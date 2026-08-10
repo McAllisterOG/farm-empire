@@ -53,6 +53,7 @@ export class FarmEmpireApp {
   private playerFacing: FarmFacing = 'south';
   private scout: FarmCompanionState;
   private scoutScratchUntil = 0;
+  private scoutWaitingForScratch = false;
   private scoutFacing: FarmFacing = 'south';
   private hover: { tx: number; ty: number } | null = null;
   private walkTarget: { x: number; y: number; cb: (() => void) | null } | null = null;
@@ -266,7 +267,8 @@ export class FarmEmpireApp {
     }
     const clickLogical = farmLogicalPoint(this.renderer.camera.tilePointAt(sx, sy));
     if (!this.operatingTractor && Math.hypot(clickLogical.x - this.scout.x, clickLogical.y - this.scout.y) <= 0.72) {
-      this.walkNear(this.scout.x, this.scout.y, () => this.openScoutMenu());
+      this.scoutWaitingForScratch = true;
+      this.walkNear(this.scout.x, this.scout.y, () => { this.scoutWaitingForScratch = false; this.openScoutMenu(); });
       return;
     }
     const { tx, ty } = this.farmTargetAtScreen(sx, sy);
@@ -665,7 +667,7 @@ export class FarmEmpireApp {
 
     const scoutHome = farmLandmarks().scoutHome;
     const scoutBefore = this.scout;
-    this.scout = updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.operatingTractor || !!this.tractorJob);
+    this.scout = this.scoutWaitingForScratch && !this.operatingTractor ? { ...this.scout, moving: false } : updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.operatingTractor || !!this.tractorJob);
     const scoutDx = this.scout.x - scoutBefore.x; const scoutDy = this.scout.y - scoutBefore.y;
     if (Math.hypot(scoutDx, scoutDy) > 0.0001) this.scoutFacing = Math.abs(scoutDx) >= Math.abs(scoutDy) ? (scoutDx > 0 ? 'east' : 'west') : (scoutDy > 0 ? 'south' : 'north');
 

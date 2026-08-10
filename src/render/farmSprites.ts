@@ -1,7 +1,4 @@
-/** Bounded presentation keys; never include coordinates or timestamps. */
-export type FarmFacing = 'south' | 'north' | 'east' | 'west';
-export type FarmSpriteFrame = 0 | 1 | 2 | 3;
-export function farmFarmerSpriteKey(facing: FarmFacing, frame: FarmSpriteFrame): string {
-  return `farm:farmer:${facing}:${frame}`;
-}
-export function farmScoutSpriteKey(frame: FarmSpriteFrame): string { return `farm:scout:${frame}`; }
+/** Bounded farm-only animation domains. */
+export const FARM_FACINGS = ['south', 'north', 'east', 'west'] as const;
+export type FarmFacing = typeof FARM_FACINGS[number];
+export const FARM_WALK_FRAME_COUNT = 4;

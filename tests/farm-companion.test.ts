@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createFarmGame } from '../src/core/state';
 import { serialize } from '../src/save/save';
 import { updateFarmCompanion } from '../src/core/farmCompanion';
-import { farmFarmerSpriteKey, farmScoutSpriteKey } from '../src/render/farmSprites';
+import { FARM_FACINGS, FARM_WALK_FRAME_COUNT } from '../src/render/farmSprites';
 import { NOW } from './helpers';
 
 describe('Farmyard Scout companion', () => {
@@ -33,8 +33,8 @@ describe('Farmyard Scout companion', () => {
     expect(Math.hypot(next.x - home.x, next.y - home.y)).toBeLessThanOrEqual(.261);
   });
   it('uses finite sprite key enums and leaves save serialization companion-free', () => {
-    expect(new Set(['south', 'north', 'east', 'west'].map((f) => farmFarmerSpriteKey(f as 'south', 3))).size).toBe(4);
-    expect(farmScoutSpriteKey(2)).toBe('farm:scout:2');
+    expect(FARM_FACINGS).toEqual(['south', 'north', 'east', 'west']);
+    expect(FARM_WALK_FRAME_COUNT).toBe(4);
     const saved = JSON.parse(serialize(createFarmGame('Save Check', 12, NOW), NOW)) as Record<string, unknown>;
     expect(saved).not.toHaveProperty('scout');
     expect(saved.farm).not.toHaveProperty('scout');
