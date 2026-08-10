@@ -1,5 +1,18 @@
 # Farm Empire Agent Guide
 
+## Owner Console workflow
+
+Farm Empire uses a durable Owner Console workflow. Read `docs/owner/OWNER_CONSOLE.md`, `PLAN.md`, `STATUS.md`, and relevant entries in `docs/owner/DECISIONS.md` before planning or authorizing project work. Use `docs/owner/WORK_LOG.md` for major completed packages and verification results.
+
+- Owner Console is the planning and project-control layer, not the default implementation writer.
+- Ordinary owner discussion does not authorize code or documentation changes. Clear language such as "build it", "implement that", "go ahead", or "proceed" authorizes a reasonably clear bounded package.
+- The exact phrase `brainstorm` enters Brainstorm Mode. During that mode, discuss only: do not edit files, run implementation commands, dispatch implementation agents, commit, or record ideas as decisions. Stay in that mode until the owner says `end brainstorm`; then synthesize without implementing.
+- Authorized implementation should normally be delegated to one primary writer with a finite scope and stopping condition. That writer may use a small number of read-only research agents. Avoid overlapping writers and recursive agent trees.
+- Substantial milestones should normally receive one independent read-only Red Team review after implementation and testing. Use one bounded repair/re-review cycle unless a genuine critical defect remains.
+- Do not create `/goal`, automation, or an open-ended persistent loop unless the owner explicitly requests it.
+- Keep `STATUS.md` concise and current, `PLAN.md` as the roadmap, `DECISIONS.md` limited to approved durable decisions, and `WORK_LOG.md` limited to major completed packages. Do not turn ordinary chat into repository paperwork.
+- No later milestone is authorized merely because it appears in the roadmap. Discuss and package it first; implement only after owner authorization.
+
 ## Working principles
 
 - Preserve working systems instead of rewriting blindly. Inspect the relevant core, renderer, UI, and save paths before changing them.
@@ -23,4 +36,3 @@ npm.cmd run dev -- --host 127.0.0.1 --port 5173
 ```
 
 There is currently no lint script. Do not invent a successful lint result.
-

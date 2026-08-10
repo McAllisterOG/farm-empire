@@ -1,5 +1,9 @@
 # Farm Empire V1 Status
 
+## Project control
+
+The durable Owner Console workflow is established in `docs/owner/OWNER_CONSOLE.md`. Farming Business V1 is the current known-good checkpoint. No Milestone 2 implementation package is authorized; the next action is owner discussion, prioritization, or Brainstorm Mode.
+
 ## Branch
 
 `codex/farming-business-v1`
@@ -49,4 +53,4 @@ There is no lint script in this repository.
 
 ## Next recommended task
 
-Add field-job batching and the first drivable/equippable tractor slice without changing the proven business-state contracts.
+Discuss and package the next milestone with the owner. The leading roadmap candidate remains field-job batching and the first drivable/equippable tractor slice, but it is not yet authorized for implementation.
