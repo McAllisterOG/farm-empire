@@ -1,9 +1,9 @@
 import type { ActionResult, GameState } from '../core/types';
-import { cropView } from '../core/crops';
 import { cropDef, farmCropDef } from '../core/registry';
 import {
   NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, buyFarmSeeds, farmOf,
-  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
+  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
+  issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage,
   sellStoredCrop, syncCashMirror, ownedFarmParcelAt, planParcelWork,
   placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
@@ -165,6 +165,8 @@ export class FarmEmpireApp {
       buyLand: () => purchaseNeighborParcel(this.state),
       acceptCountyWorkOrder: () => acceptCountyWorkOrder(this.state),
       fulfillCountyWorkOrder: () => fulfillCountyWorkOrder(this.state),
+      issueCountyReliefSeed: () => issueCountyReliefSeed(this.state, Date.now()),
+      purchaseBarnLoft: () => purchaseBarnLoftExpansion(this.state),
       dispatch: this.dispatch,
     };
   }
@@ -581,15 +583,23 @@ export class FarmEmpireApp {
       return;
     }
     const def = farmCropDef(plot.crop.defId);
-    const view = cropView(plot.crop, Date.now());
-    if (view.stage === 'ready') {
+    const now = Date.now();
+    const stage = farmCropStage(plot.crop, now);
+    if (isFarmCropWithered(plot.crop, now)) {
+      showActionMenu(sx, sy, `${def.name} · Withered`, [{
+        label: 'Clear withered section (no refund)', icon: 'fx:hungry',
+        onClick: () => this.dispatch(clearWitheredFarmCrop(this.state, plotUid, Date.now())),
+      }]);
+      return;
+    }
+    if (stage === 'ready') {
       showActionMenu(sx, sy, `${def.name} · Ready`, [{
         label: 'Harvest into barn', icon: 'fx:ready',
         onClick: () => this.dispatch(harvestFarmCrop(this.state, plotUid, Date.now(), 'manual')),
       }]);
     } else {
-      showActionMenu(sx, sy, `${def.name} · ${view.stage}`, [{
-        label: `Growing · ${Math.max(1, Math.ceil(view.etaMs / 1000))}s remaining`,
+      showActionMenu(sx, sy, `${def.name} · ${stage}`, [{
+        label: `Growing · ${Math.max(1, Math.ceil((plot.crop.plantedAt + def.growMs - plot.crop.wateredBonusMs - now) / 1000))}s remaining`,
         disabled: true,
         onClick: () => {},
       }]);
@@ -902,6 +912,7 @@ export class FarmEmpireApp {
         wheelPhase: this.tractorMotion.wheelPhase,
       },
       scout: { ...this.scout, facing: this.scoutFacing, scratching: Date.now() < this.scoutScratchUntil },
+      barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
       clockMinute: farm.clock.minute,
     };
     if (this.hover) {

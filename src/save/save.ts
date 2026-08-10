@@ -48,12 +48,22 @@ const MIGRATIONS: Record<number, Migrator> = {
   },
   5: (raw) => {
     const farm = raw.farm as Record<string, unknown> | undefined;
-    if (farm) {
-      const equipment = (farm.equipment ?? {}) as Record<string, unknown>;
+    if (farm && typeof farm === 'object' && !Array.isArray(farm)) {
+      const equipment = (farm.equipment && typeof farm.equipment === 'object' ? farm.equipment : {}) as Record<string, unknown>;
       equipment.countyRowCropFieldKitOwned = true;
       farm.equipment = equipment;
     }
     raw.version = 6;
+  },
+  6: (raw) => {
+    const farm = raw.farm as Record<string, unknown> | undefined;
+    if (farm && typeof farm === 'object' && !Array.isArray(farm)) {
+      const equipment = (farm.equipment && typeof farm.equipment === 'object' ? farm.equipment : {}) as Record<string, unknown>;
+      equipment.barnLoftExpansionOwned = false;
+      farm.equipment = equipment;
+      farm.countyReliefClaimed = false;
+    }
+    raw.version = 7;
   },
 };
 
@@ -76,7 +86,7 @@ export function deserialize(json: string, now: number): GameState {
   }
   const state = migrate(raw);
   // 邻居为空（老档/异常）时重建
-  if (state.farm) normalizeFarmBusinessState(state, now);
+  if (Object.prototype.hasOwnProperty.call(raw, 'farm')) normalizeFarmBusinessState(state, now);
   else initNeighbors(state, now);
   return state;
 }

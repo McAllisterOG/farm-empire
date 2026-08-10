@@ -3,7 +3,7 @@ import { allFarmCrops, farmCropDef } from '../../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
-import { COUNTY_ROW_CROP_FIELD_KIT } from '../../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT } from '../../data/farmEquipment.data';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
 import { h, spriteImg, clearChildren } from '../dom';
@@ -17,6 +17,8 @@ export interface FarmPanelActions {
   buyLand: () => ActionResult;
   acceptCountyWorkOrder: () => ActionResult;
   fulfillCountyWorkOrder: () => ActionResult;
+  issueCountyReliefSeed: () => ActionResult;
+  purchaseBarnLoft: () => ActionResult;
   dispatch: Dispatch;
 }
 
@@ -96,7 +98,7 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', { 'data-testid': 'market-cash' }, `Cash: ${formatMoney(farm.cashCents)}`),
     h('strong', { 'data-testid': 'market-capacity' }, `Storage: ${used} / ${farm.storageCapacity}`),
-    h('span', {}, `${storageRemaining(state)} capacity remaining. A full barn leaves mature crops safely in the field.`),
+    h('span', {}, `${storageRemaining(state)} capacity remaining. A full barn leaves mature crops safely in the field. ${farm.equipment.barnLoftExpansionOwned ? 'Barn Loft Expansion owned.' : 'Barn Loft Expansion is available through Mae after the neighboring parcel is owned.'}`),
   ));
 
   const events = h('div', { class: 'market-events', 'data-testid': 'market-events' });
@@ -174,6 +176,24 @@ function renderCountyWorkOrder(body: HTMLElement, state: GameState, actions: Far
   clearChildren(body);
   const status = townContact(state).status;
   const progress = countyWorkOrderProgress(state);
+  const farm = farmOf(state);
+  const loftOwned = farm.equipment.barnLoftExpansionOwned;
+  const loftCard = h('div', { class: 'farm-card', 'data-testid': 'barn-loft-expansion' },
+    h('div', { class: 'farm-card-main' },
+      h('div', { class: 'farm-card-title' }, BARN_LOFT_DEF.name),
+      h('div', { class: 'farm-card-sub' }, `One-time investment · ${formatMoney(BARN_LOFT_DEF.priceCents)} · storage ${BARN_LOFT_DEF.fromCapacity} → ${BARN_LOFT_DEF.toCapacity}`),
+      h('div', { class: 'farm-card-stock' }, loftOwned ? 'Owned · barn loft installed' : farm.parcels.northOwned ? 'Unlocked · neighboring parcel owned' : 'Locked · buy the neighboring parcel first'),
+    ),
+    ...(!loftOwned && farm.parcels.northOwned ? [h('button', { class: 'btn btn-primary btn-sm', 'data-testid': 'buy-barn-loft', onclick: () => runAndRender(actions.purchaseBarnLoft(), actions, () => renderCountyWorkOrder(body, state, actions)) }, `Purchase for ${formatMoney(BARN_LOFT_DEF.priceCents)}`)] : []),
+  );
+  body.append(loftCard);
+  const cheapest = allFarmCrops().slice().sort((a, b) => a.seedPriceCents - b.seedPriceCents || a.id.localeCompare(b.id))[0];
+  const relief = h('div', { class: 'farm-card', 'data-testid': 'county-relief' },
+    h('div', { class: 'farm-card-title' }, 'Last-resort seed relief'),
+    h('div', { class: 'farm-card-sub' }, `Mae can issue exactly one ${cheapest.name} seed only when cash is below ${formatMoney(cheapest.seedPriceCents)}, every seed and stored crop is gone, and no field crop can still mature or be harvested. Withered sections do not block relief.`),
+    h('button', { class: 'btn btn-sm', 'data-testid': 'claim-county-relief', onclick: () => runAndRender(actions.issueCountyReliefSeed(), actions, () => renderCountyWorkOrder(body, state, actions)) }, 'Check relief eligibility'),
+  );
+  body.append(relief);
   if (status === 'completed') {
     body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-completed' },
       h('strong', {}, 'First delivery recorded'),
@@ -222,6 +242,12 @@ function renderLand(body: HTMLElement, state: GameState, actions: FarmPanelActio
     owned
       ? h('div', { class: 'owned-mark', 'data-testid': 'parcel-owned' }, 'Purchased · field sections unlocked')
       : h('button', { class: 'btn btn-primary', 'data-testid': 'buy-parcel-button', onclick: () => runAndRender(actions.buyLand(), actions, rerender) }, 'Purchase Parcel'),
+  ));
+  const selected = farmCropDef(farm.selectedCropId);
+  const nineSectionSeedCapital = selected.seedPriceCents * 9;
+  body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'land-working-capital' },
+    h('strong', {}, `Cash after parcel: ${formatMoney(farm.cashCents - (owned ? 0 : FIRST_PARCEL_PRICE_CENTS))}`),
+    h('span', {}, `Nine additional field sections need ${formatMoney(nineSectionSeedCapital)} in ${selected.name} seed capital at current prices. This is planning guidance, not a purchase block.`),
   ));
 }
 

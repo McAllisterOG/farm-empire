@@ -4,7 +4,7 @@ import type {
 import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
-import { COUNTY_ROW_CROP_FIELD_KIT } from '../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT } from '../data/farmEquipment.data';
 
 export const STARTING_CASH_CENTS = 500_000;
 export const STARTING_STORAGE_CAPACITY = 150;
@@ -63,6 +63,11 @@ function clampNumber(value: unknown, fallback: number, min = 0): number {
   return Number.isFinite(n) ? Math.max(min, n) : fallback;
 }
 
+function objectRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown> : {};
+}
+
 export function createFarmBusinessState(now: number): FarmBusinessState {
   const quotes: FarmBusinessState['market']['quotes'] = {};
   const seeds: Record<string, number> = {};
@@ -77,6 +82,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     seeds,
     storage,
     storageCapacity: STARTING_STORAGE_CAPACITY,
+    countyReliefClaimed: false,
     selectedCropId: 'crop_corn',
     townContact: { status: 'unmet' },
     clock: { day: 1, minute: 8 * 60, lastRealAt: now },
@@ -84,6 +90,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     parcels: { starterOwned: true, northOwned: false },
     equipment: {
       countyRowCropFieldKitOwned: false,
+      barnLoftExpansionOwned: false,
       tractor: {
         id: 'old-tractor',
         name: 'Old Red Tractor',
@@ -100,13 +107,18 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
 /** Fill missing/corrupt Farm Empire fields without trusting stored nested shapes. */
 export function normalizeFarmBusinessState(state: GameState, now: number): FarmBusinessState {
   const defaults = createFarmBusinessState(now);
-  const raw = (state.farm ?? {}) as Partial<FarmBusinessState>;
-  const rawMarket = raw.market ?? defaults.market;
-  const rawClock = raw.clock ?? defaults.clock;
-  const rawParcels = raw.parcels ?? defaults.parcels;
-  const rawTractor = raw.equipment?.tractor ?? defaults.equipment.tractor;
-  const rawKitOwned = raw.equipment?.countyRowCropFieldKitOwned;
-  const townStatus = raw.townContact?.status;
+  const raw = objectRecord(state.farm);
+  const rawMarket = objectRecord(raw.market);
+  const rawClock = objectRecord(raw.clock);
+  const rawParcels = objectRecord(raw.parcels);
+  const rawEquipment = objectRecord(raw.equipment);
+  const rawTractor = objectRecord(rawEquipment.tractor);
+  const rawKitOwned = rawEquipment.countyRowCropFieldKitOwned;
+  const rawLoftOwned = rawEquipment.barnLoftExpansionOwned;
+  const townStatus = objectRecord(raw.townContact).status;
+  const rawSeeds = objectRecord(raw.seeds);
+  const rawStorage = objectRecord(raw.storage);
+  const rawQuotes = objectRecord(rawMarket.quotes);
   const validCropIds = new Set(allFarmCrops().map((c) => c.id));
   const selectedCropId = validCropIds.has(String(raw.selectedCropId))
     ? String(raw.selectedCropId)
@@ -116,9 +128,9 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const storage: Record<string, number> = {};
   const quotes: FarmBusinessState['market']['quotes'] = {};
   for (const def of allFarmCrops()) {
-    seeds[def.id] = clampInt(raw.seeds?.[def.id], defaults.seeds[def.id]);
-    storage[def.id] = clampInt(raw.storage?.[def.id], 0);
-    const quote = rawMarket.quotes?.[def.id];
+    seeds[def.id] = clampInt(rawSeeds[def.id], defaults.seeds[def.id]);
+    storage[def.id] = clampInt(rawStorage[def.id], 0);
+    const quote = objectRecord(rawQuotes[def.id]);
     quotes[def.id] = {
       currentCents: clampInt(quote?.currentCents, def.basePriceCents, 1),
       previousCents: clampInt(quote?.previousCents, def.basePriceCents, 1),
@@ -135,11 +147,14 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
       remainingDays: clampInt(event.remainingDays, 1, 1),
     }));
 
+  const northOwned = rawParcels.northOwned === true;
+  const loftOwned = rawLoftOwned === true && northOwned;
   state.farm = {
     cashCents: clampInt(raw.cashCents, STARTING_CASH_CENTS),
     seeds,
     storage,
-    storageCapacity: clampInt(raw.storageCapacity, STARTING_STORAGE_CAPACITY, 1),
+    storageCapacity: loftOwned ? BARN_LOFT_EXPANSION.toCapacity : STARTING_STORAGE_CAPACITY,
+    countyReliefClaimed: raw.countyReliefClaimed === true,
     selectedCropId,
     townContact: { status: townStatus === 'offered' || townStatus === 'active' || townStatus === 'completed' ? townStatus : 'unmet' },
     clock: {
@@ -154,10 +169,11 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     },
     parcels: {
       starterOwned: rawParcels.starterOwned !== false,
-      northOwned: rawParcels.northOwned === true,
+      northOwned,
     },
     equipment: {
       countyRowCropFieldKitOwned: rawKitOwned === true,
+      barnLoftExpansionOwned: loftOwned,
       tractor: {
         id: String(rawTractor.id || defaults.equipment.tractor.id),
         name: String(rawTractor.name || defaults.equipment.tractor.name),
@@ -294,6 +310,7 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
   const farm = farmOf(state);
   const plot = state.plots.find((candidate) => candidate.uid === plotUid);
   if (!plot?.crop) return fail('There is no crop to harvest.');
+  if (isFarmCropWithered(plot.crop, now)) return fail('This crop has withered. Clear it before planting again.');
   if (!farmCropReady(plot, now)) return fail('This crop is still growing.');
   const def = farmCropDef(plot.crop.defId);
   const bonus = context === 'operatedTractor' && farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
@@ -321,8 +338,65 @@ export function purchaseCountyRowCropFieldKit(state: GameState): ActionResult {
 
 function farmCropReady(plot: FarmPlot, now: number): boolean {
   if (!plot.crop) return false;
-  const def = farmCropDef(plot.crop.defId);
-  return now >= plot.crop.plantedAt + def.growMs - plot.crop.wateredBonusMs;
+  return farmCropStage(plot.crop, now) === 'ready';
+}
+
+export type FarmCropStage = 'growing' | 'ready' | 'withered';
+
+export function farmCropStage(crop: FarmPlot['crop'], now: number): FarmCropStage | 'empty' {
+  if (!crop) return 'empty';
+  const def = farmCropDef(crop.defId);
+  const readyAt = crop.plantedAt + def.growMs - crop.wateredBonusMs;
+  if (now < readyAt) return 'growing';
+  return now >= readyAt + def.witherMs ? 'withered' : 'ready';
+}
+
+export function isFarmCropWithered(crop: FarmPlot['crop'], now: number): boolean {
+  return farmCropStage(crop, now) === 'withered';
+}
+
+export function clearWitheredFarmCrop(state: GameState, plotUid: number, now: number): ActionResult {
+  const plot = state.plots.find((candidate) => candidate.uid === plotUid);
+  if (!plot?.crop) return fail('There is no crop to clear.');
+  if (!isFarmCropWithered(plot.crop, now)) return fail('Only withered crops can be cleared.');
+  plot.crop = null;
+  return { ok: true, events: [{ type: 'toast', target: 'Withered field section cleared. No crop or refund was recovered.' }] };
+}
+
+export function cheapestFarmSeed(): { cropId: string; priceCents: number; name: string } {
+  const def = allFarmCrops().slice().sort((a, b) => a.seedPriceCents - b.seedPriceCents || a.id.localeCompare(b.id))[0];
+  return { cropId: def.id, priceCents: def.seedPriceCents, name: def.name };
+}
+
+export function countyReliefEligible(state: GameState, now: number): boolean {
+  const farm = farmOf(state);
+  if (farm.countyReliefClaimed) return false;
+  const cheapest = cheapestFarmSeed();
+  if (farm.cashCents >= cheapest.priceCents) return false;
+  if (allFarmCrops().some((def) => (farm.seeds[def.id] ?? 0) > 0)) return false;
+  if (storageUsed(state) > 0) return false;
+  return !state.plots.some((plot) => plot.crop && !isFarmCropWithered(plot.crop, now));
+}
+
+export function issueCountyReliefSeed(state: GameState, now: number): ActionResult {
+  if (!countyReliefEligible(state, now)) return fail('County relief is reserved for a true zero-asset farm.');
+  const starter = cheapestFarmSeed();
+  const farm = farmOf(state);
+  farm.seeds[starter.cropId] = (farm.seeds[starter.cropId] ?? 0) + 1;
+  farm.countyReliefClaimed = true;
+  return { ok: true, events: [{ type: 'toast', target: `Mae issued 1 ${starter.name} seed as last-resort County relief.` }] };
+}
+
+export function purchaseBarnLoftExpansion(state: GameState): ActionResult {
+  const farm = farmOf(state);
+  if (!farm.parcels.northOwned) return fail('Buy the neighboring parcel before expanding the barn loft.');
+  if (farm.equipment.barnLoftExpansionOwned) return fail('The Barn Loft Expansion is already owned.');
+  if (farm.cashCents < BARN_LOFT_EXPANSION.priceCents) return fail('Not enough cash for the Barn Loft Expansion.');
+  farm.cashCents -= BARN_LOFT_EXPANSION.priceCents;
+  farm.equipment.barnLoftExpansionOwned = true;
+  farm.storageCapacity = BARN_LOFT_EXPANSION.toCapacity;
+  syncCashMirror(state);
+  return { ok: true, events: [{ type: 'toast', target: 'Barn Loft Expansion purchased. Storage capacity is now 200.' }] };
 }
 
 export function sellStoredCrop(state: GameState, cropId: string, count: number): ActionResult {

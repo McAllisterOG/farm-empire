@@ -5,3 +5,11 @@ export const COUNTY_ROW_CROP_FIELD_KIT = {
   workSpeedBonusBps: 2_000,
   harvestBonusUnits: 1,
 } as const;
+
+export const BARN_LOFT_EXPANSION = {
+  id: 'barn-loft-expansion',
+  name: 'Barn Loft Expansion',
+  priceCents: 180_000,
+  fromCapacity: 150,
+  toCapacity: 200,
+} as const;

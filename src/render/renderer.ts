@@ -8,6 +8,7 @@ import type {
 import { buildTerrain } from '../core/island';
 import { buildingDef } from '../core/registry';
 import { cropView } from '../core/crops';
+import { farmCropStage } from '../core/farmBusiness';
 import { animalPhase } from '../core/animals';
 import { WATER_COOLDOWN_MS } from '../core/balance';
 import { FARM_TOWN_GATE } from '../core/townGateway';
@@ -66,6 +67,7 @@ export interface RenderScene {
       wheelPhase?: number;
     };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
+    barnLoftOwned: boolean;
     clockMinute: number;
   };
   /** Optional isolated County Service Center scene; never serialized. */
@@ -472,7 +474,7 @@ export class Renderer {
     items.push({ depth: townGatePoint.x + townGatePoint.y + .18, draw: () => drawFarmTownGateway(ctx, camera.sx(isoX(townGatePoint.x, townGatePoint.y)), camera.sy(isoY(townGatePoint.x, townGatePoint.y) + TILE_H / 2), zoom) });
     for (const plot of scene.plots) if (plot.crop) {
       const point = farmWorldPoint(plot);
-      const stage = cropView(plot.crop, now).stage;
+      const stage = farmCropStage(plot.crop, now);
       items.push({ depth: point.x + point.y, draw: () => drawFarmCropRows(ctx, camera, plot, stage, zoom, now, bob) });
     }
     for (const pl of scene.placements) {
@@ -482,7 +484,7 @@ export class Renderer {
       if (def.category === 'path') continue;
       const point = farmWorldPoint({ x: pl.x + (def.w - 1) / 2, y: pl.y + (def.h - 1) / 2 });
       items.push({ depth: point.x + point.y + 0.2, draw: () => pl.defId === 'bld_storage'
-        ? drawFarmBarn(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom)
+        ? drawFarmBarn(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, scene.farm!.barnLoftOwned)
         : drawSprite(ctx, `bld:${pl.defId}`, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom * 1.16) });
     }
     const doghousePoint = farmWorldPoint(farmLandmarks().doghouse);
@@ -697,7 +699,7 @@ function drawFarmName(ctx: CanvasRenderingContext2D, sx: number, sy: number, nam
   ctx.fillStyle = 'rgba(40,34,28,.55)'; ctx.fillRect(sx - width / 2 - 4, sy - 118 * zoom, width + 8, 14 * zoom); ctx.fillStyle = '#fff'; ctx.fillText(name, sx, sy - 107 * zoom); ctx.restore();
 }
 
-function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
+function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, loftOwned = false): void {
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 2, zoom * 2);
   ctx.fillStyle = 'rgba(40,30,20,.22)'; ctx.beginPath(); ctx.ellipse(0, 5, 58, 16, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#a84634'; ctx.fillRect(-42, -53, 84, 55);
@@ -705,6 +707,10 @@ function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
   ctx.fillStyle = '#f2d8a5'; ctx.fillRect(-45, -54, 90, 6);
   ctx.beginPath(); ctx.moveTo(-50, -53); ctx.lineTo(0, -85); ctx.lineTo(50, -53); ctx.closePath(); ctx.fillStyle = '#70372d'; ctx.fill();
   ctx.beginPath(); ctx.moveTo(-44, -54); ctx.lineTo(0, -80); ctx.lineTo(44, -54); ctx.closePath(); ctx.fillStyle = '#bd5840'; ctx.fill();
+  if (loftOwned) {
+    ctx.fillStyle = '#8b5a35'; ctx.fillRect(32, -43, 24, 35); ctx.fillStyle = '#b87b42'; ctx.fillRect(29, -47, 30, 5);
+    ctx.fillStyle = '#ead39a'; ctx.fillRect(35, -40, 18, 4);
+  }
   ctx.fillStyle = '#e5c788'; ctx.fillRect(-16, -36, 32, 38); ctx.fillStyle = '#69422d'; ctx.fillRect(-12, -32, 24, 34);
   ctx.strokeStyle = '#e5c788'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(0, 2); ctx.stroke();
   ctx.fillStyle = '#b8d7dd'; ctx.fillRect(-34, -37, 12, 12); ctx.fillRect(22, -37, 12, 12);

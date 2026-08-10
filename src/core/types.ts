@@ -394,6 +394,7 @@ export interface FarmCropDef {
   name: string;
   seedPriceCents: number;
   growMs: number;
+  witherMs: number;
   harvestYield: number;
   storageUnitsPerItem: number;
   basePriceCents: number;
@@ -434,6 +435,7 @@ export interface FarmBusinessState {
   seeds: Record<string, number>;
   storage: Record<string, number>;
   storageCapacity: number;
+  countyReliefClaimed: boolean;
   selectedCropId: string;
   townContact: FarmTownContactState;
   clock: FarmClockState;
@@ -448,6 +450,7 @@ export interface FarmBusinessState {
   };
   equipment: {
     countyRowCropFieldKitOwned: boolean;
+    barnLoftExpansionOwned: boolean;
     tractor: {
       id: string;
       name: string;
