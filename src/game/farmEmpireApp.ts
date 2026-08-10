@@ -12,7 +12,7 @@ import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../render/farmLayout';
 import { farmLandmarks } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
-import type { FarmFacing } from '../render/farmSprites';
+import type { FarmFacing } from '../render/renderer';
 import { FarmHud } from '../ui/farmHud';
 import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMenu';
 import { closePanel, isPanelOpen } from '../ui/modal';
@@ -53,6 +53,7 @@ export class FarmEmpireApp {
   private playerFacing: FarmFacing = 'south';
   private scout: FarmCompanionState;
   private scoutScratchUntil = 0;
+  private scoutFacing: FarmFacing = 'south';
   private hover: { tx: number; ty: number } | null = null;
   private walkTarget: { x: number; y: number; cb: (() => void) | null } | null = null;
   private operatingTractor = false;
@@ -663,7 +664,10 @@ export class FarmEmpireApp {
     }
 
     const scoutHome = farmLandmarks().scoutHome;
+    const scoutBefore = this.scout;
     this.scout = updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.operatingTractor || !!this.tractorJob);
+    const scoutDx = this.scout.x - scoutBefore.x; const scoutDy = this.scout.y - scoutBefore.y;
+    if (Math.hypot(scoutDx, scoutDy) > 0.0001) this.scoutFacing = Math.abs(scoutDx) >= Math.abs(scoutDy) ? (scoutDx > 0 ? 'east' : 'west') : (scoutDy > 0 ? 'south' : 'north');
 
     this.renderer.render(this.buildScene(), now);
     this.hud.update(this.state, this.tractorHudRuntime());
@@ -687,7 +691,7 @@ export class FarmEmpireApp {
         operating: this.operatingTractor,
         working: !!this.tractorJob,
       },
-      scout: { ...this.scout, scratching: Date.now() < this.scoutScratchUntil },
+      scout: { ...this.scout, facing: this.scoutFacing, scratching: Date.now() < this.scoutScratchUntil },
     };
     if (this.hover) {
       scene.hover = { tx: this.hover.tx, ty: this.hover.ty, ok: true };

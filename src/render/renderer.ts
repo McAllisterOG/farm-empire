@@ -16,7 +16,7 @@ import { charKey, drawSprite } from './sprites';
 import { farmMainlandBounds, farmPlotFootprint, farmWorldPoint } from './farmLayout';
 import { farmLandmarks } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
-import type { FarmFacing } from './farmSprites';
+export type FarmFacing = 'south' | 'north' | 'east' | 'west';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -54,7 +54,7 @@ export interface RenderScene {
       operating?: boolean;
       working?: boolean;
     };
-    scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; scratching: boolean };
+    scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
   };
 }
 
@@ -446,7 +446,7 @@ export class Renderer {
     const tractorPoint = farmWorldPoint(tractor);
     items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now) });
     const scoutPoint = farmWorldPoint(scene.farm!.scout);
-    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.scratching, scene.farm!.scout.mode === 'home') });
+    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, false, scene.farm!.scout.mode === 'home', scene.farm!.scout.facing) });
     for (const actor of scene.actors) {
       const point = farmWorldPoint(actor);
       items.push({ depth: point.x + point.y + 0.4, draw: () => {
@@ -458,6 +458,7 @@ export class Renderer {
     items.sort((a, b) => a.depth - b.depth); items.forEach((item) => item.draw());
     const na = nightAlpha(now);
     if (na > .01) { ctx.fillStyle = `rgba(24, 34, 76, ${na})`; ctx.fillRect(0, 0, camera.viewW, camera.viewH); }
+    if (scene.farm!.scout.scratching) drawScoutHeart(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y)) - 42 * zoom, zoom, now);
   }
 }
 
@@ -544,20 +545,23 @@ function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoo
   ctx.restore();
 }
 
-function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, moving: boolean, scratching: boolean, sitting: boolean): void {
+function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, moving: boolean, scratching: boolean, sitting: boolean, facing: FarmFacing): void {
   const trot = moving ? Math.sin(now / 90) * 2 : 0; const wag = Math.sin(now / 110) * (moving ? .55 : .9);
   ctx.save(); ctx.translate(x, y + trot * zoom); ctx.scale(zoom * 1.2, zoom * 1.2);
   ctx.fillStyle = 'rgba(35,29,23,.2)'; ctx.beginPath(); ctx.ellipse(0, 2, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#965b3c'; ctx.beginPath(); ctx.ellipse(0, sitting ? -9 : -11, 14, sitting ? 11 : 9, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#b97b4c'; ctx.beginPath(); ctx.arc(11, -17, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#f2e2c1'; ctx.fillRect(9, -22, 4, 8); ctx.fillRect(-5, -6, 6, 3); ctx.fillRect(4, -6, 6, 3);
+  const headX = facing === 'west' ? -11 : facing === 'north' ? 0 : 11; ctx.fillStyle = '#b97b4c'; ctx.beginPath(); ctx.arc(headX, -17, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f2e2c1'; ctx.fillRect(headX - 2, -22, 4, 8); ctx.fillRect(-5, -6, 6, 3); ctx.fillRect(4, -6, 6, 3);
   ctx.strokeStyle = '#287b80'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(6, -12); ctx.lineTo(15, -12); ctx.stroke();
   ctx.fillStyle = '#553521'; ctx.beginPath(); ctx.moveTo(7, -22); ctx.lineTo(8, -31); ctx.lineTo(13, -23); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(14, -22); ctx.lineTo(18, -29); ctx.lineTo(18, -19); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#6f452b'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-12, -13); ctx.quadraticCurveTo(-22, -19 + wag * 6, -24, -11 + wag * 4); ctx.stroke();
   ctx.strokeStyle = '#4b3426'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-7, -5); ctx.lineTo(-8 + trot, 1); ctx.moveTo(6, -5); ctx.lineTo(7 - trot, 1); ctx.stroke();
   ctx.fillStyle = '#261d19'; ctx.fillRect(14, -18, 2, 2); ctx.fillRect(18, -15, 3, 2);
-  if (scratching) { ctx.fillStyle = '#ef7d96'; ctx.font = '18px Segoe UI, sans-serif'; ctx.fillText('♥', 2, -38); }
   ctx.restore();
+}
+
+function drawScoutHeart(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {
+  ctx.save(); ctx.translate(x, y - (now % 1200) / 1200 * 12 * zoom); ctx.scale(zoom * 1.5, zoom * 1.5); ctx.font = '22px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#f2e2c1'; ctx.fillText('♥', 1, 1); ctx.fillStyle = '#ef7d96'; ctx.fillText('♥', 0, 0); ctx.restore();
 }
 
 function drawFarmTree(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
