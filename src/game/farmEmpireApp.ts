@@ -10,6 +10,9 @@ import {
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../render/farmLayout';
+import { farmLandmarks } from '../render/farmLayout';
+import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
+import type { FarmFacing } from '../render/farmSprites';
 import { FarmHud } from '../ui/farmHud';
 import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMenu';
 import { closePanel, isPanelOpen } from '../ui/modal';
@@ -47,6 +50,9 @@ export class FarmEmpireApp {
   private renderer: Renderer;
   private hud: FarmHud;
   private playerActor: SceneActor;
+  private playerFacing: FarmFacing = 'south';
+  private scout: FarmCompanionState;
+  private scoutScratchUntil = 0;
   private hover: { tx: number; ty: number } | null = null;
   private walkTarget: { x: number; y: number; cb: (() => void) | null } | null = null;
   private operatingTractor = false;
@@ -70,6 +76,8 @@ export class FarmEmpireApp {
       y: state.player.py,
       walking: false,
     };
+    const scoutHome = farmLandmarks().doghouse;
+    this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
       onSeedShop: () => openFarmSeedShop(this.state, this.panelActions()),
@@ -255,6 +263,11 @@ export class FarmEmpireApp {
       toast('A tractor field job is already active. Press Escape to cancel it.', 'bad');
       return;
     }
+    const clickLogical = farmLogicalPoint(this.renderer.camera.tilePointAt(sx, sy));
+    if (!this.operatingTractor && Math.hypot(clickLogical.x - this.scout.x, clickLogical.y - this.scout.y) <= 0.72) {
+      this.walkNear(this.scout.x, this.scout.y, () => this.openScoutMenu(sx, sy));
+      return;
+    }
     const { tx, ty } = this.farmTargetAtScreen(sx, sy);
     const farm = farmOf(this.state);
 
@@ -329,9 +342,21 @@ export class FarmEmpireApp {
       this.walkTarget = null;
       this.playerActor.walking = false;
       this.operatingTractor = true;
+      const home = farmLandmarks().doghouse;
+      this.scout = { ...home, mode: 'home', moving: false };
       toast('Operating the old tractor. Click ground to drive or a field parcel for batch work.', 'good');
     }
     this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
+  private openScoutMenu(sx: number, sy: number): void {
+    showActionMenu(sx, sy, 'Scout · farm dog', [{
+      label: 'Give Scout scratches',
+      onClick: () => {
+        this.scoutScratchUntil = Date.now() + 1_200;
+        toast('Scout wags and leans into the scratches.', 'good');
+      },
+    }]);
   }
 
   private driveTractorTo(x: number, y: number): void {
@@ -632,8 +657,12 @@ export class FarmEmpireApp {
         this.playerActor.x += dx / dist * step;
         this.playerActor.y += dy / dist * step;
         this.playerActor.walking = true;
+        this.playerFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
       }
     }
+
+    const scoutHome = farmLandmarks().doghouse;
+    this.scout = updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.operatingTractor || !!this.tractorJob);
 
     this.renderer.render(this.buildScene(), now);
     this.hud.update(this.state, this.tractorHudRuntime());
@@ -647,7 +676,7 @@ export class FarmEmpireApp {
 
   private buildScene(): RenderScene {
     const scene = sceneFromState(this.state);
-    scene.actors = this.operatingTractor ? [] : [{ ...this.playerActor, name: this.state.player.name }];
+    scene.actors = this.operatingTractor ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing }];
     const farm = farmOf(this.state);
     scene.farm = {
       lockedTiles: farm.parcels.northOwned ? [] : NEIGHBOR_FIELD_TILES,
@@ -657,6 +686,7 @@ export class FarmEmpireApp {
         operating: this.operatingTractor,
         working: !!this.tractorJob,
       },
+      scout: { ...this.scout, scratching: Date.now() < this.scoutScratchUntil },
     };
     if (this.hover) {
       scene.hover = { tx: this.hover.tx, ty: this.hover.ty, ok: true };

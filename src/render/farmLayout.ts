@@ -12,6 +12,22 @@ export const FARM_PLOT_GAP = 0.14;
 export interface FarmPoint { x: number; y: number }
 export interface FarmBounds { minX: number; minY: number; maxX: number; maxY: number }
 
+export interface FarmLandmarks {
+  barn: FarmPoint;
+  doghouse: FarmPoint;
+  doghouseFootprint: FarmBounds;
+}
+
+/** Farm-only landmarks are presentation anchors, never saved world state. */
+export function farmLandmarks(): FarmLandmarks {
+  const doghouse = { x: 9.8, y: 11.6 };
+  return {
+    barn: { x: 8.5, y: 5.5 },
+    doghouse,
+    doghouseFootprint: { minX: 9.35, minY: 11.15, maxX: 10.25, maxY: 12.05 },
+  };
+}
+
 export function farmWorldPoint(point: FarmPoint): FarmPoint {
   return { x: point.x * FARM_PLOT_SPAN, y: point.y * FARM_PLOT_SPAN };
 }
