@@ -78,3 +78,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Seed, market, land, and equipment interactions reuse the authoritative integer-cents farm business state; the town Equipment Desk can inspect equipment but cannot operate it.
 - Town location and movement are not saved. Saves made in town serialize ordinary farm/business state and reload at a deterministic safe farm-gateway anchor.
 - Legacy island neighbors, social systems, inventories, quests, currencies, and shops remain isolated rather than being revived to populate the town.
+
+## 2026-08-10 - Give the town one finite farm-business story loop
+
+**Status:** Approved by the owner
+
+- Mae Carter introduces one persistent County Pantry corn order requiring 12 units of real stored corn; its progress is derived from authoritative barn storage rather than a parallel quest counter.
+- Only Eli Morgan's Grain Exchange can fulfill the order. Farm HUD and barn market panels remain ordinary selling surfaces and fail closed for County delivery.
+- Fulfillment atomically removes exactly 12 corn, awards exactly 8,500 integer cents once, synchronizes the cash mirror, and completes before another payout can occur.
+- Save schema v5 persists only the minimal contact status and defensively normalizes old, missing, or corrupt data; transient town position and actor state remain unsaved.
+- Deadlines, RNG, reputation, repeat contracts, hauling scenes, generic quests, and legacy social/currency systems remain deferred.

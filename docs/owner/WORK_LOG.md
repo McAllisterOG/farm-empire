@@ -95,3 +95,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** Independent Red Team found one live-resize/input MEDIUM plus delayed-callback and plaza-footprint LOWs; one bounded repair/re-review added resize lifecycle handling, cancellable town walks, and exhaustive public-segment/building separation, then accepted with no remaining findings.
 - **Known limitations:** One compact outdoor service center only; no interiors, schedules, traffic, broad story/social model, town vehicles, or hauling.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## First Town Contact + County Work Order - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `ef8ca19`
+- **Scope:** One persistent Mae Carter introduction and one finite County Pantry corn order fulfilled only through Eli Morgan; no generic quests, reputation, deadlines, RNG, repeat contracts, hauling, or social-system revival.
+- **Result:** Added a data-defined 12-corn order with live barn-derived progress, atomic one-time 8,500-cent fulfillment, named town dialogue, an Eli-only delivery card integrated with the ordinary market, and defensive save-v5 migration/defaults.
+- **Verification:** 128/128 tests passed; strict typecheck and production build passed; browser acceptance covered Mae offer/acceptance, active save/reload, insufficient and ready progress, farm HUD and barn delivery exclusion, Eli delivery, exact $85/storage changes, completion persistence, ordinary market continuity, and clean current/fresh-tab consoles.
+- **Review:** Independent Red Team found one MEDIUM context leak that exposed delivery in farm-side market panels; one bounded repair/re-review added an explicit fail-closed market context and was accepted with no remaining findings.
+- **Known limitations:** The first town story is deliberately finite; there is no general contract log, repeat reward, reputation, deadline, vehicle hauling, or broader NPC relationship system.
+- **Push:** Not yet pushed; external GitHub authorization is still required.
