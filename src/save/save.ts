@@ -46,6 +46,15 @@ const MIGRATIONS: Record<number, Migrator> = {
     // Farm town-contact state is created defensively by farm normalization.
     raw.version = 5;
   },
+  5: (raw) => {
+    const farm = raw.farm as Record<string, unknown> | undefined;
+    if (farm) {
+      const equipment = (farm.equipment ?? {}) as Record<string, unknown>;
+      equipment.countyRowCropFieldKitOwned = true;
+      farm.equipment = equipment;
+    }
+    raw.version = 6;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

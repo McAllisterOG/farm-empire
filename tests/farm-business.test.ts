@@ -13,14 +13,16 @@ import { deserialize, serialize } from '../src/save/save';
 import { NOW } from './helpers';
 
 function makeFarm(seed = 4242) {
-  return createFarmGame('Test Farm', seed, NOW);
+  const state = createFarmGame('Test Farm', seed, NOW);
+  farmOf(state).equipment.countyRowCropFieldKitOwned = true;
+  return state;
 }
 
 function plantAndMature(state: ReturnType<typeof makeFarm>, cropId = 'crop_corn', plotIndex = 0): void {
   const farm = farmOf(state);
   farm.seeds[cropId] = Math.max(1, farm.seeds[cropId] ?? 0);
   const plot = state.plots[plotIndex];
-  expect(plantFarmCrop(state, plot.uid, cropId, NOW).ok).toBe(true);
+  expect(plantFarmCrop(state, plot.uid, cropId, NOW, 'operatedTractor').ok).toBe(true);
   plot.crop!.plantedAt = NOW - cropDef(cropId).growMs - 1;
 }
 
@@ -65,7 +67,7 @@ describe('farm inputs, planting, harvest, and storage', () => {
   it('harvests the data yield plus the operational old-tractor bonus into storage', () => {
     const state = makeFarm();
     plantAndMature(state, 'crop_soybean');
-    const result = harvestFarmCrop(state, state.plots[0].uid, NOW);
+    const result = harvestFarmCrop(state, state.plots[0].uid, NOW, 'operatedTractor');
     expect(result.ok).toBe(true);
     expect(farmOf(state).storage.crop_soybean).toBe(
       farmCropDef('crop_soybean').harvestYield + farmOf(state).equipment.tractor.harvestBonusUnits,
@@ -78,7 +80,7 @@ describe('farm inputs, planting, harvest, and storage', () => {
     plantAndMature(state, 'crop_potato');
     farmOf(state).storageCapacity = farmCropDef('crop_potato').harvestYield;
     const planted = state.plots[0].crop;
-    const result = harvestFarmCrop(state, state.plots[0].uid, NOW);
+    const result = harvestFarmCrop(state, state.plots[0].uid, NOW, 'operatedTractor');
     expect(result.ok).toBe(false);
     expect(result.reason).toContain('Barn full');
     expect(state.plots[0].crop).toBe(planted);
@@ -140,7 +142,7 @@ describe('tractor parcel work planning and transactional steps', () => {
     const perTileYield = farmCropDef('crop_corn').harvestYield + farm.equipment.tractor.harvestBonusUnits;
     farm.storageCapacity = perTileYield * 2;
     const plan = planParcelWork(state, 'starter', NOW);
-    const results = plan.harvestPlotUids.map((uid) => harvestFarmCrop(state, uid, NOW));
+    const results = plan.harvestPlotUids.map((uid) => harvestFarmCrop(state, uid, NOW, 'operatedTractor'));
 
     expect(results.filter((result) => result.ok)).toHaveLength(2);
     expect(results.filter((result) => !result.ok)).toHaveLength(1);
@@ -232,7 +234,7 @@ describe('land and save compatibility', () => {
     const state = makeFarm();
     const farm = farmOf(state);
     plantAndMature(state, 'crop_corn');
-    expect(harvestFarmCrop(state, state.plots[0].uid, NOW).ok).toBe(true);
+    expect(harvestFarmCrop(state, state.plots[0].uid, NOW, 'operatedTractor').ok).toBe(true);
     farm.cashCents = FIRST_PARCEL_PRICE_CENTS;
     expect(purchaseNeighborParcel(state).ok).toBe(true);
     updateFarmMarketToDay(state, 12);

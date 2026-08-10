@@ -3,7 +3,7 @@ import { cropView } from '../core/crops';
 import { cropDef, farmCropDef } from '../core/registry';
 import {
   NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, buyFarmSeeds, farmOf,
-  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseNeighborParcel, selectFarmCrop,
+  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
   sellStoredCrop, syncCashMirror, ownedFarmParcelAt, planParcelWork,
   placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
@@ -203,7 +203,7 @@ export class FarmEmpireApp {
     }
     for (const event of result.events ?? []) {
       if (event.type === 'plant') {
-        toast(`${farmCropDef(String(event.target)).name} planted. Tractor efficiency applied.`, 'good');
+        toast(`${farmCropDef(String(event.target)).name} planted.`, 'good');
       } else if (event.type === 'harvest') {
         toast(`Harvested ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} into the barn.`, 'good');
         floatText(this.playerScreenX(), this.playerScreenY() - 45, `+${event.amount ?? 0}`, 'float-good');
@@ -403,7 +403,7 @@ export class FarmEmpireApp {
       { label: 'Land Records', onClick: () => openFarmLand(this.state, this.panelActions()) },
       {
         label: 'Equipment Desk',
-        onClick: () => openFarmEquipment(this.state, { context: 'town', onClose: () => {} }),
+        onClick: () => openFarmEquipment(this.state, { context: 'town', onPurchaseKit: () => purchaseCountyRowCropFieldKit(this.state), dispatch: this.dispatch, onClose: () => {} }),
       },
       { label: 'County Work Order', onClick: () => this.openCountyWorkOrder() },
     ]);
@@ -574,7 +574,7 @@ export class FarmEmpireApp {
         {
           label: `Plant ${def.name} (${count} seed${count === 1 ? '' : 's'})`,
           icon: `icon:seed_${def.id.replace('crop_', '')}`,
-          onClick: () => this.dispatch(plantFarmCrop(this.state, plotUid, def.id, Date.now())),
+          onClick: () => this.dispatch(plantFarmCrop(this.state, plotUid, def.id, Date.now(), 'manual')),
         },
         { label: 'Open seed supplier', onClick: () => openFarmSeedShop(this.state, this.panelActions()) },
       ]);
@@ -585,7 +585,7 @@ export class FarmEmpireApp {
     if (view.stage === 'ready') {
       showActionMenu(sx, sy, `${def.name} · Ready`, [{
         label: 'Harvest into barn', icon: 'fx:ready',
-        onClick: () => this.dispatch(harvestFarmCrop(this.state, plotUid, Date.now())),
+        onClick: () => this.dispatch(harvestFarmCrop(this.state, plotUid, Date.now(), 'manual')),
       }]);
     } else {
       showActionMenu(sx, sy, `${def.name} · ${view.stage}`, [{
@@ -654,8 +654,8 @@ export class FarmEmpireApp {
     const job = this.tractorJob;
     if (!job || job.targetPlotUids[job.nextIndex] !== plotUid) return;
     const result = job.kind === 'plant'
-      ? plantFarmCrop(this.state, plotUid, String(job.cropId), Date.now())
-      : harvestFarmCrop(this.state, plotUid, Date.now());
+      ? plantFarmCrop(this.state, plotUid, String(job.cropId), Date.now(), 'operatedTractor')
+      : harvestFarmCrop(this.state, plotUid, Date.now(), 'operatedTractor');
     if (result.ok) {
       job.completed += 1;
       const harvest = result.events?.find((event) => event.type === 'harvest');

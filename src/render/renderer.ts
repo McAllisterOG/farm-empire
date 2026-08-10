@@ -22,6 +22,7 @@ import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmWin
 import { farmNightAlpha as farmClockNightAlpha, nightAlphaAtHour as clockNightAlpha } from './lighting';
 import { renderTown, type TownRenderScene } from './townRenderer';
 import { TOWN_CAMERA } from './townLayout';
+import { tractorToolbarPoseFromRenderState } from '../core/farmTractorMotion';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -763,6 +764,13 @@ function drawOldTractor(
   ctx.fillStyle = '#ead9a8';
   ctx.fillRect(18, -24, 5, 4);
   if (operating) {
+    ctx.strokeStyle = tractorToolbarPoseFromRenderState({ operating, moving, working }) === 'lowered' ? '#d9b44a' : '#8e6a3a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(25, -9);
+    ctx.lineTo(working ? 39 : 33, working ? 10 : -21);
+    ctx.lineTo(working ? 55 : 47, working ? 10 : -21);
+    ctx.stroke();
     ctx.strokeStyle = working ? '#f2c018' : '#fff1c9';
     ctx.lineWidth = 2;
     ctx.globalAlpha = working ? 0.72 + Math.sin(now / 120) * 0.2 : 0.72;

@@ -12,7 +12,7 @@ import { tickPetGifts } from './pets';
 import { updateEnergy } from './player';
 import { createFarmBusinessState, seedStarterPlots } from './farmBusiness';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export function defaultAvatar(): AvatarConfig {
   return {

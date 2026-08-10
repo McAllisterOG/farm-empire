@@ -1,10 +1,10 @@
 import type {
   ActionResult, ActiveFarmMarketEvent, FarmBusinessState, FarmPlot, GameState,
 } from './types';
-import { cropView } from './crops';
-import { allFarmCrops, allFarmMarketEvents, cropDef, farmCropDef, farmMarketEventDef } from './registry';
+import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
+import { COUNTY_ROW_CROP_FIELD_KIT } from '../data/farmEquipment.data';
 
 export const STARTING_CASH_CENTS = 500_000;
 export const STARTING_STORAGE_CAPACITY = 150;
@@ -23,6 +23,7 @@ export const NEIGHBOR_FIELD_TILES = Array.from({ length: 9 }, (_, i) => ({
 
 export type FarmParcelId = 'starter' | 'north';
 export type ParcelWorkKind = 'plant' | 'harvest';
+export type FarmWorkContext = 'manual' | 'operatedTractor';
 
 export interface ParcelWorkPlan {
   parcelId: FarmParcelId;
@@ -82,6 +83,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     market: { quotes, activeEvents: [], lastUpdatedDay: 1 },
     parcels: { starterOwned: true, northOwned: false },
     equipment: {
+      countyRowCropFieldKitOwned: false,
       tractor: {
         id: 'old-tractor',
         name: 'Old Red Tractor',
@@ -103,6 +105,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const rawClock = raw.clock ?? defaults.clock;
   const rawParcels = raw.parcels ?? defaults.parcels;
   const rawTractor = raw.equipment?.tractor ?? defaults.equipment.tractor;
+  const rawKitOwned = raw.equipment?.countyRowCropFieldKitOwned;
   const townStatus = raw.townContact?.status;
   const validCropIds = new Set(allFarmCrops().map((c) => c.id));
   const selectedCropId = validCropIds.has(String(raw.selectedCropId))
@@ -154,6 +157,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
       northOwned: rawParcels.northOwned === true,
     },
     equipment: {
+      countyRowCropFieldKitOwned: rawKitOwned === true,
       tractor: {
         id: String(rawTractor.id || defaults.equipment.tractor.id),
         name: String(rawTractor.name || defaults.equipment.tractor.name),
@@ -265,38 +269,35 @@ export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: nu
     orderedPlotUids: orderedPlots.map((plot) => plot.uid),
     plantPlotUids: orderedPlots.filter((plot) => !plot.crop).map((plot) => plot.uid),
     harvestPlotUids: orderedPlots
-      .filter((plot) => !!plot.crop && cropView(plot.crop, now).stage === 'ready')
+      .filter((plot) => farmCropReady(plot, now))
       .map((plot) => plot.uid),
   };
 }
 
-export function plantFarmCrop(state: GameState, plotUid: number, cropId: string, now: number): ActionResult {
+export function plantFarmCrop(state: GameState, plotUid: number, cropId: string, now: number, context: FarmWorkContext = 'manual'): ActionResult {
   const farm = farmOf(state);
   const plot = state.plots.find((candidate) => candidate.uid === plotUid);
   if (!plot || !isOwnedFieldTile(state, plot.x, plot.y)) return fail('This field is not owned.');
   if (plot.crop) return fail('That field section is already planted.');
   const farmDef = farmCropDef(cropId);
   if ((farm.seeds[cropId] ?? 0) < 1) return fail(`No ${farmDef.name} seeds available.`);
-  const legacyDef = cropDef(cropId);
-  const speedBps = farm.equipment.tractor.status === 'operational'
-    ? farm.equipment.tractor.workSpeedBonusBps
-    : 0;
+  const speedBps = context === 'operatedTractor' && farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
+      ? COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps : 0;
   const effectiveGrowMs = Math.round(farmDef.growMs * (10_000 - speedBps) / 10_000);
-  const preworkedMs = Math.max(0, legacyDef.growMs - effectiveGrowMs);
+  const preworkedMs = Math.max(0, farmDef.growMs - effectiveGrowMs);
   farm.seeds[cropId] -= 1;
   plot.crop = { defId: cropId, plantedAt: now, wateredBonusMs: preworkedMs, lastWateredAt: 0 };
   return { ok: true, events: [{ type: 'plant', target: cropId, amount: 1 }] };
 }
 
-export function harvestFarmCrop(state: GameState, plotUid: number, now: number): ActionResult {
+export function harvestFarmCrop(state: GameState, plotUid: number, now: number, context: FarmWorkContext = 'manual'): ActionResult {
   const farm = farmOf(state);
   const plot = state.plots.find((candidate) => candidate.uid === plotUid);
   if (!plot?.crop) return fail('There is no crop to harvest.');
-  if (cropView(plot.crop, now).stage !== 'ready') return fail('This crop is still growing.');
+  if (!farmCropReady(plot, now)) return fail('This crop is still growing.');
   const def = farmCropDef(plot.crop.defId);
-  const bonus = farm.equipment.tractor.status === 'operational'
-    ? farm.equipment.tractor.harvestBonusUnits
-    : 0;
+  const bonus = context === 'operatedTractor' && farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
+      ? COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits : 0;
   const amount = def.harvestYield + bonus;
   const needed = amount * def.storageUnitsPerItem;
   if (storageRemaining(state) < needed) {
@@ -305,6 +306,23 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number):
   farm.storage[def.id] = (farm.storage[def.id] ?? 0) + amount;
   plot.crop = null;
   return { ok: true, events: [{ type: 'harvest', target: def.id, amount }] };
+}
+
+export function purchaseCountyRowCropFieldKit(state: GameState): ActionResult {
+  const farm = farmOf(state);
+  if (farm.townContact.status !== 'completed') return fail('Complete the County Pantry order before buying this field kit.');
+  if (farm.equipment.countyRowCropFieldKitOwned) return fail('The County Row-Crop Field Kit is already installed.');
+  if (farm.cashCents < COUNTY_ROW_CROP_FIELD_KIT.priceCents) return fail('Not enough cash for the County Row-Crop Field Kit.');
+  farm.cashCents -= COUNTY_ROW_CROP_FIELD_KIT.priceCents;
+  farm.equipment.countyRowCropFieldKitOwned = true;
+  syncCashMirror(state);
+  return { ok: true, events: [{ type: 'toast', target: 'County Row-Crop Field Kit purchased and installed.' }] };
+}
+
+function farmCropReady(plot: FarmPlot, now: number): boolean {
+  if (!plot.crop) return false;
+  const def = farmCropDef(plot.crop.defId);
+  return now >= plot.crop.plantedAt + def.growMs - plot.crop.wateredBonusMs;
 }
 
 export function sellStoredCrop(state: GameState, cropId: string, count: number): ActionResult {

@@ -31,6 +31,18 @@ export function resetTractorMotion(motion: TractorMotion): TractorMotion {
   return { ...motion, speed: 0, steer: 0 };
 }
 
+export function tractorToolbarPose(working: boolean): 'raised' | 'lowered' {
+  return working ? 'lowered' : 'raised';
+}
+
+export function tractorToolbarPoseFromRenderState(state: {
+  operating: boolean;
+  moving: boolean;
+  working: boolean;
+}): 'raised' | 'lowered' {
+  return tractorToolbarPose(state.operating && state.working);
+}
+
 /** Advances exactly toward a click/job target while heading turns smoothly for presentation. */
 export function advanceTractorMotion(
   position: TractorPoint,

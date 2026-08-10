@@ -3,6 +3,7 @@ import { allFarmCrops, farmCropDef } from '../../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
+import { COUNTY_ROW_CROP_FIELD_KIT } from '../../data/farmEquipment.data';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
 import { h, spriteImg, clearChildren } from '../dom';
@@ -234,6 +235,8 @@ export interface FarmEquipmentOnFarmActions {
 
 export interface FarmEquipmentTownActions {
   context: 'town';
+  onPurchaseKit?: () => ActionResult;
+  dispatch?: Dispatch;
   onClose: () => void;
 }
 
@@ -249,6 +252,8 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
   const operating = actions.context === 'farm' ? actions.operating : false;
   const jobActive = actions.context === 'farm' ? actions.jobActive : false;
   const onToggleOperating = actions.context === 'farm' ? actions.onToggleOperating : null;
+  const kitOwned = farmOf(state).equipment.countyRowCropFieldKitOwned;
+  const kitUnlocked = farmOf(state).townContact.status === 'completed';
   openPanel({
     title: onFarm ? 'Farm Equipment' : 'Farm Services Equipment Desk',
     onClose: actions.onClose,
@@ -256,7 +261,20 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
       h('div', { class: 'tractor-illustration' }, 'TRACTOR'),
       h('div', { class: 'farm-card-title' }, tractor.name),
       h('div', { class: `equipment-status ${tractor.status}` }, `Status: ${tractor.status === 'operational' ? 'Operational' : 'Maintenance'}`),
-      h('p', {}, `Field efficiency: ${tractor.workSpeedBonusBps / 100}% faster crop cycles and +${tractor.harvestBonusUnits} unit per harvest.`),
+      h('p', {}, kitOwned
+        ? `Installed effect: +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% operated tractor crop cycles and +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} operated tractor harvest unit.`
+        : 'Base crop time and yield apply until the County Row-Crop Field Kit is installed.'),
+      h('div', { class: 'equipment-kit', 'data-testid': 'county-field-kit' },
+        h('div', { class: 'farm-card-title' }, COUNTY_ROW_CROP_FIELD_KIT.name),
+        h('p', {}, `One-time upgrade · ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)} · +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% operated tractor crop speed · +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} operated tractor harvest unit`),
+        h('div', { class: 'equipment-mode', 'data-testid': 'county-field-kit-status' }, kitOwned ? 'Owned · installed' : kitUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · complete the County Pantry order'),
+        ...(!onFarm && !kitOwned && kitUnlocked && actions.context === 'town' ? [h('button', { class: 'btn btn-primary', 'data-testid': 'buy-county-field-kit', onclick: () => {
+          const result = actions.onPurchaseKit?.();
+          if (!result) return;
+          actions.dispatch?.(result);
+          if (result.ok) openFarmEquipment(state, actions);
+        } }, `Purchase for ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)}`)] : []),
+      ),
       h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, !onFarm
         ? 'Equipment record on file - tractor operation is available back at the farm'
         : operating
