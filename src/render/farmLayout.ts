@@ -43,4 +43,3 @@ export function farmMainlandBounds(): FarmBounds {
 export function pointInFarmBounds(point: FarmPoint, bounds = farmMainlandBounds()): boolean {
   return point.x >= bounds.minX && point.x <= bounds.maxX && point.y >= bounds.minY && point.y <= bounds.maxY;
 }
-
