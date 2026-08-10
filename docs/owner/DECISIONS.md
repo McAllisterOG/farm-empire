@@ -31,3 +31,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Partial jobs must preserve seeds, storage, and unprocessed crops while clearly reporting completed, skipped, and untouched work.
 - Active operation and job queues are transient. Completed work and tractor position persist, and mounted saves reload the player at a safe deterministic dismount position.
 - Implements, fuel, condition, dealerships, trailers, combines, hauling, collision physics, and advanced pathfinding remain deferred rather than being implied by this slice.
+
+## 2026-08-10 - Make farm scale physical without migrating saves
+
+**Status:** Approved by the owner
+
+- One saved logical plot is presented as one large field section, and an owned parcel reads as a 3x3 block of those sections.
+- Farm Empire uses one authoritative logical-to-presentation projection while keeping plot IDs, coordinates, yields, ownership, actor and tractor state, and save schema v4 unchanged.
+- The active farm is a flat rectangular mainland with continuous soil sections, rural lanes, and tree-line framing; the legacy island renderer remains preserved and isolated.
+- Player-facing language uses `field section` for one workable unit and `parcel` for a 3x3 owned group.
+- Visual scale and identity should continue through bounded farm-only presentation slices before broad legacy character, pet, quest, or building systems are reconsidered.

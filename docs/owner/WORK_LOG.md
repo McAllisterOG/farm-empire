@@ -32,3 +32,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Screenshot:** `docs/screenshots/tractor-field-work.png`
 - **Known limitations:** Straight-line movement has no pathfinding/collision physics; Equipment panel state may remain stale during standalone driving until reopened; retained input-listener cleanup is a deferred LOW lifecycle concern.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Farm Scale & Terrain Overhaul - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/farm-scale-overhaul`
+- **Commits:** `4286383`, `4cf6d00`, `fedeff2`
+- **Scope:** Save-compatible presentation projection, large field sections, 3x3 parcel-scale land, flat mainland terrain, rural framing, denser crop rows, and stronger barn/tractor silhouettes; no economy, simulation, or save-schema changes.
+- **Result:** Replaced the compact inherited island view with a substantially larger working farm while preserving logical plot coordinates, input behavior, land ownership, tractor jobs, and old saves.
+- **Verification:** 98/98 tests passed; strict typecheck passed; production build passed; fresh and expanded farm browser acceptance, crop interaction and harvest, land purchase, tractor entry, mounted save/reload, and clean console verified.
+- **Review:** Independent Red Team found no MEDIUM-or-higher issues and accepted the milestone after one bounded cleanup of legacy path diamonds, grass variation, terminology, and footprint regression coverage.
+- **Screenshots:** `docs/screenshots/farm-scale-starter-crops.png`, `docs/screenshots/farm-scale-expanded-property.png`
+- **Known limitations:** The farmer and farm focal objects remain small relative to the new field scale; the next bounded package addresses farmyard identity and life.
+- **Push:** Not yet pushed; external GitHub authorization is still required.
