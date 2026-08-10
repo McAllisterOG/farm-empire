@@ -43,7 +43,7 @@ export function openPanel(spec: PanelSpec): void {
 
   const header = h('div', { class: 'panel-header' },
     h('span', { class: 'panel-title' }, spec.title),
-    h('button', { class: 'btn-close', onclick: () => closePanel() }, '✕'),
+    h('button', { class: 'btn-close', 'aria-label': 'Close panel', onclick: () => closePanel() }, '✕'),
   );
   panelBox.append(header);
 

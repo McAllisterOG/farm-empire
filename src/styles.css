@@ -29,6 +29,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: var(--sea-
 button { font-family: inherit; cursor: pointer; }
 img { image-rendering: auto; }
 
+button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-visible {
+  outline: 3px solid #4a9ed0; outline-offset: 3px;
+}
+
 .icon-sm { width: 16px; height: 16px; vertical-align: -3px; }
 .icon-md { width: 26px; height: 26px; }
 .icon-lg { width: 44px; height: 44px; }
@@ -68,7 +72,8 @@ img { image-rendering: auto; }
 }
 .slot-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .slot-card.empty { border-style: dashed; opacity: 0.85; }
-.slot-main { flex: 1; text-align: left; cursor: pointer; }
+.slot-main { flex: 1; text-align: left; cursor: pointer; border-radius: 8px; padding: 2px; transition: color .15s ease; }
+.slot-main:hover { color: #2f6d3d; }
 .slot-name { font-size: 17px; font-weight: 700; }
 .slot-sub { font-size: 12px; color: #9a8a78; margin-top: 3px; }
 .title-footer { margin-top: 22px; font-size: 12px; color: #9a8a78; }
@@ -86,7 +91,7 @@ img { image-rendering: auto; }
 .btn-primary { background: var(--leaf); border-color: #4c9138; color: #fff; }
 .btn-primary:hover { background: #6ec254; }
 .btn-sm { padding: 4px 10px; font-size: 12.5px; border-radius: 8px; }
-.btn.disabled, .action-btn.disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.disabled, .btn:disabled, .action-btn.disabled, .action-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 .btn-close {
   background: var(--coral); color: #fff; border: none; border-radius: 50%;
   width: 30px; height: 30px; font-size: 14px; font-weight: 700;
@@ -473,6 +478,7 @@ img { image-rendering: auto; }
   background: rgba(255, 252, 238, 0.96); border: 2px solid #d7c486;
   border-radius: 12px; box-shadow: var(--shadow); padding: 8px 12px;
 }
+.farm-stat { transition: background .15s ease, border-color .15s ease, transform .15s ease; }
 .farm-brand { display: flex; align-items: center; gap: 9px; min-width: 220px; }
 .farm-brand-mark {
   width: 38px; height: 38px; display: grid; place-items: center; border-radius: 9px;
@@ -485,12 +491,15 @@ img { image-rendering: auto; }
 .farm-stat > strong { color: #3d4a32; font-size: 14px; white-space: nowrap; }
 .farm-stat-button { font: inherit; text-align: left; cursor: pointer; }
 .farm-stat-button:hover { background: #fff4cf; }
+.farm-stat-button:hover { transform: translateY(-1px); border-color: #b79b55; }
 .farm-hud-bottom {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 10px; width: min(1100px, 96vw);
   background: rgba(255, 252, 238, 0.97); border: 2px solid #d7c486;
   border-radius: 16px; box-shadow: var(--shadow); padding: 8px 10px;
+  transition: box-shadow .2s ease, border-color .2s ease;
 }
+.farm-hud-bottom:focus-within { border-color: #9cbf73; box-shadow: 0 7px 22px rgba(74, 59, 50, .28); }
 .farm-hud-farm-controls { display: contents; }
 .farm-hud-town-controls { display: flex; align-items: center; gap: 18px; width: 100%; }
 .town-hud-copy { display: flex; flex-direction: column; color: #315b3a; }
@@ -515,16 +524,19 @@ img { image-rendering: auto; }
 }
 .farm-crop-button:hover { background: #fff4cf; }
 .farm-crop-button.active { border-color: #4c9138; background: #eaf4dc; }
+.farm-crop-button:disabled { opacity: .5; cursor: not-allowed; }
 .farm-actions { display: flex; gap: 5px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
 .farm-help {
   position: absolute; top: 82px; left: 10px; padding: 7px 11px; max-width: 440px;
   background: rgba(47, 96, 56, 0.92); color: white; border-radius: 9px;
-  font-size: 12px; box-shadow: var(--shadow);
+  font-size: 12px; box-shadow: var(--shadow); line-height: 1.35;
+  animation: farm-hud-in .22s ease-out;
 }
 .farm-operation-status {
   position: absolute; top: 82px; right: 10px; padding: 8px 12px; max-width: 560px;
   background: rgba(255, 248, 218, 0.97); color: #6d4124; border: 2px solid #d6ad48;
   border-radius: 10px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow);
+  animation: farm-hud-in .22s ease-out;
 }
 .farm-operation-status.working { background: rgba(255, 241, 181, 0.98); border-color: #c88e25; }
 .farm-panel-summary {
@@ -566,10 +578,41 @@ img { image-rendering: auto; }
 .fe-dev-tools { position: fixed; right: 0; top: 0; display: flex; opacity: 0.001; z-index: 100; }
 .fe-dev-tools > * { width: 74px; height: 24px; overflow: hidden; }
 
+@keyframes farm-hud-in { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
 @media (max-width: 900px) {
   .farm-brand { min-width: 180px; }
   .farm-stat { min-width: 100px; }
   .farm-hud-bottom { align-items: flex-start; flex-wrap: wrap; }
   .farm-actions { width: 100%; justify-content: center; }
   .farm-operation-status { top: 142px; max-width: calc(100vw - 20px); }
+  .farm-hud-top { max-width: calc(100vw - 20px); overflow-x: auto; scrollbar-width: thin; }
+  .farm-brand, .farm-stat { flex: 0 0 auto; }
+  .farm-hud-bottom { width: calc(100vw - 20px); }
+  .farm-crop-strip { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+  .farm-actions { flex: 0 0 auto; }
+}
+
+@media (max-width: 560px) {
+  .farm-hud-top { gap: 5px; }
+  .farm-brand { min-width: 168px; padding: 6px 8px; }
+  .farm-brand-mark { width: 32px; height: 32px; }
+  .farm-stat { min-width: 94px; padding: 6px 8px; }
+  .farm-stat > strong { font-size: 12px; }
+  .farm-hud-bottom { bottom: 8px; padding: 7px; gap: 6px; }
+  .farm-selected { min-width: 82px; }
+  .farm-actions { gap: 4px; }
+  .farm-actions .btn { padding: 6px 9px; font-size: 12px; }
+  .farm-help { top: 76px; max-width: calc(100vw - 20px); }
+  .modal-panel { width: calc(100vw - 20px); max-height: 88vh; border-width: 2px; }
+  .panel-header { padding: 11px 13px 9px; }
+  .panel-title { font-size: 17px; }
+  .panel-body { padding: 11px 12px 14px; }
+  .farm-card { align-items: flex-start; flex-wrap: wrap; }
+  .farm-card-main { min-width: min(180px, calc(100% - 56px)); }
+  .market-sell-controls { width: 100%; justify-content: flex-start; padding-left: 56px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
