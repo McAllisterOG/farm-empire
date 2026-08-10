@@ -13,7 +13,12 @@ import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../rende
 import { farmLandmarks } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
+import { FARM_TOWN_GATE, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
+import type { TownNpcDef, TownServiceId } from '../data/town.data';
 import type { FarmFacing } from '../render/farmSprites';
+import {
+  TOWN_EXIT, TOWN_SPAWN, cancelTownMovement, townInteractionAt, type TownMoveTarget,
+} from '../render/townLayout';
 import { FarmHud } from '../ui/farmHud';
 import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMenu';
 import { closePanel, isPanelOpen } from '../ui/modal';
@@ -44,6 +49,10 @@ interface TractorJob {
   waitUntil: number;
 }
 
+type FarmEmpireMode = 'farm' | 'town';
+
+interface CameraSnapshot { cx: number; cy: number; zoom: number }
+
 export class FarmEmpireApp {
   state: GameState;
   private slot: number;
@@ -51,6 +60,12 @@ export class FarmEmpireApp {
   private hud: FarmHud;
   private playerActor: SceneActor;
   private playerFacing: FarmFacing = 'south';
+  private mode: FarmEmpireMode = 'farm';
+  private townActor: SceneActor;
+  private townFacing: FarmFacing = 'north';
+  private townTarget: TownMoveTarget | null = null;
+  private townGesture: { npcId: TownNpcDef['id']; until: number } | null = null;
+  private farmCamera: CameraSnapshot | null = null;
   private scout: FarmCompanionState;
   private scoutScratchUntil = 0;
   private scoutWaitingForScratch = false;
@@ -67,18 +82,21 @@ export class FarmEmpireApp {
   private lastFrame = 0;
   private lastSave: number;
   private devTools: HTMLElement | null = null;
+  private readonly onResize = (): void => { this.renderer.resize(); };
 
   constructor(canvas: HTMLCanvasElement, state: GameState, slot: number, onBackToTitle: () => void) {
     if (!state.farm) throw new Error('Cannot start Farm Empire without farm state.');
     this.state = state;
     this.slot = slot;
     this.renderer = new Renderer(canvas);
+    window.addEventListener('resize', this.onResize);
     this.playerActor = {
       avatar: state.player.avatar,
       x: state.player.px,
       y: state.player.py,
       walking: false,
     };
+    this.townActor = { avatar: state.player.avatar, ...TOWN_SPAWN, walking: false };
     const scoutHome = farmLandmarks().scoutHome;
     this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
@@ -87,9 +105,10 @@ export class FarmEmpireApp {
       onMarket: () => { this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions()); },
       onLand: () => { this.cancelScoutApproach(); openFarmLand(this.state, this.panelActions()); },
       onEquipment: () => this.openEquipmentPanel(),
+      onReturnFarm: () => this.requestReturnToFarm(),
       onSave: () => {
         this.save();
-        toast('Farm saved.', 'good');
+        toast(this.mode === 'town' ? 'Farm business saved from town.' : 'Farm saved.', 'good');
       },
     });
     this.bindInput(canvas);
@@ -101,6 +120,7 @@ export class FarmEmpireApp {
 
     const debug = {
       state: () => this.state,
+      mode: () => this.mode,
       tileToScreen: (x: number, y: number) => [
         this.renderer.camera.sx(isoX(farmWorldPoint({ x, y }).x, farmWorldPoint({ x, y }).y)),
         this.renderer.camera.sy(isoY(farmWorldPoint({ x, y }).x, farmWorldPoint({ x, y }).y)),
@@ -112,6 +132,14 @@ export class FarmEmpireApp {
           this.renderer.camera.sy(isoY(farmWorldPoint(tractor).x, farmWorldPoint(tractor).y)),
         ];
       },
+      townTileToScreen: (x: number, y: number) => [
+        this.renderer.camera.sx(isoX(x, y)),
+        this.renderer.camera.sy(isoY(x, y)),
+      ],
+      gatewayScreen: () => {
+        const gate = farmWorldPoint(FARM_TOWN_GATE);
+        return [this.renderer.camera.sx(isoX(gate.x, gate.y)), this.renderer.camera.sy(isoY(gate.x, gate.y))];
+      },
     };
     if (import.meta.env.DEV) Object.assign(debug, {
       matureAll: () => this.matureAll(),
@@ -121,6 +149,8 @@ export class FarmEmpireApp {
         syncCashMirror(this.state);
       },
       save: () => this.save(),
+      enterTown: () => this.enterTown(),
+      returnFarm: () => this.returnToFarm(),
     });
     (window as unknown as Record<string, unknown>).__FE__ = debug;
     if (import.meta.env.DEV) this.devTools = this.createDevTools();
@@ -141,6 +171,7 @@ export class FarmEmpireApp {
     cancelAnimationFrame(this.raf);
     this.hud.destroy();
     window.removeEventListener('beforeunload', this.save);
+    window.removeEventListener('resize', this.onResize);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.devTools?.remove();
     delete (window as unknown as Record<string, unknown>).__FE__;
@@ -151,7 +182,9 @@ export class FarmEmpireApp {
   };
 
   save = (): void => {
-    if (this.operatingTractor) {
+    if (this.mode === 'town') {
+      placePlayerAtTownReturn(this.state);
+    } else if (this.operatingTractor) {
       placePlayerAtTractorDismount(this.state);
     } else {
       this.state.player.px = this.playerActor.x;
@@ -228,7 +261,7 @@ export class FarmEmpireApp {
           this.renderer.camera.pan(event.movementX, event.movementY);
         }
       }
-      this.hover = this.farmTargetAtScreen(event.clientX, event.clientY);
+      this.hover = this.mode === 'farm' ? this.farmTargetAtScreen(event.clientX, event.clientY) : null;
     });
     canvas.addEventListener('pointerup', (event) => {
       dragging = false;
@@ -248,6 +281,12 @@ export class FarmEmpireApp {
     }, { passive: false });
     window.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
+      if (this.mode === 'town') {
+        if (isActionMenuOpen()) hideActionMenu();
+        else if (isPanelOpen()) closePanel();
+        this.cancelTownWalk();
+        return;
+      }
       if (this.scoutWaitingForScratch) this.cancelScoutApproach();
       else if (this.tractorJob) this.cancelTractorJob();
       else if (this.tractorTarget) {
@@ -264,6 +303,10 @@ export class FarmEmpireApp {
       hideActionMenu();
       return;
     }
+    if (this.mode === 'town') {
+      this.onClickTown(sx, sy);
+      return;
+    }
     if (this.tractorJob) {
       toast('A tractor field job is already active. Press Escape to cancel it.', 'bad');
       return;
@@ -272,6 +315,16 @@ export class FarmEmpireApp {
     // Scout hit below immediately restores the hold for that new approach.
     this.cancelScoutApproach();
     const clickLogical = farmLogicalPoint(this.renderer.camera.tilePointAt(sx, sy));
+    if (Math.hypot(clickLogical.x - FARM_TOWN_GATE.x, clickLogical.y - FARM_TOWN_GATE.y) <= 0.75) {
+      const blocked = townTravelBlockReason({
+        operatingTractor: this.operatingTractor,
+        tractorMoving: !!this.tractorTarget,
+        tractorJobActive: !!this.tractorJob,
+      });
+      if (blocked) toast(blocked, 'bad');
+      else this.walkNear(FARM_TOWN_GATE.x, FARM_TOWN_GATE.y, () => this.enterTown());
+      return;
+    }
     if (!this.operatingTractor && Math.hypot(clickLogical.x - this.scout.x, clickLogical.y - this.scout.y) <= 0.72) {
       this.scoutWaitingForScratch = true;
       this.walkNear(this.scout.x, this.scout.y, () => { this.scoutWaitingForScratch = false; this.openScoutMenu(); });
@@ -312,10 +365,95 @@ export class FarmEmpireApp {
     else this.walkNear(tx, ty, null);
   }
 
+  private onClickTown(sx: number, sy: number): void {
+    const point = this.renderer.camera.tilePointAt(sx, sy);
+    const interaction = townInteractionAt(point);
+    if (interaction.kind === 'npc') {
+      this.walkTownNear(interaction.npc.x, interaction.npc.y, () => {
+        this.townGesture = { npcId: interaction.npc.id, until: Date.now() + 1_200 };
+        this.openTownService(interaction.service, interaction.npc.name, interaction.npc.x, interaction.npc.y);
+      });
+    } else if (interaction.kind === 'building') {
+      this.walkTownNear(interaction.building.door.x, interaction.building.door.y, () => {
+        this.openTownService(interaction.service, interaction.building.name, interaction.building.door.x, interaction.building.door.y);
+      });
+    } else if (interaction.kind === 'exit') {
+      this.requestReturnToFarm();
+    } else if (interaction.kind === 'ground') {
+      this.townTarget = { ...interaction.point, cb: null };
+    }
+  }
+
+  private openTownService(service: TownServiceId, title: string, x: number, y: number): void {
+    if (service === 'seed-supplier') {
+      openFarmSeedShop(this.state, this.panelActions());
+      return;
+    }
+    if (service === 'commodity-market') {
+      openFarmMarket(this.state, this.panelActions());
+      return;
+    }
+    const screenX = this.renderer.camera.sx(isoX(x, y));
+    const screenY = this.renderer.camera.sy(isoY(x, y));
+    showActionMenu(screenX, screenY, title, [
+      { label: 'Land Records', onClick: () => openFarmLand(this.state, this.panelActions()) },
+      {
+        label: 'Equipment Desk',
+        onClick: () => openFarmEquipment(this.state, { context: 'town', onClose: () => {} }),
+      },
+    ]);
+  }
+
+  private enterTown(): void {
+    if (this.mode === 'town') return;
+    const blocked = townTravelBlockReason({
+      operatingTractor: this.operatingTractor,
+      tractorMoving: !!this.tractorTarget,
+      tractorJobActive: !!this.tractorJob,
+    });
+    if (blocked) { toast(blocked, 'bad'); return; }
+    const returnPoint = placePlayerAtTownReturn(this.state);
+    this.playerActor.x = returnPoint.x; this.playerActor.y = returnPoint.y; this.playerActor.walking = false;
+    this.walkTarget = null; this.hover = null; this.cancelScoutApproach();
+    this.farmCamera = { cx: this.renderer.camera.cx, cy: this.renderer.camera.cy, zoom: this.renderer.camera.zoom };
+    this.townActor = { avatar: this.state.player.avatar, ...TOWN_SPAWN, walking: false };
+    this.townFacing = 'north'; this.townTarget = null; this.townGesture = null; this.mode = 'town';
+    this.renderer.centerOnTown(); this.hud.setMode('town');
+    toast('Welcome to the County Service Center.', 'good');
+  }
+
+  private requestReturnToFarm(): void {
+    if (this.mode !== 'town') return;
+    this.walkTownNear(TOWN_EXIT.x, TOWN_EXIT.y, () => this.returnToFarm());
+  }
+
+  private cancelTownWalk(): boolean {
+    const cancellation = cancelTownMovement(this.townTarget);
+    if (!cancellation.cancelled) return false;
+    this.townTarget = cancellation.target;
+    this.townActor.walking = cancellation.walking;
+    toast('Town walk cancelled.', 'good');
+    return true;
+  }
+
+  private returnToFarm(): void {
+    if (this.mode !== 'town') return;
+    hideActionMenu(); if (isPanelOpen()) closePanel();
+    this.townTarget = null; this.townActor.walking = false; this.townGesture = null; this.mode = 'farm';
+    const returnPoint = placePlayerAtTownReturn(this.state);
+    this.playerActor.x = returnPoint.x; this.playerActor.y = returnPoint.y; this.playerActor.walking = false;
+    if (this.farmCamera) {
+      this.renderer.camera.cx = this.farmCamera.cx; this.renderer.camera.cy = this.farmCamera.cy; this.renderer.camera.zoom = this.farmCamera.zoom;
+    } else this.renderer.centerOnFarm();
+    this.farmCamera = null; this.hud.setMode('farm');
+    toast('Back at the farm.', 'good');
+  }
+
   private openEquipmentPanel(): void {
     this.cancelScoutApproach();
     this.equipmentPanelOpen = true;
     openFarmEquipment(this.state, {
+      context: 'farm',
       operating: this.operatingTractor,
       jobActive: !!this.tractorJob || !!this.tractorTarget,
       onToggleOperating: () => this.toggleTractorOperating(),
@@ -587,6 +725,14 @@ export class FarmEmpireApp {
     this.walkTarget = { x: tx + dx / len, y: ty + dy / len, cb };
   }
 
+  private walkTownNear(tx: number, ty: number, cb: (() => void) | null): void {
+    const dist = Math.hypot(this.townActor.x - tx, this.townActor.y - ty);
+    if (dist <= 1.05) { cb?.(); return; }
+    const dx = this.townActor.x - tx; const dy = this.townActor.y - ty;
+    const len = Math.max(0.001, Math.hypot(dx, dy));
+    this.townTarget = { x: tx + dx / len * .85, y: ty + dy / len * .85, cb };
+  }
+
   private matureAll(): void {
     const now = Date.now();
     for (const plot of this.state.plots) {
@@ -643,7 +789,7 @@ export class FarmEmpireApp {
     this.lastFrame = now;
     advanceFarmClock(this.state, now);
 
-    if (this.tractorTarget) {
+    if (this.mode === 'farm' && this.tractorTarget) {
       const tractor = farmOf(this.state).equipment.tractor;
       const motionStep = advanceTractorMotion(tractor, this.tractorTarget, this.tractorMotion, dt);
       tractor.x = motionStep.position.x;
@@ -656,9 +802,9 @@ export class FarmEmpireApp {
       }
     }
 
-    this.updateTractorJob(now);
+    if (this.mode === 'farm') this.updateTractorJob(now);
 
-    if (this.walkTarget) {
+    if (this.mode === 'farm' && this.walkTarget) {
       const speed = 5.2 / 1_000;
       const dx = this.walkTarget.x - this.playerActor.x;
       const dy = this.walkTarget.y - this.playerActor.y;
@@ -679,9 +825,26 @@ export class FarmEmpireApp {
       }
     }
 
+    if (this.mode === 'town' && this.townTarget) {
+      const speed = 4.4 / 1_000;
+      const dx = this.townTarget.x - this.townActor.x;
+      const dy = this.townTarget.y - this.townActor.y;
+      const dist = Math.hypot(dx, dy);
+      const step = speed * dt;
+      if (dist <= step) {
+        this.townActor.x = this.townTarget.x; this.townActor.y = this.townTarget.y;
+        const cb = this.townTarget.cb; this.townTarget = null; this.townActor.walking = false; cb?.();
+      } else {
+        this.townActor.x += dx / dist * step; this.townActor.y += dy / dist * step; this.townActor.walking = true;
+        this.townFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
+      }
+    }
+
     const scoutHome = farmLandmarks().scoutHome;
     const scoutBefore = this.scout;
-    this.scout = this.scoutWaitingForScratch && !this.operatingTractor ? { ...this.scout, moving: false } : updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.operatingTractor || !!this.tractorJob);
+    this.scout = this.scoutWaitingForScratch && !this.operatingTractor && this.mode === 'farm'
+      ? { ...this.scout, moving: false }
+      : updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.mode === 'town' || this.operatingTractor || !!this.tractorJob);
     const scoutDx = this.scout.x - scoutBefore.x; const scoutDy = this.scout.y - scoutBefore.y;
     if (Math.hypot(scoutDx, scoutDy) > 0.0001) this.scoutFacing = Math.abs(scoutDx) >= Math.abs(scoutDy) ? (scoutDx > 0 ? 'east' : 'west') : (scoutDy > 0 ? 'south' : 'north');
 
@@ -697,8 +860,24 @@ export class FarmEmpireApp {
 
   private buildScene(): RenderScene {
     const scene = sceneFromState(this.state);
-    scene.actors = this.operatingTractor ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing }];
     const farm = farmOf(this.state);
+    if (this.mode === 'town') {
+      scene.town = {
+        actor: {
+          avatar: this.state.player.avatar,
+          x: this.townActor.x,
+          y: this.townActor.y,
+          walking: this.townActor.walking,
+          facing: this.townFacing,
+          name: this.state.player.name,
+        },
+        clockMinute: farm.clock.minute,
+        gesturingNpcId: this.townGesture?.npcId ?? null,
+        gestureUntil: this.townGesture?.until ?? 0,
+      };
+      return scene;
+    }
+    scene.actors = this.operatingTractor ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing }];
     scene.farm = {
       lockedTiles: farm.parcels.northOwned ? [] : NEIGHBOR_FIELD_TILES,
       parcelLabel: `${formatMoney(650_000)} · 9 field sections`,

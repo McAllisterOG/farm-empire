@@ -145,38 +145,58 @@ function renderLand(body: HTMLElement, state: GameState, actions: FarmPanelActio
   ));
 }
 
-export interface FarmEquipmentActions {
+export interface FarmEquipmentOnFarmActions {
+  context: 'farm';
   operating: boolean;
   jobActive: boolean;
   onToggleOperating: () => void;
   onClose: () => void;
 }
 
+export interface FarmEquipmentTownActions {
+  context: 'town';
+  onClose: () => void;
+}
+
+export type FarmEquipmentActions = FarmEquipmentOnFarmActions | FarmEquipmentTownActions;
+
+export function equipmentPanelAllowsOperation(actions: FarmEquipmentActions): boolean {
+  return actions.context === 'farm';
+}
+
 export function openFarmEquipment(state: GameState, actions: FarmEquipmentActions): void {
   const tractor = farmOf(state).equipment.tractor;
+  const onFarm = equipmentPanelAllowsOperation(actions);
+  const operating = actions.context === 'farm' ? actions.operating : false;
+  const jobActive = actions.context === 'farm' ? actions.jobActive : false;
+  const onToggleOperating = actions.context === 'farm' ? actions.onToggleOperating : null;
   openPanel({
-    title: 'Farm Equipment',
+    title: onFarm ? 'Farm Equipment' : 'Farm Services Equipment Desk',
     onClose: actions.onClose,
     body: (body) => body.append(h('div', { class: 'equipment-card', 'data-testid': 'tractor-panel' },
       h('div', { class: 'tractor-illustration' }, 'TRACTOR'),
       h('div', { class: 'farm-card-title' }, tractor.name),
       h('div', { class: `equipment-status ${tractor.status}` }, `Status: ${tractor.status === 'operational' ? 'Operational' : 'Maintenance'}`),
       h('p', {}, `Field efficiency: ${tractor.workSpeedBonusBps / 100}% faster crop cycles and +${tractor.harvestBonusUnits} unit per harvest.`),
-      h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, actions.operating
-        ? actions.jobActive ? 'Operating · field job in progress' : 'Operating · ready to drive or work a parcel'
-        : 'Parked · select Operate to climb aboard'),
-      h('button', {
+      h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, !onFarm
+        ? 'Equipment record on file - tractor operation is available back at the farm'
+        : operating
+          ? jobActive ? 'Operating - field job in progress' : 'Operating - ready to drive or work a parcel'
+          : 'Parked - select Operate to climb aboard'),
+      ...(onFarm ? [h('button', {
         class: 'btn btn-primary equipment-operate',
-        'data-testid': actions.operating ? 'exit-tractor' : 'operate-tractor',
-        ...(actions.jobActive ? { disabled: 'true' } : {}),
+        'data-testid': operating ? 'exit-tractor' : 'operate-tractor',
+        ...(jobActive ? { disabled: 'true' } : {}),
         onclick: () => {
           closePanel();
-          actions.onToggleOperating();
+          onToggleOperating?.();
         },
-      }, actions.operating ? actions.jobActive ? 'Finish or cancel job before exiting' : 'Exit Tractor' : 'Operate Tractor'),
-      h('div', { class: 'panel-note' }, actions.operating
-        ? 'Click open ground to drive. Click an owned 3×3 field to choose batch planting or harvesting. Escape cancels active work.'
-        : 'The driver is hidden while aboard. Tractor position is saved; active field jobs safely reset after reload.'),
+      }, operating ? jobActive ? 'Finish or cancel job before exiting' : 'Exit Tractor' : 'Operate Tractor')] : []),
+      h('div', { class: 'panel-note', 'data-testid': onFarm ? 'farm-equipment-note' : 'town-equipment-note' }, !onFarm
+        ? 'The Equipment Desk can review the tractor record here. Return to the farm to climb aboard and operate it.'
+        : operating
+          ? 'Click open ground to drive. Click an owned 3x3 field to choose batch planting or harvesting. Escape cancels active work.'
+          : 'The driver is hidden while aboard. Tractor position is saved; active field jobs safely reset after reload.'),
     )),
   });
 }

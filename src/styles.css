@@ -491,6 +491,15 @@ img { image-rendering: auto; }
   background: rgba(255, 252, 238, 0.97); border: 2px solid #d7c486;
   border-radius: 16px; box-shadow: var(--shadow); padding: 8px 10px;
 }
+.farm-hud-farm-controls { display: contents; }
+.farm-hud-town-controls { display: flex; align-items: center; gap: 18px; width: 100%; }
+.town-hud-copy { display: flex; flex-direction: column; color: #315b3a; }
+.town-hud-copy strong { font-size: 13px; letter-spacing: 1px; }
+.town-hud-copy span { color: #7e704f; font-size: 11px; }
+.farm-hud-town-controls .farm-actions { margin-left: auto; }
+.town-location-stat { min-width: 180px; }
+.farm-hud-root.town-mode .farm-help { background: rgba(66, 84, 64, .94); }
+.farm-hud-root.town-mode .farm-stat:disabled { cursor: default; opacity: 1; }
 .farm-selected { min-width: 110px; display: flex; flex-direction: column; }
 .farm-selected span { font-size: 10px; color: #8c7a55; text-transform: uppercase; font-weight: 800; }
 .farm-selected strong { color: #2f6038; }

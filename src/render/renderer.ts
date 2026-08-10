@@ -10,6 +10,7 @@ import { buildingDef } from '../core/registry';
 import { cropView } from '../core/crops';
 import { animalPhase } from '../core/animals';
 import { WATER_COOLDOWN_MS } from '../core/balance';
+import { FARM_TOWN_GATE } from '../core/townGateway';
 import { Camera } from './camera';
 import { diamondPath, isoX, isoY, TILE_H, TILE_W } from './iso';
 import { charKey, drawSprite } from './sprites';
@@ -18,6 +19,9 @@ import { farmLandmarks } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
 import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
+import { farmNightAlpha as farmClockNightAlpha, nightAlphaAtHour as clockNightAlpha } from './lighting';
+import { renderTown, type TownRenderScene } from './townRenderer';
+import { TOWN_CAMERA } from './townLayout';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -63,6 +67,8 @@ export interface RenderScene {
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
     clockMinute: number;
   };
+  /** Optional isolated County Service Center scene; never serialized. */
+  town?: TownRenderScene;
 }
 
 export function sceneFromState(state: GameState): RenderScene {
@@ -101,15 +107,11 @@ export function nightAlpha(now: number): number {
 
 /** Shared lighting curve for an explicit farm-clock or real-world hour. */
 export function nightAlphaAtHour(hour: number): number {
-  const normalized = ((hour % 24) + 24) % 24;
-  if (normalized >= 7 && normalized <= 17) return 0;
-  if (normalized > 17 && normalized < 20) return ((normalized - 17) / 3) * 0.42;
-  if (normalized >= 20 || normalized < 5) return 0.42;
-  return (1 - (normalized - 5) / 2) * 0.42;
+  return clockNightAlpha(hour);
 }
 
 export function farmNightAlpha(clockMinute: number): number {
-  return nightAlphaAtHour(clockMinute / 60);
+  return farmClockNightAlpha(clockMinute);
 }
 
 export class Renderer {
@@ -138,6 +140,11 @@ export class Renderer {
     const { ctx, camera } = this;
     const zoom = camera.zoom;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+    if (scene.town) {
+      renderTown(ctx, camera, scene.town, now);
+      return;
+    }
 
     const farmScene = Boolean(scene.farm);
     if (farmScene) {
@@ -417,6 +424,11 @@ export class Renderer {
     this.camera.centerOnTile(point.x, point.y);
   }
 
+  centerOnTown(): void {
+    this.camera.centerOnTile(TOWN_CAMERA.x, TOWN_CAMERA.y);
+    this.camera.zoom = TOWN_CAMERA.zoom;
+  }
+
   /** Farm-only presentation branch.  Legacy island rendering above stays isolated. */
   private renderFarm(scene: RenderScene, now: number): void {
     const { ctx, camera } = this;
@@ -455,6 +467,8 @@ export class Renderer {
       const point = farmWorldPoint(prop);
       items.push({ depth: point.x + point.y + .1, draw: () => drawFarmDecor(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, prop) });
     }
+    const townGatePoint = farmWorldPoint(FARM_TOWN_GATE);
+    items.push({ depth: townGatePoint.x + townGatePoint.y + .18, draw: () => drawFarmTownGateway(ctx, camera.sx(isoX(townGatePoint.x, townGatePoint.y)), camera.sy(isoY(townGatePoint.x, townGatePoint.y) + TILE_H / 2), zoom) });
     for (const plot of scene.plots) if (plot.crop) {
       const point = farmWorldPoint(plot);
       const stage = cropView(plot.crop, now).stage;
@@ -540,11 +554,23 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
 }
 
 function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
-  // A restrained gravel lane connects the barn and the broad field entrances.
-  const lane = [{ x: 19, y: 14 }, { x: 23, y: 14 }, { x: 26, y: 17 }, { x: 29, y: 20 }, { x: 32, y: 23 }];
+  // A restrained gravel lane connects the barn, field entrances, and town road.
+  const lane = [{ x: 19, y: 14 }, { x: 23, y: 14 }, { x: 26, y: 17 }, { x: 29, y: 20 }, { x: 32, y: 23 }, { x: 35, y: 22 }, farmWorldPoint(FARM_TOWN_GATE)];
   ctx.strokeStyle = '#b9a071'; ctx.lineWidth = 13 * zoom; ctx.lineCap = 'round'; ctx.beginPath();
   lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.stroke();
   ctx.strokeStyle = 'rgba(100, 75, 46, .35)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
+}
+
+function drawFarmTownGateway(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.35, zoom * 1.35);
+  ctx.fillStyle = 'rgba(45,34,24,.24)'; ctx.beginPath(); ctx.ellipse(0, 4, 42, 10, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#765036'; ctx.fillRect(-33, -48, 6, 51); ctx.fillRect(27, -48, 6, 51);
+  ctx.fillStyle = '#9d7145'; ctx.fillRect(-38, -54, 11, 7); ctx.fillRect(27, -54, 11, 7);
+  ctx.fillStyle = '#eadba9'; ctx.fillRect(-46, -70, 92, 25); ctx.strokeStyle = '#704a31'; ctx.lineWidth = 2; ctx.strokeRect(-46, -70, 92, 25);
+  ctx.fillStyle = '#355f3e'; ctx.font = '900 11px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('TOWN 2 MI', 0, -53);
+  ctx.beginPath(); ctx.moveTo(23, -38); ctx.lineTo(37, -30); ctx.lineTo(23, -22); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#564436'; ctx.lineWidth = 2; for (let line = -23; line <= 23; line += 9) { ctx.beginPath(); ctx.moveTo(line, -2); ctx.lineTo(line + 6, 6); ctx.stroke(); }
+  ctx.restore();
 }
 
 function drawFarmDoghouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {

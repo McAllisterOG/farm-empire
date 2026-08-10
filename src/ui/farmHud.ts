@@ -9,8 +9,11 @@ export interface FarmHudCallbacks {
   onMarket: () => void;
   onLand: () => void;
   onEquipment: () => void;
+  onReturnFarm: () => void;
   onSave: () => void;
 }
+
+export type FarmHudMode = 'farm' | 'town';
 
 export interface TractorHudRuntime {
   operating: boolean;
@@ -35,6 +38,13 @@ export class FarmHud {
   private tractorEl: HTMLElement;
   private operationEl: HTMLElement;
   private helpEl: HTMLElement;
+  private brandSubEl: HTMLElement;
+  private storageButton: HTMLButtonElement;
+  private equipmentButton: HTMLButtonElement;
+  private locationStat: HTMLElement;
+  private farmControls: HTMLElement;
+  private townControls: HTMLElement;
+  private mode: FarmHudMode = 'farm';
   private cropButtons = new Map<string, HTMLButtonElement>();
 
   constructor(cb: FarmHudCallbacks) {
@@ -44,16 +54,21 @@ export class FarmHud {
     this.selectedEl = h('strong', { 'data-testid': 'selected-crop' }, 'Corn');
     this.tractorEl = h('strong', { 'data-testid': 'tractor-status' }, 'Operational');
     this.operationEl = h('div', { class: 'farm-operation-status hidden', 'data-testid': 'tractor-operation-status' });
+    this.brandSubEl = h('div', { class: 'farm-brand-sub' }, 'Farming Business V1');
+    this.storageButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'storage-button', onclick: cb.onMarket }, h('span', {}, 'Barn'), this.storageEl) as HTMLButtonElement;
+    this.equipmentButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'equipment-button', onclick: cb.onEquipment }, h('span', {}, 'Old Tractor'), this.tractorEl) as HTMLButtonElement;
+    this.locationStat = h('div', { class: 'farm-stat town-location-stat hidden', 'data-testid': 'town-location-stat' }, h('span', {}, 'Location'), h('strong', {}, 'County Service Center'));
 
     const top = h('div', { class: 'farm-hud-top' },
       h('div', { class: 'farm-brand' }, h('span', { class: 'farm-brand-mark' }, 'FE'), h('div', {},
         h('div', { class: 'farm-brand-title' }, 'FARM EMPIRE'),
-        h('div', { class: 'farm-brand-sub' }, 'Farming Business V1'),
+        this.brandSubEl,
       )),
       h('div', { class: 'farm-stat' }, h('span', {}, 'Cash'), this.cashEl),
       h('div', { class: 'farm-stat' }, h('span', {}, 'Time'), this.clockEl),
-      h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'storage-button', onclick: cb.onMarket }, h('span', {}, 'Barn'), this.storageEl),
-      h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'equipment-button', onclick: cb.onEquipment }, h('span', {}, 'Old Tractor'), this.tractorEl),
+      this.storageButton,
+      this.equipmentButton,
+      this.locationStat,
     );
 
     const cropStrip = h('div', { class: 'farm-crop-strip', 'aria-label': 'Crop selection' });
@@ -68,7 +83,7 @@ export class FarmHud {
       cropStrip.append(button);
     }
 
-    const bottom = h('div', { class: 'farm-hud-bottom' },
+    this.farmControls = h('div', { class: 'farm-hud-farm-controls' },
       h('div', { class: 'farm-selected' }, h('span', {}, 'Selected crop'), this.selectedEl),
       cropStrip,
       h('div', { class: 'farm-actions' },
@@ -78,10 +93,35 @@ export class FarmHud {
         h('button', { class: 'btn', 'data-testid': 'save-button', onclick: cb.onSave }, 'Save'),
       ),
     );
+    this.townControls = h('div', { class: 'farm-hud-town-controls hidden' },
+      h('div', { class: 'town-hud-copy' },
+        h('strong', {}, 'COUNTY SERVICE CENTER'),
+        h('span', {}, 'Walk to a storefront or townsperson for service.'),
+      ),
+      h('div', { class: 'farm-actions' },
+        h('button', { class: 'btn', 'data-testid': 'town-save-button', onclick: cb.onSave }, 'Save'),
+        h('button', { class: 'btn btn-primary', 'data-testid': 'town-return-button', onclick: cb.onReturnFarm }, 'Return to Farm'),
+      ),
+    );
+    const bottom = h('div', { class: 'farm-hud-bottom' }, this.farmControls, this.townControls);
 
     this.helpEl = h('div', { class: 'farm-help' }, 'Select a crop, then click an empty field section to plant. Click a ready crop to harvest.');
     this.root = h('div', { class: 'farm-hud-root' }, top, bottom, this.operationEl, this.helpEl);
     document.body.append(this.root);
+  }
+
+  setMode(mode: FarmHudMode): void {
+    this.mode = mode;
+    const town = mode === 'town';
+    this.root.classList.toggle('town-mode', town);
+    this.farmControls.classList.toggle('hidden', town);
+    this.townControls.classList.toggle('hidden', !town);
+    this.equipmentButton.classList.toggle('hidden', town);
+    this.locationStat.classList.toggle('hidden', !town);
+    this.storageButton.disabled = town;
+    this.storageButton.classList.toggle('farm-stat-button', !town);
+    this.brandSubEl.textContent = town ? 'County Service Center' : 'Farming Business V1';
+    this.operationEl.classList.toggle('hidden', town || !this.operationEl.textContent);
   }
 
   update(state: GameState, runtime?: TractorHudRuntime): void {
@@ -95,10 +135,12 @@ export class FarmHud {
       : runtime?.operating
         ? 'Operating'
         : farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Maintenance';
-    this.operationEl.classList.toggle('hidden', !runtime?.operating);
+    this.operationEl.classList.toggle('hidden', this.mode === 'town' || !runtime?.operating);
     this.operationEl.classList.toggle('working', !!runtime?.working);
     this.operationEl.textContent = runtime?.statusText ?? '';
-    this.helpEl.textContent = runtime?.working
+    this.helpEl.textContent = this.mode === 'town'
+      ? 'Click a townsperson or storefront for service. Walk only on the paved center.'
+      : runtime?.working
       ? 'The tractor is working section by section. Press Escape to cancel safely.'
       : runtime?.operating
         ? 'Click open ground to drive. Click an owned field parcel for batch planting or harvesting.'
