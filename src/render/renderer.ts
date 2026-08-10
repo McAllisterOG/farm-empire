@@ -413,7 +413,6 @@ export class Renderer {
       drawSprite(ctx, `tile:farmground:${farmGroundVariant(scene.seed, x, y)}`, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
     }
     drawFarmyard(ctx, camera, zoom);
-    drawFarmDoghouse(ctx, camera, zoom);
     for (const plot of scene.plots) drawFarmSection(ctx, camera, plot, now, zoom, false);
     for (const plot of scene.farm!.lockedTiles) drawFarmSection(ctx, camera, { ...plot, uid: -1, crop: null }, now, zoom, true);
     drawLockedParcelLabel(ctx, camera, scene, zoom);
@@ -441,11 +440,13 @@ export class Renderer {
         ? drawFarmBarn(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom)
         : drawSprite(ctx, `bld:${pl.defId}`, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom * 1.16) });
     }
+    const doghousePoint = farmWorldPoint(farmLandmarks().doghouse);
+    items.push({ depth: doghousePoint.x + doghousePoint.y + 0.15, draw: () => drawFarmDoghouse(ctx, camera.sx(isoX(doghousePoint.x, doghousePoint.y)), camera.sy(isoY(doghousePoint.x, doghousePoint.y) + TILE_H / 2), zoom) });
     const tractor = scene.farm!.tractor;
     const tractorPoint = farmWorldPoint(tractor);
     items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now) });
     const scoutPoint = farmWorldPoint(scene.farm!.scout);
-    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.scratching) });
+    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.scratching, scene.farm!.scout.mode === 'home') });
     for (const actor of scene.actors) {
       const point = farmWorldPoint(actor);
       items.push({ depth: point.x + point.y + 0.4, draw: () => {
@@ -514,9 +515,7 @@ function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: numbe
   for (let y = bounds.minY + 3; y < bounds.maxY - 2; y += 3) for (const x of [bounds.minX + 1, bounds.maxX - 1]) drawFarmTree(ctx, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
 }
 
-function drawFarmDoghouse(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
-  const home = farmWorldPoint(farmLandmarks().doghouse);
-  const x = camera.sx(isoX(home.x, home.y)); const y = camera.sy(isoY(home.x, home.y) + TILE_H / 2);
+function drawFarmDoghouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
   ctx.fillStyle = 'rgba(48,34,23,.23)'; ctx.beginPath(); ctx.ellipse(0, 3, 28, 8, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#b84f37'; ctx.fillRect(-22, -26, 44, 28);
@@ -543,12 +542,14 @@ function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoo
   ctx.restore();
 }
 
-function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, moving: boolean, scratching: boolean): void {
+function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, moving: boolean, scratching: boolean, sitting: boolean): void {
   const trot = moving ? Math.sin(now / 90) * 2 : 0; const wag = Math.sin(now / 110) * (moving ? .55 : .9);
   ctx.save(); ctx.translate(x, y + trot * zoom); ctx.scale(zoom, zoom);
   ctx.fillStyle = 'rgba(35,29,23,.2)'; ctx.beginPath(); ctx.ellipse(0, 2, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#9b643e'; ctx.beginPath(); ctx.ellipse(0, -11, 14, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#965b3c'; ctx.beginPath(); ctx.ellipse(0, sitting ? -9 : -11, 14, sitting ? 11 : 9, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#b97b4c'; ctx.beginPath(); ctx.arc(11, -17, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f2e2c1'; ctx.fillRect(9, -22, 4, 8); ctx.fillRect(-5, -6, 6, 3); ctx.fillRect(4, -6, 6, 3);
+  ctx.strokeStyle = '#287b80'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(6, -12); ctx.lineTo(15, -12); ctx.stroke();
   ctx.fillStyle = '#553521'; ctx.beginPath(); ctx.moveTo(7, -22); ctx.lineTo(8, -31); ctx.lineTo(13, -23); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(14, -22); ctx.lineTo(18, -29); ctx.lineTo(18, -19); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#6f452b'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-12, -13); ctx.quadraticCurveTo(-22, -19 + wag * 6, -24, -11 + wag * 4); ctx.stroke();
   ctx.strokeStyle = '#4b3426'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-7, -5); ctx.lineTo(-8 + trot, 1); ctx.moveTo(6, -5); ctx.lineTo(7 - trot, 1); ctx.stroke();

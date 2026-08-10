@@ -76,7 +76,7 @@ export class FarmEmpireApp {
       y: state.player.py,
       walking: false,
     };
-    const scoutHome = farmLandmarks().doghouse;
+    const scoutHome = farmLandmarks().scoutHome;
     this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
@@ -265,7 +265,7 @@ export class FarmEmpireApp {
     }
     const clickLogical = farmLogicalPoint(this.renderer.camera.tilePointAt(sx, sy));
     if (!this.operatingTractor && Math.hypot(clickLogical.x - this.scout.x, clickLogical.y - this.scout.y) <= 0.72) {
-      this.walkNear(this.scout.x, this.scout.y, () => this.openScoutMenu(sx, sy));
+      this.walkNear(this.scout.x, this.scout.y, () => this.openScoutMenu());
       return;
     }
     const { tx, ty } = this.farmTargetAtScreen(sx, sy);
@@ -342,14 +342,15 @@ export class FarmEmpireApp {
       this.walkTarget = null;
       this.playerActor.walking = false;
       this.operatingTractor = true;
-      const home = farmLandmarks().doghouse;
-      this.scout = { ...home, mode: 'home', moving: false };
       toast('Operating the old tractor. Click ground to drive or a field parcel for batch work.', 'good');
     }
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
-  private openScoutMenu(sx: number, sy: number): void {
+  private openScoutMenu(): void {
+    const point = farmWorldPoint(this.scout);
+    const sx = this.renderer.camera.sx(isoX(point.x, point.y));
+    const sy = this.renderer.camera.sy(isoY(point.x, point.y));
     showActionMenu(sx, sy, 'Scout · farm dog', [{
       label: 'Give Scout scratches',
       onClick: () => {
@@ -661,7 +662,7 @@ export class FarmEmpireApp {
       }
     }
 
-    const scoutHome = farmLandmarks().doghouse;
+    const scoutHome = farmLandmarks().scoutHome;
     this.scout = updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.operatingTractor || !!this.tractorJob);
 
     this.renderer.render(this.buildScene(), now);

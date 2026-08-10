@@ -20,6 +20,13 @@ describe('Farmyard Scout companion', () => {
     const next = updateFarmCompanion({ x: 2, y: 2, mode: 'follow', moving: false }, { x: 8, y: 8 }, home, 100, true);
     expect(next.mode).toBe('home'); expect(next.x).toBeGreaterThan(2); expect(next.x).toBeLessThan(home.x);
   });
+  it('begins the tractor home transition without teleporting and resumes follow mode after exit', () => {
+    const start = { x: 5, y: 5, mode: 'follow' as const, moving: false };
+    const towardHome = updateFarmCompanion(start, { x: 8, y: 8 }, home, 16, true);
+    expect(towardHome).not.toMatchObject(home);
+    expect(Math.hypot(towardHome.x - home.x, towardHome.y - home.y)).toBeLessThan(Math.hypot(start.x - home.x, start.y - home.y));
+    expect(updateFarmCompanion(towardHome, { x: 8, y: 8 }, home, 16, false).mode).toBe('follow');
+  });
   it('bounds invalid or large time steps without NaN', () => {
     const next = updateFarmCompanion({ x: Number.NaN, y: Infinity, mode: 'follow', moving: false }, { x: 1, y: 1 }, home, 1_000_000, true);
     expect(Number.isFinite(next.x) && Number.isFinite(next.y)).toBe(true);
