@@ -172,6 +172,7 @@ describe('land and save compatibility', () => {
     farm.cashCents = FIRST_PARCEL_PRICE_CENTS;
     expect(purchaseNeighborParcel(state).ok).toBe(true);
     updateFarmMarketToDay(state, 12);
+    farm.market.activeEvents = [{ ...farmMarketEventDef('potato-shortage'), remainingDays: 2 }];
     farm.clock.day = 12;
     const loaded = deserialize(serialize(state, NOW + 5_000), NOW + 6_000);
     expect(loaded.farm).toEqual(state.farm);

@@ -2,7 +2,7 @@ import type {
   ActionResult, ActiveFarmMarketEvent, FarmBusinessState, FarmPlot, GameState,
 } from './types';
 import { cropView } from './crops';
-import { allFarmCrops, allFarmMarketEvents, cropDef, farmCropDef } from './registry';
+import { allFarmCrops, allFarmMarketEvents, cropDef, farmCropDef, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
 
@@ -89,7 +89,10 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     .filter((event): event is ActiveFarmMarketEvent => (
       !!event && knownEvents.has(String(event.id)) && clampInt(event.remainingDays, 0) > 0
     ))
-    .map((event) => ({ ...event, remainingDays: clampInt(event.remainingDays, 1, 1) }));
+    .map((event) => ({
+      ...farmMarketEventDef(String(event.id)),
+      remainingDays: clampInt(event.remainingDays, 1, 1),
+    }));
 
   state.farm = {
     cashCents: clampInt(raw.cashCents, STARTING_CASH_CENTS),

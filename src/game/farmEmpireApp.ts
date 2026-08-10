@@ -68,6 +68,8 @@ export class FarmEmpireApp {
         this.renderer.camera.sx(isoX(x, y)),
         this.renderer.camera.sy(isoY(x, y)),
       ],
+    };
+    if (import.meta.env.DEV) Object.assign(debug, {
       matureAll: () => this.matureAll(),
       advanceDay: (days = 1) => advanceFarmDays(this.state, days),
       setCashCents: (cents: number) => {
@@ -75,7 +77,7 @@ export class FarmEmpireApp {
         syncCashMirror(this.state);
       },
       save: () => this.save(),
-    };
+    });
     (window as unknown as Record<string, unknown>).__FE__ = debug;
     if (import.meta.env.DEV) this.devTools = this.createDevTools();
     this.loop();

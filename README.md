@@ -1,3 +1,33 @@
+# Farm Empire
+
+Farm Empire is an original isometric farming-business simulation built incrementally on the MIT-licensed Paradise Isle engine. Start with $5,000, buy seed, plant and harvest four commodity crops, manage finite barn storage, choose when to sell into a deterministic daily market, and purchase the neighboring field parcel.
+
+![Farm Empire starter farm](docs/screenshots/farm-empire-starter-farm.png)
+
+![Farm Empire commodity market](docs/screenshots/farm-empire-market.png)
+
+## Farming Business V1
+
+- Four data-driven crops: corn, wheat, soybeans, and potatoes.
+- Timestamped visible growth, transactional harvest storage, and an old tractor efficiency bonus.
+- Integer-cent cash, bounded daily prices, previous-price movement, and temporary saved market events.
+- One locked $6,500 neighboring parcel that permanently unlocks nine additional field tiles.
+- Versioned saves in a clean `farm-empire:*` browser namespace; legacy `paradise-isle:*` saves remain untouched.
+
+```bash
+npm ci
+npm test
+npm run typecheck
+npm run build
+npm run dev
+```
+
+The original engine architecture, attribution, historical feature documentation, and MIT license are preserved below.
+
+---
+
+## Paradise Isle engine documentation
+
 <div align="center">
 
 # 🏝️ 天堂小岛 Paradise Isle
