@@ -1,9 +1,9 @@
 {
-  "name": "paradise-isle",
+  "name": "farm-empire",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "天堂小岛 Paradise Isle — an original open-source island life-sim inspired by the 2011 web game QQ天堂岛. No Tencent assets; all art is procedurally drawn.",
+  "description": "Farm Empire — an original isometric farming-business simulation built on the MIT-licensed Paradise Isle engine.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

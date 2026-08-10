@@ -11,7 +11,7 @@ import { cropView } from '../core/crops';
 import { animalPhase } from '../core/animals';
 import { WATER_COOLDOWN_MS } from '../core/balance';
 import { Camera } from './camera';
-import { isoX, isoY, TILE_H, TILE_W } from './iso';
+import { diamondPath, isoX, isoY, TILE_H, TILE_W } from './iso';
 import { charKey, drawSprite } from './sprites';
 
 export interface SceneActor {
@@ -37,6 +37,17 @@ export interface RenderScene {
   hover: { tx: number; ty: number; ok: boolean } | null;
   /** 编辑/摆放模式下的虚影 */
   ghost: { defId: string; tx: number; ty: number; ok: boolean } | null;
+  /** Optional Farm Empire overlay data; legacy scenes omit it. */
+  farm?: {
+    lockedTiles: { x: number; y: number }[];
+    parcelLabel: string;
+    tractor: {
+      name: string;
+      status: 'operational' | 'maintenance';
+      x: number;
+      y: number;
+    };
+  };
 }
 
 export function sceneFromState(state: GameState): RenderScene {
@@ -101,7 +112,7 @@ export class Renderer {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
     // 海洋底色
-    ctx.fillStyle = '#4aa8d8';
+    ctx.fillStyle = scene.farm ? '#7fa9b5' : '#4aa8d8';
     ctx.fillRect(0, 0, camera.viewW, camera.viewH);
 
     const terrain = buildTerrain(scene.seed, scene.islandTier);
@@ -144,6 +155,36 @@ export class Renderer {
       const sy = camera.sy(isoY(plot.x, plot.y));
       const wet = !!plot.crop && now - plot.crop.lastWateredAt < WATER_COOLDOWN_MS;
       drawSprite(ctx, `tile:plot:${wet ? 'wet' : 'dry'}`, sx, sy, zoom);
+    }
+    if (scene.farm && scene.farm.lockedTiles.length > 0) {
+      ctx.save();
+      ctx.setLineDash([5 * zoom, 4 * zoom]);
+      for (const tile of scene.farm.lockedTiles) {
+        const sx = camera.sx(isoX(tile.x, tile.y));
+        const sy = camera.sy(isoY(tile.x, tile.y));
+        diamondPath(ctx, sx, sy, TILE_W * zoom - 5, TILE_H * zoom - 3);
+        ctx.fillStyle = 'rgba(124, 86, 52, 0.34)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(106, 63, 34, 0.95)';
+        ctx.lineWidth = Math.max(1.5, 2 * zoom);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      const centerX = scene.farm.lockedTiles.reduce((sum, tile) => sum + tile.x, 0) / scene.farm.lockedTiles.length;
+      const centerY = scene.farm.lockedTiles.reduce((sum, tile) => sum + tile.y, 0) / scene.farm.lockedTiles.length;
+      const labelX = camera.sx(isoX(centerX, centerY));
+      const labelY = camera.sy(isoY(centerX, centerY)) - 26 * zoom;
+      ctx.font = `700 ${Math.max(10, Math.round(11 * zoom))}px "Segoe UI", sans-serif`;
+      ctx.textAlign = 'center';
+      const labelWidth = ctx.measureText(`LOCKED · ${scene.farm.parcelLabel}`).width + 14;
+      ctx.fillStyle = 'rgba(255, 248, 226, 0.95)';
+      ctx.fillRect(labelX - labelWidth / 2, labelY - 14, labelWidth, 20);
+      ctx.strokeStyle = '#8b5a32';
+      ctx.strokeRect(labelX - labelWidth / 2, labelY - 14, labelWidth, 20);
+      ctx.fillStyle = '#6d4124';
+      ctx.fillText(`LOCKED · ${scene.farm.parcelLabel}`, labelX, labelY + 1);
+      ctx.textAlign = 'start';
+      ctx.restore();
     }
     // 道路也贴地
     for (const pl of scene.placements) {
@@ -249,6 +290,16 @@ export class Renderer {
       });
     }
 
+    if (scene.farm) {
+      const tractor = scene.farm.tractor;
+      const sx = camera.sx(isoX(tractor.x, tractor.y));
+      const sy = camera.sy(isoY(tractor.x, tractor.y) + TILE_H / 2);
+      items.push({
+        depth: tractor.x + tractor.y,
+        draw: () => drawOldTractor(ctx, sx, sy, zoom, tractor.status),
+      });
+    }
+
     for (const actor of scene.actors) {
       const sx = camera.sx(isoX(actor.x, actor.y));
       const sy = camera.sy(isoY(actor.x, actor.y) + TILE_H / 2);
@@ -324,3 +375,44 @@ export class Renderer {
 }
 
 export { TILE_W };
+
+function drawOldTractor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  status: 'operational' | 'maintenance',
+): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = 'rgba(40, 30, 20, 0.22)';
+  ctx.beginPath();
+  ctx.ellipse(0, 2, 34, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2c2c2a';
+  ctx.beginPath();
+  ctx.arc(-20, -8, 12, 0, Math.PI * 2);
+  ctx.arc(22, -7, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#b8a98e';
+  ctx.beginPath();
+  ctx.arc(-20, -8, 5, 0, Math.PI * 2);
+  ctx.arc(22, -7, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = status === 'operational' ? '#b74832' : '#7d746b';
+  ctx.fillRect(-16, -27, 37, 18);
+  ctx.fillStyle = '#8f3027';
+  ctx.fillRect(-10, -41, 17, 16);
+  ctx.fillStyle = '#b9d7df';
+  ctx.fillRect(-7, -38, 11, 10);
+  ctx.fillStyle = '#33312f';
+  ctx.fillRect(15, -36, 3, 10);
+  ctx.fillStyle = '#ead9a8';
+  ctx.fillRect(18, -24, 5, 4);
+  ctx.fillStyle = '#f3e5bd';
+  ctx.font = '700 8px "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('OLD', 2, -15);
+  ctx.restore();
+}

@@ -30,7 +30,7 @@ jobs:
         run: npm test
       - name: Build (GitHub Pages base path)
         env:
-          BASE_PATH: /paradise-isle/
+          BASE_PATH: /farm-empire/
         run: npx vite build
       - name: Upload Pages artifact
         if: github.ref == 'refs/heads/main'

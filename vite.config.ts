@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 
-// BASE_PATH is set to "/paradise-isle/" by CI when deploying to GitHub Pages.
+// BASE_PATH is set to "/farm-empire/" by CI when deploying to GitHub Pages.
 export default defineConfig({
   base: process.env.BASE_PATH || '/',
   build: {
