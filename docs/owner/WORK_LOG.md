@@ -17,5 +17,5 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Date:** 2026-08-09
 - **Branch:** `codex/farming-business-v1`
 - **Scope:** Documentation and coordination workflow only; no gameplay code or Milestone 2 work.
-- **Result:** Added durable recovery, discussion, Brainstorm Mode, authorization, bounded worker, Red Team, decision-record, work-log, and checkpoint-maintenance rules.
+- **Result:** Added durable game-vision, recovery, discussion, Brainstorm Mode, authorization, bounded worker, Red Team, decision-record, work-log, and checkpoint-maintenance documentation.
 - **Verification:** Documentation read-back, Git diff review, and whitespace validation.
