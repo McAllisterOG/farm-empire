@@ -17,6 +17,7 @@ import { farmMainlandBounds, farmPlotFootprint, farmWorldPoint } from './farmLay
 import { farmLandmarks } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
+import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -425,6 +426,16 @@ export class Renderer {
 
     const items: DrawItem[] = [];
     const bob = Math.sin(now / 350) * 1.6;
+    for (const tree of farmWindbreakAnchors()) {
+      items.push({ depth: tree.x + tree.y, draw: () => drawFarmTree(ctx, camera.sx(isoX(tree.x, tree.y)), camera.sy(isoY(tree.x, tree.y)), zoom, now, tree.x * 19 + tree.y) });
+    }
+    for (const fence of FARM_FENCE_MANIFEST) {
+      items.push({ depth: fence.x + fence.y + .05, draw: () => drawFarmFence(ctx, camera.sx(isoX(fence.x, fence.y)), camera.sy(isoY(fence.x, fence.y) + TILE_H / 2), zoom, fence) });
+    }
+    for (const prop of FARM_DECOR_MANIFEST) {
+      const point = farmWorldPoint(prop);
+      items.push({ depth: point.x + point.y + .1, draw: () => drawFarmDecor(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, prop) });
+    }
     for (const plot of scene.plots) if (plot.crop) {
       const point = farmWorldPoint(plot);
       const stage = cropView(plot.crop, now).stage;
@@ -457,7 +468,10 @@ export class Renderer {
     }
     items.sort((a, b) => a.depth - b.depth); items.forEach((item) => item.draw());
     const na = nightAlpha(now);
-    if (na > .01) { ctx.fillStyle = `rgba(24, 34, 76, ${na})`; ctx.fillRect(0, 0, camera.viewW, camera.viewH); }
+    if (na > .01) {
+      ctx.fillStyle = `rgba(24, 34, 76, ${na})`; ctx.fillRect(0, 0, camera.viewW, camera.viewH);
+      drawFarmNightGlow(ctx, camera, zoom, na, now, doghousePoint, scene.placements);
+    }
     if (scene.farm!.scout.scratching) drawScoutHeart(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y)) - 42 * zoom, zoom, now);
   }
 }
@@ -497,7 +511,9 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
     const x = footprint.minX + (col + .5 + (row % 2 ? .08 : 0)) * (footprint.maxX - footprint.minX) / 5;
     const y = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / 4;
     const sx = camera.sx(isoX(x, y)); const sy = camera.sy(isoY(x, y) + TILE_H / 2);
-    drawSprite(ctx, `crop:${plot.crop!.defId}:${stage}`, sx, sy, zoom * .54);
+    // Separate row phases read as a breeze across the section, not a global bob.
+    const sway = Math.sin(now / 720 + row * 1.17 + col * .34 + plot.x * .7 + plot.y) * (stage === 'seedling' ? .45 : 1.15) * zoom;
+    drawSprite(ctx, `crop:${plot.crop!.defId}:${stage}`, sx + sway, sy, zoom * .54);
   }
   const centre = farmWorldPoint(plot); const sx = camera.sx(isoX(centre.x, centre.y)); const sy = camera.sy(isoY(centre.x, centre.y) + TILE_H / 2);
   if (stage === 'ready') drawSprite(ctx, 'fx:ready', sx, sy - 67 * zoom + bob * zoom, zoom * 1.15);
@@ -510,10 +526,6 @@ function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: numbe
   ctx.strokeStyle = '#b9a071'; ctx.lineWidth = 13 * zoom; ctx.lineCap = 'round'; ctx.beginPath();
   lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.stroke();
   ctx.strokeStyle = 'rgba(100, 75, 46, .35)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
-  const bounds = farmMainlandBounds();
-  ctx.strokeStyle = 'rgba(79, 87, 41, .82)'; ctx.lineWidth = 2 * zoom;
-  for (let x = bounds.minX + 1; x < bounds.maxX; x += 2) for (const y of [bounds.minY + 1, bounds.maxY - 1]) drawFarmTree(ctx, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
-  for (let y = bounds.minY + 3; y < bounds.maxY - 2; y += 3) for (const x of [bounds.minX + 1, bounds.maxX - 1]) drawFarmTree(ctx, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
 }
 
 function drawFarmDoghouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
@@ -566,11 +578,62 @@ function drawScoutHeart(ctx: CanvasRenderingContext2D, x: number, y: number, zoo
   ctx.save(); ctx.translate(x, y - (now % 1200) / 1200 * 12 * zoom); ctx.scale(zoom * 1.5, zoom * 1.5); ctx.font = '22px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#f2e2c1'; ctx.fillText('♥', 1, 1); ctx.fillStyle = '#ef7d96'; ctx.fillText('♥', 0, 0); ctx.restore();
 }
 
-function drawFarmTree(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
+function drawFarmTree(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, phase: number): void {
+  const sway = Math.sin(now / 1900 + phase * .37) * 1.3;
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
   ctx.fillStyle = '#68472c'; ctx.fillRect(-2, -19, 4, 20);
+  ctx.translate(sway, 0);
   ctx.fillStyle = '#426f35'; ctx.beginPath(); ctx.arc(0, -25, 12, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#5b8c42'; ctx.beginPath(); ctx.arc(-5, -29, 7, 0, Math.PI * 2); ctx.arc(6, -29, 7, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+
+function drawFarmFence(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, fence: FarmFenceCue): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  ctx.fillStyle = 'rgba(52,38,25,.18)'; ctx.beginPath(); ctx.ellipse(0, 2, fence.direction === 'east-west' ? 31 : 13, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#6f4b2e'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  const horizontal = fence.direction === 'east-west'; const half = fence.gate ? 18 : 30;
+  const post = (px: number, py: number) => { ctx.fillStyle = '#8d6338'; ctx.fillRect(px - 2.5, py - 22, 5, 24); ctx.fillStyle = '#b78a52'; ctx.fillRect(px - 1, py - 20, 2, 17); };
+  if (horizontal) {
+    post(-half, 0); post(half, 0); ctx.beginPath(); ctx.moveTo(-half, -16); ctx.lineTo(half, -12); ctx.moveTo(-half, -8); ctx.lineTo(half, -5); ctx.stroke();
+    if (fence.gate) { ctx.strokeStyle = '#b78a52'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-15, -4); ctx.lineTo(12, -20); ctx.stroke(); }
+  } else {
+    post(-7, -12); post(7, 12); ctx.beginPath(); ctx.moveTo(-7, -27); ctx.lineTo(7, -4); ctx.moveTo(-2, -25); ctx.lineTo(12, -2); ctx.stroke();
+    if (fence.gate) { ctx.strokeStyle = '#b78a52'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-9, -20); ctx.lineTo(12, -5); ctx.stroke(); }
+  }
+  ctx.restore();
+}
+
+function drawFarmDecor(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, prop: FarmDecor): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  ctx.fillStyle = 'rgba(47,34,22,.2)'; ctx.beginPath(); ctx.ellipse(0, 3, prop.type === 'crate-pallet' ? 22 : 16, 5, 0, 0, Math.PI * 2); ctx.fill();
+  if (prop.type === 'hay-bale') {
+    ctx.fillStyle = '#b98732'; ctx.fillRect(-12, -18, 24, 20); ctx.fillStyle = '#d5ad4d'; ctx.fillRect(-10, -20, 20, 8); ctx.strokeStyle = '#8e6428'; ctx.lineWidth = 1.5;
+    for (const line of [-5, 3]) { ctx.beginPath(); ctx.moveTo(-12, line); ctx.lineTo(12, line + 2); ctx.stroke(); }
+  } else if (prop.type === 'crate-pallet') {
+    ctx.fillStyle = '#7b522d'; ctx.fillRect(-19, -2, 38, 5); ctx.fillStyle = '#b77b3e'; ctx.fillRect(-17, -14, 15, 13); ctx.fillRect(2, -17, 15, 16); ctx.strokeStyle = '#6b4126'; ctx.lineWidth = 1.5;
+    for (const px of [-13, 6]) { ctx.beginPath(); ctx.moveTo(px, -13); ctx.lineTo(px + 8, -2); ctx.moveTo(px + 8, -13); ctx.lineTo(px, -2); ctx.stroke(); }
+  } else if (prop.type === 'water-trough') {
+    ctx.fillStyle = '#245f65'; ctx.fillRect(-17, -13, 34, 13); ctx.fillStyle = '#57aab0'; ctx.fillRect(-14, -11, 28, 5); ctx.strokeStyle = '#173f46'; ctx.lineWidth = 2; ctx.strokeRect(-17, -13, 34, 13); ctx.fillStyle = '#70482b'; ctx.fillRect(-12, 0, 4, 5); ctx.fillRect(8, 0, 4, 5);
+  } else {
+    ctx.fillStyle = '#7f9f9c'; ctx.fillRect(-3, -25, 6, 27); ctx.fillStyle = '#b8d2ce'; ctx.fillRect(-5, -27, 10, 5); ctx.strokeStyle = '#4e6f6d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -23); ctx.lineTo(14, -31); ctx.lineTo(18, -27); ctx.stroke(); ctx.fillStyle = '#795034'; ctx.fillRect(-10, 1, 20, 4);
+  }
+  ctx.restore();
+}
+
+function drawFarmNightGlow(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, alpha: number, now: number, doghousePoint: { x: number; y: number }, placements: RenderScene['placements']): void {
+  const barn = placements.find((placement) => placement.defId === 'bld_storage');
+  const lights = [doghousePoint, ...(barn ? [farmWorldPoint({ x: barn.x, y: barn.y })] : [])];
+  for (const light of lights) {
+    const sx = camera.sx(isoX(light.x, light.y)); const sy = camera.sy(isoY(light.x, light.y)) - 17 * zoom; const radius = 47 * zoom;
+    const gradient = ctx.createRadialGradient(sx, sy, 2, sx, sy, radius);
+    gradient.addColorStop(0, `rgba(255,218,132,${alpha * .7})`); gradient.addColorStop(1, 'rgba(255,218,132,0)');
+    ctx.fillStyle = gradient; ctx.fillRect(sx - radius, sy - radius, radius * 2, radius * 2);
+  }
+  const fireflies = [{ x: 17.8, y: 22.8 }, { x: 20.2, y: 23.4 }, { x: 28.8, y: 22.4 }, { x: 31.2, y: 19.5 }, { x: 24.4, y: 17.5 }];
+  fireflies.forEach((fly, index) => {
+    const sx = camera.sx(isoX(fly.x, fly.y)); const sy = camera.sy(isoY(fly.x, fly.y)) - (8 + Math.sin(now / 900 + index) * 3) * zoom;
+    ctx.fillStyle = `rgba(255,239,137,${.42 + Math.sin(now / 500 + index) * .2})`; ctx.beginPath(); ctx.arc(sx, sy, Math.max(1.1, 1.8 * zoom), 0, Math.PI * 2); ctx.fill();
+  });
 }
 
 function drawLockedParcelLabel(ctx: CanvasRenderingContext2D, camera: Camera, scene: RenderScene, zoom: number): void {
@@ -636,6 +699,10 @@ function drawOldTractor(
   ctx.fillStyle = '#b9d7df';
   ctx.fillRect(-7, -38, 11, 10);
   if (operating) {
+    const puff = Math.sin(now / 180) * 2;
+    ctx.fillStyle = working ? 'rgba(214,191,154,.42)' : 'rgba(224,224,212,.34)';
+    ctx.beginPath(); ctx.arc(18 + puff, -46 - Math.abs(puff), working ? 5 : 4, 0, Math.PI * 2); ctx.fill();
+    if (working) { ctx.fillStyle = 'rgba(157,115,67,.22)'; ctx.beginPath(); ctx.ellipse(-28 - puff, 0, 15, 4, 0, 0, Math.PI * 2); ctx.fill(); }
     ctx.fillStyle = '#f2c59f';
     ctx.beginPath();
     ctx.arc(-1.5, -34, 3.2, 0, Math.PI * 2);
