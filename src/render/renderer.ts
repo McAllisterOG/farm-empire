@@ -516,7 +516,7 @@ function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: numbe
 }
 
 function drawFarmDoghouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
-  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.55, zoom * 1.55);
   ctx.fillStyle = 'rgba(48,34,23,.23)'; ctx.beginPath(); ctx.ellipse(0, 3, 28, 8, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#b84f37'; ctx.fillRect(-22, -26, 44, 28);
   ctx.beginPath(); ctx.moveTo(-27, -26); ctx.lineTo(0, -46); ctx.lineTo(27, -26); ctx.closePath(); ctx.fillStyle = '#6e392e'; ctx.fill();
@@ -528,23 +528,25 @@ function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoo
   const walk = frame % 4; const bob = walk ? (walk === 1 ? -2 : walk === 3 ? 1 : 0) : Math.sin(now / 700) * .8;
   const skin = avatar.skin.includes('deep') ? '#7a4d38' : avatar.skin.includes('tan') ? '#bd8056' : '#f0c29b';
   const hair = avatar.hair.includes('black') ? '#25201e' : '#70422c';
-  ctx.save(); ctx.translate(x, y + bob * zoom); ctx.scale(zoom * 1.2, zoom * 1.2);
+  ctx.save(); ctx.translate(x, y + bob * zoom); ctx.scale(zoom * 2, zoom * 2);
   ctx.fillStyle = 'rgba(38,30,24,.22)'; ctx.beginPath(); ctx.ellipse(0, 2, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
   const swing = walk ? (walk % 2 ? 4 : -4) : 0;
   ctx.strokeStyle = '#365b9a'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-5, -20); ctx.lineTo(-7 + swing, -8); ctx.moveTo(5, -20); ctx.lineTo(7 - swing, -8); ctx.stroke();
   ctx.strokeStyle = '#5a3825'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-4, -9); ctx.lineTo(-5 - swing, 0); ctx.moveTo(4, -9); ctx.lineTo(5 + swing, 0); ctx.stroke();
-  ctx.fillStyle = '#3e78a8'; ctx.fillRect(-8, -28, 16, 20); ctx.fillStyle = '#d99b3d'; ctx.fillRect(-8, -28, 16, 4);
+  ctx.fillStyle = '#3e78a8'; ctx.fillRect(-9, -29, 18, 21); ctx.fillStyle = '#f0dfb5'; ctx.fillRect(-5, -29, 10, 13); ctx.fillStyle = '#d99b3d'; ctx.fillRect(-9, -29, 18, 4);
   ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, -38, 9, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = hair; ctx.beginPath(); ctx.arc(0, -42, 9, Math.PI, 0); ctx.fill();
   ctx.fillStyle = '#c58a2e'; ctx.fillRect(-11, -49, 22, 4); ctx.fillRect(-6, -54, 12, 7);
-  ctx.fillStyle = '#fff'; const eyeX = facing === 'east' ? 3 : facing === 'west' ? -3 : 0; ctx.fillRect(eyeX - 2, -39, 2, 2);
-  if (facing === 'south') { ctx.strokeStyle = '#9f5d4e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, -35, 3, 0, Math.PI); ctx.stroke(); }
+  if (facing !== 'north') { ctx.fillStyle = '#fff'; const eyeX = facing === 'east' ? 3 : facing === 'west' ? -3 : 0; ctx.fillRect(eyeX - 2, -39, 2, 2); }
+  if (facing === 'south') { ctx.fillStyle = '#fff'; ctx.fillRect(2, -39, 2, 2); ctx.strokeStyle = '#9f5d4e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, -35, 3, 0, Math.PI); ctx.stroke(); }
+  if (facing === 'north') { ctx.fillStyle = hair; ctx.fillRect(-8, -43, 16, 10); ctx.strokeStyle = '#f0dfb5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5, -28); ctx.lineTo(-5, -18); ctx.moveTo(5, -28); ctx.lineTo(5, -18); ctx.stroke(); }
+  if (facing === 'east' || facing === 'west') { ctx.fillStyle = skin; ctx.fillRect(facing === 'east' ? 8 : -10, -38, 3, 3); }
   ctx.restore();
 }
 
 function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, moving: boolean, scratching: boolean, sitting: boolean): void {
   const trot = moving ? Math.sin(now / 90) * 2 : 0; const wag = Math.sin(now / 110) * (moving ? .55 : .9);
-  ctx.save(); ctx.translate(x, y + trot * zoom); ctx.scale(zoom, zoom);
+  ctx.save(); ctx.translate(x, y + trot * zoom); ctx.scale(zoom * 1.2, zoom * 1.2);
   ctx.fillStyle = 'rgba(35,29,23,.2)'; ctx.beginPath(); ctx.ellipse(0, 2, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#965b3c'; ctx.beginPath(); ctx.ellipse(0, sitting ? -9 : -11, 14, sitting ? 11 : 9, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#b97b4c'; ctx.beginPath(); ctx.arc(11, -17, 7, 0, Math.PI * 2); ctx.fill();
@@ -581,16 +583,17 @@ function drawFarmName(ctx: CanvasRenderingContext2D, sx: number, sy: number, nam
 }
 
 function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
-  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 2, zoom * 2);
   ctx.fillStyle = 'rgba(40,30,20,.22)'; ctx.beginPath(); ctx.ellipse(0, 5, 58, 16, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#a84634'; ctx.fillRect(-42, -53, 84, 55);
+  ctx.strokeStyle = '#7b392d'; ctx.lineWidth = 2; for (let bx = -35; bx < 40; bx += 10) { ctx.beginPath(); ctx.moveTo(bx, -50); ctx.lineTo(bx, -2); ctx.stroke(); }
   ctx.fillStyle = '#f2d8a5'; ctx.fillRect(-45, -54, 90, 6);
   ctx.beginPath(); ctx.moveTo(-50, -53); ctx.lineTo(0, -85); ctx.lineTo(50, -53); ctx.closePath(); ctx.fillStyle = '#70372d'; ctx.fill();
   ctx.beginPath(); ctx.moveTo(-44, -54); ctx.lineTo(0, -80); ctx.lineTo(44, -54); ctx.closePath(); ctx.fillStyle = '#bd5840'; ctx.fill();
   ctx.fillStyle = '#e5c788'; ctx.fillRect(-16, -36, 32, 38); ctx.fillStyle = '#69422d'; ctx.fillRect(-12, -32, 24, 34);
   ctx.strokeStyle = '#e5c788'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(0, 2); ctx.stroke();
   ctx.fillStyle = '#b8d7dd'; ctx.fillRect(-34, -37, 12, 12); ctx.fillRect(22, -37, 12, 12);
-  ctx.fillStyle = '#ead9a8'; ctx.font = '700 8px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('BARN', 0, -59); ctx.restore();
+  ctx.fillStyle = '#b8d7dd'; ctx.fillRect(-5, -68, 10, 9); ctx.fillStyle = '#5a3825'; ctx.fillRect(-45, 2, 90, 5); ctx.restore();
 }
 
 function drawOldTractor(
@@ -605,7 +608,7 @@ function drawOldTractor(
 ): void {
   ctx.save();
   ctx.translate(x, y);
-  ctx.scale(scale, scale);
+  ctx.scale(scale * 1.8, scale * 1.8);
   ctx.fillStyle = 'rgba(40, 30, 20, 0.22)';
   ctx.beginPath();
   ctx.ellipse(0, 2, 34, 10, 0, 0, Math.PI * 2);
