@@ -59,3 +59,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - All decor anchors are deterministic and must remain clear of workable plots, landmark interactions, Scout's home, tractor/dismount space, and the main gravel lane.
 - Farm Empire daylight and night effects follow the saved accelerated farm clock shown in the HUD; the preserved legacy island retains its existing real-time lighting behavior.
 - Ambient animation stays bounded and must not create unbounded sprite-cache keys or obscure gameplay feedback.
+
+## 2026-08-10 - Improve machinery feel without changing saved machinery state
+
+**Status:** Approved by the owner
+
+- Operated tractor travel uses deterministic runtime acceleration, braking, bounded angular turning, wheel roll, steering cues, and direction-aware effects while retaining exact logical target arrival and existing transactional field actions.
+- Heading, velocity, steering, and wheel phase are presentation state only; save schema v4 continues to persist tractor position and business state without active motion.
+- A flat side-view machinery painter must stay visually upright, mirror for leftward travel, and use the isometric farm basis rather than rotate freely like a top-down icon.
+- Collision physics, road planning, implements, fuel, condition, hauling, and equipment economy remain separate future packages rather than being implied by motion polish.

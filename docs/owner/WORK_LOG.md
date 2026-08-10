@@ -71,3 +71,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Screenshots:** `docs/screenshots/farm-atmosphere-day.png`, `docs/screenshots/farm-atmosphere-night.png`
 - **Known limitations:** Decorative gates and props intentionally have no collision or interactions; broader weather, animals, story, and equipment systems remain deferred.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Operated Tractor Motion & Silhouette - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/machinery-motion-v2`
+- **Commit:** `98e9e83`
+- **Scope:** Runtime-only tractor acceleration, braking, bounded turning, wheel roll, steering, direction-aware effects, and upright isometric presentation; no save, economy, collision, routing, implement, or field-transaction changes.
+- **Result:** Replaced constant-rate sliding with deterministic eased travel while preserving exact target snapping and existing click-drive and sequential 3x3 job callbacks. The farm tractor now visibly turns, steers, rolls, and reverses without rotating its flat cab sideways.
+- **Verification:** 113/113 tests passed; strict typecheck and production build passed; browser acceptance covered directional driving, cancellation, exact reverse travel, a complete 9-section planting job, exit, save/reload, and zero console warnings/errors.
+- **Review:** Independent Red Team identified exact-opposite heading degeneration and vertical-screen sideways rotation as MEDIUM findings; one bounded repair/re-review added deterministic angular U-turns and a clamped upright pose, then accepted with no remaining MEDIUM-or-higher issues.
+- **Known limitations:** Motion remains direct and collision-free; implements, fuel, condition, road routing, hauling, and equipment economy remain deferred.
+- **Push:** Not yet pushed; external GitHub authorization is still required.
