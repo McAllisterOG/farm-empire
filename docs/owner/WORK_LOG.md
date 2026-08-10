@@ -83,3 +83,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** Independent Red Team identified exact-opposite heading degeneration and vertical-screen sideways rotation as MEDIUM findings; one bounded repair/re-review added deterministic angular U-turns and a clamped upright pose, then accepted with no remaining MEDIUM-or-higher issues.
 - **Known limitations:** Motion remains direct and collision-free; implements, fuel, condition, road routing, hauling, and equipment economy remain deferred.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Town Gateway - County Service Center - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/town-gateway`
+- **Commit:** `b698575`
+- **Scope:** Signed farm gateway, separate walkable town scene, three functional service buildings, three animated rural NPCs, town HUD, shared farm-clock lighting, and save-safe farm return; no interiors, traffic, social system, vehicle travel, legacy currency, or town save fields.
+- **Result:** Created a real rural destination where the seed supplier, commodity market, land records, and Equipment Desk exist as physical storefronts and townspeople. The Equipment Desk remains context-safe and cannot operate the tractor.
+- **Verification:** 123/123 tests passed; strict typecheck and production build passed; browser acceptance covered mounted rejection, on-foot travel, all NPC/building services, exact seed and grain transactions, town day/night, save-in-town reload, return restoration, compact layout, Escape cancellation, and clean current/fresh-tab consoles.
+- **Review:** Independent Red Team found one live-resize/input MEDIUM plus delayed-callback and plaza-footprint LOWs; one bounded repair/re-review added resize lifecycle handling, cancellable town walks, and exhaustive public-segment/building separation, then accepted with no remaining findings.
+- **Known limitations:** One compact outdoor service center only; no interiors, schedules, traffic, broad story/social model, town vehicles, or hauling.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

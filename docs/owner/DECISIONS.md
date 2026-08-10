@@ -68,3 +68,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Heading, velocity, steering, and wheel phase are presentation state only; save schema v4 continues to persist tractor position and business state without active motion.
 - A flat side-view machinery painter must stay visually upright, mirror for leftward travel, and use the isometric farm basis rather than rotate freely like a top-down icon.
 - Collision physics, road planning, implements, fuel, condition, hauling, and equipment economy remain separate future packages rather than being implied by motion polish.
+
+## 2026-08-10 - Make the first town a separate physical service destination
+
+**Status:** Approved by the owner
+
+- The farm contains a visible signed road gateway, while the County Service Center renders as a separate walkable Canvas scene with its own transient actor, camera, gestures, and input surface.
+- Every visible town building is backed by a real Farm Empire service. The first center contains only Feed & Seed, the Grain Exchange, and Farm Services rather than decorative or unavailable storefronts.
+- Seed, market, land, and equipment interactions reuse the authoritative integer-cents farm business state; the town Equipment Desk can inspect equipment but cannot operate it.
+- Town location and movement are not saved. Saves made in town serialize ordinary farm/business state and reload at a deterministic safe farm-gateway anchor.
+- Legacy island neighbors, social systems, inventories, quests, currencies, and shops remain isolated rather than being revived to populate the town.
