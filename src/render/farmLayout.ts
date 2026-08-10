@@ -13,10 +13,8 @@ export interface FarmPoint { x: number; y: number }
 export interface FarmBounds { minX: number; minY: number; maxX: number; maxY: number }
 
 export interface FarmLandmarks {
-  barn: FarmPoint;
   doghouse: FarmPoint;
   scoutHome: FarmPoint;
-  doghouseFootprint: FarmBounds;
 }
 
 /** Farm-only landmarks are presentation anchors, never saved world state. */
@@ -24,10 +22,8 @@ export function farmLandmarks(): FarmLandmarks {
   const doghouse = { x: 10.3, y: 11.15 };
   const scoutHome = { x: 9.8, y: 11.6 };
   return {
-    barn: { x: 8.5, y: 5.5 },
     doghouse,
     scoutHome,
-    doghouseFootprint: { minX: 9.35, minY: 11.15, maxX: 10.25, maxY: 12.05 },
   };
 }
 

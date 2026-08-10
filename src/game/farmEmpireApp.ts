@@ -12,7 +12,7 @@ import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../render/farmLayout';
 import { farmLandmarks } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
-import type { FarmFacing } from '../render/renderer';
+import type { FarmFacing } from '../render/farmSprites';
 import { FarmHud } from '../ui/farmHud';
 import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMenu';
 import { closePanel, isPanelOpen } from '../ui/modal';
@@ -247,7 +247,11 @@ export class FarmEmpireApp {
     }, { passive: false });
     window.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
-      if (this.tractorJob) this.cancelTractorJob();
+      if (this.scoutWaitingForScratch) {
+        this.scoutWaitingForScratch = false;
+        this.walkTarget = null;
+        this.playerActor.walking = false;
+      } else if (this.tractorJob) this.cancelTractorJob();
       else if (this.tractorTarget) {
         this.tractorTarget = null;
         toast('Tractor drive cancelled.', 'good');
@@ -265,6 +269,9 @@ export class FarmEmpireApp {
       toast('A tractor field job is already active. Press Escape to cancel it.', 'bad');
       return;
     }
+    // Any new world click replaces an in-progress approach to Scout. A fresh
+    // Scout hit below immediately restores the hold for that new approach.
+    this.scoutWaitingForScratch = false;
     const clickLogical = farmLogicalPoint(this.renderer.camera.tilePointAt(sx, sy));
     if (!this.operatingTractor && Math.hypot(clickLogical.x - this.scout.x, clickLogical.y - this.scout.y) <= 0.72) {
       this.scoutWaitingForScratch = true;
@@ -344,6 +351,7 @@ export class FarmEmpireApp {
     } else {
       this.walkTarget = null;
       this.playerActor.walking = false;
+      this.scoutWaitingForScratch = false;
       this.operatingTractor = true;
       toast('Operating the old tractor. Click ground to drive or a field parcel for batch work.', 'good');
     }

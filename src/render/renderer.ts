@@ -16,7 +16,7 @@ import { charKey, drawSprite } from './sprites';
 import { farmMainlandBounds, farmPlotFootprint, farmWorldPoint } from './farmLayout';
 import { farmLandmarks } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
-export type FarmFacing = 'south' | 'north' | 'east' | 'west';
+import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -446,12 +446,12 @@ export class Renderer {
     const tractorPoint = farmWorldPoint(tractor);
     items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now) });
     const scoutPoint = farmWorldPoint(scene.farm!.scout);
-    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, false, scene.farm!.scout.mode === 'home', scene.farm!.scout.facing) });
+    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.mode === 'home', scene.farm!.scout.facing) });
     for (const actor of scene.actors) {
       const point = farmWorldPoint(actor);
       items.push({ depth: point.x + point.y + 0.4, draw: () => {
         const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y) + TILE_H / 2);
-        drawFarmFarmer(ctx, sx, sy, zoom, actor.avatar, actor.facing ?? 'south', actor.walking ? Math.floor(now / 100) % 4 : 0, now);
+        drawFarmFarmer(ctx, sx, sy, zoom, actor.avatar, actor.facing ?? 'south', actor.walking ? Math.floor(now / 100) % FARM_WALK_FRAME_COUNT : 0, now);
         if (actor.name) drawFarmName(ctx, sx, sy, actor.name, zoom);
       } });
     }
@@ -526,7 +526,7 @@ function drawFarmDoghouse(ctx: CanvasRenderingContext2D, x: number, y: number, z
 }
 
 function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, avatar: AvatarConfig, facing: FarmFacing, frame: number, now: number): void {
-  const walk = frame % 4; const bob = walk ? (walk === 1 ? -2 : walk === 3 ? 1 : 0) : Math.sin(now / 700) * .8;
+  const walk = frame % FARM_WALK_FRAME_COUNT; const bob = walk ? (walk === 1 ? -2 : walk === 3 ? 1 : 0) : Math.sin(now / 700) * .8;
   const skin = avatar.skin.includes('deep') ? '#7a4d38' : avatar.skin.includes('tan') ? '#bd8056' : '#f0c29b';
   const hair = avatar.hair.includes('black') ? '#25201e' : '#70422c';
   ctx.save(); ctx.translate(x, y + bob * zoom); ctx.scale(zoom * 2, zoom * 2);
@@ -545,14 +545,16 @@ function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoo
   ctx.restore();
 }
 
-function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, moving: boolean, scratching: boolean, sitting: boolean, facing: FarmFacing): void {
+function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, moving: boolean, sitting: boolean, facing: FarmFacing): void {
   const trot = moving ? Math.sin(now / 90) * 2 : 0; const wag = Math.sin(now / 110) * (moving ? .55 : .9);
   ctx.save(); ctx.translate(x, y + trot * zoom); ctx.scale(zoom * 1.2, zoom * 1.2);
   ctx.fillStyle = 'rgba(35,29,23,.2)'; ctx.beginPath(); ctx.ellipse(0, 2, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#965b3c'; ctx.beginPath(); ctx.ellipse(0, sitting ? -9 : -11, 14, sitting ? 11 : 9, 0, 0, Math.PI * 2); ctx.fill();
-  const headX = facing === 'west' ? -11 : facing === 'north' ? 0 : 11; ctx.fillStyle = '#b97b4c'; ctx.beginPath(); ctx.arc(headX, -17, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#f2e2c1'; ctx.fillRect(headX - 2, -22, 4, 8); ctx.fillRect(-5, -6, 6, 3); ctx.fillRect(4, -6, 6, 3);
-  ctx.strokeStyle = '#287b80'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(6, -12); ctx.lineTo(15, -12); ctx.stroke();
+  ctx.fillStyle = '#965b3c'; ctx.beginPath(); ctx.ellipse(sitting ? -3 : 0, sitting ? -12 : -11, sitting ? 10 : 14, sitting ? 15 : 9, 0, 0, Math.PI * 2); ctx.fill();
+  if (sitting) { ctx.beginPath(); ctx.ellipse(-8, -2, 10, 6, 0, 0, Math.PI * 2); ctx.fill(); }
+  const headX = sitting ? 4 : facing === 'west' ? -11 : facing === 'north' ? 0 : 11; const headY = sitting ? -27 : -17;
+  ctx.fillStyle = '#b97b4c'; ctx.beginPath(); ctx.arc(headX, headY, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f2e2c1'; ctx.fillRect(headX - 2, headY - 5, 4, 8); ctx.fillRect(-5, -6, 6, 3); ctx.fillRect(4, -6, 6, 3);
+  ctx.strokeStyle = '#287b80'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(headX - 5, headY + 5); ctx.lineTo(headX + 5, headY + 5); ctx.stroke();
   ctx.fillStyle = '#553521'; ctx.beginPath(); ctx.moveTo(7, -22); ctx.lineTo(8, -31); ctx.lineTo(13, -23); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(14, -22); ctx.lineTo(18, -29); ctx.lineTo(18, -19); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#6f452b'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-12, -13); ctx.quadraticCurveTo(-22, -19 + wag * 6, -24, -11 + wag * 4); ctx.stroke();
   ctx.strokeStyle = '#4b3426'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-7, -5); ctx.lineTo(-8 + trot, 1); ctx.moveTo(6, -5); ctx.lineTo(7 - trot, 1); ctx.stroke();
@@ -583,7 +585,7 @@ function drawLockedParcelLabel(ctx: CanvasRenderingContext2D, camera: Camera, sc
 
 function drawFarmName(ctx: CanvasRenderingContext2D, sx: number, sy: number, name: string, zoom: number): void {
   ctx.save(); ctx.font = `${Math.round(11 * zoom)}px Segoe UI, sans-serif`; ctx.textAlign = 'center'; const width = ctx.measureText(name).width;
-  ctx.fillStyle = 'rgba(40,34,28,.55)'; ctx.fillRect(sx - width / 2 - 4, sy - 76 * zoom, width + 8, 14 * zoom); ctx.fillStyle = '#fff'; ctx.fillText(name, sx, sy - 65 * zoom); ctx.restore();
+  ctx.fillStyle = 'rgba(40,34,28,.55)'; ctx.fillRect(sx - width / 2 - 4, sy - 118 * zoom, width + 8, 14 * zoom); ctx.fillStyle = '#fff'; ctx.fillText(name, sx, sy - 107 * zoom); ctx.restore();
 }
 
 function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
