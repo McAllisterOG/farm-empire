@@ -50,3 +50,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Companion coordinates, facing, approach state, and reaction timing are runtime-only; existing saves gain Scout automatically and serialize no companion fields.
 - The generic legacy pet, quest, character, and building systems remain isolated rather than being reactivated wholesale.
 - Farm-only character and landmark painters may establish a higher visual bar without changing the business simulation or saved logical coordinates.
+
+## 2026-08-10 - Keep farm atmosphere decorative and tied to game time
+
+**Status:** Approved by the owner
+
+- Barnyard props, fences, gates, crop/tree motion, tractor exhaust, lamps, and fireflies are presentation-only and add no collision, inventory, action, economy effect, or save field.
+- All decor anchors are deterministic and must remain clear of workable plots, landmark interactions, Scout's home, tractor/dismount space, and the main gravel lane.
+- Farm Empire daylight and night effects follow the saved accelerated farm clock shown in the HUD; the preserved legacy island retains its existing real-time lighting behavior.
+- Ambient animation stays bounded and must not create unbounded sprite-cache keys or obscure gameplay feedback.

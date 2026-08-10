@@ -58,3 +58,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Screenshots:** `docs/screenshots/farmyard-identity-on-foot.png`, `docs/screenshots/farmyard-identity-tractor.png`
 - **Known limitations:** Scout has no persisted bonding/economy system by design; the large open yard still needs more non-interactive rural set dressing and ambient motion.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Farm Atmosphere & Set Dressing Slice - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/farm-atmosphere`
+- **Commits:** `cb8f67e`, `60b5a0c`, `8708898`
+- **Scope:** Render-only deterministic hay, crates, trough, pump, fence/gate cues, independent crop/tree motion, tractor exhaust/dust, farm-clock day/night lighting, lamps, and six safe off-field fireflies.
+- **Result:** Filled the enlarged farm's empty service areas and added restrained ambient life while preserving every field, barn, tractor, land, Scout, movement, and save interaction.
+- **Verification:** 107/107 tests passed; strict typecheck and production build passed; browser acceptance covered readable day/night presentation, clock/lighting agreement, props, Save, tractor interaction, reload, and a fresh-tab console with zero warnings/errors.
+- **Review:** Independent Red Team found no MEDIUM-or-higher issues, then accepted the bounded firefly-fade and farm-clock lighting repair.
+- **Screenshots:** `docs/screenshots/farm-atmosphere-day.png`, `docs/screenshots/farm-atmosphere-night.png`
+- **Known limitations:** Decorative gates and props intentionally have no collision or interactions; broader weather, animals, story, and equipment systems remain deferred.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

@@ -3,11 +3,11 @@
 ## Current known-good checkpoint
 
 - **Date:** 2026-08-10
-- **Branch:** `codex/farmyard-identity`
-- **Head:** `c770732`
-- **Product state:** Farming Business V1, operated tractor field work, the Farm Scale & Terrain Overhaul, and the Farmyard Identity Slice are complete and browser-verified.
-- **Verification:** 104/104 tests passed; strict typecheck passed; production build passed; field/business workflows plus farmer movement, Scout follow/scratches/home behavior, barn/tractor interaction, save/reload, and clean browser console verified.
-- **Review:** Independent Red Team accepted the identity milestone after its bounded repair/re-review closed all MEDIUM findings.
+- **Branch:** `codex/farm-atmosphere`
+- **Head:** `8708898`
+- **Product state:** Farming Business V1, operated tractor field work, Farm Scale & Terrain, Farmyard Identity, and Farm Atmosphere & Set Dressing are complete and browser-verified.
+- **Verification:** 107/107 tests passed; strict typecheck passed; production build passed; field/business workflows, identity interactions, decor click-through, farm-clock day/night presentation, save/reload, and a clean fresh-tab browser console verified.
+- **Review:** Independent Red Team accepted all three overnight visual checkpoints after bounded repair/re-review; no MEDIUM-or-higher findings remain.
 
 ## Current presentation
 
@@ -16,14 +16,14 @@
 - Saved coordinates, economy, crop counts, land ownership, tractor jobs, and save schema v4 remain unchanged.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
+- Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
 
 ## Immediate authorized work
 
-Implement one bounded Farm Atmosphere & Set Dressing Slice: deterministic farm-only fences/gates and a small depth-sorted barnyard prop cluster, plus subtle bounded ambient motion and night lighting. Keep every addition decorative, non-blocking, and unsaved; do not imply new storage, animal, equipment, or economy features.
+No further implementation package is authorized. The next Owner Console session should review the three overnight visual checkpoints in the browser, then choose between a farm-specific first-day story/progression slice or the next equipment/logistics capability.
 
 ## Known limitations
 
-- The large property still has sparse open yard areas and limited ambient motion until the atmosphere slice lands.
 - Movement is straight-line and has no collision pathfinding.
 - Equipment modal state can remain stale during standalone driving until reopened.
 - The branch has not been pushed; external GitHub authorization is still required.

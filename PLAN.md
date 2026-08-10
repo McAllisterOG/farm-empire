@@ -8,21 +8,15 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 2. **Operated tractor field work** - enter/exit, click-to-drive, deterministic 3x3 parcel planting and harvesting, partial outcomes, cancellation, and safe mounted-save reload.
 3. **Farm Scale & Terrain Overhaul** - large field sections, 3x3 parcel-scale presentation, flat mainland terrain, rural framing, denser crops, and save-compatible coordinate projection.
 4. **Farmyard Identity Slice** - larger four-facing farmer, runtime-only Scout companion and scratches interaction, detailed barn/tractor/doghouse art, and transient save-safe farmyard animation.
+5. **Farm Atmosphere & Set Dressing Slice** - deterministic barnyard props and fence/gate cues, restrained crop/tree/tractor motion, farm-clock lighting, lamps, and off-field fireflies.
 
-## Current authorized package
+## Current authorization
 
-### Farm Atmosphere & Set Dressing Slice
-
-- Farm-only perimeter and parcel fence/gate cues that preserve every existing click path.
-- A small depth-sorted barnyard cluster of clearly decorative hay, crate, trough, and hand-pump props.
-- Subtle deterministic crop/tree motion, tractor dust/exhaust, and warm night lamps with bounded animation domains.
-- No new interactions, collision, inventory, storage, animals, weather simulation, save fields, economy effects, or legacy-system revival.
-
-Acceptance requires the full existing suite, typecheck, production build, browser checks at day/night and during tractor operation, unchanged interactions/save reload, clean console, screenshots, and independent review.
+No implementation package is currently authorized. Review the completed overnight checkpoints before selecting the next slice.
 
 ## Later directions
 
 - First-day farm story and farm-specific progression after its event/save model is designed.
 - Equipment and logistics depth: implements, trailers, hauling, combines, condition, and dealerships.
 - More crop, storage, land, building, worker, contract, weather, and operating-cost depth.
-- Further environment art and ambient farm life after the benchmark identity slice establishes the quality bar.
+- Further environment art and ambient farm life after the current benchmark presentation is reviewed in play.
