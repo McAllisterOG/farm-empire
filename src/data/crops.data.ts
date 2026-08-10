@@ -43,6 +43,8 @@ function tree(
 }
 
 export const CROPS: CropDef[] = [
+  crop('wheat',      'Wheat',      'Wheat',       1,  10,  8, 3, 2,  55 * 1000, 40 * M, 7, 7),
+  crop('soybean',    'Soybeans',   'Soybeans',    1,  17, 11, 4, 3,  85 * 1000, 50 * M, 9, 9),
   // ---- 田地作物（id, 中文, 英文, 解锁级, 种价, 卖价, 经验, 食物, 生长, 枯萎, 产量min-max）
   crop('carrot',     '胡萝卜',   'Carrot',      1,  10,  8, 2, 2,  90 * 1000, 30 * M, 2, 3),
   crop('potato',     '土豆',     'Potato',      1,  14, 10, 3, 3,   3 * M,    40 * M, 2, 3),

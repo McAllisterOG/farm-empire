@@ -12,6 +12,7 @@ const AY = 64;
 type FruitStyle = 'root' | 'berry' | 'stalk' | 'vine' | 'gourd' | 'flower' | 'head';
 
 const STYLE: Record<string, FruitStyle> = {
+  crop_wheat: 'stalk', crop_soybean: 'berry',
   crop_carrot: 'root', crop_potato: 'root', crop_taro: 'root', crop_ginseng: 'root',
   crop_strawberry: 'berry', crop_chili: 'berry',
   crop_corn: 'stalk', crop_rice: 'stalk', crop_sugarcane: 'stalk',
@@ -22,6 +23,7 @@ const STYLE: Record<string, FruitStyle> = {
 };
 
 const FRUIT_COLOR: Record<string, string> = {
+  crop_wheat: '#d8b85b', crop_soybean: '#8db45b',
   crop_carrot: '#f08030', crop_potato: '#c9a06a', crop_strawberry: '#e8425c',
   crop_corn: '#f2d049', crop_tomato: '#e85d4a', crop_cabbage: '#9fd66c',
   crop_pineapple: '#f0b23c', crop_eggplant: '#7a4a9c', crop_pumpkin: '#ec8b32',

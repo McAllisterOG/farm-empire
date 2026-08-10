@@ -16,9 +16,11 @@ import { CLOTHING } from './clothing.data';
 import { PETS } from './pets.data';
 import { NEIGHBORS } from './neighbors.data';
 import { ACHIEVEMENTS, DAILY_QUESTS, TUTORIAL_QUESTS } from './quests.data';
+import { FARM_CROPS, FARM_MARKET_EVENTS } from './farm.data';
 
 export { CROPS, ANIMALS, BEASTS, FISH, BUILDINGS, CLOTHING, PETS, NEIGHBORS };
 export { TUTORIAL_QUESTS, DAILY_QUESTS, ACHIEVEMENTS };
+export { FARM_CROPS, FARM_MARKET_EVENTS };
 
 /** 手写材料/特殊物品 */
 const MATERIALS: ItemDef[] = [
@@ -82,6 +84,8 @@ export function registerAllContent(): void {
     quests: [...TUTORIAL_QUESTS, ...DAILY_QUESTS],
     achievements: ACHIEVEMENTS,
     neighbors: NEIGHBORS,
+    farmCrops: FARM_CROPS,
+    farmMarketEvents: FARM_MARKET_EVENTS,
   });
   for (const b of BUILDINGS) {
     registerFootprint(b.id, b.w, b.h, isWalkableCategory(b.category));

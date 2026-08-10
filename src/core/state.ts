@@ -10,8 +10,9 @@ import { tickBeastMischief, tickBeasts } from './beasts';
 import { tickWeeds } from './weeds';
 import { tickPetGifts } from './pets';
 import { updateEnergy } from './player';
+import { createFarmBusinessState, seedStarterPlots } from './farmBusiness';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export function defaultAvatar(): AvatarConfig {
   return {
@@ -103,6 +104,44 @@ export function createNewGame(name: string, seed: number, now: number): GameStat
   initNeighbors(state, now);
   syncTutorialQuests(state, now);
   refreshDaily(state, now);
+  return state;
+}
+
+/** Farm Empire factory. The legacy factory remains intact for compatibility tests and imports. */
+export function createFarmGame(name: string, seed: number, now: number): GameState {
+  const state = createNewGame(name || 'Farm Manager', seed, now);
+  state.player.name = name || 'Farm Manager';
+  state.player.level = 1;
+  state.player.xp = 0;
+  state.player.coins = 5_000;
+  state.player.food = 0;
+  state.player.reputation = 0;
+  state.player.px = 8.5;
+  state.player.py = 10.5;
+  state.plots = [];
+  state.placements = [];
+  state.animals = [];
+  state.pets = [];
+  state.beasts = [];
+  state.weeds = [];
+  state.neighbors = [];
+  state.inventory = {};
+  state.quests = { tutorialDone: [], active: [], daily: { day: '', questIds: [], completed: [] } };
+  state.achievements = {};
+  state.collections = { fish: {}, beasts: {} };
+  state.nextBeastAt = Number.MAX_SAFE_INTEGER;
+  state.nextWeedAt = Number.MAX_SAFE_INTEGER;
+  state.settings.lang = 'en';
+  state.uidCounter = 0;
+  state.plots = seedStarterPlots(state);
+  state.placements = [
+    { uid: ++state.uidCounter, defId: 'bld_storage', x: 8, y: 5, rot: 0 },
+    { uid: ++state.uidCounter, defId: 'bld_path_stone', x: 8, y: 7, rot: 0 },
+    { uid: ++state.uidCounter, defId: 'bld_path_stone', x: 8, y: 8, rot: 0 },
+    { uid: ++state.uidCounter, defId: 'bld_path_stone', x: 8, y: 9, rot: 0 },
+    { uid: ++state.uidCounter, defId: 'bld_path_stone', x: 9, y: 10, rot: 0 },
+  ];
+  state.farm = createFarmBusinessState(now);
   return state;
 }
 

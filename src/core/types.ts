@@ -387,6 +387,71 @@ export interface DailyState {
   completed: string[];
 }
 
+// ---------------------------------------------------------------- Farm Empire business simulation
+
+export interface FarmCropDef {
+  id: string;
+  name: string;
+  seedPriceCents: number;
+  growMs: number;
+  harvestYield: number;
+  storageUnitsPerItem: number;
+  basePriceCents: number;
+  color: string;
+}
+
+export interface FarmMarketEventDef {
+  id: string;
+  name: string;
+  cropId: string;
+  modifierBps: number;
+  durationDays: number;
+}
+
+export interface FarmMarketQuote {
+  currentCents: number;
+  previousCents: number;
+}
+
+export interface ActiveFarmMarketEvent extends FarmMarketEventDef {
+  remainingDays: number;
+}
+
+export interface FarmClockState {
+  day: number;
+  minute: number;
+  lastRealAt: number;
+}
+
+export interface FarmBusinessState {
+  cashCents: number;
+  seeds: Record<string, number>;
+  storage: Record<string, number>;
+  storageCapacity: number;
+  selectedCropId: string;
+  clock: FarmClockState;
+  market: {
+    quotes: Record<string, FarmMarketQuote>;
+    activeEvents: ActiveFarmMarketEvent[];
+    lastUpdatedDay: number;
+  };
+  parcels: {
+    starterOwned: boolean;
+    northOwned: boolean;
+  };
+  equipment: {
+    tractor: {
+      id: string;
+      name: string;
+      status: 'operational' | 'maintenance';
+      x: number;
+      y: number;
+      workSpeedBonusBps: number;
+      harvestBonusUnits: number;
+    };
+  };
+}
+
 export interface GameState {
   version: number;
   createdAt: number;
@@ -421,6 +486,8 @@ export interface GameState {
     sound: boolean;
     music: boolean;
   };
+  /** Present for Farm Empire saves; absent on untouched legacy Paradise Isle states. */
+  farm?: FarmBusinessState;
 }
 
 // ---------------------------------------------------------------- 事件

@@ -4,7 +4,7 @@
  */
 import type {
   AchievementDef, AnimalDef, BeastDef, BuildingDef, ClothingDef, CropDef,
-  FishDef, ItemDef, NeighborPersona, PetDef, QuestDef,
+  FarmCropDef, FarmMarketEventDef, FishDef, ItemDef, NeighborPersona, PetDef, QuestDef,
 } from './types';
 
 export const REG = {
@@ -19,6 +19,8 @@ export const REG = {
   quests: new Map<string, QuestDef>(),
   achievements: new Map<string, AchievementDef>(),
   neighbors: new Map<string, NeighborPersona>(),
+  farmCrops: new Map<string, FarmCropDef>(),
+  farmMarketEvents: new Map<string, FarmMarketEventDef>(),
 };
 
 function must<T>(map: Map<string, T>, id: string, kind: string): T {
@@ -38,6 +40,8 @@ export const petDef = (id: string) => must(REG.pets, id, 'pet');
 export const questDef = (id: string) => must(REG.quests, id, 'quest');
 export const achievementDef = (id: string) => must(REG.achievements, id, 'achievement');
 export const neighborDef = (id: string) => must(REG.neighbors, id, 'neighbor');
+export const farmCropDef = (id: string) => must(REG.farmCrops, id, 'farm crop');
+export const farmMarketEventDef = (id: string) => must(REG.farmMarketEvents, id, 'farm market event');
 
 export function allCrops(): CropDef[] { return [...REG.crops.values()]; }
 export function allAnimals(): AnimalDef[] { return [...REG.animals.values()]; }
@@ -49,6 +53,8 @@ export function allPets(): PetDef[] { return [...REG.pets.values()]; }
 export function allQuests(): QuestDef[] { return [...REG.quests.values()]; }
 export function allAchievements(): AchievementDef[] { return [...REG.achievements.values()]; }
 export function allNeighbors(): NeighborPersona[] { return [...REG.neighbors.values()]; }
+export function allFarmCrops(): FarmCropDef[] { return [...REG.farmCrops.values()]; }
+export function allFarmMarketEvents(): FarmMarketEventDef[] { return [...REG.farmMarketEvents.values()]; }
 
 function fill<T extends { id: string }>(map: Map<string, T>, defs: readonly T[], kind: string): void {
   for (const d of defs) {
@@ -69,6 +75,8 @@ export interface ContentBundle {
   quests?: readonly QuestDef[];
   achievements?: readonly AchievementDef[];
   neighbors?: readonly NeighborPersona[];
+  farmCrops?: readonly FarmCropDef[];
+  farmMarketEvents?: readonly FarmMarketEventDef[];
 }
 
 export function registerContent(bundle: ContentBundle): void {
@@ -83,4 +91,6 @@ export function registerContent(bundle: ContentBundle): void {
   if (bundle.quests) fill(REG.quests, bundle.quests, 'quest');
   if (bundle.achievements) fill(REG.achievements, bundle.achievements, 'achievement');
   if (bundle.neighbors) fill(REG.neighbors, bundle.neighbors, 'neighbor');
+  if (bundle.farmCrops) fill(REG.farmCrops, bundle.farmCrops, 'farm crop');
+  if (bundle.farmMarketEvents) fill(REG.farmMarketEvents, bundle.farmMarketEvents, 'farm market event');
 }

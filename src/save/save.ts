@@ -3,12 +3,13 @@
  * core 层不依赖本模块；测试直接调用 serialize/deserialize/migrate。
  */
 import type { GameState } from '../core/types';
-import { SAVE_VERSION, createNewGame, emptyStats } from '../core/state';
+import { SAVE_VERSION, createFarmGame, emptyStats } from '../core/state';
 import { initNeighbors } from '../core/social';
+import { normalizeFarmBusinessState } from '../core/farmBusiness';
 
 export const SLOT_COUNT = 3;
-const KEY_PREFIX = 'paradise-isle:save:';
-const KEY_ACTIVE = 'paradise-isle:activeSlot';
+const KEY_PREFIX = 'farm-empire:save:';
+const KEY_ACTIVE = 'farm-empire:activeSlot';
 
 export function serialize(state: GameState, now: number): string {
   state.savedAt = now;
@@ -37,6 +38,10 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (!raw.neighbors) raw.neighbors = [];
     raw.version = 3;
   },
+  3: (raw) => {
+    // A clean Farm Empire namespace keeps Paradise Isle browser saves untouched.
+    raw.version = 4;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {
@@ -58,7 +63,8 @@ export function deserialize(json: string, now: number): GameState {
   }
   const state = migrate(raw);
   // 邻居为空（老档/异常）时重建
-  initNeighbors(state, now);
+  if (state.farm) normalizeFarmBusinessState(state, now);
+  else initNeighbors(state, now);
   return state;
 }
 
@@ -105,7 +111,7 @@ export function slotInfos(): (SlotInfo | null)[] {
         slot: i,
         name: raw.player?.name ?? '?',
         level: raw.player?.level ?? 1,
-        coins: raw.player?.coins ?? 0,
+        coins: raw.farm ? Math.floor(raw.farm.cashCents / 100) : (raw.player?.coins ?? 0),
         savedAt: raw.savedAt ?? 0,
       };
     } catch {
@@ -126,7 +132,7 @@ export function deleteSlot(slot: number): void {
 
 export function newGameInSlot(name: string, slot: number, now: number): GameState {
   const seed = (Math.floor(Math.random() * 0xffffffff) ^ now) >>> 0;
-  const state = createNewGame(name, seed, now);
+  const state = createFarmGame(name, seed, now);
   saveToSlot(state, slot, now);
   return state;
 }
