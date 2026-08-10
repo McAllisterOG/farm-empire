@@ -446,7 +446,7 @@ export class Renderer {
     const tractorPoint = farmWorldPoint(tractor);
     items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now) });
     const scoutPoint = farmWorldPoint(scene.farm!.scout);
-    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.mode === 'home', scene.farm!.scout.facing) });
+    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.mode === 'home' && !scene.farm!.scout.moving, scene.farm!.scout.facing) });
     for (const actor of scene.actors) {
       const point = farmWorldPoint(actor);
       items.push({ depth: point.x + point.y + 0.4, draw: () => {

@@ -82,9 +82,9 @@ export class FarmEmpireApp {
     this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
-      onSeedShop: () => openFarmSeedShop(this.state, this.panelActions()),
-      onMarket: () => openFarmMarket(this.state, this.panelActions()),
-      onLand: () => openFarmLand(this.state, this.panelActions()),
+      onSeedShop: () => { this.cancelScoutApproach(); openFarmSeedShop(this.state, this.panelActions()); },
+      onMarket: () => { this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions()); },
+      onLand: () => { this.cancelScoutApproach(); openFarmLand(this.state, this.panelActions()); },
       onEquipment: () => this.openEquipmentPanel(),
       onSave: () => {
         this.save();
@@ -247,11 +247,8 @@ export class FarmEmpireApp {
     }, { passive: false });
     window.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
-      if (this.scoutWaitingForScratch) {
-        this.scoutWaitingForScratch = false;
-        this.walkTarget = null;
-        this.playerActor.walking = false;
-      } else if (this.tractorJob) this.cancelTractorJob();
+      if (this.scoutWaitingForScratch) this.cancelScoutApproach();
+      else if (this.tractorJob) this.cancelTractorJob();
       else if (this.tractorTarget) {
         this.tractorTarget = null;
         toast('Tractor drive cancelled.', 'good');
@@ -271,7 +268,7 @@ export class FarmEmpireApp {
     }
     // Any new world click replaces an in-progress approach to Scout. A fresh
     // Scout hit below immediately restores the hold for that new approach.
-    this.scoutWaitingForScratch = false;
+    this.cancelScoutApproach();
     const clickLogical = farmLogicalPoint(this.renderer.camera.tilePointAt(sx, sy));
     if (!this.operatingTractor && Math.hypot(clickLogical.x - this.scout.x, clickLogical.y - this.scout.y) <= 0.72) {
       this.scoutWaitingForScratch = true;
@@ -314,6 +311,7 @@ export class FarmEmpireApp {
   }
 
   private openEquipmentPanel(): void {
+    this.cancelScoutApproach();
     this.equipmentPanelOpen = true;
     openFarmEquipment(this.state, {
       operating: this.operatingTractor,
@@ -329,6 +327,13 @@ export class FarmEmpireApp {
     if (!this.equipmentPanelOpen) return;
     if (isPanelOpen()) closePanel();
     this.equipmentPanelOpen = false;
+  }
+
+  private cancelScoutApproach(): void {
+    if (!this.scoutWaitingForScratch) return;
+    this.scoutWaitingForScratch = false;
+    this.walkTarget = null;
+    this.playerActor.walking = false;
   }
 
   private toggleTractorOperating(): void {
@@ -351,7 +356,7 @@ export class FarmEmpireApp {
     } else {
       this.walkTarget = null;
       this.playerActor.walking = false;
-      this.scoutWaitingForScratch = false;
+      this.cancelScoutApproach();
       this.operatingTractor = true;
       toast('Operating the old tractor. Click ground to drive or a field parcel for batch work.', 'good');
     }
