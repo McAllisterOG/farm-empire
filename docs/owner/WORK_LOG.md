@@ -19,3 +19,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Scope:** Documentation and coordination workflow only; no gameplay code or Milestone 2 work.
 - **Result:** Added durable game-vision, recovery, discussion, Brainstorm Mode, authorization, bounded worker, Red Team, decision-record, work-log, and checkpoint-maintenance documentation.
 - **Verification:** Documentation read-back, Git diff review, and whitespace validation.
+
+## Operated tractor field work - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/tractor-field-work`
+- **Commits:** `fd1dcd0`, `0690cda`
+- **Scope:** Operated old tractor, click-to-drive movement, and sequential batch planting/harvesting across one owned 3×3 parcel at a time; no advanced vehicle or logistics systems.
+- **Result:** Added deterministic serpentine parcel planning, mounted presentation, live job progress, safe partial outcomes and cancellation, persisted tractor position, and safe dismount behavior after mounted saves while preserving the on-foot loop.
+- **Verification:** 93/93 tests passed; strict typecheck passed; production build passed; primary and Owner Console browser acceptance passed; console had zero warnings/errors.
+- **Review:** Independent Red Team found no CRITICAL/HIGH issues, identified one mounted-save MEDIUM defect, and accepted the milestone after one repair/re-review cycle with no remaining MEDIUM findings.
+- **Screenshot:** `docs/screenshots/tractor-field-work.png`
+- **Known limitations:** Straight-line movement has no pathfinding/collision physics; Equipment panel state may remain stale during standalone driving until reopened; retained input-listener cleanup is a deferred LOW lifecycle concern.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

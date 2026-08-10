@@ -21,3 +21,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Future work should extend the deterministic core, data-driven definitions, isometric renderer, focused DOM UI, and versioned save architecture rather than rewrite working systems without cause.
 - The clean `farm-empire:*` save namespace remains separate from preserved legacy `paradise-isle:*` browser data.
 - Money remains integer cents and business simulation remains deterministic and testable.
+
+## 2026-08-10 - Make machinery physical through operated field work
+
+**Status:** Approved by the owner
+
+- The old tractor is now directly operated through a simple enter/exit and click-to-drive workflow rather than existing only as a passive efficiency stat.
+- Tractor planting and harvesting jobs work one owned 3×3 parcel at a time in a deterministic serpentine route and reuse the existing per-plot transactional actions.
+- Partial jobs must preserve seeds, storage, and unprocessed crops while clearly reporting completed, skipped, and untouched work.
+- Active operation and job queues are transient. Completed work and tractor position persist, and mounted saves reload the player at a safe deterministic dismount position.
+- Implements, fuel, condition, dealerships, trailers, combines, hauling, collision physics, and advanced pathfinding remain deferred rather than being implied by this slice.

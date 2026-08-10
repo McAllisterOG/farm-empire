@@ -8,6 +8,10 @@ Farm Empire is an original isometric farming-business simulation: buy inputs, gr
 
 Deliver one complete desktop-browser loop with $5,000 starting cash, four crops, seed purchasing, planting and visible crop stages, capacity-aware harvest storage, daily commodity prices and temporary events, quantity-based selling, a locked neighboring parcel, a visible old tractor with a clear work-speed benefit, and reliable save/reload.
 
+## Operated tractor field-work milestone — complete
+
+Make the old tractor a player-operated machine: enter or exit through the equipment UI, click-drive across the farm, and perform visible sequential planting or harvesting jobs across either owned 3×3 parcel in a deterministic serpentine route. Preserve the on-foot loop, existing transactional crop actions, safe partial outcomes, and save compatibility.
+
 ## Completed work
 
 - Cloned the requested repository and created `codex/farming-business-v1` from `main`.
@@ -21,6 +25,10 @@ Deliver one complete desktop-browser loop with $5,000 starting cash, four crops,
 - Added a clean `farm-empire:*` save namespace, v4 migration support, defensive nested defaults, autosave, manual save, and reload retention.
 - Added 14 farming-business tests; all 88 tests, typecheck, production build, and real-browser acceptance pass.
 - Captured starter-farm, expanded-farm, and market screenshots in `docs/screenshots/`.
+- Added mounted tractor operation, click-to-drive movement, deterministic parcel-job planning, sequential planting/harvesting, live progress, safe cancellation, and partial-result feedback.
+- Preserved tractor position and completed work while treating active jobs as transient; mounted saves reload at a safe deterministic dismount position.
+- Added five focused tractor/save tests; all 93 tests, typecheck, production build, primary browser acceptance, and independent Red Team review pass.
+- Captured the operated tractor on the expanded farm in `docs/screenshots/tractor-field-work.png`.
 
 ## Acceptance criteria
 
@@ -40,6 +48,6 @@ Deliver one complete desktop-browser loop with $5,000 starting cash, four crops,
 
 ## Future milestones
 
-1. Equipment and logistics: drivable tractor, implements, trailers, condition, and field-job batching.
+1. Equipment and logistics continuation: implements, larger field-job shapes, trailers, condition, and more grounded vehicle movement. The first operated tractor and parcel-job slice is complete.
 2. Regional economy: contracts, transport, grain elevators, weather-linked supply, and operating costs.
 3. Scale and depth: more parcels, workers, crop rotation, infrastructure, and long-form progression.
