@@ -4,7 +4,7 @@ import {
   FIRST_PARCEL_PRICE_CENTS, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
 import { h, spriteImg, clearChildren } from '../dom';
-import { openPanel } from '../modal';
+import { closePanel, openPanel } from '../modal';
 
 type Dispatch = (result: ActionResult) => void;
 
@@ -145,7 +145,13 @@ function renderLand(body: HTMLElement, state: GameState, actions: FarmPanelActio
   ));
 }
 
-export function openFarmEquipment(state: GameState): void {
+export interface FarmEquipmentActions {
+  operating: boolean;
+  jobActive: boolean;
+  onToggleOperating: () => void;
+}
+
+export function openFarmEquipment(state: GameState, actions: FarmEquipmentActions): void {
   const tractor = farmOf(state).equipment.tractor;
   openPanel({
     title: 'Farm Equipment',
@@ -154,7 +160,21 @@ export function openFarmEquipment(state: GameState): void {
       h('div', { class: 'farm-card-title' }, tractor.name),
       h('div', { class: `equipment-status ${tractor.status}` }, `Status: ${tractor.status === 'operational' ? 'Operational' : 'Maintenance'}`),
       h('p', {}, `Field efficiency: ${tractor.workSpeedBonusBps / 100}% faster crop cycles and +${tractor.harvestBonusUnits} unit per harvest.`),
-      h('div', { class: 'panel-note' }, 'Future-ready equipment data: implements, trailers, combines, condition, fuel, dealers, and hauling are deliberately deferred.'),
+      h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, actions.operating
+        ? actions.jobActive ? 'Operating · field job in progress' : 'Operating · ready to drive or work a parcel'
+        : 'Parked · select Operate to climb aboard'),
+      h('button', {
+        class: 'btn btn-primary equipment-operate',
+        'data-testid': actions.operating ? 'exit-tractor' : 'operate-tractor',
+        ...(actions.jobActive ? { disabled: 'true' } : {}),
+        onclick: () => {
+          closePanel();
+          actions.onToggleOperating();
+        },
+      }, actions.operating ? actions.jobActive ? 'Finish or cancel job before exiting' : 'Exit Tractor' : 'Operate Tractor'),
+      h('div', { class: 'panel-note' }, actions.operating
+        ? 'Click open ground to drive. Click an owned 3×3 field to choose batch planting or harvesting. Escape cancels active work.'
+        : 'The driver is hidden while aboard. Tractor position is saved; active field jobs safely reset after reload.'),
     )),
   });
 }

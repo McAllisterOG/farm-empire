@@ -46,6 +46,8 @@ export interface RenderScene {
       status: 'operational' | 'maintenance';
       x: number;
       y: number;
+      operating?: boolean;
+      working?: boolean;
     };
   };
 }
@@ -296,7 +298,7 @@ export class Renderer {
       const sy = camera.sy(isoY(tractor.x, tractor.y) + TILE_H / 2);
       items.push({
         depth: tractor.x + tractor.y,
-        draw: () => drawOldTractor(ctx, sx, sy, zoom, tractor.status),
+        draw: () => drawOldTractor(ctx, sx, sy, zoom, tractor.status, !!tractor.operating, !!tractor.working, now),
       });
     }
 
@@ -382,6 +384,9 @@ function drawOldTractor(
   y: number,
   scale: number,
   status: 'operational' | 'maintenance',
+  operating: boolean,
+  working: boolean,
+  now: number,
 ): void {
   ctx.save();
   ctx.translate(x, y);
@@ -406,6 +411,12 @@ function drawOldTractor(
   ctx.fillRect(-10, -41, 17, 16);
   ctx.fillStyle = '#b9d7df';
   ctx.fillRect(-7, -38, 11, 10);
+  if (operating) {
+    ctx.fillStyle = '#f2c59f';
+    ctx.beginPath();
+    ctx.arc(-1.5, -34, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.fillStyle = '#33312f';
   ctx.fillRect(15, -36, 3, 10);
   ctx.fillStyle = '#ead9a8';
@@ -414,5 +425,13 @@ function drawOldTractor(
   ctx.font = '700 8px "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('OLD', 2, -15);
+  if (operating) {
+    ctx.strokeStyle = working ? '#f2c018' : '#fff1c9';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = working ? 0.72 + Math.sin(now / 120) * 0.2 : 0.72;
+    ctx.beginPath();
+    ctx.ellipse(0, -12, 38, 30, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
 }

@@ -21,6 +21,35 @@ export const NEIGHBOR_FIELD_TILES = Array.from({ length: 9 }, (_, i) => ({
   y: 7 + Math.floor(i / 3),
 }));
 
+export type FarmParcelId = 'starter' | 'north';
+export type ParcelWorkKind = 'plant' | 'harvest';
+
+export interface ParcelWorkPlan {
+  parcelId: FarmParcelId;
+  orderedPlotUids: number[];
+  plantPlotUids: number[];
+  harvestPlotUids: number[];
+}
+
+function parcelTiles(parcelId: FarmParcelId): { x: number; y: number }[] {
+  return parcelId === 'starter' ? STARTER_FIELD_TILES : NEIGHBOR_FIELD_TILES;
+}
+
+/** Stable row-by-row route with alternating direction, independent of plot array order. */
+export function serpentineFieldTiles(tiles: readonly { x: number; y: number }[]): { x: number; y: number }[] {
+  const rows = new Map<number, { x: number; y: number }[]>();
+  for (const tile of tiles) {
+    const row = rows.get(tile.y) ?? [];
+    row.push({ x: tile.x, y: tile.y });
+    rows.set(tile.y, row);
+  }
+  return [...rows.entries()]
+    .sort(([a], [b]) => a - b)
+    .flatMap(([, row], rowIndex) => row.sort((a, b) => (
+      rowIndex % 2 === 0 ? a.x - b.x : b.x - a.x
+    )));
+}
+
 function clampInt(value: unknown, fallback: number, min = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(min, Math.round(n)) : fallback;
@@ -177,6 +206,42 @@ export function isOwnedFieldTile(state: GameState, x: number, y: number): boolea
   if (STARTER_FIELD_TILES.some((tile) => tile.x === x && tile.y === y)) return farm.parcels.starterOwned;
   if (NEIGHBOR_FIELD_TILES.some((tile) => tile.x === x && tile.y === y)) return farm.parcels.northOwned;
   return false;
+}
+
+export function ownedFarmParcelAt(state: GameState, x: number, y: number): FarmParcelId | null {
+  const farm = farmOf(state);
+  if (farm.parcels.starterOwned && STARTER_FIELD_TILES.some((tile) => tile.x === x && tile.y === y)) {
+    return 'starter';
+  }
+  if (farm.parcels.northOwned && NEIGHBOR_FIELD_TILES.some((tile) => tile.x === x && tile.y === y)) {
+    return 'north';
+  }
+  return null;
+}
+
+/**
+ * Build a read-only parcel work plan. The app applies each UID through the existing
+ * transactional per-plot actions as the tractor reaches it.
+ */
+export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: number): ParcelWorkPlan {
+  const farm = farmOf(state);
+  const owned = parcelId === 'starter' ? farm.parcels.starterOwned : farm.parcels.northOwned;
+  if (!owned) {
+    return { parcelId, orderedPlotUids: [], plantPlotUids: [], harvestPlotUids: [] };
+  }
+
+  const plotByCoordinate = new Map(state.plots.map((plot) => [`${plot.x}:${plot.y}`, plot]));
+  const orderedPlots = serpentineFieldTiles(parcelTiles(parcelId))
+    .map((tile) => plotByCoordinate.get(`${tile.x}:${tile.y}`))
+    .filter((plot): plot is FarmPlot => !!plot);
+  return {
+    parcelId,
+    orderedPlotUids: orderedPlots.map((plot) => plot.uid),
+    plantPlotUids: orderedPlots.filter((plot) => !plot.crop).map((plot) => plot.uid),
+    harvestPlotUids: orderedPlots
+      .filter((plot) => !!plot.crop && cropView(plot.crop, now).stage === 'ready')
+      .map((plot) => plot.uid),
+  };
 }
 
 export function plantFarmCrop(state: GameState, plotUid: number, cropId: string, now: number): ActionResult {

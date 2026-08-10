@@ -12,6 +12,12 @@ export interface FarmHudCallbacks {
   onSave: () => void;
 }
 
+export interface TractorHudRuntime {
+  operating: boolean;
+  working: boolean;
+  statusText?: string;
+}
+
 function clockText(minute: number): string {
   const hour24 = Math.floor(minute / 60) % 24;
   const minutes = minute % 60;
@@ -27,6 +33,8 @@ export class FarmHud {
   private storageEl: HTMLElement;
   private selectedEl: HTMLElement;
   private tractorEl: HTMLElement;
+  private operationEl: HTMLElement;
+  private helpEl: HTMLElement;
   private cropButtons = new Map<string, HTMLButtonElement>();
 
   constructor(cb: FarmHudCallbacks) {
@@ -35,6 +43,7 @@ export class FarmHud {
     this.storageEl = h('strong', { 'data-testid': 'storage-summary' }, '0 / 0');
     this.selectedEl = h('strong', { 'data-testid': 'selected-crop' }, 'Corn');
     this.tractorEl = h('strong', { 'data-testid': 'tractor-status' }, 'Operational');
+    this.operationEl = h('div', { class: 'farm-operation-status hidden', 'data-testid': 'tractor-operation-status' });
 
     const top = h('div', { class: 'farm-hud-top' },
       h('div', { class: 'farm-brand' }, h('span', { class: 'farm-brand-mark' }, 'FE'), h('div', {},
@@ -70,18 +79,30 @@ export class FarmHud {
       ),
     );
 
-    const help = h('div', { class: 'farm-help' }, 'Select a crop, then click an empty field tile to plant. Click a ready crop to harvest.');
-    this.root = h('div', { class: 'farm-hud-root' }, top, bottom, help);
+    this.helpEl = h('div', { class: 'farm-help' }, 'Select a crop, then click an empty field tile to plant. Click a ready crop to harvest.');
+    this.root = h('div', { class: 'farm-hud-root' }, top, bottom, this.operationEl, this.helpEl);
     document.body.append(this.root);
   }
 
-  update(state: GameState): void {
+  update(state: GameState, runtime?: TractorHudRuntime): void {
     const farm = farmOf(state);
     this.cashEl.textContent = formatMoney(farm.cashCents);
     this.clockEl.textContent = `Day ${farm.clock.day} · ${clockText(farm.clock.minute)}`;
     this.storageEl.textContent = `${storageUsed(state)} / ${farm.storageCapacity}`;
     this.selectedEl.textContent = farmCropDef(farm.selectedCropId).name;
-    this.tractorEl.textContent = farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Maintenance';
+    this.tractorEl.textContent = runtime?.working
+      ? 'Field job active'
+      : runtime?.operating
+        ? 'Operating'
+        : farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Maintenance';
+    this.operationEl.classList.toggle('hidden', !runtime?.operating);
+    this.operationEl.classList.toggle('working', !!runtime?.working);
+    this.operationEl.textContent = runtime?.statusText ?? '';
+    this.helpEl.textContent = runtime?.working
+      ? 'The tractor is working tile by tile. Press Escape to cancel safely.'
+      : runtime?.operating
+        ? 'Click open ground to drive. Click an owned field parcel for batch planting or harvesting.'
+        : 'Select a crop, then click an empty field tile to plant. Click a ready crop to harvest.';
     for (const [cropId, button] of this.cropButtons) {
       button.classList.toggle('active', cropId === farm.selectedCropId);
       const seedCount = farm.seeds[cropId] ?? 0;

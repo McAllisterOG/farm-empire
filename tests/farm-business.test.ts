@@ -5,8 +5,8 @@ import { allFarmCrops, farmCropDef, farmMarketEventDef } from '../src/core/regis
 import { cropDef } from '../src/core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, advanceFarmClock, buyFarmSeeds, farmOf, harvestFarmCrop,
-  marketMovement, plantFarmCrop, purchaseNeighborParcel, sellStoredCrop, storageUsed,
-  updateFarmMarketToDay,
+  marketMovement, plantFarmCrop, planParcelWork, purchaseNeighborParcel, sellStoredCrop,
+  serpentineFieldTiles, storageUsed, updateFarmMarketToDay,
 } from '../src/core/farmBusiness';
 import { deserialize, serialize } from '../src/save/save';
 import { NOW } from './helpers';
@@ -82,6 +82,69 @@ describe('farm inputs, planting, harvest, and storage', () => {
     expect(result.reason).toContain('Barn full');
     expect(state.plots[0].crop).toBe(planted);
     expect(storageUsed(state)).toBe(0);
+  });
+});
+
+describe('tractor parcel work planning and transactional steps', () => {
+  it('orders field coordinates in deterministic serpentine rows', () => {
+    const shuffled = [
+      { x: 7, y: 9 }, { x: 5, y: 7 }, { x: 6, y: 8 },
+      { x: 7, y: 7 }, { x: 5, y: 9 }, { x: 5, y: 8 },
+      { x: 6, y: 9 }, { x: 6, y: 7 }, { x: 7, y: 8 },
+    ];
+    expect(serpentineFieldTiles(shuffled).map((tile) => `${tile.x},${tile.y}`)).toEqual([
+      '5,7', '6,7', '7,7',
+      '7,8', '6,8', '5,8',
+      '5,9', '6,9', '7,9',
+    ]);
+  });
+
+  it('plans only empty and ready plots in route order and rejects a locked parcel', () => {
+    const state = makeFarm();
+    plantAndMature(state, 'crop_corn', 1);
+    farmOf(state).seeds.crop_wheat = 1;
+    expect(plantFarmCrop(state, state.plots[4].uid, 'crop_wheat', NOW).ok).toBe(true);
+    state.plots.reverse();
+
+    const plan = planParcelWork(state, 'starter', NOW);
+    const coordinates = (uids: number[]) => uids.map((uid) => {
+      const plot = state.plots.find((candidate) => candidate.uid === uid)!;
+      return `${plot.x},${plot.y}`;
+    });
+    expect(coordinates(plan.orderedPlotUids)).toEqual([
+      '5,7', '6,7', '7,7', '7,8', '6,8', '5,8', '5,9', '6,9', '7,9',
+    ]);
+    expect(plan.harvestPlotUids).toEqual([state.plots.find((plot) => plot.x === 6 && plot.y === 7)!.uid]);
+    expect(plan.plantPlotUids).toHaveLength(7);
+    expect(planParcelWork(state, 'north', NOW).orderedPlotUids).toEqual([]);
+  });
+
+  it('keeps a seed-limited parcel planting job safe when each planned step is attempted', () => {
+    const state = makeFarm();
+    const farm = farmOf(state);
+    farm.seeds.crop_soybean = 3;
+    const plan = planParcelWork(state, 'starter', NOW);
+    const results = plan.plantPlotUids.map((uid) => plantFarmCrop(state, uid, 'crop_soybean', NOW));
+
+    expect(results.filter((result) => result.ok)).toHaveLength(3);
+    expect(results.filter((result) => !result.ok)).toHaveLength(6);
+    expect(farm.seeds.crop_soybean).toBe(0);
+    expect(state.plots.filter((plot) => plot.crop?.defId === 'crop_soybean')).toHaveLength(3);
+  });
+
+  it('partially harvests to exact barn capacity without clearing failed crops', () => {
+    const state = makeFarm();
+    const farm = farmOf(state);
+    for (let index = 0; index < 3; index++) plantAndMature(state, 'crop_corn', index);
+    const perTileYield = farmCropDef('crop_corn').harvestYield + farm.equipment.tractor.harvestBonusUnits;
+    farm.storageCapacity = perTileYield * 2;
+    const plan = planParcelWork(state, 'starter', NOW);
+    const results = plan.harvestPlotUids.map((uid) => harvestFarmCrop(state, uid, NOW));
+
+    expect(results.filter((result) => result.ok)).toHaveLength(2);
+    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    expect(farm.storage.crop_corn).toBe(perTileYield * 2);
+    expect(state.plots.filter((plot) => plot.crop?.defId === 'crop_corn')).toHaveLength(1);
   });
 });
 
@@ -174,10 +237,14 @@ describe('land and save compatibility', () => {
     updateFarmMarketToDay(state, 12);
     farm.market.activeEvents = [{ ...farmMarketEventDef('potato-shortage'), remainingDays: 2 }];
     farm.clock.day = 12;
+    farm.equipment.tractor.x = 11;
+    farm.equipment.tractor.y = 8;
     const loaded = deserialize(serialize(state, NOW + 5_000), NOW + 6_000);
     expect(loaded.farm).toEqual(state.farm);
     expect(loaded.plots).toEqual(state.plots);
     expect(loaded.farm!.equipment.tractor.name).toBe('Old Red Tractor');
+    expect(loaded.farm!.equipment.tractor.x).toBe(11);
+    expect(loaded.farm!.equipment.tractor.y).toBe(8);
   });
 
   it('fills safe defaults for an incomplete current-version farm save', () => {
