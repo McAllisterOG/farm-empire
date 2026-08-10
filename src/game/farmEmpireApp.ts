@@ -363,7 +363,7 @@ export class FarmEmpireApp {
         onClick: () => this.startTractorJob('harvest', parcelId, plan.harvestPlotUids),
       },
       {
-        label: 'Drive to selected tile',
+        label: 'Drive to selected field section',
         onClick: () => this.driveTractorTo(tx, ty),
       },
     ]);
@@ -444,7 +444,7 @@ export class FarmEmpireApp {
     const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
     if (!plot) {
       job.skipped += 1;
-        job.lastFailure = 'A planned field section was unavailable.';
+      job.lastFailure = 'A planned field section was unavailable.';
       job.nextIndex += 1;
       job.waitUntil = now + FIELD_ACTION_PAUSE_MS;
       return;
@@ -473,7 +473,7 @@ export class FarmEmpireApp {
       );
     } else {
       job.skipped += 1;
-      job.lastFailure = result.reason || 'The tile was no longer eligible.';
+      job.lastFailure = result.reason || 'The field section was no longer eligible.';
     }
     job.nextIndex += 1;
     job.waitUntil = Date.now() + FIELD_ACTION_PAUSE_MS;
@@ -514,7 +514,7 @@ export class FarmEmpireApp {
       return {
         operating: true,
         working: true,
-        statusText: `${job.kind === 'plant' ? 'Planting' : 'Harvesting'}${cropLabel} · ${job.completed}/${total} completed${job.skipped ? ` · ${job.skipped} skipped` : ''} · tile ${current}/${total}`,
+        statusText: `${job.kind === 'plant' ? 'Planting' : 'Harvesting'}${cropLabel} · ${job.completed}/${total} completed${job.skipped ? ` · ${job.skipped} skipped` : ''} · section ${current}/${total}`,
       };
     }
     if (this.operatingTractor && this.tractorTarget) {

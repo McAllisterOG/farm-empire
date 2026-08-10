@@ -16,13 +16,15 @@ describe('Farm Empire presentation layout', () => {
     expect(FARM_PLOT_SPAN).toBeGreaterThanOrEqual(2.5);
   });
 
-  it('maps every edge of a large plot footprint back to its one logical plot', () => {
+  it('maps all four large-section footprint corners back to one logical plot and rejects its gaps', () => {
     const state = createFarmGame('Layout', 99, NOW);
     const plot = state.plots[0]; const bounds = farmPlotFootprint(plot);
     for (const point of [
-      { x: bounds.minX, y: (bounds.minY + bounds.maxY) / 2 }, { x: bounds.maxX, y: (bounds.minY + bounds.maxY) / 2 },
-      { x: (bounds.minX + bounds.maxX) / 2, y: bounds.minY }, { x: (bounds.minX + bounds.maxX) / 2, y: bounds.maxY },
+      { x: bounds.minX, y: bounds.minY }, { x: bounds.maxX, y: bounds.minY },
+      { x: bounds.maxX, y: bounds.maxY }, { x: bounds.minX, y: bounds.maxY },
     ]) expect(farmPlotAtWorldPoint(state.plots, point)?.uid).toBe(plot.uid);
+    expect(farmPlotAtWorldPoint(state.plots, { x: bounds.maxX + 0.01, y: (bounds.minY + bounds.maxY) / 2 })).toBeUndefined();
+    expect(farmPlotAtWorldPoint(state.plots, { x: bounds.minX - 0.01, y: (bounds.minY + bounds.maxY) / 2 })).toBeUndefined();
   });
 
   it('keeps the nine starter sections distinct with yard and neighbor separation', () => {

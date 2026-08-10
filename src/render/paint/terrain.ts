@@ -49,7 +49,7 @@ export function paintFarmGroundTile(ctx: Ctx, variant: number): void {
   const cx = TILE_W / 2;
   const cy = TILE_H / 2;
   diamondPath(ctx, cx, cy);
-  ctx.fillStyle = ['#7faa58', '#86b260', '#79a653', '#8bb665'][variant % 4];
+  ctx.fillStyle = ['#829d62', '#86a165', '#7e9960', '#849f63'][variant % 4];
   ctx.fill();
   const rng = mulberry32(900 + variant * 37);
   ctx.fillStyle = 'rgba(48, 91, 42, 0.18)';

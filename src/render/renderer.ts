@@ -428,6 +428,9 @@ export class Renderer {
     }
     for (const pl of scene.placements) {
       const def = buildingDef(pl.defId);
+      // Farm Empire lays its own continuous gravel lane; legacy stone paths are
+      // retained in save data but are not rendered as tiny leftover tiles.
+      if (def.category === 'path') continue;
       const point = farmWorldPoint({ x: pl.x + (def.w - 1) / 2, y: pl.y + (def.h - 1) / 2 });
       items.push({ depth: point.x + point.y + 0.2, draw: () => pl.defId === 'bld_storage'
         ? drawFarmBarn(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom)

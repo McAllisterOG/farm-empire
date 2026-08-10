@@ -271,7 +271,7 @@ export function plantFarmCrop(state: GameState, plotUid: number, cropId: string,
   const farm = farmOf(state);
   const plot = state.plots.find((candidate) => candidate.uid === plotUid);
   if (!plot || !isOwnedFieldTile(state, plot.x, plot.y)) return fail('This field is not owned.');
-  if (plot.crop) return fail('That field tile is already planted.');
+  if (plot.crop) return fail('That field section is already planted.');
   const farmDef = farmCropDef(cropId);
   if ((farm.seeds[cropId] ?? 0) < 1) return fail(`No ${farmDef.name} seeds available.`);
   const legacyDef = cropDef(cropId);
