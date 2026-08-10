@@ -5,8 +5,9 @@ import { allFarmCrops, farmCropDef, farmMarketEventDef } from '../src/core/regis
 import { cropDef } from '../src/core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, advanceFarmClock, buyFarmSeeds, farmOf, harvestFarmCrop,
-  marketMovement, plantFarmCrop, planParcelWork, purchaseNeighborParcel, sellStoredCrop,
-  serpentineFieldTiles, storageUsed, updateFarmMarketToDay,
+  marketMovement, placePlayerAtTractorDismount, plantFarmCrop, planParcelWork,
+  purchaseNeighborParcel, sellStoredCrop, serpentineFieldTiles, storageUsed,
+  updateFarmMarketToDay,
 } from '../src/core/farmBusiness';
 import { deserialize, serialize } from '../src/save/save';
 import { NOW } from './helpers';
@@ -245,6 +246,21 @@ describe('land and save compatibility', () => {
     expect(loaded.farm!.equipment.tractor.name).toBe('Old Red Tractor');
     expect(loaded.farm!.equipment.tractor.x).toBe(11);
     expect(loaded.farm!.equipment.tractor.y).toBe(8);
+  });
+
+  it('stages mounted saves at the deterministic dismount offset without moving the tractor', () => {
+    const state = makeFarm();
+    const tractor = farmOf(state).equipment.tractor;
+    tractor.x = 6.4;
+    tractor.y = 9.6;
+    const position = placePlayerAtTractorDismount(state);
+    const loaded = deserialize(serialize(state, NOW + 1_000), NOW + 2_000);
+
+    expect(position).toEqual({ x: 7.15, y: 9.85 });
+    expect(loaded.player.px).toBe(7.15);
+    expect(loaded.player.py).toBe(9.85);
+    expect(loaded.farm!.equipment.tractor.x).toBe(6.4);
+    expect(loaded.farm!.equipment.tractor.y).toBe(9.6);
   });
 
   it('fills safe defaults for an incomplete current-version farm save', () => {

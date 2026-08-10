@@ -5,7 +5,7 @@ import {
   NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, buyFarmSeeds, farmOf,
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseNeighborParcel, selectFarmCrop,
   sellStoredCrop, syncCashMirror, ownedFarmParcelAt, planParcelWork,
-  type FarmParcelId, type ParcelWorkKind,
+  placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY } from '../render/iso';
@@ -51,6 +51,7 @@ export class FarmEmpireApp {
   private operatingTractor = false;
   private tractorTarget: TractorMoveTarget | null = null;
   private tractorJob: TractorJob | null = null;
+  private equipmentPanelOpen = false;
   private running = true;
   private raf = 0;
   private lastFrame = 0;
@@ -139,9 +140,7 @@ export class FarmEmpireApp {
 
   save = (): void => {
     if (this.operatingTractor) {
-      const tractor = farmOf(this.state).equipment.tractor;
-      this.state.player.px = tractor.x;
-      this.state.player.py = tractor.y;
+      placePlayerAtTractorDismount(this.state);
     } else {
       this.state.player.px = this.playerActor.x;
       this.state.player.py = this.playerActor.y;
@@ -279,11 +278,21 @@ export class FarmEmpireApp {
   }
 
   private openEquipmentPanel(): void {
+    this.equipmentPanelOpen = true;
     openFarmEquipment(this.state, {
       operating: this.operatingTractor,
       jobActive: !!this.tractorJob || !!this.tractorTarget,
       onToggleOperating: () => this.toggleTractorOperating(),
+      onClose: () => {
+        this.equipmentPanelOpen = false;
+      },
     });
+  }
+
+  private closeEquipmentPanelIfOpen(): void {
+    if (!this.equipmentPanelOpen) return;
+    if (isPanelOpen()) closePanel();
+    this.equipmentPanelOpen = false;
   }
 
   private toggleTractorOperating(): void {
@@ -297,12 +306,11 @@ export class FarmEmpireApp {
       return;
     }
     if (this.operatingTractor) {
+      const dismount = placePlayerAtTractorDismount(this.state);
       this.operatingTractor = false;
-      this.playerActor.x = tractor.x + 0.75;
-      this.playerActor.y = tractor.y + 0.25;
+      this.playerActor.x = dismount.x;
+      this.playerActor.y = dismount.y;
       this.playerActor.walking = false;
-      this.state.player.px = this.playerActor.x;
-      this.state.player.py = this.playerActor.y;
       toast('Exited the old tractor.', 'good');
     } else {
       this.walkTarget = null;
@@ -467,6 +475,7 @@ export class FarmEmpireApp {
     const detail = job.skipped && job.lastFailure ? ` ${job.lastFailure}` : '';
     this.tractorJob = null;
     this.tractorTarget = null;
+    this.closeEquipmentPanelIfOpen();
     toast(summary + detail, job.completed > 0 ? 'good' : 'bad');
     this.save();
   }
@@ -478,6 +487,7 @@ export class FarmEmpireApp {
     const verb = job.kind === 'plant' ? 'Planting' : 'Harvest';
     this.tractorJob = null;
     this.tractorTarget = null;
+    this.closeEquipmentPanelIfOpen();
     toast(`${verb} cancelled: ${job.completed} completed, ${job.skipped} skipped, ${untouched} not attempted.`, 'bad');
     this.save();
   }

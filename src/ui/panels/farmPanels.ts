@@ -149,12 +149,14 @@ export interface FarmEquipmentActions {
   operating: boolean;
   jobActive: boolean;
   onToggleOperating: () => void;
+  onClose: () => void;
 }
 
 export function openFarmEquipment(state: GameState, actions: FarmEquipmentActions): void {
   const tractor = farmOf(state).equipment.tractor;
   openPanel({
     title: 'Farm Equipment',
+    onClose: actions.onClose,
     body: (body) => body.append(h('div', { class: 'equipment-card', 'data-testid': 'tractor-panel' },
       h('div', { class: 'tractor-illustration' }, 'TRACTOR'),
       h('div', { class: 'farm-card-title' }, tractor.name),

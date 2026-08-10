@@ -31,6 +31,8 @@ export interface ParcelWorkPlan {
   harvestPlotUids: number[];
 }
 
+export const TRACTOR_DISMOUNT_OFFSET = { x: 0.75, y: 0.25 } as const;
+
 function parcelTiles(parcelId: FarmParcelId): { x: number; y: number }[] {
   return parcelId === 'starter' ? STARTER_FIELD_TILES : NEIGHBOR_FIELD_TILES;
 }
@@ -53,6 +55,11 @@ export function serpentineFieldTiles(tiles: readonly { x: number; y: number }[])
 function clampInt(value: unknown, fallback: number, min = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? Math.max(min, Math.round(n)) : fallback;
+}
+
+function clampNumber(value: unknown, fallback: number, min = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.max(min, n) : fallback;
 }
 
 export function createFarmBusinessState(now: number): FarmBusinessState {
@@ -148,8 +155,8 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
         id: String(rawTractor.id || defaults.equipment.tractor.id),
         name: String(rawTractor.name || defaults.equipment.tractor.name),
         status: rawTractor.status === 'maintenance' ? 'maintenance' : 'operational',
-        x: clampInt(rawTractor.x, defaults.equipment.tractor.x),
-        y: clampInt(rawTractor.y, defaults.equipment.tractor.y),
+        x: clampNumber(rawTractor.x, defaults.equipment.tractor.x),
+        y: clampNumber(rawTractor.y, defaults.equipment.tractor.y),
         workSpeedBonusBps: clampInt(rawTractor.workSpeedBonusBps, 2_000),
         harvestBonusUnits: clampInt(rawTractor.harvestBonusUnits, 1),
       },
@@ -217,6 +224,22 @@ export function ownedFarmParcelAt(state: GameState, x: number, y: number): FarmP
     return 'north';
   }
   return null;
+}
+
+/** Safe deterministic on-foot position used for both a normal exit and mounted saves. */
+export function tractorDismountPosition(state: GameState): { x: number; y: number } {
+  const tractor = farmOf(state).equipment.tractor;
+  return {
+    x: tractor.x + TRACTOR_DISMOUNT_OFFSET.x,
+    y: tractor.y + TRACTOR_DISMOUNT_OFFSET.y,
+  };
+}
+
+export function placePlayerAtTractorDismount(state: GameState): { x: number; y: number } {
+  const position = tractorDismountPosition(state);
+  state.player.px = position.x;
+  state.player.py = position.y;
+  return position;
 }
 
 /**
