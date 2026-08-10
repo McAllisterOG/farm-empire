@@ -41,9 +41,15 @@ export class Camera {
 
   /** 屏幕像素 → 格坐标（取整） */
   tileAt(sx: number, sy: number): { tx: number; ty: number } {
+    const point = this.tilePointAt(sx, sy);
+    return { tx: Math.floor(point.x), ty: Math.floor(point.y) };
+  }
+
+  /** Screen -> fractional isometric tile coordinate, preserving large-section hits. */
+  tilePointAt(sx: number, sy: number): { x: number; y: number } {
     const wx = this.wx(sx);
     const wy = this.wy(sy);
-    return { tx: Math.floor(tileXf(wx, wy)), ty: Math.floor(tileYf(wx, wy)) };
+    return { x: tileXf(wx, wy), y: tileYf(wx, wy) };
   }
 
   pan(dxScreen: number, dyScreen: number): void {

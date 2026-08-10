@@ -9,6 +9,7 @@ import {
 } from '../core/farmBusiness';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY } from '../render/iso';
+import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../render/farmLayout';
 import { FarmHud } from '../ui/farmHud';
 import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMenu';
 import { closePanel, isPanelOpen } from '../ui/modal';
@@ -81,8 +82,8 @@ export class FarmEmpireApp {
       },
     });
     this.bindInput(canvas);
-    this.renderer.centerOnIsland(sceneFromState(state));
-    this.renderer.camera.zoomAt(1.22, window.innerWidth / 2, window.innerHeight / 2);
+    this.renderer.centerOnFarm();
+    this.renderer.camera.zoomAt(0.76, window.innerWidth / 2, window.innerHeight / 2);
     this.lastSave = Date.now();
     window.addEventListener('beforeunload', this.save);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
@@ -90,14 +91,14 @@ export class FarmEmpireApp {
     const debug = {
       state: () => this.state,
       tileToScreen: (x: number, y: number) => [
-        this.renderer.camera.sx(isoX(x, y)),
-        this.renderer.camera.sy(isoY(x, y)),
+        this.renderer.camera.sx(isoX(farmWorldPoint({ x, y }).x, farmWorldPoint({ x, y }).y)),
+        this.renderer.camera.sy(isoY(farmWorldPoint({ x, y }).x, farmWorldPoint({ x, y }).y)),
       ],
       tractorScreen: () => {
         const tractor = farmOf(this.state).equipment.tractor;
         return [
-          this.renderer.camera.sx(isoX(tractor.x, tractor.y)),
-          this.renderer.camera.sy(isoY(tractor.x, tractor.y)),
+          this.renderer.camera.sx(isoX(farmWorldPoint(tractor).x, farmWorldPoint(tractor).y)),
+          this.renderer.camera.sy(isoY(farmWorldPoint(tractor).x, farmWorldPoint(tractor).y)),
         ];
       },
     };
@@ -162,7 +163,7 @@ export class FarmEmpireApp {
       } else if (event.type === 'sell') {
         toast(`Sold ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} for ${formatMoney(Number(event.data ?? 0))}.`, 'good');
       } else if (event.type === 'expand') {
-        toast('Neighboring parcel purchased. Nine field tiles are now usable.', 'good');
+        toast('Neighboring parcel purchased. Nine field sections are now usable.', 'good');
       } else if (event.type === 'toast' && event.target) {
         toast(event.target, 'good');
       }
@@ -174,14 +175,26 @@ export class FarmEmpireApp {
     const tractor = farmOf(this.state).equipment.tractor;
     const x = this.operatingTractor ? tractor.x : this.playerActor.x;
     const y = this.operatingTractor ? tractor.y : this.playerActor.y;
-    return this.renderer.camera.sx(isoX(x, y));
+    const point = farmWorldPoint({ x, y });
+    return this.renderer.camera.sx(isoX(point.x, point.y));
   }
 
   private playerScreenY(): number {
     const tractor = farmOf(this.state).equipment.tractor;
     const x = this.operatingTractor ? tractor.x : this.playerActor.x;
     const y = this.operatingTractor ? tractor.y : this.playerActor.y;
-    return this.renderer.camera.sy(isoY(x, y));
+    const point = farmWorldPoint({ x, y });
+    return this.renderer.camera.sy(isoY(point.x, point.y));
+  }
+
+  /** Canvas -> fractional world -> authoritative Farm Layout inverse -> logical field. */
+  private farmTargetAtScreen(sx: number, sy: number): { tx: number; ty: number } {
+    const world = this.renderer.camera.tilePointAt(sx, sy);
+    const plot = farmPlotAtWorldPoint(this.state.plots, world)
+      ?? farmPlotAtWorldPoint(NEIGHBOR_FIELD_TILES.map((point) => ({ ...point, uid: -1, crop: null })), world);
+    if (plot) return { tx: plot.x, ty: plot.y };
+    const logical = farmLogicalPoint(world);
+    return { tx: Math.round(logical.x), ty: Math.round(logical.y) };
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
@@ -204,7 +217,7 @@ export class FarmEmpireApp {
           this.renderer.camera.pan(event.movementX, event.movementY);
         }
       }
-      this.hover = this.renderer.camera.tileAt(event.clientX, event.clientY);
+      this.hover = this.farmTargetAtScreen(event.clientX, event.clientY);
     });
     canvas.addEventListener('pointerup', (event) => {
       dragging = false;
@@ -242,7 +255,7 @@ export class FarmEmpireApp {
       toast('A tractor field job is already active. Press Escape to cancel it.', 'bad');
       return;
     }
-    const { tx, ty } = this.renderer.camera.tileAt(sx, sy);
+    const { tx, ty } = this.farmTargetAtScreen(sx, sy);
     const farm = farmOf(this.state);
 
     if (!farm.parcels.northOwned && NEIGHBOR_FIELD_TILES.some((tile) => tile.x === tx && tile.y === ty)) {
@@ -338,13 +351,13 @@ export class FarmEmpireApp {
     const parcelName = parcelId === 'starter' ? 'Starter parcel' : 'Neighboring parcel';
     showActionMenu(sx, sy, `${parcelName} · 3×3 tractor work`, [
       {
-        label: `Plant ${crop.name} on ${plan.plantPlotUids.length} empty tile${plan.plantPlotUids.length === 1 ? '' : 's'} (${seedCount} seeds)`,
+        label: `Plant ${crop.name} on ${plan.plantPlotUids.length} empty field section${plan.plantPlotUids.length === 1 ? '' : 's'} (${seedCount} seeds)`,
         icon: `icon:seed_${crop.id.replace('crop_', '')}`,
         disabled: plan.plantPlotUids.length === 0,
         onClick: () => this.startTractorJob('plant', parcelId, plan.plantPlotUids, crop.id),
       },
       {
-        label: `Harvest ${plan.harvestPlotUids.length} ready tile${plan.harvestPlotUids.length === 1 ? '' : 's'} into barn`,
+        label: `Harvest ${plan.harvestPlotUids.length} ready field section${plan.harvestPlotUids.length === 1 ? '' : 's'} into barn`,
         icon: 'fx:ready',
         disabled: plan.harvestPlotUids.length === 0,
         onClick: () => this.startTractorJob('harvest', parcelId, plan.harvestPlotUids),
@@ -363,7 +376,7 @@ export class FarmEmpireApp {
     if (!plot.crop) {
       const def = farmCropDef(farm.selectedCropId);
       const count = farm.seeds[def.id] ?? 0;
-      showActionMenu(sx, sy, 'Empty field tile', [
+      showActionMenu(sx, sy, 'Empty field section', [
         {
           label: `Plant ${def.name} (${count} seed${count === 1 ? '' : 's'})`,
           icon: `icon:seed_${def.id.replace('crop_', '')}`,
@@ -401,7 +414,7 @@ export class FarmEmpireApp {
       return;
     }
     if (targetPlotUids.length === 0) {
-      toast(`No eligible tiles for tractor ${kind}ing.`, 'bad');
+      toast(`No eligible field sections for tractor ${kind}ing.`, 'bad');
       return;
     }
     this.tractorJob = {
@@ -415,7 +428,7 @@ export class FarmEmpireApp {
       waitUntil: Date.now(),
     };
     const label = kind === 'plant' ? `Planting ${farmCropDef(String(cropId)).name}` : 'Harvesting ready crops';
-    toast(`${label} across ${targetPlotUids.length} tile${targetPlotUids.length === 1 ? '' : 's'}.`, 'good');
+    toast(`${label} across ${targetPlotUids.length} field section${targetPlotUids.length === 1 ? '' : 's'}.`, 'good');
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
@@ -431,7 +444,7 @@ export class FarmEmpireApp {
     const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
     if (!plot) {
       job.skipped += 1;
-      job.lastFailure = 'A planned field tile was unavailable.';
+        job.lastFailure = 'A planned field section was unavailable.';
       job.nextIndex += 1;
       job.waitUntil = now + FIELD_ACTION_PAUSE_MS;
       return;
@@ -553,8 +566,9 @@ export class FarmEmpireApp {
     addButton('dev-open-first-plot', 'Open first plot', () => {
       const plot = this.state.plots[0];
       if (!plot) return;
-      const x = this.renderer.camera.sx(isoX(plot.x + 0.5, plot.y + 0.5));
-      const y = this.renderer.camera.sy(isoY(plot.x + 0.5, plot.y + 0.5));
+      const projected = farmWorldPoint(plot);
+      const x = this.renderer.camera.sx(isoX(projected.x, projected.y));
+      const y = this.renderer.camera.sy(isoY(projected.x, projected.y));
       this.openPlotMenu(plot.uid, x, y);
     });
     const plotPoint = document.createElement('span');
@@ -569,8 +583,9 @@ export class FarmEmpireApp {
     const plot = this.state.plots[0];
     const point = this.devTools.querySelector<HTMLElement>('[data-testid="dev-first-plot-point"]');
     if (!point) return;
-    point.dataset.screenX = String(Math.round(this.renderer.camera.sx(isoX(plot.x + 0.5, plot.y + 0.5))));
-    point.dataset.screenY = String(Math.round(this.renderer.camera.sy(isoY(plot.x + 0.5, plot.y + 0.5))));
+    const projected = farmWorldPoint(plot);
+    point.dataset.screenX = String(Math.round(this.renderer.camera.sx(isoX(projected.x, projected.y))));
+    point.dataset.screenY = String(Math.round(this.renderer.camera.sy(isoY(projected.x, projected.y))));
   }
 
   private loop = (): void => {
@@ -636,7 +651,7 @@ export class FarmEmpireApp {
     const farm = farmOf(this.state);
     scene.farm = {
       lockedTiles: farm.parcels.northOwned ? [] : NEIGHBOR_FIELD_TILES,
-      parcelLabel: `${formatMoney(650_000)} · 9 field tiles`,
+      parcelLabel: `${formatMoney(650_000)} · 9 field sections`,
       tractor: {
         ...farm.equipment.tractor,
         operating: this.operatingTractor,

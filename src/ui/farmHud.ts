@@ -79,7 +79,7 @@ export class FarmHud {
       ),
     );
 
-    this.helpEl = h('div', { class: 'farm-help' }, 'Select a crop, then click an empty field tile to plant. Click a ready crop to harvest.');
+    this.helpEl = h('div', { class: 'farm-help' }, 'Select a crop, then click an empty field section to plant. Click a ready crop to harvest.');
     this.root = h('div', { class: 'farm-hud-root' }, top, bottom, this.operationEl, this.helpEl);
     document.body.append(this.root);
   }
@@ -99,10 +99,10 @@ export class FarmHud {
     this.operationEl.classList.toggle('working', !!runtime?.working);
     this.operationEl.textContent = runtime?.statusText ?? '';
     this.helpEl.textContent = runtime?.working
-      ? 'The tractor is working tile by tile. Press Escape to cancel safely.'
+      ? 'The tractor is working section by section. Press Escape to cancel safely.'
       : runtime?.operating
         ? 'Click open ground to drive. Click an owned field parcel for batch planting or harvesting.'
-        : 'Select a crop, then click an empty field tile to plant. Click a ready crop to harvest.';
+        : 'Select a crop, then click an empty field section to plant. Click a ready crop to harvest.';
     for (const [cropId, button] of this.cropButtons) {
       button.classList.toggle('active', cropId === farm.selectedCropId);
       const seedCount = farm.seeds[cropId] ?? 0;

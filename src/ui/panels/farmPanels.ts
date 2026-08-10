@@ -138,9 +138,9 @@ function renderLand(body: HTMLElement, state: GameState, actions: FarmPanelActio
     h('div', { class: 'land-card-badge' }, owned ? 'OWNED' : 'LOCKED'),
     h('div', { class: 'farm-card-title' }, 'Neighboring Field Parcel'),
     h('div', { class: 'land-price', 'data-testid': 'parcel-price' }, formatMoney(FIRST_PARCEL_PRICE_CENTS)),
-    h('p', {}, 'Adds nine adjacent usable field tiles. Ownership is permanent and saved; repeat purchases are blocked.'),
+    h('p', {}, 'Adds nine adjacent usable field sections. Ownership is permanent and saved; repeat purchases are blocked.'),
     owned
-      ? h('div', { class: 'owned-mark', 'data-testid': 'parcel-owned' }, 'Purchased · field tiles unlocked')
+      ? h('div', { class: 'owned-mark', 'data-testid': 'parcel-owned' }, 'Purchased · field sections unlocked')
       : h('button', { class: 'btn btn-primary', 'data-testid': 'buy-parcel-button', onclick: () => runAndRender(actions.buyLand(), actions, rerender) }, 'Purchase Parcel'),
   ));
 }

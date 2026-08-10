@@ -9,7 +9,7 @@
 import type { AvatarConfig, CropStage } from '../core/types';
 import { buildingDef, cropDef, fishDef } from '../core/registry';
 import { makeCanvas, SS } from './paint/common';
-import { paintGrassTile, paintHighlight, paintPlotTile, paintSandTile, paintWaterTile, paintWeed, TILE_SPRITE_H } from './paint/terrain';
+import { paintFarmGroundTile, paintGrassTile, paintHighlight, paintPlotTile, paintSandTile, paintWaterTile, paintWeed, TILE_SPRITE_H } from './paint/terrain';
 import { paintCrop } from './paint/plants';
 import { paintAnimal, paintBeast, paintPet } from './paint/creatures';
 import { buildingCanvasSize, paintBuilding } from './paint/buildings';
@@ -48,7 +48,8 @@ function build(key: string): Sprite {
       }
       const variant = Number(parts[2] ?? 0);
       return make(TILE_W, TILE_SPRITE_H, TILE_W / 2, 16, (ctx) => {
-        if (sub === 'grass') paintGrassTile(ctx, variant);
+        if (sub === 'farmground') paintFarmGroundTile(ctx, variant);
+        else if (sub === 'grass') paintGrassTile(ctx, variant);
         else if (sub === 'sand') paintSandTile(ctx, variant);
         else paintWaterTile(ctx, variant, parts[3] === 'deep');
       });

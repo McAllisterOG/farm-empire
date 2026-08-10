@@ -13,6 +13,8 @@ import { WATER_COOLDOWN_MS } from '../core/balance';
 import { Camera } from './camera';
 import { diamondPath, isoX, isoY, TILE_H, TILE_W } from './iso';
 import { charKey, drawSprite } from './sprites';
+import { farmMainlandBounds, farmPlotFootprint, farmWorldPoint } from './farmLayout';
+import { farmGroundVariant } from './farmTerrain';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -112,6 +114,12 @@ export class Renderer {
     const { ctx, camera } = this;
     const zoom = camera.zoom;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+
+    const farmScene = Boolean(scene.farm);
+    if (farmScene) {
+      this.renderFarm(scene, now);
+      return;
+    }
 
     // 海洋底色
     ctx.fillStyle = scene.farm ? '#7fa9b5' : '#4aa8d8';
@@ -371,12 +379,165 @@ export class Renderer {
   }
 
   centerOnIsland(scene: RenderScene): void {
+    if (scene.farm) {
+      const point = farmWorldPoint({ x: 9, y: 8.5 });
+      this.camera.centerOnTile(point.x, point.y);
+      return;
+    }
     const size = buildTerrain(scene.seed, scene.islandTier).length;
     this.camera.centerOnTile(size / 2 - 0.5, size / 2 - 0.5);
+  }
+
+  centerOnFarm(): void {
+    const point = farmWorldPoint({ x: 7.8, y: 7.4 });
+    this.camera.centerOnTile(point.x, point.y);
+  }
+
+  /** Farm-only presentation branch.  Legacy island rendering above stays isolated. */
+  private renderFarm(scene: RenderScene, now: number): void {
+    const { ctx, camera } = this;
+    const zoom = camera.zoom;
+    ctx.fillStyle = '#6f9254';
+    ctx.fillRect(0, 0, camera.viewW, camera.viewH);
+    const corners = [camera.tileAt(0, 0), camera.tileAt(camera.viewW, 0), camera.tileAt(0, camera.viewH), camera.tileAt(camera.viewW, camera.viewH)];
+    const bounds = farmMainlandBounds();
+    const minX = Math.max(bounds.minX, Math.min(...corners.map((p) => p.tx)) - 3);
+    const maxX = Math.min(bounds.maxX, Math.max(...corners.map((p) => p.tx)) + 3);
+    const minY = Math.max(bounds.minY, Math.min(...corners.map((p) => p.ty)) - 3);
+    const maxY = Math.min(bounds.maxY, Math.max(...corners.map((p) => p.ty)) + 3);
+    for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
+      drawSprite(ctx, `tile:farmground:${farmGroundVariant(scene.seed, x, y)}`, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
+    }
+    drawFarmyard(ctx, camera, zoom);
+    for (const plot of scene.plots) drawFarmSection(ctx, camera, plot, now, zoom, false);
+    for (const plot of scene.farm!.lockedTiles) drawFarmSection(ctx, camera, { ...plot, uid: -1, crop: null }, now, zoom, true);
+    drawLockedParcelLabel(ctx, camera, scene, zoom);
+
+    if (scene.hover) {
+      farmFootprintPath(ctx, camera, farmPlotFootprint({ x: scene.hover.tx, y: scene.hover.ty }));
+      ctx.fillStyle = 'rgba(255, 239, 132, .18)'; ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 239, 132, .92)'; ctx.lineWidth = Math.max(1.5, zoom * 2); ctx.stroke();
+    }
+
+    const items: DrawItem[] = [];
+    const bob = Math.sin(now / 350) * 1.6;
+    for (const plot of scene.plots) if (plot.crop) {
+      const point = farmWorldPoint(plot);
+      const stage = cropView(plot.crop, now).stage;
+      items.push({ depth: point.x + point.y, draw: () => drawFarmCropRows(ctx, camera, plot, stage, zoom, now, bob) });
+    }
+    for (const pl of scene.placements) {
+      const def = buildingDef(pl.defId);
+      const point = farmWorldPoint({ x: pl.x + (def.w - 1) / 2, y: pl.y + (def.h - 1) / 2 });
+      items.push({ depth: point.x + point.y + 0.2, draw: () => pl.defId === 'bld_storage'
+        ? drawFarmBarn(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom)
+        : drawSprite(ctx, `bld:${pl.defId}`, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom * 1.16) });
+    }
+    const tractor = scene.farm!.tractor;
+    const tractorPoint = farmWorldPoint(tractor);
+    items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now) });
+    for (const actor of scene.actors) {
+      const point = farmWorldPoint(actor);
+      items.push({ depth: point.x + point.y + 0.4, draw: () => {
+        const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y) + TILE_H / 2);
+        drawSprite(ctx, charKey(actor.avatar, actor.walking ? Math.floor(now / 90) % 8 : -1), sx, sy, zoom);
+        if (actor.name) drawFarmName(ctx, sx, sy, actor.name, zoom);
+      } });
+    }
+    items.sort((a, b) => a.depth - b.depth); items.forEach((item) => item.draw());
+    const na = nightAlpha(now);
+    if (na > .01) { ctx.fillStyle = `rgba(24, 34, 76, ${na})`; ctx.fillRect(0, 0, camera.viewW, camera.viewH); }
   }
 }
 
 export { TILE_W };
+
+function farmFootprintPath(ctx: CanvasRenderingContext2D, camera: Camera, footprint: { minX: number; minY: number; maxX: number; maxY: number }): void {
+  const corners = [
+    { x: footprint.minX, y: footprint.minY }, { x: footprint.maxX, y: footprint.minY },
+    { x: footprint.maxX, y: footprint.maxY }, { x: footprint.minX, y: footprint.maxY },
+  ].map((point) => ({ x: camera.sx(isoX(point.x, point.y)), y: camera.sy(isoY(point.x, point.y)) }));
+  ctx.beginPath(); ctx.moveTo(corners[0].x, corners[0].y);
+  corners.slice(1).forEach((point) => ctx.lineTo(point.x, point.y)); ctx.closePath();
+}
+
+function drawFarmSection(ctx: CanvasRenderingContext2D, camera: Camera, plot: FarmPlot, now: number, zoom: number, locked: boolean): void {
+  const footprint = farmPlotFootprint(plot);
+  farmFootprintPath(ctx, camera, footprint);
+  const wet = !!plot.crop && now - plot.crop.lastWateredAt < WATER_COOLDOWN_MS;
+  ctx.fillStyle = locked ? 'rgba(119, 88, 57, .46)' : wet ? '#6c4930' : '#95643f'; ctx.fill();
+  ctx.strokeStyle = locked ? '#6d452c' : '#593a27'; ctx.lineWidth = Math.max(1.2, zoom * 1.7); ctx.stroke();
+  if (locked) return;
+  // Furrows use the actual large footprint, rather than duplicating old tile artwork.
+  ctx.strokeStyle = wet ? 'rgba(56, 35, 21, .46)' : 'rgba(78, 46, 27, .42)'; ctx.lineWidth = Math.max(1, zoom * 1.25);
+  for (let index = 1; index < 5; index++) {
+    const t = index / 5; const x = footprint.minX + (footprint.maxX - footprint.minX) * t;
+    const a = { x: camera.sx(isoX(x, footprint.minY)), y: camera.sy(isoY(x, footprint.minY)) };
+    const b = { x: camera.sx(isoX(x, footprint.maxY)), y: camera.sy(isoY(x, footprint.maxY)) };
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+}
+
+function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: FarmPlot, stage: string, zoom: number, now: number, bob: number): void {
+  const footprint = farmPlotFootprint(plot);
+  // Five by four deterministic plants make each section feel like one planted field.
+  for (let row = 0; row < 4; row++) for (let col = 0; col < 5; col++) {
+    const x = footprint.minX + (col + .5 + (row % 2 ? .08 : 0)) * (footprint.maxX - footprint.minX) / 5;
+    const y = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / 4;
+    const sx = camera.sx(isoX(x, y)); const sy = camera.sy(isoY(x, y) + TILE_H / 2);
+    drawSprite(ctx, `crop:${plot.crop!.defId}:${stage}`, sx, sy, zoom * .54);
+  }
+  const centre = farmWorldPoint(plot); const sx = camera.sx(isoX(centre.x, centre.y)); const sy = camera.sy(isoY(centre.x, centre.y) + TILE_H / 2);
+  if (stage === 'ready') drawSprite(ctx, 'fx:ready', sx, sy - 67 * zoom + bob * zoom, zoom * 1.15);
+  else if (stage === 'withered') drawSprite(ctx, 'fx:hungry', sx, sy - 56 * zoom + bob * zoom, zoom * 1.15);
+}
+
+function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
+  // A restrained gravel lane connects the barn and the broad field entrances.
+  const lane = [{ x: 19, y: 14 }, { x: 23, y: 14 }, { x: 26, y: 17 }, { x: 29, y: 20 }, { x: 32, y: 23 }];
+  ctx.strokeStyle = '#b9a071'; ctx.lineWidth = 13 * zoom; ctx.lineCap = 'round'; ctx.beginPath();
+  lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.stroke();
+  ctx.strokeStyle = 'rgba(100, 75, 46, .35)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
+  const bounds = farmMainlandBounds();
+  ctx.strokeStyle = 'rgba(79, 87, 41, .82)'; ctx.lineWidth = 2 * zoom;
+  for (let x = bounds.minX + 1; x < bounds.maxX; x += 2) for (const y of [bounds.minY + 1, bounds.maxY - 1]) drawFarmTree(ctx, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
+  for (let y = bounds.minY + 3; y < bounds.maxY - 2; y += 3) for (const x of [bounds.minX + 1, bounds.maxX - 1]) drawFarmTree(ctx, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
+}
+
+function drawFarmTree(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  ctx.fillStyle = '#68472c'; ctx.fillRect(-2, -19, 4, 20);
+  ctx.fillStyle = '#426f35'; ctx.beginPath(); ctx.arc(0, -25, 12, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5b8c42'; ctx.beginPath(); ctx.arc(-5, -29, 7, 0, Math.PI * 2); ctx.arc(6, -29, 7, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+
+function drawLockedParcelLabel(ctx: CanvasRenderingContext2D, camera: Camera, scene: RenderScene, zoom: number): void {
+  if (!scene.farm || scene.farm.lockedTiles.length === 0) return;
+  const x = scene.farm.lockedTiles.reduce((sum, p) => sum + p.x, 0) / scene.farm.lockedTiles.length;
+  const y = scene.farm.lockedTiles.reduce((sum, p) => sum + p.y, 0) / scene.farm.lockedTiles.length;
+  const point = farmWorldPoint({ x, y }); const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)) - 42 * zoom;
+  ctx.save(); ctx.font = `700 ${Math.max(10, 12 * zoom)}px Segoe UI, sans-serif`; ctx.textAlign = 'center';
+  const label = `LOCKED · ${scene.farm.parcelLabel}`; const width = ctx.measureText(label).width + 16;
+  ctx.fillStyle = 'rgba(255,248,226,.94)'; ctx.fillRect(sx - width / 2, sy - 15, width, 21); ctx.strokeStyle = '#805638'; ctx.strokeRect(sx - width / 2, sy - 15, width, 21); ctx.fillStyle = '#694126'; ctx.fillText(label, sx, sy); ctx.restore();
+}
+
+function drawFarmName(ctx: CanvasRenderingContext2D, sx: number, sy: number, name: string, zoom: number): void {
+  ctx.save(); ctx.font = `${Math.round(11 * zoom)}px Segoe UI, sans-serif`; ctx.textAlign = 'center'; const width = ctx.measureText(name).width;
+  ctx.fillStyle = 'rgba(40,34,28,.55)'; ctx.fillRect(sx - width / 2 - 4, sy - 76 * zoom, width + 8, 14 * zoom); ctx.fillStyle = '#fff'; ctx.fillText(name, sx, sy - 65 * zoom); ctx.restore();
+}
+
+function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  ctx.fillStyle = 'rgba(40,30,20,.22)'; ctx.beginPath(); ctx.ellipse(0, 5, 58, 16, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#a84634'; ctx.fillRect(-42, -53, 84, 55);
+  ctx.fillStyle = '#f2d8a5'; ctx.fillRect(-45, -54, 90, 6);
+  ctx.beginPath(); ctx.moveTo(-50, -53); ctx.lineTo(0, -85); ctx.lineTo(50, -53); ctx.closePath(); ctx.fillStyle = '#70372d'; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(-44, -54); ctx.lineTo(0, -80); ctx.lineTo(44, -54); ctx.closePath(); ctx.fillStyle = '#bd5840'; ctx.fill();
+  ctx.fillStyle = '#e5c788'; ctx.fillRect(-16, -36, 32, 38); ctx.fillStyle = '#69422d'; ctx.fillRect(-12, -32, 24, 34);
+  ctx.strokeStyle = '#e5c788'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(0, 2); ctx.stroke();
+  ctx.fillStyle = '#b8d7dd'; ctx.fillRect(-34, -37, 12, 12); ctx.fillRect(22, -37, 12, 12);
+  ctx.fillStyle = '#ead9a8'; ctx.font = '700 8px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('BARN', 0, -59); ctx.restore();
+}
 
 function drawOldTractor(
   ctx: CanvasRenderingContext2D,
@@ -421,10 +582,6 @@ function drawOldTractor(
   ctx.fillRect(15, -36, 3, 10);
   ctx.fillStyle = '#ead9a8';
   ctx.fillRect(18, -24, 5, 4);
-  ctx.fillStyle = '#f3e5bd';
-  ctx.font = '700 8px "Segoe UI", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('OLD', 2, -15);
   if (operating) {
     ctx.strokeStyle = working ? '#f2c018' : '#fff1c9';
     ctx.lineWidth = 2;

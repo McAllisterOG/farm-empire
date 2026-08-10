@@ -44,6 +44,22 @@ export function paintGrassTile(ctx: Ctx, variant: number): void {
   tileBase(ctx, variant % 2 === 0 ? PAL.grass : shade(PAL.grass, 0.05), PAL.grassEdge, 100 + variant, PAL.grassDark);
 }
 
+/** Flat mainland tile: deliberately no island cliff edge or water treatment. */
+export function paintFarmGroundTile(ctx: Ctx, variant: number): void {
+  const cx = TILE_W / 2;
+  const cy = TILE_H / 2;
+  diamondPath(ctx, cx, cy);
+  ctx.fillStyle = ['#7faa58', '#86b260', '#79a653', '#8bb665'][variant % 4];
+  ctx.fill();
+  const rng = mulberry32(900 + variant * 37);
+  ctx.fillStyle = 'rgba(48, 91, 42, 0.18)';
+  for (let i = 0; i < 7; i++) {
+    const x = cx + (rng() - 0.5) * 42;
+    const y = cy + (rng() - 0.5) * 18;
+    ctx.fillRect(x, y, 1.5, 1.5);
+  }
+}
+
 export function paintSandTile(ctx: Ctx, variant: number): void {
   tileBase(ctx, variant % 2 === 0 ? PAL.sand : shade(PAL.sand, 0.04), PAL.sandDark, 200 + variant, shade(PAL.sand, -0.12));
 }
