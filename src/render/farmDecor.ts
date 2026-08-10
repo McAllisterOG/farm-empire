@@ -48,6 +48,12 @@ export const FARM_FENCE_MANIFEST: readonly FarmFenceCue[] = [
   { id: 'yard-gate', x: 20.6, y: 16.4, direction: 'north-south', gate: true },
 ] as const;
 
+/** Fixed logical anchors fade in only with the farm's saved night clock. */
+export const FARM_FIREFLY_ANCHORS: readonly FarmPoint[] = [
+  { x: 4.20, y: 10.45 }, { x: 4.75, y: 10.95 }, { x: 8.25, y: 3.85 },
+  { x: 8.75, y: 4.15 }, { x: 13.05, y: 5.10 }, { x: 13.55, y: 5.65 },
+] as const;
+
 /** Fixed windbreak anchors, kept outside the working fields. */
 export function farmWindbreakAnchors(): readonly FarmPoint[] {
   const bounds = farmMainlandBounds();

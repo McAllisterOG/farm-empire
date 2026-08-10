@@ -17,7 +17,7 @@ import { farmMainlandBounds, farmPlotFootprint, farmWorldPoint } from './farmLay
 import { farmLandmarks } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
-import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
+import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -56,6 +56,7 @@ export interface RenderScene {
       working?: boolean;
     };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
+    clockMinute: number;
   };
 }
 
@@ -91,6 +92,19 @@ export function nightAlpha(now: number): number {
   if (hour > 17 && hour < 20) return ((hour - 17) / 3) * 0.42;
   if (hour >= 20 || hour < 5) return 0.42;
   return (1 - (hour - 5) / 2) * 0.42; // 5-7 点渐亮
+}
+
+/** Shared lighting curve for an explicit farm-clock or real-world hour. */
+export function nightAlphaAtHour(hour: number): number {
+  const normalized = ((hour % 24) + 24) % 24;
+  if (normalized >= 7 && normalized <= 17) return 0;
+  if (normalized > 17 && normalized < 20) return ((normalized - 17) / 3) * 0.42;
+  if (normalized >= 20 || normalized < 5) return 0.42;
+  return (1 - (normalized - 5) / 2) * 0.42;
+}
+
+export function farmNightAlpha(clockMinute: number): number {
+  return nightAlphaAtHour(clockMinute / 60);
 }
 
 export class Renderer {
@@ -467,7 +481,7 @@ export class Renderer {
       } });
     }
     items.sort((a, b) => a.depth - b.depth); items.forEach((item) => item.draw());
-    const na = nightAlpha(now);
+    const na = farmNightAlpha(scene.farm!.clockMinute);
     if (na > .01) {
       ctx.fillStyle = `rgba(24, 34, 76, ${na})`; ctx.fillRect(0, 0, camera.viewW, camera.viewH);
       drawFarmNightGlow(ctx, camera, zoom, na, now, doghousePoint, scene.placements);
@@ -629,10 +643,10 @@ function drawFarmNightGlow(ctx: CanvasRenderingContext2D, camera: Camera, zoom: 
     gradient.addColorStop(0, `rgba(255,218,132,${alpha * .7})`); gradient.addColorStop(1, 'rgba(255,218,132,0)');
     ctx.fillStyle = gradient; ctx.fillRect(sx - radius, sy - radius, radius * 2, radius * 2);
   }
-  const fireflies = [{ x: 17.8, y: 22.8 }, { x: 20.2, y: 23.4 }, { x: 28.8, y: 22.4 }, { x: 31.2, y: 19.5 }, { x: 24.4, y: 17.5 }];
-  fireflies.forEach((fly, index) => {
-    const sx = camera.sx(isoX(fly.x, fly.y)); const sy = camera.sy(isoY(fly.x, fly.y)) - (8 + Math.sin(now / 900 + index) * 3) * zoom;
-    ctx.fillStyle = `rgba(255,239,137,${.42 + Math.sin(now / 500 + index) * .2})`; ctx.beginPath(); ctx.arc(sx, sy, Math.max(1.1, 1.8 * zoom), 0, Math.PI * 2); ctx.fill();
+  const nightStrength = Math.max(0, Math.min(1, alpha / .42));
+  FARM_FIREFLY_ANCHORS.forEach((anchor, index) => {
+    const fly = farmWorldPoint(anchor); const sx = camera.sx(isoX(fly.x, fly.y)); const sy = camera.sy(isoY(fly.x, fly.y)) - (8 + Math.sin(now / 900 + index) * 3) * zoom;
+    ctx.fillStyle = `rgba(255,239,137,${(.42 + Math.sin(now / 500 + index) * .2) * nightStrength})`; ctx.beginPath(); ctx.arc(sx, sy, Math.max(1.1, 1.8 * zoom), 0, Math.PI * 2); ctx.fill();
   });
 }
 

@@ -707,6 +707,7 @@ export class FarmEmpireApp {
         working: !!this.tractorJob,
       },
       scout: { ...this.scout, facing: this.scoutFacing, scratching: Date.now() < this.scoutScratchUntil },
+      clockMinute: farm.clock.minute,
     };
     if (this.hover) {
       scene.hover = { tx: this.hover.tx, ty: this.hover.ty, ok: true };
