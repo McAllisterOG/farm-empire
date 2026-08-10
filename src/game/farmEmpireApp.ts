@@ -13,6 +13,7 @@ import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../rende
 import { farmLandmarks } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
+import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
 import { FARM_TOWN_GATE, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import type { TownNpcDef, TownServiceId } from '../data/town.data';
 import type { FarmFacing } from '../render/farmSprites';
@@ -24,7 +25,7 @@ import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMe
 import { closePanel, isPanelOpen } from '../ui/modal';
 import { floatText, toast } from '../ui/toast';
 import {
-  openFarmEquipment, openFarmLand, openFarmMarket, openFarmSeedShop, type FarmPanelActions,
+  openCountyWorkOrder, openFarmEquipment, openFarmLand, openFarmMarket, openFarmSeedShop, type FarmPanelActions,
 } from '../ui/panels/farmPanels';
 import { saveToSlot } from '../save/save';
 
@@ -102,7 +103,7 @@ export class FarmEmpireApp {
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
       onSeedShop: () => { this.cancelScoutApproach(); openFarmSeedShop(this.state, this.panelActions()); },
-      onMarket: () => { this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions()); },
+      onMarket: () => { this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions(), 'farm'); },
       onLand: () => { this.cancelScoutApproach(); openFarmLand(this.state, this.panelActions()); },
       onEquipment: () => this.openEquipmentPanel(),
       onReturnFarm: () => this.requestReturnToFarm(),
@@ -162,6 +163,8 @@ export class FarmEmpireApp {
       buySeeds: (cropId, count) => buyFarmSeeds(this.state, cropId, count),
       sellCrop: (cropId, count) => sellStoredCrop(this.state, cropId, count),
       buyLand: () => purchaseNeighborParcel(this.state),
+      acceptCountyWorkOrder: () => acceptCountyWorkOrder(this.state),
+      fulfillCountyWorkOrder: () => fulfillCountyWorkOrder(this.state),
       dispatch: this.dispatch,
     };
   }
@@ -353,7 +356,7 @@ export class FarmEmpireApp {
 
     const barn = this.state.placements.find((placement) => placement.defId === 'bld_storage');
     if (barn && tx >= barn.x && tx < barn.x + 2 && ty >= barn.y && ty < barn.y + 2) {
-      openFarmMarket(this.state, this.panelActions());
+      openFarmMarket(this.state, this.panelActions(), 'farm');
       return;
     }
 
@@ -371,7 +374,8 @@ export class FarmEmpireApp {
     if (interaction.kind === 'npc') {
       this.walkTownNear(interaction.npc.x, interaction.npc.y, () => {
         this.townGesture = { npcId: interaction.npc.id, until: Date.now() + 1_200 };
-        this.openTownService(interaction.service, interaction.npc.name, interaction.npc.x, interaction.npc.y);
+        if (interaction.npc.id === 'mae-carter') this.openCountyWorkOrder();
+        else this.openTownService(interaction.service, interaction.npc.name, interaction.npc.x, interaction.npc.y);
       });
     } else if (interaction.kind === 'building') {
       this.walkTownNear(interaction.building.door.x, interaction.building.door.y, () => {
@@ -390,7 +394,7 @@ export class FarmEmpireApp {
       return;
     }
     if (service === 'commodity-market') {
-      openFarmMarket(this.state, this.panelActions());
+      openFarmMarket(this.state, this.panelActions(), 'town');
       return;
     }
     const screenX = this.renderer.camera.sx(isoX(x, y));
@@ -401,7 +405,13 @@ export class FarmEmpireApp {
         label: 'Equipment Desk',
         onClick: () => openFarmEquipment(this.state, { context: 'town', onClose: () => {} }),
       },
+      { label: 'County Work Order', onClick: () => this.openCountyWorkOrder() },
     ]);
+  }
+
+  private openCountyWorkOrder(): void {
+    this.dispatch(offerCountyWorkOrder(this.state));
+    openCountyWorkOrder(this.state, this.panelActions());
   }
 
   private enterTown(): void {

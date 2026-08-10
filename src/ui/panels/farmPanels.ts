@@ -3,6 +3,8 @@ import { allFarmCrops, farmCropDef } from '../../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
+import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
+import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
 import { h, spriteImg, clearChildren } from '../dom';
 import { closePanel, openPanel } from '../modal';
 
@@ -12,7 +14,27 @@ export interface FarmPanelActions {
   buySeeds: (cropId: string, count: number) => ActionResult;
   sellCrop: (cropId: string, count: number) => ActionResult;
   buyLand: () => ActionResult;
+  acceptCountyWorkOrder: () => ActionResult;
+  fulfillCountyWorkOrder: () => ActionResult;
   dispatch: Dispatch;
+}
+
+/** A market panel is reusable, but County fulfillment is only available at Eli's exchange. */
+export type FarmMarketContext = 'farm' | 'town';
+
+export interface CountyDeliveryMarketState {
+  showCountyOrder: boolean;
+  deliveryReady: boolean;
+}
+
+/** Defaults closed so a new farm-side caller cannot accidentally expose County delivery. */
+export function countyDeliveryMarketState(state: GameState, context: FarmMarketContext = 'farm'): CountyDeliveryMarketState {
+  const showCountyOrder = context === 'town' && townContact(state).status === 'active';
+  const progress = countyWorkOrderProgress(state);
+  return {
+    showCountyOrder,
+    deliveryReady: showCountyOrder && progress.storedUnits >= progress.requiredUnits,
+  };
 }
 
 function runAndRender(result: ActionResult, actions: FarmPanelActions, rerender: () => void): void {
@@ -57,16 +79,16 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
   body.append(list);
 }
 
-export function openFarmMarket(state: GameState, actions: FarmPanelActions): void {
+export function openFarmMarket(state: GameState, actions: FarmPanelActions, context: FarmMarketContext = 'farm'): void {
   const spec = {
     title: 'Commodity Market & Barn Storage',
     className: 'panel-wide',
-    body: (body: HTMLElement): void => renderMarket(body, state, actions),
+    body: (body: HTMLElement): void => renderMarket(body, state, actions, context),
   };
   openPanel(spec);
 }
 
-function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelActions): void {
+function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelActions, context: FarmMarketContext): void {
   clearChildren(body);
   const farm = farmOf(state);
   const used = storageUsed(state);
@@ -89,7 +111,25 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   }
   body.append(events);
 
-  const rerender = (): void => renderMarket(body, state, actions);
+  const countyDelivery = countyDeliveryMarketState(state, context);
+  if (countyDelivery.showCountyOrder) {
+    const progress = countyWorkOrderProgress(state);
+    const order = h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-work-order-market' },
+      h('div', { class: 'farm-card-main' },
+        h('div', { class: 'farm-card-title' }, COUNTY_PANTRY_CORN_ORDER.title),
+        h('div', { class: 'farm-card-sub' }, `County delivery: ${progress.storedUnits} / ${progress.requiredUnits} corn in barn · fixed ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)} payout`),
+        h('div', { class: 'farm-card-stock' }, countyDelivery.deliveryReady ? 'Ready for Eli to accept.' : 'Keep harvesting and storing corn.'),
+      ),
+      h('button', {
+        class: 'btn btn-primary btn-sm', 'data-testid': 'deliver-county-work-order',
+        ...(countyDelivery.deliveryReady ? {} : { disabled: 'true' }),
+        onclick: () => runAndRender(actions.fulfillCountyWorkOrder(), actions, rerender),
+      }, `Deliver ${progress.requiredUnits} corn`),
+    );
+    body.append(order);
+  }
+
+  const rerender = (): void => renderMarket(body, state, actions, context);
   const list = h('div', { class: 'farm-card-list market-list' });
   for (const def of allFarmCrops()) {
     const quote = farm.market.quotes[def.id];
@@ -119,6 +159,45 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     ));
   }
   body.append(list);
+}
+
+export function openCountyWorkOrder(state: GameState, actions: FarmPanelActions): void {
+  const spec = {
+    title: 'Mae Carter · Farm Services',
+    body: (body: HTMLElement): void => renderCountyWorkOrder(body, state, actions),
+  };
+  openPanel(spec);
+}
+
+function renderCountyWorkOrder(body: HTMLElement, state: GameState, actions: FarmPanelActions): void {
+  clearChildren(body);
+  const status = townContact(state).status;
+  const progress = countyWorkOrderProgress(state);
+  if (status === 'completed') {
+    body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-completed' },
+      h('strong', {}, 'First delivery recorded'),
+      h('span', {}, 'Mae Carter: The County Pantry has your corn, and your farm is on the board now.'),
+    ));
+    return;
+  }
+  if (status === 'active') {
+    body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-active' },
+      h('strong', {}, COUNTY_PANTRY_CORN_ORDER.title),
+      h('span', {}, `Mae Carter: Eli at the County Grain Exchange is waiting for ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} corn.`),
+      h('span', {}, `Barn progress: ${progress.storedUnits} / ${progress.requiredUnits} corn.`),
+      h('span', {}, `Fixed county payout: ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)}.`),
+    ));
+    return;
+  }
+  body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-offer' },
+    h('strong', {}, 'A first county delivery'),
+    h('span', {}, 'Mae Carter: Welcome to the County Service Center. The County Pantry needs a dependable first corn delivery.'),
+    h('span', {}, `Grow, harvest, and store ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} corn; Eli will pay a fixed ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)} at the Grain Exchange.`),
+    h('button', {
+      class: 'btn btn-primary', 'data-testid': 'accept-county-work-order',
+      onclick: () => runAndRender(actions.acceptCountyWorkOrder(), actions, () => renderCountyWorkOrder(body, state, actions)),
+    }, 'Accept County Work Order'),
+  ));
 }
 
 export function openFarmLand(state: GameState, actions: FarmPanelActions): void {

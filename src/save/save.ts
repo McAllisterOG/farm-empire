@@ -42,6 +42,10 @@ const MIGRATIONS: Record<number, Migrator> = {
     // A clean Farm Empire namespace keeps Paradise Isle browser saves untouched.
     raw.version = 4;
   },
+  4: (raw) => {
+    // Farm town-contact state is created defensively by farm normalization.
+    raw.version = 5;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

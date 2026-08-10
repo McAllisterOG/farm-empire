@@ -77,6 +77,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     storage,
     storageCapacity: STARTING_STORAGE_CAPACITY,
     selectedCropId: 'crop_corn',
+    townContact: { status: 'unmet' },
     clock: { day: 1, minute: 8 * 60, lastRealAt: now },
     market: { quotes, activeEvents: [], lastUpdatedDay: 1 },
     parcels: { starterOwned: true, northOwned: false },
@@ -102,6 +103,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const rawClock = raw.clock ?? defaults.clock;
   const rawParcels = raw.parcels ?? defaults.parcels;
   const rawTractor = raw.equipment?.tractor ?? defaults.equipment.tractor;
+  const townStatus = raw.townContact?.status;
   const validCropIds = new Set(allFarmCrops().map((c) => c.id));
   const selectedCropId = validCropIds.has(String(raw.selectedCropId))
     ? String(raw.selectedCropId)
@@ -136,6 +138,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     storage,
     storageCapacity: clampInt(raw.storageCapacity, STARTING_STORAGE_CAPACITY, 1),
     selectedCropId,
+    townContact: { status: townStatus === 'offered' || townStatus === 'active' || townStatus === 'completed' ? townStatus : 'unmet' },
     clock: {
       day: clampInt(rawClock.day, 1, 1),
       minute: clampInt(rawClock.minute, 8 * 60) % 1_440,

@@ -423,12 +423,19 @@ export interface FarmClockState {
   lastRealAt: number;
 }
 
+export type FarmTownContactStatus = 'unmet' | 'offered' | 'active' | 'completed';
+
+export interface FarmTownContactState {
+  status: FarmTownContactStatus;
+}
+
 export interface FarmBusinessState {
   cashCents: number;
   seeds: Record<string, number>;
   storage: Record<string, number>;
   storageCapacity: number;
   selectedCropId: string;
+  townContact: FarmTownContactState;
   clock: FarmClockState;
   market: {
     quotes: Record<string, FarmMarketQuote>;
