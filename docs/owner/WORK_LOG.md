@@ -45,3 +45,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Screenshots:** `docs/screenshots/farm-scale-starter-crops.png`, `docs/screenshots/farm-scale-expanded-property.png`
 - **Known limitations:** The farmer and farm focal objects remain small relative to the new field scale; the next bounded package addresses farmyard identity and life.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Farmyard Identity Slice - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/farmyard-identity`
+- **Commits:** `714da7c`, `89f636d`, `3481ea4`, `004e2e3`, `720eddb`, `eb10f20`, `c770732`
+- **Scope:** Larger animated farm-only farmer; transient Scout follow/home/sit/scratches behavior; detailed farm-only barn, tractor, and doghouse art; no save, economy, quest, adoption, or legacy-system changes.
+- **Result:** Added a visibly larger four-facing rural farmer, an expressive farm dog who follows on foot and rests during tractor work, reliable near/far scratches with visible heart feedback, and farmyard focal objects scaled to the enlarged property.
+- **Verification:** 104/104 tests passed; strict typecheck and production build passed; browser acceptance covered movement/facing, Scout follow and held far approach, scratch feedback, tractor home travel/sit/exit resume, barn/tractor/field interactions, alternate-click cancellation, save/reload, and a console with zero warnings/errors.
+- **Review:** Independent Red Team accepted after the bounded repair/re-review closed teleport, depth sorting, missing focal-art, delayed-menu, and travel-pose findings; no MEDIUM-or-higher issues remain.
+- **Screenshots:** `docs/screenshots/farmyard-identity-on-foot.png`, `docs/screenshots/farmyard-identity-tractor.png`
+- **Known limitations:** Scout has no persisted bonding/economy system by design; the large open yard still needs more non-interactive rural set dressing and ambient motion.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

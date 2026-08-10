@@ -7,17 +7,18 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 1. **Farming Business V1** - seed buying, crops, barn storage, market timing, selling, neighboring land purchase, saves, and focused Farm Empire UI.
 2. **Operated tractor field work** - enter/exit, click-to-drive, deterministic 3x3 parcel planting and harvesting, partial outcomes, cancellation, and safe mounted-save reload.
 3. **Farm Scale & Terrain Overhaul** - large field sections, 3x3 parcel-scale presentation, flat mainland terrain, rural framing, denser crops, and save-compatible coordinate projection.
+4. **Farmyard Identity Slice** - larger four-facing farmer, runtime-only Scout companion and scratches interaction, detailed barn/tractor/doghouse art, and transient save-safe farmyard animation.
 
 ## Current authorized package
 
-### Farmyard Identity Slice
+### Farm Atmosphere & Set Dressing Slice
 
-- Larger farm-only farmer with four facings, idle breathing, and a readable walk cycle.
-- Scout, a runtime-only farm dog who follows on foot, rests at a doghouse during tractor operation, and accepts a simple scratches interaction.
-- Higher-detail farm-only barn, tractor, and doghouse painters at the new scale.
-- No save migration, economy bonus, feeding, bonding system, adoption, wardrobe, quests, animals, or broad legacy revival.
+- Farm-only perimeter and parcel fence/gate cues that preserve every existing click path.
+- A small depth-sorted barnyard cluster of clearly decorative hay, crate, trough, and hand-pump props.
+- Subtle deterministic crop/tree motion, tractor dust/exhaust, and warm night lamps with bounded animation domains.
+- No new interactions, collision, inventory, storage, animals, weather simulation, save fields, economy effects, or legacy-system revival.
 
-Acceptance requires deterministic companion tests, the full existing suite, typecheck, production build, browser playtesting on foot and in the tractor, save/reload, clean console, screenshots, and independent review.
+Acceptance requires the full existing suite, typecheck, production build, browser checks at day/night and during tractor operation, unchanged interactions/save reload, clean console, screenshots, and independent review.
 
 ## Later directions
 

@@ -41,3 +41,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The active farm is a flat rectangular mainland with continuous soil sections, rural lanes, and tree-line framing; the legacy island renderer remains preserved and isolated.
 - Player-facing language uses `field section` for one workable unit and `parcel` for a 3x3 owned group.
 - Visual scale and identity should continue through bounded farm-only presentation slices before broad legacy character, pet, quest, or building systems are reconsidered.
+
+## 2026-08-10 - Keep the first farm companion transient and presentation-only
+
+**Status:** Approved by the owner
+
+- Scout is one fixed farm dog whose follow, home, sit, and scratches behavior adds warmth without creating a pet economy or progression system.
+- Companion coordinates, facing, approach state, and reaction timing are runtime-only; existing saves gain Scout automatically and serialize no companion fields.
+- The generic legacy pet, quest, character, and building systems remain isolated rather than being reactivated wholesale.
+- Farm-only character and landmark painters may establish a higher visual bar without changing the business simulation or saved logical coordinates.
