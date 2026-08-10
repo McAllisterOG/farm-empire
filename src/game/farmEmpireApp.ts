@@ -12,6 +12,7 @@ import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../render/farmLayout';
 import { farmLandmarks } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
+import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import type { FarmFacing } from '../render/farmSprites';
 import { FarmHud } from '../ui/farmHud';
 import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMenu';
@@ -23,7 +24,6 @@ import {
 import { saveToSlot } from '../save/save';
 
 const AUTOSAVE_MS = 15_000;
-const TRACTOR_SPEED_TILES_PER_MS = 3.6 / 1_000;
 const FIELD_ACTION_PAUSE_MS = 260;
 
 interface TractorMoveTarget {
@@ -59,6 +59,7 @@ export class FarmEmpireApp {
   private walkTarget: { x: number; y: number; cb: (() => void) | null } | null = null;
   private operatingTractor = false;
   private tractorTarget: TractorMoveTarget | null = null;
+  private tractorMotion: TractorMotion = createTractorMotion();
   private tractorJob: TractorJob | null = null;
   private equipmentPanelOpen = false;
   private running = true;
@@ -251,6 +252,7 @@ export class FarmEmpireApp {
       else if (this.tractorJob) this.cancelTractorJob();
       else if (this.tractorTarget) {
         this.tractorTarget = null;
+        this.tractorMotion = resetTractorMotion(this.tractorMotion);
         toast('Tractor drive cancelled.', 'good');
       } else if (isActionMenuOpen()) hideActionMenu();
       else if (isPanelOpen()) closePanel();
@@ -349,6 +351,7 @@ export class FarmEmpireApp {
     if (this.operatingTractor) {
       const dismount = placePlayerAtTractorDismount(this.state);
       this.operatingTractor = false;
+      this.tractorMotion = resetTractorMotion(this.tractorMotion);
       this.playerActor.x = dismount.x;
       this.playerActor.y = dismount.y;
       this.playerActor.walking = false;
@@ -358,6 +361,7 @@ export class FarmEmpireApp {
       this.playerActor.walking = false;
       this.cancelScoutApproach();
       this.operatingTractor = true;
+      this.tractorMotion = resetTractorMotion(this.tractorMotion);
       toast('Operating the old tractor. Click ground to drive or a field parcel for batch work.', 'good');
     }
     this.hud.update(this.state, this.tractorHudRuntime());
@@ -530,6 +534,7 @@ export class FarmEmpireApp {
     const detail = job.skipped && job.lastFailure ? ` ${job.lastFailure}` : '';
     this.tractorJob = null;
     this.tractorTarget = null;
+    this.tractorMotion = resetTractorMotion(this.tractorMotion);
     this.closeEquipmentPanelIfOpen();
     toast(summary + detail, job.completed > 0 ? 'good' : 'bad');
     this.save();
@@ -542,6 +547,7 @@ export class FarmEmpireApp {
     const verb = job.kind === 'plant' ? 'Planting' : 'Harvest';
     this.tractorJob = null;
     this.tractorTarget = null;
+    this.tractorMotion = resetTractorMotion(this.tractorMotion);
     this.closeEquipmentPanelIfOpen();
     toast(`${verb} cancelled: ${job.completed} completed, ${job.skipped} skipped, ${untouched} not attempted.`, 'bad');
     this.save();
@@ -639,19 +645,14 @@ export class FarmEmpireApp {
 
     if (this.tractorTarget) {
       const tractor = farmOf(this.state).equipment.tractor;
-      const dx = this.tractorTarget.x - tractor.x;
-      const dy = this.tractorTarget.y - tractor.y;
-      const dist = Math.hypot(dx, dy);
-      const step = TRACTOR_SPEED_TILES_PER_MS * dt;
-      if (dist <= step) {
-        tractor.x = this.tractorTarget.x;
-        tractor.y = this.tractorTarget.y;
+      const motionStep = advanceTractorMotion(tractor, this.tractorTarget, this.tractorMotion, dt);
+      tractor.x = motionStep.position.x;
+      tractor.y = motionStep.position.y;
+      this.tractorMotion = motionStep.motion;
+      if (motionStep.arrived) {
         const cb = this.tractorTarget.cb;
         this.tractorTarget = null;
         cb?.();
-      } else {
-        tractor.x += dx / dist * step;
-        tractor.y += dy / dist * step;
       }
     }
 
@@ -705,6 +706,11 @@ export class FarmEmpireApp {
         ...farm.equipment.tractor,
         operating: this.operatingTractor,
         working: !!this.tractorJob,
+        moving: !!this.tractorTarget,
+        headingX: this.tractorMotion.headingX,
+        headingY: this.tractorMotion.headingY,
+        steer: this.tractorMotion.steer,
+        wheelPhase: this.tractorMotion.wheelPhase,
       },
       scout: { ...this.scout, facing: this.scoutFacing, scratching: Date.now() < this.scoutScratchUntil },
       clockMinute: farm.clock.minute,

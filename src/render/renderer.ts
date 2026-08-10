@@ -13,7 +13,7 @@ import { WATER_COOLDOWN_MS } from '../core/balance';
 import { Camera } from './camera';
 import { diamondPath, isoX, isoY, TILE_H, TILE_W } from './iso';
 import { charKey, drawSprite } from './sprites';
-import { farmMainlandBounds, farmPlotFootprint, farmWorldPoint } from './farmLayout';
+import { farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint } from './farmLayout';
 import { farmLandmarks } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
@@ -54,6 +54,11 @@ export interface RenderScene {
       y: number;
       operating?: boolean;
       working?: boolean;
+      moving?: boolean;
+      headingX?: number;
+      headingY?: number;
+      steer?: number;
+      wheelPhase?: number;
     };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
     clockMinute: number;
@@ -469,7 +474,7 @@ export class Renderer {
     items.push({ depth: doghousePoint.x + doghousePoint.y + 0.15, draw: () => drawFarmDoghouse(ctx, camera.sx(isoX(doghousePoint.x, doghousePoint.y)), camera.sy(isoY(doghousePoint.x, doghousePoint.y) + TILE_H / 2), zoom) });
     const tractor = scene.farm!.tractor;
     const tractorPoint = farmWorldPoint(tractor);
-    items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now) });
+    items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now, tractor.headingX, tractor.headingY, tractor.steer, tractor.wheelPhase, !!tractor.moving) });
     const scoutPoint = farmWorldPoint(scene.farm!.scout);
     items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.mode === 'home' && !scene.farm!.scout.moving, scene.farm!.scout.facing) });
     for (const actor of scene.actors) {
@@ -688,26 +693,31 @@ function drawOldTractor(
   operating: boolean,
   working: boolean,
   now: number,
+  headingX = 1,
+  headingY = 0,
+  steer = 0,
+  wheelPhase = 0,
+  moving = false,
 ): void {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(scale * 1.8, scale * 1.8);
+  // The painter's forward axis is screen-right.  Leftward travel mirrors the
+  // side silhouette, then folds its slope upright instead of paper-rotating
+  // the cab and driver through 180 degrees.
+  const pose = farmUprightPose({ x: headingX, y: headingY });
+  ctx.rotate(pose.slope);
+  if (pose.mirrored) ctx.scale(-1, 1);
   ctx.fillStyle = 'rgba(40, 30, 20, 0.22)';
   ctx.beginPath();
   ctx.ellipse(0, 2, 34, 10, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#2c2c2a';
-  ctx.beginPath();
-  ctx.arc(-20, -8, 12, 0, Math.PI * 2);
-  ctx.arc(22, -7, 8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#b8a98e';
-  ctx.beginPath();
-  ctx.arc(-20, -8, 5, 0, Math.PI * 2);
-  ctx.arc(22, -7, 3, 0, Math.PI * 2);
-  ctx.fill();
+  drawTractorWheel(ctx, -20, -8, 12, 5, wheelPhase);
+  ctx.save(); ctx.translate(22, -7); ctx.rotate(steer * .48); drawTractorWheel(ctx, 0, 0, 8, 3, wheelPhase * 1.35); ctx.restore();
   ctx.fillStyle = status === 'operational' ? '#b74832' : '#7d746b';
   ctx.fillRect(-16, -27, 37, 18);
+  ctx.fillStyle = status === 'operational' ? '#d06442' : '#9a9285';
+  ctx.fillRect(-20, -24, 8, 11);
   ctx.fillStyle = '#8f3027';
   ctx.fillRect(-10, -41, 17, 16);
   ctx.fillStyle = '#b9d7df';
@@ -715,8 +725,8 @@ function drawOldTractor(
   if (operating) {
     const puff = Math.sin(now / 180) * 2;
     ctx.fillStyle = working ? 'rgba(214,191,154,.42)' : 'rgba(224,224,212,.34)';
-    ctx.beginPath(); ctx.arc(18 + puff, -46 - Math.abs(puff), working ? 5 : 4, 0, Math.PI * 2); ctx.fill();
-    if (working) { ctx.fillStyle = 'rgba(157,115,67,.22)'; ctx.beginPath(); ctx.ellipse(-28 - puff, 0, 15, 4, 0, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(18 + puff, -46 - Math.abs(puff), working ? 5 : moving ? 4.5 : 3.5, 0, Math.PI * 2); ctx.fill();
+    if (working || moving) { ctx.fillStyle = `rgba(157,115,67,${working ? .22 : .14})`; ctx.beginPath(); ctx.ellipse(-28 - puff, 0, moving ? 13 : 15, 4, 0, 0, Math.PI * 2); ctx.fill(); }
     ctx.fillStyle = '#f2c59f';
     ctx.beginPath();
     ctx.arc(-1.5, -34, 3.2, 0, Math.PI * 2);
@@ -735,4 +745,15 @@ function drawOldTractor(
     ctx.stroke();
   }
   ctx.restore();
+}
+
+function drawTractorWheel(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, hubRadius: number, phase: number): void {
+  ctx.fillStyle = '#2c2c2a'; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, radius - 2, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#b8a98e'; ctx.lineWidth = 1.35;
+  for (let spoke = 0; spoke < 4; spoke++) {
+    const angle = phase + spoke * Math.PI / 2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(angle) * (radius - 3), y + Math.sin(angle) * (radius - 3)); ctx.stroke();
+  }
+  ctx.fillStyle = '#d6c6a8'; ctx.beginPath(); ctx.arc(x, y, hubRadius, 0, Math.PI * 2); ctx.fill();
 }

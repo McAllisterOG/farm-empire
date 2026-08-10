@@ -3,7 +3,7 @@ import { createFarmGame } from '../src/core/state';
 import { NEIGHBOR_FIELD_TILES } from '../src/core/farmBusiness';
 import { deserialize } from '../src/save/save';
 import {
-  FARM_PLOT_SPAN, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmWorldPoint,
+  FARM_PLOT_SPAN, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint,
 } from '../src/render/farmLayout';
 import { farmGroundVariant, farmTerrainBounds, intersectsFarmTerrain } from '../src/render/farmTerrain';
 import { NOW } from './helpers';
@@ -14,6 +14,26 @@ describe('Farm Empire presentation layout', () => {
       expect(farmLogicalPoint(farmWorldPoint(point))).toEqual(point);
     }
     expect(FARM_PLOT_SPAN).toBeGreaterThanOrEqual(2.5);
+  });
+
+  it('maps all four logical tractor directions through the isometric screen basis', () => {
+    expect(farmScreenHeadingAngle({ x: 1, y: 0 })).toBeCloseTo(Math.atan2(.5, 1));
+    expect(farmScreenHeadingAngle({ x: 0, y: 1 })).toBeCloseTo(Math.atan2(.5, -1));
+    expect(farmScreenHeadingAngle({ x: -1, y: 0 })).toBeCloseTo(Math.atan2(-.5, -1));
+    expect(farmScreenHeadingAngle({ x: 0, y: -1 })).toBeCloseTo(Math.atan2(-.5, 1));
+  });
+
+  it('keeps tractor side-view poses upright for cardinals, diagonals, and near-vertical travel', () => {
+    const limit = Math.PI / 6;
+    expect(farmUprightPose({ x: 1, y: 0 })).toEqual({ mirrored: false, slope: expect.any(Number) });
+    expect(farmUprightPose({ x: 0, y: 1 }).mirrored).toBe(true);
+    expect(farmUprightPose({ x: -1, y: 0 }).mirrored).toBe(true);
+    expect(farmUprightPose({ x: 0, y: -1 }).mirrored).toBe(false);
+    for (const heading of [{ x: 1, y: 1 }, { x: -1, y: -1 }, { x: 1, y: 1.00001 }, { x: 1.00001, y: 1 }]) {
+      expect(Math.abs(farmUprightPose(heading).slope)).toBeLessThanOrEqual(limit);
+    }
+    expect(farmUprightPose({ x: 1, y: 1 }).slope).toBeGreaterThan(0);
+    expect(farmUprightPose({ x: -1, y: -1 }).slope).toBeLessThan(0);
   });
 
   it('maps all four large-section footprint corners back to one logical plot and rejects its gaps', () => {

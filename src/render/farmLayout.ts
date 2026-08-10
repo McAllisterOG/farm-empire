@@ -35,6 +35,28 @@ export function farmLogicalPoint(point: FarmPoint): FarmPoint {
   return { x: point.x / FARM_PLOT_SPAN, y: point.y / FARM_PLOT_SPAN };
 }
 
+/** Screen-space heading for a logical farm direction under the isometric basis. */
+export function farmScreenHeadingAngle(heading: FarmPoint): number {
+  const screenX = heading.x - heading.y;
+  const screenY = (heading.x + heading.y) / 2;
+  return Math.atan2(screenY, screenX);
+}
+
+export interface FarmUprightPose { mirrored: boolean; slope: number }
+
+/**
+ * An upright side-view vehicle pose for a projected farm heading.  The front
+ * remains on the correct left/right side while diagonal travel cannot tip the
+ * cab into a vertical paper cutout.
+ */
+export function farmUprightPose(heading: FarmPoint, maxSlope = Math.PI / 6): FarmUprightPose {
+  const angle = farmScreenHeadingAngle(heading);
+  const screenX = heading.x - heading.y;
+  const mirrored = screenX < -0.000001;
+  const folded = mirrored ? angle - Math.sign(angle || 1) * Math.PI : angle;
+  return { mirrored, slope: Math.max(-maxSlope, Math.min(maxSlope, folded)) };
+}
+
 /** The continuous soil footprint of one logical field section. */
 export function farmPlotFootprint(plot: Pick<FarmPlot, 'x' | 'y'>): FarmBounds {
   const half = (FARM_PLOT_SPAN - FARM_PLOT_GAP) / 2;
