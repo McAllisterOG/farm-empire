@@ -52,12 +52,14 @@ Before dispatch, define a bounded package containing:
 
 ## Default execution model
 
-1. Owner Console defines and authorizes the package.
+1. Owner Console defines and authorizes the package, then dispatches new Farm Empire tasks on `gpt-5.6-luna` with `medium` reasoning unless the owner explicitly approves a more expensive model/effort for that named task.
 2. One primary implementation writer inspects the current system, edits the working tree, tests, browser-playtests gameplay changes, checks runtime errors, and creates logical commits.
 3. The writer may use a small number of read-only research agents when useful. Do not create overlapping writers or uncontrolled nested agent trees.
 4. For a substantial milestone, dispatch one independent read-only Red Team reviewer after a tested checkpoint. Classify findings as CRITICAL, HIGH, MEDIUM, or LOW.
 5. Send milestone-threatening CRITICAL/HIGH findings back for one bounded repair pass and normally one re-review. Avoid endless review loops.
 6. Owner Console reconciles the result with the package, updates durable project state at a sensible checkpoint, and explains the outcome to the owner.
+
+Avoid speculative parallel tasks and inherited high-cost model settings. Sol models, Fast mode/service-tier overrides, and reasoning above Medium require explicit owner approval; cost control is part of package design.
 
 Implementation workers must read the project instructions and relevant Owner Console records, preserve working architecture, avoid unrelated scope expansion, run proportional complete validation, and report valuable unrelated ideas instead of silently adding them.
 

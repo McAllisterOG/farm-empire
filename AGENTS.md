@@ -25,6 +25,14 @@ Farm Empire uses a durable Owner Console workflow. Read `docs/owner/OWNER_CONSOL
 - Prioritize working gameplay over decorative scope. Complete the farming, storage, market, save, and expansion loops before polish.
 - Preserve the MIT license and required attribution.
 
+## Model and usage efficiency
+
+- Create Farm Empire tasks with `gpt-5.6-luna` at `medium` reasoning by default, including research, implementation, and review tasks.
+- Do not use a Sol model, Fast mode/service-tier override, or reasoning above `medium` unless the owner explicitly authorizes that model and effort for a named finite task.
+- Use the fewest tasks that materially improve the outcome. Prefer one bounded primary writer and add one independent reviewer only for a substantial checkpoint.
+- Do not create parallel analyses when one Luna Medium task can answer the question. Stop or avoid redundant tasks as soon as sufficient evidence exists.
+- A current task's model cannot be changed by child-task instructions; enforce this policy on every newly created or continued task through explicit model and reasoning settings.
+
 ## Practical commands
 
 ```powershell

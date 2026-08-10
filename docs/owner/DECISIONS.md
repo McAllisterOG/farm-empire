@@ -88,3 +88,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Fulfillment atomically removes exactly 12 corn, awards exactly 8,500 integer cents once, synchronizes the cash mirror, and completes before another payout can occur.
 - Save schema v5 persists only the minimal contact status and defensively normalizes old, missing, or corrupt data; transient town position and actor state remain unsaved.
 - Deadlines, RNG, reputation, repeat contracts, hauling scenes, generic quests, and legacy social/currency systems remain deferred.
+
+## 2026-08-10 - Default Farm Empire tasks to Luna Medium
+
+**Status:** Approved by the owner
+
+- New Farm Empire research, implementation, and review tasks default to `gpt-5.6-luna` with Medium reasoning.
+- Sol models, Fast mode/service-tier overrides, and reasoning above Medium require explicit owner approval for a named finite task.
+- Task count should be minimized: normally one bounded writer, with one independent reviewer only when the checkpoint is substantial.
+- Completed or redundant tasks should not be continued merely to consume an available parallel slot.
