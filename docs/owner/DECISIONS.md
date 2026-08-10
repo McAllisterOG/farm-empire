@@ -97,3 +97,22 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Sol models, Fast mode/service-tier overrides, and reasoning above Medium require explicit owner approval for a named finite task.
 - Task count should be minimized: normally one bounded writer, with one independent reviewer only when the checkpoint is substantial.
 - Completed or redundant tasks should not be continued merely to consume an available parallel slot.
+
+## 2026-08-10 - Make the first tractor upgrade physical and operated
+
+**Status:** Approved by the owner
+
+- The County Row-Crop Field Kit is one visible, town-purchased upgrade unlocked after the first County order, with its provisional price isolated as 125,000 integer cents.
+- Planting speed and harvest bonuses apply only during physically operated tractor parcel jobs; manual work and a tractor without the kit retain base economics.
+- Existing v5 farms are grandfathered through save v6 while fresh farms begin without the kit. Toolbar pose remains transient and unsaved.
+- Implements, trailers, hauling, fuel, condition, and broader machinery tiers remain separate future packages.
+
+## 2026-08-10 - Protect playability with recovery and one storage step
+
+**Status:** Approved by the owner
+
+- Farm crops have one authoritative deterministic stage model and a 15-minute post-maturity harvest window. Withered sections can be cleared without crop, seed, or cash refund.
+- County relief is a lifetime one-seed safety net for a true zero-asset farm, issued only through Mae/Farm Services and persisted so deliberate loss cannot recycle it.
+- The Barn Loft Expansion is a one-time 180,000-cent investment unlocked by owning the neighboring parcel; it raises storage from 150 to 200 and has a restrained visible barn change.
+- Save v7 fails closed for malformed relief/loft data and requires the parcel prerequisite during normalization as well as purchase.
+- These safeguards do not authorize a crop rebalance, repeat subsidy, broader land tier, worker system, or logistics rewrite.

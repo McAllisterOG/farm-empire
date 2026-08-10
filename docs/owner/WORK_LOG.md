@@ -107,3 +107,38 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** Independent Red Team found one MEDIUM context leak that exposed delivery in farm-side market panels; one bounded repair/re-review added an explicit fail-closed market context and was accepted with no remaining findings.
 - **Known limitations:** The first town story is deliberately finite; there is no general contract log, repeat reward, reputation, deadline, vehicle hauling, or broader NPC relationship system.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## County Row-Crop Field Kit - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `6dd4122`
+- **Scope:** One post-order Equipment Desk tractor upgrade, explicit manual/operated work contexts, and visible toolbar motion; no implements, logistics, fuel, condition, or broader economy rewrite.
+- **Result:** Added a data-defined $1,250 kit whose speed/yield benefits apply only to physically operated tractor jobs, with town-only purchase and save-v6 grandfathering for existing farms.
+- **Verification:** 134/134 tests passed; strict typecheck and production build passed; browser acceptance covered prerequisite, exact cash, save/reload, toolbar states, operated bonuses, manual base results, and clean console.
+- **Review:** Independent Red Team accepted after one bounded repair made omitted work context fail closed and tightened save behavior; no MEDIUM-or-higher findings remain.
+- **Screenshots:** `docs/screenshots/farm-kit-desk-locked.png`, `docs/screenshots/farm-kit-toolbar-raised.png`, `docs/screenshots/farm-kit-toolbar-lowered.png`
+- **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Public Demo Polish Pass - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `85a9701`
+- **Scope:** Capped presentation-only pass across farm/town HUD, panels, controls, feedback, transitions, and compact layout; no gameplay, economy, or save changes.
+- **Result:** Improved visual hierarchy, consistent interaction states, modal readability, responsive spacing, and reduced-motion-aware presentation while preserving the complete player loop.
+- **Verification:** 134/134 tests passed; strict typecheck and production build passed; browser acceptance covered desktop/compact farm and town, panels, crop/tractor flow, Save/reload, Escape behavior, and clean console.
+- **Evidence:** `docs/demo/PUBLIC_DEMO_POLISH.md` and matched `docs/screenshots/demo-polish-*` images.
+- **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Barn Expansion & Recovery - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `52337dd`
+- **Scope:** Recoverable withered crops, one lifetime true-zero County seed, one north-parcel-gated barn upgrade, working-capital guidance, and save v7; no new crops, rebalance, logistics, workers, or managers.
+- **Result:** Added an authoritative farm crop stage with a 15-minute ready window, no-refund clearing, non-recyclable relief, exact $1,800 loft purchase, storage 150 to 200, and a visible barn lean-to.
+- **Verification:** 142/142 tests passed; strict typecheck, production build, and diff checks passed; browser acceptance covered service routing, land guidance, exact purchase/capacity, barn presentation, normal relief rejection, Save/reload, and clean console.
+- **Review:** Independent Red Team initially found three MEDIUM edge cases; one bounded repair hardened malformed saves, enforced the parcel prerequisite during normalization, and made relief lifetime one-time. Re-review accepted with no MEDIUM-or-higher findings.
+- **Screenshots:** `docs/screenshots/barn-loft-before.png`, `docs/screenshots/barn-loft-after.png`
+- **Push:** Not yet pushed; external GitHub authorization is still required.
