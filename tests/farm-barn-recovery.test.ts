@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { BARN_LOFT_EXPANSION } from '../src/data/farmEquipment.data';
 import {
-  clearWitheredFarmCrop, countyReliefEligible, farmCropStage, farmOf, issueCountyReliefSeed,
+  cheapestFarmSeed, clearWitheredFarmCrop, countyReliefEligible, farmCropStage, farmOf, issueCountyReliefSeed,
   purchaseBarnLoftExpansion, purchaseNeighborParcel, plantFarmCrop,
 } from '../src/core/farmBusiness';
 import { farmCropDef } from '../src/core/registry';
@@ -49,9 +49,11 @@ describe('Barn expansion and recovery', () => {
   it('issues exactly one cheapest seed only for a true zero-asset farm', () => {
     const state = makeFarm(); const farm = farmOf(state);
     farm.cashCents = 0; Object.keys(farm.seeds).forEach((id) => { farm.seeds[id] = 0; });
+    expect(cheapestFarmSeed()).toEqual({ cropId: 'crop_wheat', priceCents: 1_000, name: 'Wheat' });
     expect(countyReliefEligible(state, NOW)).toBe(true);
     expect(issueCountyReliefSeed(state, NOW).ok).toBe(true);
     expect(farm.seeds.crop_wheat).toBe(1);
+    expect(farm.seeds.crop_carrot).toBe(0);
     const snapshot = JSON.stringify(farm);
     expect(issueCountyReliefSeed(state, NOW).ok).toBe(false);
     expect(JSON.stringify(farm)).toBe(snapshot);

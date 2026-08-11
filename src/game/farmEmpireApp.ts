@@ -1,5 +1,5 @@
 import type { ActionResult, GameState } from '../core/types';
-import { cropDef, farmCropDef } from '../core/registry';
+import { farmCropDef } from '../core/registry';
 import {
   NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, buyFarmSeeds, farmOf,
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
@@ -764,7 +764,7 @@ export class FarmEmpireApp {
     const now = Date.now();
     for (const plot of this.state.plots) {
       if (!plot.crop) continue;
-      plot.crop.plantedAt = now - cropDef(plot.crop.defId).growMs - 1_000;
+      plot.crop.plantedAt = now - farmCropDef(plot.crop.defId).growMs - 1_000;
     }
   }
 

@@ -100,11 +100,20 @@ describe('County crop catalog', () => {
     const defs = allFarmCrops();
     for (const def of defs) {
       expect(def.seedPriceCents).toBeGreaterThan(0); expect(def.basePriceCents).toBeGreaterThan(0);
+      expect(Number.isInteger(def.storageUnitsPerItem)).toBe(true);
+      expect(def.storageUnitsPerItem).toBeGreaterThan(0);
       expect(def.harvestYield * def.basePriceCents).toBeGreaterThan(def.seedPriceCents);
     }
-    expect(farmCropDef('crop_carrot').growMs).toBeLessThan(farmCropDef('crop_wheat').growMs);
+    const carrot = farmCropDef('crop_carrot'); const wheat = farmCropDef('crop_wheat');
+    expect(carrot.growMs).toBeLessThan(wheat.growMs);
+    expect(carrot.seedPriceCents).toBeLessThan(wheat.seedPriceCents);
+    expect(carrot.harvestYield * carrot.basePriceCents - carrot.seedPriceCents)
+      .toBeLessThan(wheat.harvestYield * wheat.basePriceCents - wheat.seedPriceCents);
     expect(farmCropDef('crop_tomato').harvestYield).toBeGreaterThan(farmCropDef('crop_corn').harvestYield);
-    expect(farmCropDef('crop_cabbage').storageUnitsPerItem).toBeLessThan(1);
+    const cabbage = farmCropDef('crop_cabbage'); const tomato = farmCropDef('crop_tomato');
+    const cabbageValuePerBarnUnit = cabbage.harvestYield * cabbage.basePriceCents / (cabbage.harvestYield * cabbage.storageUnitsPerItem);
+    const tomatoValuePerBarnUnit = tomato.harvestYield * tomato.basePriceCents / (tomato.harvestYield * tomato.storageUnitsPerItem);
+    expect(cabbageValuePerBarnUnit).toBeGreaterThan(tomatoValuePerBarnUnit);
     expect(farmCropDef('crop_pumpkin').storageUnitsPerItem).toBeGreaterThan(1);
     expect(farmCropDef('crop_pumpkin').harvestYield * farmCropDef('crop_pumpkin').basePriceCents)
       .toBeGreaterThan(farmCropDef('crop_cabbage').harvestYield * farmCropDef('crop_cabbage').basePriceCents);

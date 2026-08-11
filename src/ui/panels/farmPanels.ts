@@ -1,7 +1,7 @@
 import type { ActionResult, GameState } from '../../core/types';
 import { allFarmCrops, farmCropDef } from '../../core/registry';
 import {
-  FIRST_PARCEL_PRICE_CENTS, farmCropUnlockInfo, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
+  FIRST_PARCEL_PRICE_CENTS, cheapestFarmSeed, farmCropUnlockInfo, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
 import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT } from '../../data/farmEquipment.data';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
@@ -191,10 +191,10 @@ function renderCountyWorkOrder(body: HTMLElement, state: GameState, actions: Far
     ...(!loftOwned && farm.parcels.northOwned ? [h('button', { class: 'btn btn-primary btn-sm', 'data-testid': 'buy-barn-loft', onclick: () => runAndRender(actions.purchaseBarnLoft(), actions, () => renderCountyWorkOrder(body, state, actions)) }, `Purchase for ${formatMoney(BARN_LOFT_DEF.priceCents)}`)] : []),
   );
   body.append(loftCard);
-  const cheapest = allFarmCrops().slice().sort((a, b) => a.seedPriceCents - b.seedPriceCents || a.id.localeCompare(b.id))[0];
+  const cheapest = cheapestFarmSeed();
   const relief = h('div', { class: 'farm-card', 'data-testid': 'county-relief' },
     h('div', { class: 'farm-card-title' }, 'Last-resort seed relief'),
-    h('div', { class: 'farm-card-sub' }, `Mae can issue exactly one ${cheapest.name} seed only when cash is below ${formatMoney(cheapest.seedPriceCents)}, every seed and stored crop is gone, and no field crop can still mature or be harvested. Withered sections do not block relief.`),
+    h('div', { class: 'farm-card-sub' }, `Mae can issue exactly one ${cheapest.name} seed only when cash is below ${formatMoney(cheapest.priceCents)}, every seed and stored crop is gone, and no field crop can still mature or be harvested. Withered sections do not block relief.`),
     h('button', { class: 'btn btn-sm', 'data-testid': 'claim-county-relief', onclick: () => runAndRender(actions.issueCountyReliefSeed(), actions, () => renderCountyWorkOrder(body, state, actions)) }, 'Check relief eligibility'),
   );
   body.append(relief);

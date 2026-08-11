@@ -18,7 +18,7 @@ export const FARM_CROPS: FarmCropDef[] = [
     harvestYield: 10, storageUnitsPerItem: 1, basePriceCents: 290, color: '#b98b58',
   },
   {
-    id: 'crop_carrot', name: 'Carrots', startingSeeds: 0, unlock: 'county-order', role: 'Quick low-risk turnaround', seedPriceCents: 1_100, growMs: 40_000, witherMs: 900_000,
+    id: 'crop_carrot', name: 'Carrots', startingSeeds: 0, unlock: 'county-order', role: 'Quick low-risk turnaround', seedPriceCents: 800, growMs: 40_000, witherMs: 900_000,
     harvestYield: 6, storageUnitsPerItem: 1, basePriceCents: 200, color: '#e99545',
   },
   {
@@ -27,11 +27,11 @@ export const FARM_CROPS: FarmCropDef[] = [
   },
   {
     id: 'crop_cabbage', name: 'Cabbage', startingSeeds: 0, unlock: 'north-parcel', role: 'Slow premium · storage efficient', seedPriceCents: 2_400, growMs: 140_000, witherMs: 900_000,
-    harvestYield: 8, storageUnitsPerItem: 0.5, basePriceCents: 520, color: '#78a95c',
+    harvestYield: 8, storageUnitsPerItem: 1, basePriceCents: 520, color: '#78a95c',
   },
   {
     id: 'crop_pumpkin', name: 'Pumpkins', startingSeeds: 0, unlock: 'barn-loft', role: 'Slowest · highest gross, bulky', seedPriceCents: 2_600, growMs: 180_000, witherMs: 900_000,
-    harvestYield: 8, storageUnitsPerItem: 2.5, basePriceCents: 650, color: '#d98238',
+    harvestYield: 8, storageUnitsPerItem: 3, basePriceCents: 650, color: '#d98238',
   },
 ];
 

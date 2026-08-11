@@ -525,6 +525,11 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .farm-crop-button:hover { background: #fff4cf; }
 .farm-crop-button.active { border-color: #4c9138; background: #eaf4dc; }
 .farm-crop-button:disabled { opacity: .5; cursor: not-allowed; }
+.farm-crop-button.locked:disabled { opacity: .72; background: rgba(125, 105, 72, .08); }
+.farm-crop-button.locked::after {
+  content: 'LOCK'; min-width: 25px; right: 1px; padding: 0 2px;
+  background: #796b55; color: #fff9e6; font-size: 7px; letter-spacing: .04em;
+}
 .farm-actions { display: flex; gap: 5px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
 .farm-help {
   position: absolute; top: 82px; left: 10px; padding: 7px 11px; max-width: 440px;

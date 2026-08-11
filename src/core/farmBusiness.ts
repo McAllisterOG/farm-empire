@@ -404,7 +404,9 @@ export function clearWitheredFarmCrop(state: GameState, plotUid: number, now: nu
 }
 
 export function cheapestFarmSeed(): { cropId: string; priceCents: number; name: string } {
-  const def = allFarmCrops().slice().sort((a, b) => a.seedPriceCents - b.seedPriceCents || a.id.localeCompare(b.id))[0];
+  const def = allFarmCrops()
+    .filter((candidate) => candidate.unlock === 'starter')
+    .sort((a, b) => a.seedPriceCents - b.seedPriceCents || a.id.localeCompare(b.id))[0];
   return { cropId: def.id, priceCents: def.seedPriceCents, name: def.name };
 }
 
