@@ -126,3 +126,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Crop roles remain data-driven and use whole barn units: carrots minimize capital and time, tomatoes emphasize throughput, cabbage emphasizes value per barn unit, and pumpkins trade three storage units per item for the highest base gross and margin.
 - County emergency relief always selects the cheapest starter-eligible crop, so later catalog pricing cannot issue an unusable locked seed.
 - Additional crop tiers, fertilizer, irrigation, quality, processing, recipes, and crop-specific machinery remain separate future packages.
+
+## 2026-08-11 - Ship a secure local Windows desktop build
+
+**Status:** Approved by the owner
+
+- Farm Empire's supported local player surface is a sandboxed Electron shell that loads the bundled Vite build, keeps Node integration disabled, denies unexpected navigation, and allows only the existing HTTPS attribution link to open externally.
+- The stable app identity `com.farmempire.desktop` and `%APPDATA%\Farm Empire` profile preserve desktop localStorage across launches and rebuilds. Desktop saves remain intentionally separate from browser saves; no automatic scraping, import, or cloud synchronization is introduced.
+- The supported branded shortcut targets the unpacked x64 application and uses the deployed Farm Empire ICO explicitly. Portable and NSIS artifacts are also produced, but the local build remains unsigned with no auto-updater or publisher-certificate claim.
+- Desktop packaging does not authorize gameplay, economy, or save-schema changes. Future signed distribution, auto-update, cross-platform builds, and browser-save import require separate design and authorization.

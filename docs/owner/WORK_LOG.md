@@ -155,3 +155,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Screenshots:** `docs/screenshots/crop-catalog-locked-1280.png`, `docs/screenshots/crop-catalog-shop-1280.png`, `docs/screenshots/crop-catalog-varied-field-1280.png`
 - **Known limitations:** Unlocks use existing finite milestones; there are no repeat contracts, additional land tiers, crop inputs/quality, processing, hauling, workers, or managers yet.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Windows Desktop Release - complete
+
+- **Date:** 2026-08-11
+- **Branch:** `codex/first-town-contact`
+- **Commits:** `98344cd`, `01eae44`, `1a7069b`, `7314689`
+- **Scope:** Secure Windows desktop shell, packaging, original icon resources, exact branded Desktop shortcut, current release/test toolchain, and native acceptance; no gameplay, economy, or save-schema changes.
+- **Result:** Farm Empire now launches from the real Windows Desktop as a centered native game window without a terminal, browser tab, development server, or internet. It has stable desktop saves, single-instance focus, F11 fullscreen, bundled local loading, denied unexpected navigation, unpacked/portable/NSIS x64 artifacts, and a verified Farm Empire shortcut/icon.
+- **Verification:** 155/155 tests passed; strict typecheck, production build, full npm audit with zero findings, and all three Windows package targets passed. Native acceptance covered shortcut target/icon read-back, 150% DPI presentation, fullscreen/restoration, second-launch focus, normal shutdown with zero residual processes, and packaged hostile-environment behavior. Browser acceptance covered farm creation, save/reload/re-entry, responsive minimum layout, cleanup, and zero console warnings/errors.
+- **Review:** Independent Red Team rejected the first development launcher because Windows shell descendants could survive and fool readiness. Bounded repairs moved to direct child processes, fail-closed port/content validation, packaged-local-only loading, no preload bridge, and bounded process-tree cleanup; the final primary inspection and real process checks closed the finding.
+- **Artifacts:** `release/win-unpacked/Farm Empire.exe`, `release/Farm Empire Portable 1.0.0 x64.exe`, and `release/Farm Empire Setup 1.0.0 x64.exe` (generated and ignored). The real shortcut is `Farm Empire.lnk` on the Windows-resolved Desktop.
+- **Known limitations:** Unsigned x64 Windows build; SmartScreen may warn. Executable file metadata remains Electron because resource post-editing is disabled in this account; the supported shortcut and game window use the verified external Farm Empire icon. Desktop and browser saves are separate; no signing, auto-update, cloud sync, or cross-platform package yet.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

@@ -16,10 +16,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 10. **Public Demo Polish Pass** - a capped presentation pass covering HUD and modal hierarchy, interaction feedback, controls, responsive behavior, transitions, and matched before/after evidence.
 11. **Barn Expansion & Recovery** - recoverable withered field sections, one lifetime last-resort County seed, a north-parcel-gated Barn Loft Expansion from 150 to 200 storage, working-capital guidance, and defensive save-v7 migration.
 12. **County Crop Catalog & Market Choice** - four additional procedural crops, existing-milestone unlocks, authoritative lock enforcement, differentiated time/margin/storage roles, expanded Seed Shop and market support, and save-safe zero-seed defaults.
+13. **Windows Desktop Release** - a secure local Electron shell, current security-fixed release toolchain, branded native window and Desktop shortcut, persistent app-profile saves, fullscreen/single-instance behavior, portable and installer artifacts, and real Windows launch/save/reload acceptance.
 
 ## Current authorization
 
-No implementation package is currently authorized. The owner should play the accepted build before another feature package is selected.
+No implementation package is currently authorized. The owner should play the accepted Windows desktop build before another feature package is selected.
 
 ## Later directions
 

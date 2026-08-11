@@ -14,6 +14,14 @@ The checked-in `desktop/icon.svg` is the original deterministic icon source, wit
 
 The repository shortcut helper is the supported branded shortcut workflow for `win-unpacked`; the NSIS installer creates its standard shortcuts but does not run that helper or post-edit shortcut resources.
 
+Create or refresh the branded Desktop shortcut after packaging:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\desktop\install-shortcut.ps1 -ExecutablePath (Resolve-Path '.\release\win-unpacked\Farm Empire.exe')
+```
+
+The helper resolves the actual Windows Desktop (including OneDrive redirection), writes only `Farm Empire.lnk`, and verifies its executable and icon targets after saving.
+
 ## Development and security boundary
 
 `npm.cmd run desktop:dev` is the explicit development path. It starts Vite on strict `127.0.0.1:5173`, waits up to 15 seconds for an HTTP response, and only then starts Electron. Only that script sets `FARM_EMPIRE_DEV=1` and `FARM_EMPIRE_DEV_URL`; packaged mode always loads the bundled `dist/index.html`, even if those variables are present.
@@ -25,3 +33,5 @@ The main process uses context isolation, disabled Node integration, Chromium san
 Desktop saves are browser-local storage managed by Chromium under the stable Electron user-data directory `%APPDATA%\Farm Empire`. They are separate from browser-hosted saves and are not imported or synchronized automatically. Removing the app's user data removes desktop saves; use normal Windows backup practices before doing so.
 
 The installer is unsigned in this repository. Windows SmartScreen may show an unsigned-app warning; this is expected until a publisher certificate and signing workflow are introduced.
+
+The accepted local release uses Electron 43.3.0, electron-builder 26.15.3, Vite 8.2.1, and Vitest 4.1.10. At the 2026-08-11 checkpoint, the full npm audit reported zero vulnerabilities.

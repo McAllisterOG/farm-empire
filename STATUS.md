@@ -2,12 +2,12 @@
 
 ## Current known-good checkpoint
 
-- **Date:** 2026-08-10
+- **Date:** 2026-08-11
 - **Branch:** `codex/first-town-contact`
-- **Head:** `62b6263`
-- **Product state:** The complete farm/town loop now includes eight differentiated crops, milestone-derived crop unlocks, an expanded Seed Shop and market, the County Row-Crop Field Kit, recoverable withered crops, lifetime County seed relief, and a purchasable Barn Loft Expansion.
-- **Verification:** 150/150 tests passed; strict typecheck, production build, and whitespace checks passed. Browser acceptance covered locked and compact crop ribbons, County-order carrot/tomato unlocks, north-parcel cabbage unlock, loft pumpkin unlock, tractor planting and exact 24-capacity pumpkin harvest, market sale, mounted save/reload, responsive presentation, and a clean console.
-- **Review:** The Luna Medium writer completed the bounded catalog package. Independent-review task provisioning was unavailable, so the primary performed the targeted architecture, economy, save, UI, and browser review; the repair checkpoint closed fractional storage, ambiguous lock feedback, emergency-relief selection, carrot role, and legacy maturity-helper findings.
+- **Head:** `7314689`
+- **Product state:** The complete eight-crop farm/town loop now also ships as a double-clickable Windows desktop game with a secure local Electron shell, branded Desktop shortcut, persistent app-profile saves, fullscreen and single-instance behavior, and unpacked, portable, and installer artifacts.
+- **Verification:** 155/155 tests passed; strict typecheck, Vite production build, all three Windows x64 package targets, whitespace checks, and full npm audit passed. Native acceptance covered the real OneDrive Desktop shortcut, centered 1280x800 launch at 150% display scaling, branded titlebar/window, single-instance focus, F11/Escape, normal zero-process shutdown, and exact shortcut target/icon read-back. Browser acceptance covered fresh farm creation, complete HUD/crop states, Save feedback, reload/re-entry, 1024x640 layout, temporary-save cleanup, and zero console warnings/errors.
+- **Review:** One Luna Medium writer completed the finite desktop package. Independent Red Team found a Windows development-launch cleanup defect; bounded repairs added direct child processes, occupied-port and Farm Empire-content gates, packaged-local-only loading, bounded process-tree cleanup, exact shortcut naming, and explicit external icon deployment. The primary then upgraded the release/test toolchain to current security-fixed versions and closed npm audit at zero findings.
 
 ## Current presentation
 
@@ -28,10 +28,11 @@
 - The crop catalog now contains corn, wheat, soybeans, potatoes, carrots, tomatoes, cabbage, and pumpkins. New crops start with zero seeds and unlock from the existing County-order, neighboring-parcel, and Barn Loft milestones without new saved license state.
 - Carrots are a low-capital quick turn; tomatoes trade barn throughput for margin; cabbage is value-dense; pumpkins are the slowest, highest-gross, and consume three barn units per harvested item.
 - The public-demo pass improves HUD/modal hierarchy, controls, feedback, transitions, and compact layouts without changing game transactions.
+- Farm Empire now runs from `Farm Empire.lnk` on the real Windows Desktop without a terminal, browser tab, development server, or internet. The packaged shell loads only bundled files, keeps Node unavailable to game content, and stores saves under the stable `%APPDATA%\Farm Empire` profile.
 
 ## Immediate authorized work
 
-No further implementation package is authorized. The next step is owner playtesting; use that evidence to choose between physical equipment/logistics, additional acreage/storage, or the first worker/manager progression package.
+No further implementation package is authorized. The next step is owner playtesting from the Windows Desktop shortcut; use that evidence to choose between physical equipment/logistics, additional acreage/storage, or the first worker/manager progression package.
 
 ## Known limitations
 
@@ -43,3 +44,5 @@ No further implementation package is authorized. The next step is owner playtest
 - Eight crops, one neighboring parcel, one tractor kit, and one storage upgrade provide a bounded progression loop; additional acreage, crop inputs/quality, trailers/implements, physical transfers, workers, and managers remain deferred.
 - Crop withering uses wall-clock time and a 15-minute post-maturity window; this should be evaluated during the owner's first longer play session.
 - The branch has not been pushed; external GitHub authorization is still required.
+- Windows artifacts are local x64 builds and unsigned, so SmartScreen may warn. The executable retains Electron file metadata because this account cannot run the normal resource-edit helper; the supported Desktop shortcut and game window use the verified Farm Empire ICO explicitly.
+- Desktop saves are intentionally separate from browser-hosted saves. Removing `%APPDATA%\Farm Empire` removes desktop saves; there is no automatic import, cloud sync, code signing, auto-update, or macOS/Linux package yet.
