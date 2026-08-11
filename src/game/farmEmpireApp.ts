@@ -7,7 +7,7 @@ import {
   syncCashMirror, ownedFarmParcelAt, planParcelWork,
   placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
-import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, sellPickupCrop, unloadPickupSeedsToFarm } from '../core/farmPickup';
+import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../render/farmLayout';
@@ -168,6 +168,7 @@ export class FarmEmpireApp {
 
   private panelActions(): FarmPanelActions {
     return {
+      context: this.mode,
       pickupPresent: this.mode === 'farm' || this.pickupAtTown,
       buySeeds: (cropId, count) => this.mode === 'town'
         ? buyTownSeedsIntoPickup(this.state, cropId, count, this.pickupAtTown)
@@ -176,6 +177,7 @@ export class FarmEmpireApp {
         ? sellPickupCrop(this.state, cropId, count, this.pickupAtTown)
         : failFarmSideSale(),
       loadCrop: (cropId, count) => loadBarnCropToPickup(this.state, cropId, count),
+      unloadCrop: (cropId, count) => unloadPickupCropToBarn(this.state, cropId, count),
       loadSeeds: (cropId, count) => loadFarmSeedsToPickup(this.state, cropId, count),
       unloadSeeds: (cropId, count) => unloadPickupSeedsToFarm(this.state, cropId, count),
       buyLand: () => purchaseNeighborParcel(this.state),
@@ -207,6 +209,10 @@ export class FarmEmpireApp {
       placePlayerAtTownReturn(this.state);
     } else if (this.operatingTractor) {
       placePlayerAtTractorDismount(this.state);
+    } else if (this.operatingPickup) {
+      const pickup = farmOf(this.state).pickup;
+      this.state.player.px = pickup.x + .7;
+      this.state.player.py = pickup.y + .25;
     } else {
       this.state.player.px = this.playerActor.x;
       this.state.player.py = this.playerActor.y;
@@ -238,16 +244,18 @@ export class FarmEmpireApp {
 
   private playerScreenX(): number {
     const tractor = farmOf(this.state).equipment.tractor;
-    const x = this.operatingTractor ? tractor.x : this.playerActor.x;
-    const y = this.operatingTractor ? tractor.y : this.playerActor.y;
+    const pickup = farmOf(this.state).pickup;
+    const x = this.operatingTractor ? tractor.x : this.operatingPickup ? pickup.x : this.playerActor.x;
+    const y = this.operatingTractor ? tractor.y : this.operatingPickup ? pickup.y : this.playerActor.y;
     const point = farmWorldPoint({ x, y });
     return this.renderer.camera.sx(isoX(point.x, point.y));
   }
 
   private playerScreenY(): number {
     const tractor = farmOf(this.state).equipment.tractor;
-    const x = this.operatingTractor ? tractor.x : this.playerActor.x;
-    const y = this.operatingTractor ? tractor.y : this.playerActor.y;
+    const pickup = farmOf(this.state).pickup;
+    const x = this.operatingTractor ? tractor.x : this.operatingPickup ? pickup.x : this.playerActor.x;
+    const y = this.operatingTractor ? tractor.y : this.operatingPickup ? pickup.y : this.playerActor.y;
     const point = farmWorldPoint({ x, y });
     return this.renderer.camera.sy(isoY(point.x, point.y));
   }
@@ -948,9 +956,9 @@ export class FarmEmpireApp {
 
     const scoutHome = farmLandmarks().scoutHome;
     const scoutBefore = this.scout;
-    this.scout = this.scoutWaitingForScratch && !this.operatingTractor && this.mode === 'farm'
+    this.scout = this.scoutWaitingForScratch && !this.operatingTractor && !this.operatingPickup && this.mode === 'farm'
       ? { ...this.scout, moving: false }
-      : updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.mode === 'town' || this.operatingTractor || !!this.tractorJob);
+      : updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.mode === 'town' || this.operatingTractor || this.operatingPickup || !!this.tractorJob);
     const scoutDx = this.scout.x - scoutBefore.x; const scoutDy = this.scout.y - scoutBefore.y;
     if (Math.hypot(scoutDx, scoutDy) > 0.0001) this.scoutFacing = Math.abs(scoutDx) >= Math.abs(scoutDy) ? (scoutDx > 0 ? 'east' : 'west') : (scoutDy > 0 ? 'south' : 'north');
 
@@ -984,7 +992,7 @@ export class FarmEmpireApp {
       };
       return scene;
     }
-    scene.actors = this.operatingTractor ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing }];
+    scene.actors = this.operatingTractor || this.operatingPickup ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing }];
     scene.farm = {
       lockedTiles: farm.parcels.northOwned ? [] : NEIGHBOR_FIELD_TILES,
       parcelLabel: `${formatMoney(650_000)} · 9 field sections`,
@@ -1004,6 +1012,10 @@ export class FarmEmpireApp {
         y: farm.pickup.y,
         operating: this.operatingPickup,
         moving: !!this.pickupTarget,
+        headingX: this.pickupMotion.headingX,
+        headingY: this.pickupMotion.headingY,
+        steer: this.pickupMotion.steer,
+        wheelPhase: this.pickupMotion.wheelPhase,
       },
       scout: { ...this.scout, facing: this.scoutFacing, scratching: Date.now() < this.scoutScratchUntil },
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,

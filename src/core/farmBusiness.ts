@@ -167,8 +167,8 @@ function normalizePickup(rawPickup: unknown): FarmBusinessState['pickup'] {
   return {
     id: PICKUP_ID,
     name: PICKUP_NAME,
-    x: clampNumber(raw.x, PICKUP_START.x),
-    y: clampNumber(raw.y, PICKUP_START.y),
+    x: Number.isFinite(Number(raw.x)) && Number(raw.x) >= 0 && Number(raw.x) <= 24 ? Number(raw.x) : PICKUP_START.x,
+    y: Number.isFinite(Number(raw.y)) && Number(raw.y) >= 0 && Number(raw.y) <= 24 ? Number(raw.y) : PICKUP_START.y,
     cargo: { crops, seeds },
   };
 }

@@ -6,8 +6,7 @@ import { pickupCropUnits } from './farmPickup';
 
 export interface CountyDeliveryContext {
   pickupPresent: boolean;
-  /** Legacy callers omit this; player-facing town delivery passes pickup. */
-  source?: 'pickup' | 'barn';
+  source: 'pickup';
 }
 
 export function townContact(state: GameState): FarmTownContactState {
@@ -29,10 +28,9 @@ export function acceptCountyWorkOrder(state: GameState): ActionResult {
   return { ok: true, events: [{ type: 'toast', target: 'County work order accepted. Deliver 12 corn to Eli at the Grain Exchange.' }] };
 }
 
-export function countyWorkOrderProgress(state: GameState, context: CountyDeliveryContext = { pickupPresent: true, source: 'barn' }): { storedUnits: number; requiredUnits: number } {
-  const storedUnits = context.source === 'pickup'
-    ? (context.pickupPresent ? pickupCropUnits(state, COUNTY_PANTRY_CORN_ORDER.cropId) : 0)
-    : farmOf(state).storage[COUNTY_PANTRY_CORN_ORDER.cropId] ?? 0;
+export function countyWorkOrderProgress(state: GameState, context?: CountyDeliveryContext): { storedUnits: number; requiredUnits: number } {
+  const storedUnits = context?.source === 'pickup' && context.pickupPresent
+    ? pickupCropUnits(state, COUNTY_PANTRY_CORN_ORDER.cropId) : 0;
   return { storedUnits, requiredUnits: COUNTY_PANTRY_CORN_ORDER.requiredUnits };
 }
 
@@ -41,17 +39,15 @@ export function countyPickupWorkOrderProgress(state: GameState, pickupPresent: b
 }
 
 /** Atomically trades the exact stored crop requirement for the one-time fixed county payout. */
-export function fulfillCountyWorkOrder(state: GameState, context: CountyDeliveryContext = { pickupPresent: true, source: 'barn' }): ActionResult {
+export function fulfillCountyWorkOrder(state: GameState, context?: CountyDeliveryContext): ActionResult {
   const farm = farmOf(state);
   if (farm.townContact.status !== 'active') return fail('There is no active County Pantry order to deliver.');
-  if (!context.pickupPresent) return fail('Bring the old pickup to the County Service Center before delivery.');
-  const fromPickup = context.source === 'pickup';
-  const stored = fromPickup ? pickupCropUnits(state, COUNTY_PANTRY_CORN_ORDER.cropId) : farm.storage[COUNTY_PANTRY_CORN_ORDER.cropId] ?? 0;
+  if (!context || context.source !== 'pickup' || context.pickupPresent !== true) return fail('Bring the old pickup to the County Service Center before delivery.');
+  const stored = pickupCropUnits(state, COUNTY_PANTRY_CORN_ORDER.cropId);
   if (stored < COUNTY_PANTRY_CORN_ORDER.requiredUnits) {
     return fail(`The County Pantry needs ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} stored corn before delivery.`);
   }
-  if (fromPickup) farm.pickup.cargo.crops[COUNTY_PANTRY_CORN_ORDER.cropId] = stored - COUNTY_PANTRY_CORN_ORDER.requiredUnits;
-  else farm.storage[COUNTY_PANTRY_CORN_ORDER.cropId] = stored - COUNTY_PANTRY_CORN_ORDER.requiredUnits;
+  farm.pickup.cargo.crops[COUNTY_PANTRY_CORN_ORDER.cropId] = stored - COUNTY_PANTRY_CORN_ORDER.requiredUnits;
   farm.cashCents += COUNTY_PANTRY_CORN_ORDER.payoutCents;
   farm.townContact.status = 'completed';
   syncCashMirror(state);

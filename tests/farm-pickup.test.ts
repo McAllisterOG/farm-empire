@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { createFarmGame } from '../src/core/state';
 import { farmOf } from '../src/core/farmBusiness';
-import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoRemaining, pickupCargoUsed, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
+import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoRemaining, pickupCargoUsed, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../src/core/farmTownContact';
+import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
 import { deserialize, serialize } from '../src/save/save';
 
 const NOW = Date.UTC(2026, 0, 1);
@@ -20,6 +21,8 @@ describe('old pickup cargo loop', () => {
     expect(loadBarnCropToPickup(state, 'crop_pumpkin', 27).ok).toBe(false);
     expect(JSON.stringify(farm.pickup)).toBe(before);
     expect(pickupCargoRemaining(state)).toBe(40);
+    expect(unloadPickupCropToBarn(state, 'crop_pumpkin', 4).ok).toBe(true);
+    expect(pickupCargoUsed(state)).toBe(20);
   });
 
   it('buys town seeds into pickup and unloads them without duplication', () => {
@@ -47,15 +50,29 @@ describe('old pickup cargo loop', () => {
     expect(fulfillCountyWorkOrder(loaded, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
   });
 
+  it('cannot pay from barn cargo or an omitted context', () => {
+    const state = createFarmGame('Pickup', 7, NOW); const farm = farmOf(state);
+    offerCountyWorkOrder(state); acceptCountyWorkOrder(state); farm.storage.crop_corn = 12;
+    expect(fulfillCountyWorkOrder(state).ok).toBe(false);
+    expect(farm.cashCents).toBe(500_000);
+  });
+
+  it('does not report County readiness from barn-only corn', () => {
+    const state = createFarmGame('Pickup', 8, NOW); const farm = farmOf(state);
+    offerCountyWorkOrder(state); acceptCountyWorkOrder(state); farm.storage.crop_corn = 12;
+    expect(countyDeliveryMarketState(state, 'town', true)).toEqual({ showCountyOrder: true, deliveryReady: false });
+  });
+
   it('normalizes missing, malformed, and over-capacity v7 pickup data safely', () => {
     const state = createFarmGame('Pickup', 6, NOW) as unknown as Record<string, unknown>;
     state.version = 7;
     const farm = state.farm as Record<string, unknown>;
-    farm.pickup = { x: 'bad', cargo: { crops: { crop_pumpkin: 99 }, seeds: { crop_wheat: 99 } } };
+    farm.pickup = { x: 999, y: -99, cargo: { crops: { crop_pumpkin: 99 }, seeds: { crop_wheat: 99 } } };
     const loaded = deserialize(JSON.stringify(state), NOW + 1);
     const pickup = farmOf(loaded).pickup;
     expect(pickup.id).toBe('old-pickup');
     expect(pickup.x).toBe(11.5);
+    expect(pickup.y).toBe(11.5);
     expect(pickupCargoUsed(loaded)).toBeLessThanOrEqual(72);
   });
 });

@@ -8,7 +8,7 @@ import { PICKUP_CARGO_CAPACITY } from './farmPickupData';
 export { PICKUP_CARGO_CAPACITY } from './farmPickupData';
 
 function validCount(value: number): boolean {
-  return Number.isInteger(value) && value > 0;
+  return Number.isSafeInteger(value) && value > 0;
 }
 
 function nonNegativeInt(value: unknown): number {
@@ -75,6 +75,8 @@ export function unloadPickupCropToBarn(state: GameState, cropId: string, count: 
   farm.storage[cropId] = (farm.storage[cropId] ?? 0) + count;
   return { ok: true, events: [{ type: 'toast', target: `Unloaded ${count} ${def.name} into the barn.` }] };
 }
+
+export const unloadCropFromPickup = unloadPickupCropToBarn;
 
 export function loadFarmSeedsToPickup(state: GameState, cropId: string, count: number): ActionResult {
   if (!validCount(count)) return fail('Choose a positive whole quantity.');

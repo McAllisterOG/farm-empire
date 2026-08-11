@@ -6,6 +6,7 @@ import { farmOf } from '../src/core/farmBusiness';
 import { SAVE_VERSION, createFarmGame } from '../src/core/state';
 import { deserialize, serialize } from '../src/save/save';
 import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
+import { loadBarnCropToPickup } from '../src/core/farmPickup';
 import { NOW } from './helpers';
 
 function makeFarm() {
@@ -30,10 +31,10 @@ describe('First Town Contact county order', () => {
     const state = makeFarm();
     offerCountyWorkOrder(state);
     acceptCountyWorkOrder(state);
-    const farm = farmOf(state); farm.storage.crop_corn = 11; const cash = farm.cashCents;
-    expect(countyWorkOrderProgress(state)).toEqual({ storedUnits: 11, requiredUnits: 12 });
-    expect(fulfillCountyWorkOrder(state).ok).toBe(false);
-    expect(farm.storage.crop_corn).toBe(11);
+    const farm = farmOf(state); farm.storage.crop_corn = 11; loadBarnCropToPickup(state, 'crop_corn', 11); const cash = farm.cashCents;
+    expect(countyWorkOrderProgress(state, { pickupPresent: true, source: 'pickup' })).toEqual({ storedUnits: 11, requiredUnits: 12 });
+    expect(fulfillCountyWorkOrder(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
+    expect(farm.pickup.cargo.crops.crop_corn).toBe(11);
     expect(farm.cashCents).toBe(cash);
     expect(townContact(state).status).toBe('active');
   });
@@ -42,25 +43,25 @@ describe('First Town Contact county order', () => {
     const state = makeFarm();
     offerCountyWorkOrder(state);
     acceptCountyWorkOrder(state);
-    const farm = farmOf(state); farm.storage.crop_corn = 15; const cash = farm.cashCents;
-    expect(fulfillCountyWorkOrder(state).ok).toBe(true);
-    expect(farm.storage.crop_corn).toBe(3);
+    const farm = farmOf(state); farm.storage.crop_corn = 15; loadBarnCropToPickup(state, 'crop_corn', 15); const cash = farm.cashCents;
+    expect(fulfillCountyWorkOrder(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(true);
+    expect(farm.pickup.cargo.crops.crop_corn).toBe(3);
     expect(farm.cashCents).toBe(cash + COUNTY_PANTRY_CORN_ORDER.payoutCents);
     expect(state.player.coins).toBe(Math.floor(farm.cashCents / 100));
     expect(townContact(state).status).toBe('completed');
-    expect(fulfillCountyWorkOrder(state).ok).toBe(false);
+    expect(fulfillCountyWorkOrder(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
     expect(farm.cashCents).toBe(cash + COUNTY_PANTRY_CORN_ORDER.payoutCents);
   });
 
   it("exposes County delivery only at Eli's town market, with live readiness", () => {
     const state = makeFarm();
     offerCountyWorkOrder(state); acceptCountyWorkOrder(state);
-    farmOf(state).storage.crop_corn = 11;
+    farmOf(state).storage.crop_corn = 11; loadBarnCropToPickup(state, 'crop_corn', 11);
     expect(countyDeliveryMarketState(state)).toEqual({ showCountyOrder: false, deliveryReady: false });
     expect(countyDeliveryMarketState(state, 'farm')).toEqual({ showCountyOrder: false, deliveryReady: false });
     expect(countyDeliveryMarketState(state, 'town')).toEqual({ showCountyOrder: true, deliveryReady: false });
-    farmOf(state).storage.crop_corn = 12;
-    expect(countyDeliveryMarketState(state, 'town')).toEqual({ showCountyOrder: true, deliveryReady: true });
+    farmOf(state).storage.crop_corn = 12; loadBarnCropToPickup(state, 'crop_corn', 12);
+    expect(countyDeliveryMarketState(state, 'town', true)).toEqual({ showCountyOrder: true, deliveryReady: true });
   });
 
   it('migrates literal v4 and corrupt contact values safely, while completed work stays complete after reload', () => {
@@ -76,10 +77,10 @@ describe('First Town Contact county order', () => {
     const loadedCorrupt = deserialize(JSON.stringify(corrupt), NOW + 1000);
     expect(townContact(loadedCorrupt).status).toBe('unmet');
 
-    offerCountyWorkOrder(migrated); acceptCountyWorkOrder(migrated); farmOf(migrated).storage.crop_corn = 12;
-    expect(fulfillCountyWorkOrder(migrated).ok).toBe(true);
+    offerCountyWorkOrder(migrated); acceptCountyWorkOrder(migrated); farmOf(migrated).storage.crop_corn = 12; loadBarnCropToPickup(migrated, 'crop_corn', 12);
+    expect(fulfillCountyWorkOrder(migrated, { pickupPresent: true, source: 'pickup' }).ok).toBe(true);
     const completed = deserialize(serialize(migrated, NOW + 2000), NOW + 3000);
     expect(townContact(completed).status).toBe('completed');
-    expect(fulfillCountyWorkOrder(completed).ok).toBe(false);
+    expect(fulfillCountyWorkOrder(completed, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
   });
 });

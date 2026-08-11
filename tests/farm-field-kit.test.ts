@@ -7,6 +7,7 @@ import { tractorToolbarPose, tractorToolbarPoseFromRenderState } from '../src/co
 import { deserialize, serialize } from '../src/save/save';
 import { offerCountyWorkOrder, acceptCountyWorkOrder, fulfillCountyWorkOrder } from '../src/core/farmTownContact';
 import { cropDef, farmCropDef } from '../src/core/registry';
+import { loadBarnCropToPickup } from '../src/core/farmPickup';
 
 const NOW = 1_784_394_000_000;
 
@@ -22,7 +23,8 @@ describe('County Row-Crop Field Kit', () => {
     expect(farmOf(state).cashCents).toBe(before);
     offerCountyWorkOrder(state); acceptCountyWorkOrder(state);
     farmOf(state).storage.crop_corn = 12;
-    fulfillCountyWorkOrder(state);
+    loadBarnCropToPickup(state, 'crop_corn', 12);
+    fulfillCountyWorkOrder(state, { pickupPresent: true, source: 'pickup' });
     expect(purchaseCountyRowCropFieldKit(state).ok).toBe(true);
     expect(farmOf(state).cashCents).toBe(500_000 + 8_500 - COUNTY_ROW_CROP_FIELD_KIT.priceCents);
   });

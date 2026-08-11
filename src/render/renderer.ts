@@ -66,7 +66,7 @@ export interface RenderScene {
       steer?: number;
       wheelPhase?: number;
     };
-    pickup: { name: string; x: number; y: number; operating: boolean; moving: boolean };
+    pickup: { name: string; x: number; y: number; operating: boolean; moving: boolean; headingX?: number; headingY?: number; steer?: number; wheelPhase?: number };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
     barnLoftOwned: boolean;
     clockMinute: number;
@@ -495,7 +495,7 @@ export class Renderer {
     items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now, tractor.headingX, tractor.headingY, tractor.steer, tractor.wheelPhase, !!tractor.moving) });
     const pickup = scene.farm!.pickup;
     const pickupPoint = farmWorldPoint(pickup);
-    items.push({ depth: pickupPoint.x + pickupPoint.y + 0.31, draw: () => drawOldPickup(ctx, camera.sx(isoX(pickupPoint.x, pickupPoint.y)), camera.sy(isoY(pickupPoint.x, pickupPoint.y) + TILE_H / 2), zoom, pickup.operating, pickup.moving, now) });
+    items.push({ depth: pickupPoint.x + pickupPoint.y + 0.31, draw: () => drawOldPickup(ctx, camera.sx(isoX(pickupPoint.x, pickupPoint.y)), camera.sy(isoY(pickupPoint.x, pickupPoint.y) + TILE_H / 2), zoom, pickup.operating, pickup.moving, now, pickup.headingX, pickup.headingY, pickup.steer, pickup.wheelPhase) });
     const scoutPoint = farmWorldPoint(scene.farm!.scout);
     items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.mode === 'home' && !scene.farm!.scout.moving, scene.farm!.scout.facing) });
     for (const actor of scene.actors) {
@@ -721,16 +721,17 @@ function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
   ctx.fillStyle = '#b8d7dd'; ctx.fillRect(-5, -68, 10, 9); ctx.fillStyle = '#5a3825'; ctx.fillRect(-45, 2, 90, 5); ctx.restore();
 }
 
-function drawOldPickup(ctx: CanvasRenderingContext2D, x: number, y: number, scale: number, operating: boolean, moving: boolean, now: number): void {
+function drawOldPickup(ctx: CanvasRenderingContext2D, x: number, y: number, scale: number, operating: boolean, moving: boolean, now: number, headingX = 1, headingY = 0, steer = 0, wheelPhase = 0): void {
   ctx.save(); ctx.translate(x, y); ctx.scale(scale * 1.35, scale * 1.35);
+  ctx.scale(headingX < 0 ? -1 : 1, 1);
   ctx.fillStyle = 'rgba(40,30,20,.24)'; ctx.beginPath(); ctx.ellipse(0, 8, 32, 9, 0, 0, Math.PI * 2); ctx.fill();
-  const roll = moving ? Math.floor(now / 90) % 2 : 0;
+  const roll = moving ? wheelPhase : 0;
   ctx.fillStyle = '#2d3438'; ctx.beginPath(); ctx.arc(-20, 5, 7, 0, Math.PI * 2); ctx.arc(20, 5, 7, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#c75a3d'; ctx.fillRect(-27, -8, 54, 14); ctx.fillStyle = '#8d3d31'; ctx.fillRect(4, -25, 22, 18);
   ctx.fillStyle = '#b8d7dd'; ctx.fillRect(8, -22, 16, 10); ctx.fillStyle = '#e7b56b'; ctx.fillRect(-25, -5, 6, 5);
   ctx.strokeStyle = '#d6a24e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-17, 5); ctx.lineTo(-17 + roll, 5); ctx.moveTo(17, 5); ctx.lineTo(17 - roll, 5); ctx.stroke();
   if (operating) { ctx.fillStyle = '#f2d8a5'; ctx.fillRect(-2, -35, 5, 9); }
-  ctx.fillStyle = 'rgba(218,218,180,.4)'; ctx.beginPath(); ctx.arc(-30, -19 - Math.sin(now / 300) * 2, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(218,218,180,.4)'; ctx.beginPath(); ctx.arc(-30 - steer * 4, -19 - Math.abs(headingY) * 3 - Math.sin(now / 300) * 2, 3, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
