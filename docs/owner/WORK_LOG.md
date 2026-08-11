@@ -168,3 +168,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/win-unpacked/Farm Empire.exe`, `release/Farm Empire Portable 1.0.0 x64.exe`, and `release/Farm Empire Setup 1.0.0 x64.exe` (generated and ignored). The real shortcut is `Farm Empire.lnk` on the Windows-resolved Desktop.
 - **Known limitations:** Unsigned x64 Windows build; SmartScreen may warn. Executable file metadata remains Electron because resource post-editing is disabled in this account; the supported shortcut and game window use the verified external Farm Empire icon. Desktop and browser saves are separate; no signing, auto-update, cloud sync, or cross-platform package yet.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Old Pickup & County Haul Loop - complete
+
+- **Date:** 2026-08-11
+- **Branch:** `codex/first-town-contact`
+- **Commits:** `93313c7`, `a16fffe`, `e9e9573`, `0ae284c`
+- **Scope:** One owned drivable pickup, persistent 72-unit mixed cargo, reversible farm transfers, pickup-gated town seed/sale/County transactions, save v8, UI/feedback, and refreshed Windows artifacts; no trailers, fuel, damage, implements, workers, repeat contracts, land, or economy rebalance.
+- **Result:** The farm now has a tangible barn-to-truck-to-town loop. Produce is loaded from the barn, seed bags are bought into the truck and unloaded at home, ordinary sales consume truck cargo, and the finite County Pantry order consumes exactly 12 hauled corn. On-foot services remain available but cargo actions fail closed.
+- **Verification:** 161/161 tests passed; strict typecheck, production build, diff checks, full npm audit with zero findings, and unpacked/portable/NSIS x64 packaging passed. Browser acceptance completed the real crop-to-barn-to-pickup route, on-foot lockouts, drive/cancel/gate transition, freight parking, exact $10 seed purchase, $12.28 sale, $85 delivery, return/unload, town and mounted reload safety, mutual exclusion, cleanup, and zero console warnings/errors. The real Desktop shortcut launched one responsive packaged window and closed to zero processes; target/icon read-back matched the release.
+- **Review:** Independent Red Team found three MEDIUM transaction/UI defects; one bounded repair added crop unloading, pickup-only County readiness/fulfillment, and explicit farm/town authority. Re-review found one valid cardinal-pose gap, fixed with the existing farm upright-pose mapping. The primary browser pass corrected one residual barn-wording mismatch.
+- **Artifacts:** `release/win-unpacked/Farm Empire.exe` (225,441,792 bytes), `release/Farm Empire Portable 1.0.0 x64.exe` (89,809,797 bytes), and `release/Farm Empire Setup 1.0.0 x64.exe` (90,018,109 bytes), all generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the unpacked executable and exact external icon.
+- **Known limitations:** Direct collision-free vehicle travel; one pickup with no trailers, fuel, condition, dealership, or hauling jobs beyond the finite Pantry order. Desktop artifacts remain local unsigned x64 builds with separate desktop/browser saves.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

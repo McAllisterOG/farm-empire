@@ -135,3 +135,14 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The stable app identity `com.farmempire.desktop` and `%APPDATA%\Farm Empire` profile preserve desktop localStorage across launches and rebuilds. Desktop saves remain intentionally separate from browser saves; no automatic scraping, import, or cloud synchronization is introduced.
 - The supported branded shortcut targets the unpacked x64 application and uses the deployed Farm Empire ICO explicitly. Portable and NSIS artifacts are also produced, but the local build remains unsigned with no auto-updater or publisher-certificate claim.
 - Desktop packaging does not authorize gameplay, economy, or save-schema changes. Future signed distribution, auto-update, cross-platform builds, and browser-save import require separate design and authorization.
+
+## 2026-08-11 - Make County commerce a physical pickup route
+
+**Status:** Approved by the owner
+
+- Every farm owns one old pickup from the start. Its persistent mixed cargo bed holds 72 units; crops use their existing storage footprint and each seed bag uses one unit.
+- Harvest still enters the barn. Farm panels move produce and seed bags reversibly between authoritative farm inventory and pickup cargo; ordinary seed buying and crop selling occur only at the County Service Center with the pickup present.
+- The County Pantry order now derives progress from pickup corn and consumes exactly 12 hauled units at Eli's Grain Exchange. This supersedes the earlier barn-source decision without adding a parallel quest counter or repeat payout.
+- On-foot town visits remain valid for dialogue, records, and inspection, but seed purchase, crop sale, and delivery actions fail closed without the pickup.
+- Save schema v8 persists pickup cargo and safe farm coordinates. Town vehicle presence, velocity, heading, and operating state remain transient; town saves reload safely at the farm gateway with cargo intact.
+- Trailers, hitching, fuel, damage, routed roads, combines, workers, managers, repeat contracts, and economy rebalance remain separate future packages.

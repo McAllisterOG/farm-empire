@@ -11,21 +11,22 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 5. **Farm Atmosphere & Set Dressing Slice** - deterministic barnyard props and fence/gate cues, restrained crop/tree/tractor motion, farm-clock lighting, lamps, and off-field fireflies.
 6. **Operated Tractor Motion & Silhouette** - runtime-only acceleration, braking, bounded turning, exact reversals, wheel roll, steering cues, direction-aware effects, and an upright mirrored tractor pose with save-compatible arrival semantics.
 7. **Town Gateway - County Service Center** - a signed farm-road gateway, separate walkable Canvas town, three functional service buildings, three animated townspeople, town HUD, save-safe reload boundary, shared clock lighting, and responsive input lifecycle.
-8. **First Town Contact + County Work Order** - persistent Mae Carter introduction, one data-defined County Pantry corn order, live barn-derived progress, Eli-only atomic fulfillment, one-time fixed payout, and defensive save-v5 migration.
+8. **First Town Contact + County Work Order** - persistent Mae Carter introduction, one data-defined County Pantry corn order, Eli-only atomic fulfillment, one-time fixed payout, and defensive save-v5 migration; its delivery source is now the physical pickup cargo loop.
 9. **County Row-Crop Field Kit** - a post-order, town-purchased tractor upgrade with visible raised/lowered toolbar state and bonuses restricted to physically operated field jobs.
 10. **Public Demo Polish Pass** - a capped presentation pass covering HUD and modal hierarchy, interaction feedback, controls, responsive behavior, transitions, and matched before/after evidence.
 11. **Barn Expansion & Recovery** - recoverable withered field sections, one lifetime last-resort County seed, a north-parcel-gated Barn Loft Expansion from 150 to 200 storage, working-capital guidance, and defensive save-v7 migration.
 12. **County Crop Catalog & Market Choice** - four additional procedural crops, existing-milestone unlocks, authoritative lock enforcement, differentiated time/margin/storage roles, expanded Seed Shop and market support, and save-safe zero-seed defaults.
 13. **Windows Desktop Release** - a secure local Electron shell, current security-fixed release toolchain, branded native window and Desktop shortcut, persistent app-profile saves, fullscreen/single-instance behavior, portable and installer artifacts, and real Windows launch/save/reload acceptance.
+14. **Old Pickup & County Haul Loop** - an owned-from-start drivable pickup, persistent 72-unit mixed cargo, reversible barn/seed transfers, pickup-gated town commerce and County delivery, save v8, direction-aware motion, and a rebuilt Desktop release.
 
 ## Current authorization
 
-No implementation package is currently authorized. The owner should play the accepted Windows desktop build before another feature package is selected.
+No implementation package is currently authorized. The owner should play the accepted pickup/hauling Desktop build before another feature package is selected.
 
 ## Later directions
 
 - First-day farm story and farm-specific progression after its event/save model is designed.
-- Equipment and logistics depth after the current playability checkpoint is exercised: distinct implements, trailers, physical hauling, combines, condition, and genuine dealership actions.
-- Broader contracts or hauling only after a deliberate event, logistics, and save design.
+- Equipment and logistics depth after the pickup loop is exercised: distinct implements, trailers, combines, condition, and genuine dealership actions.
+- Broader or repeat contracts only after a deliberate job, logistics, and save design.
 - Additional acreage and storage tiers, crop inputs/quality, then property-aware workers and managers after the expanded crop, manual, and machinery loops are proven fun.
 - Further environment art and ambient farm life after the current benchmark presentation is reviewed in play.
