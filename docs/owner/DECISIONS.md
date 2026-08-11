@@ -116,3 +116,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The Barn Loft Expansion is a one-time 180,000-cent investment unlocked by owning the neighboring parcel; it raises storage from 150 to 200 and has a restrained visible barn change.
 - Save v7 fails closed for malformed relief/loft data and requires the parcel prerequisite during normalization as well as purchase.
 - These safeguards do not authorize a crop rebalance, repeat subsidy, broader land tier, worker system, or logistics rewrite.
+
+## 2026-08-10 - Expand crop choice through existing farm milestones
+
+**Status:** Approved by the owner
+
+- Carrots and tomatoes unlock after the County Pantry order, cabbage unlocks with the neighboring parcel, and pumpkins unlock with the Barn Loft Expansion; these licenses are derived from existing saved achievements rather than new persistent flags.
+- New crops start with zero seeds on fresh and older saves. Selection, seed purchase, manual planting, and tractor planting all fail closed while a crop is locked.
+- Crop roles remain data-driven and use whole barn units: carrots minimize capital and time, tomatoes emphasize throughput, cabbage emphasizes value per barn unit, and pumpkins trade three storage units per item for the highest base gross and margin.
+- County emergency relief always selects the cheapest starter-eligible crop, so later catalog pricing cannot issue an unusable locked seed.
+- Additional crop tiers, fertilizer, irrigation, quality, processing, recipes, and crop-specific machinery remain separate future packages.

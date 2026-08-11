@@ -15,6 +15,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 9. **County Row-Crop Field Kit** - a post-order, town-purchased tractor upgrade with visible raised/lowered toolbar state and bonuses restricted to physically operated field jobs.
 10. **Public Demo Polish Pass** - a capped presentation pass covering HUD and modal hierarchy, interaction feedback, controls, responsive behavior, transitions, and matched before/after evidence.
 11. **Barn Expansion & Recovery** - recoverable withered field sections, one lifetime last-resort County seed, a north-parcel-gated Barn Loft Expansion from 150 to 200 storage, working-capital guidance, and defensive save-v7 migration.
+12. **County Crop Catalog & Market Choice** - four additional procedural crops, existing-milestone unlocks, authoritative lock enforcement, differentiated time/margin/storage roles, expanded Seed Shop and market support, and save-safe zero-seed defaults.
 
 ## Current authorization
 
@@ -25,5 +26,5 @@ No implementation package is currently authorized. The owner should play the acc
 - First-day farm story and farm-specific progression after its event/save model is designed.
 - Equipment and logistics depth after the current playability checkpoint is exercised: distinct implements, trailers, physical hauling, combines, condition, and genuine dealership actions.
 - Broader contracts or hauling only after a deliberate event, logistics, and save design.
-- More crops and market choices, larger acreage and storage tiers, then property-aware workers and managers after the manual and machinery loops are proven fun.
+- Additional acreage and storage tiers, crop inputs/quality, then property-aware workers and managers after the expanded crop, manual, and machinery loops are proven fun.
 - Further environment art and ambient farm life after the current benchmark presentation is reviewed in play.

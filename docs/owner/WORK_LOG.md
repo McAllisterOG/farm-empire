@@ -142,3 +142,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** Independent Red Team initially found three MEDIUM edge cases; one bounded repair hardened malformed saves, enforced the parcel prerequisite during normalization, and made relief lifetime one-time. Re-review accepted with no MEDIUM-or-higher findings.
 - **Screenshots:** `docs/screenshots/barn-loft-before.png`, `docs/screenshots/barn-loft-after.png`
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## County Crop Catalog & Market Choice - complete
+
+- **Date:** 2026-08-10
+- **Branch:** `codex/first-town-contact`
+- **Commits:** `f9ffc84`, `62b6263`
+- **Scope:** Add carrots, tomatoes, cabbage, and pumpkins with milestone-derived unlocks, authoritative lock guards, differentiated economics, procedural field art, Seed Shop/market support, and old-save zero-seed defaults; no new save version, acreage, logistics, workers, or crop-input systems.
+- **Result:** Expanded the playable catalog from four to eight crops. County completion unlocks carrots/tomatoes, the neighboring parcel unlocks cabbage, and the Barn Loft unlocks bulky pumpkins; the compact crop ribbon visibly labels locks and scrolls to all eight choices.
+- **Verification:** 150/150 tests passed; strict typecheck, production build, and diff checks passed. Browser acceptance covered the complete County delivery and unlock chain, carrot and pumpkin tractor jobs, distinct mature art, exact pumpkin storage 4 to 28 and sale back to 4, Seed Shop economics, 760px horizontal scrolling, mounted save/reload, and zero console warnings/errors.
+- **Review:** Independent reviewer provisioning did not start, so the primary performed the bounded acceptance review. Repairs made storage footprints integral, clarified lock badges, corrected carrot's low-capital role, kept County relief on starter wheat, and moved developer maturity controls to the authoritative Farm Empire crop registry.
+- **Screenshots:** `docs/screenshots/crop-catalog-locked-1280.png`, `docs/screenshots/crop-catalog-shop-1280.png`, `docs/screenshots/crop-catalog-varied-field-1280.png`
+- **Known limitations:** Unlocks use existing finite milestones; there are no repeat contracts, additional land tiers, crop inputs/quality, processing, hauling, workers, or managers yet.
+- **Push:** Not yet pushed; external GitHub authorization is still required.
