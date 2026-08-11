@@ -1,12 +1,11 @@
 param(
-  [Parameter(Mandatory = $true)][string]$ExecutablePath,
-  [string]$ShortcutName = 'Farm Empire.lnk'
+  [Parameter(Mandatory = $true)][string]$ExecutablePath
 )
 
 $resolvedExe = (Resolve-Path -LiteralPath $ExecutablePath -ErrorAction Stop).Path
 $desktop = [Environment]::GetFolderPath('Desktop')
 if ([string]::IsNullOrWhiteSpace($desktop)) { throw 'Windows Desktop path could not be resolved.' }
-$shortcutPath = Join-Path $desktop $ShortcutName
+$shortcutPath = Join-Path $desktop 'Farm Empire.lnk'
 $iconPath = Join-Path (Split-Path -Parent $resolvedExe) 'resources\icon.ico'
 if (-not (Test-Path -LiteralPath $iconPath)) { throw "Branded icon resource not found: $iconPath" }
 $shell = New-Object -ComObject WScript.Shell

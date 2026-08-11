@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isDevUrlEnabled } from '../desktop/policy.mjs';
+import { isFarmEmpireHtml } from '../desktop/devPolicy.mjs';
 
 const policy = readFileSync(resolve('desktop/policy.mjs'), 'utf8');
 const main = readFileSync(resolve('desktop/main.mjs'), 'utf8');
@@ -33,14 +34,21 @@ describe('Windows desktop release boundary', () => {
 
   it('uses a strict fixed Vite port and waits for HTTP readiness before Electron', () => {
     expect(dev).toContain("'--strictPort'");
-    expect(dev).toContain("http://127.0.0.1:5173/");
-    expect(dev).toContain('waitForHttpReady(devUrl)');
-    expect(dev.indexOf('await waitForHttpReady(devUrl)')).toBeLessThan(dev.indexOf('spawn(electronCommand'));
+    expect(dev).toContain("const port = 5173;");
+    expect(dev).toContain('assertPortFree()');
+    expect(dev).toContain('waitForFarmEmpire(devUrl, vite)');
+    expect(dev).toContain('shell: false');
+    expect(dev).not.toContain('shell: true');
+    expect(dev).toContain('taskkill.exe');
+    expect(dev.indexOf('await waitForFarmEmpire(devUrl, vite)')).toBeLessThan(dev.indexOf('spawn(electronCommand'));
+    expect(isFarmEmpireHtml('<!doctype html><title>Farm Empire</title><canvas id="game-canvas"></canvas>')).toBe(true);
+    expect(isFarmEmpireHtml('<!doctype html><title>Other App</title><canvas id="game-canvas"></canvas>')).toBe(false);
   });
 
   it('resolves only the real Desktop and verifies the exact shortcut target', () => {
     expect(shortcut).toContain("[Environment]::GetFolderPath('Desktop')");
-    expect(shortcut).toContain("Farm Empire.lnk");
+    expect(shortcut).toContain("Join-Path $desktop 'Farm Empire.lnk'");
+    expect(shortcut).not.toContain('$ShortcutName');
     expect(shortcut).toContain('resources\\icon.ico');
     expect(shortcut).toContain('IconLocation');
     expect(shortcut).toContain('Shortcut target verification failed');

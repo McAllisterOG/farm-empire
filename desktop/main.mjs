@@ -12,6 +12,7 @@ const isExplicitDev = isDevUrlEnabled({
 const iconPath = app.isPackaged ? join(process.resourcesPath, 'icon.ico') : join(__dirname, 'icon.ico');
 
 app.setAppUserModelId(APP_ID);
+app.setName('Farm Empire');
 app.setPath('userData', join(app.getPath('appData'), 'Farm Empire'));
 
 if (!app.requestSingleInstanceLock()) {
