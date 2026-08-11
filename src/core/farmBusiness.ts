@@ -1,7 +1,7 @@
 import type {
   ActionResult, ActiveFarmMarketEvent, FarmBusinessState, FarmPlot, GameState,
 } from './types';
-import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmMarketEventDef } from './registry';
+import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
 import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT } from '../data/farmEquipment.data';
@@ -24,6 +24,34 @@ export const NEIGHBOR_FIELD_TILES = Array.from({ length: 9 }, (_, i) => ({
 export type FarmParcelId = 'starter' | 'north';
 export type ParcelWorkKind = 'plant' | 'harvest';
 export type FarmWorkContext = 'manual' | 'operatedTractor';
+
+export interface FarmCropUnlockInfo {
+  unlocked: boolean;
+  requirement: string;
+}
+
+export function farmCropUnlockInfo(state: GameState, cropId: string): FarmCropUnlockInfo {
+  const def = farmCropDefOrNull(cropId);
+  if (!def) return { unlocked: false, requirement: 'Unknown crop.' };
+  if (def.unlock === 'starter') return { unlocked: true, requirement: 'Available from the start.' };
+  if (def.unlock === 'county-order') {
+    return farmOf(state).townContact.status === 'completed'
+      ? { unlocked: true, requirement: 'County Pantry order completed.' }
+      : { unlocked: false, requirement: 'Complete the County Pantry corn order.' };
+  }
+  if (def.unlock === 'north-parcel') {
+    return farmOf(state).parcels.northOwned
+      ? { unlocked: true, requirement: 'Neighboring parcel owned.' }
+      : { unlocked: false, requirement: 'Buy the neighboring parcel.' };
+  }
+  return farmOf(state).equipment.barnLoftExpansionOwned
+    ? { unlocked: true, requirement: 'Barn Loft Expansion owned.' }
+    : { unlocked: false, requirement: 'Purchase the Barn Loft Expansion.' };
+}
+
+export function isFarmCropUnlocked(state: GameState, cropId: string): boolean {
+  return farmCropUnlockInfo(state, cropId).unlocked;
+}
 
 export interface ParcelWorkPlan {
   parcelId: FarmParcelId;
@@ -74,7 +102,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
   const storage: Record<string, number> = {};
   for (const def of allFarmCrops()) {
     quotes[def.id] = { currentCents: def.basePriceCents, previousCents: def.basePriceCents };
-    seeds[def.id] = 2;
+    seeds[def.id] = def.startingSeeds;
     storage[def.id] = 0;
   }
   return {
@@ -185,6 +213,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
       },
     },
   };
+  if (!isFarmCropUnlocked(state, state.farm.selectedCropId)) state.farm.selectedCropId = 'crop_corn';
   syncCashMirror(state);
   return state.farm;
 }
@@ -216,7 +245,10 @@ export function storageRemaining(state: GameState): number {
 export function buyFarmSeeds(state: GameState, cropId: string, count: number): ActionResult {
   if (!Number.isInteger(count) || count <= 0) return fail('Choose a positive seed quantity.');
   const farm = farmOf(state);
-  const def = farmCropDef(cropId);
+  const def = farmCropDefOrNull(cropId);
+  if (!def) return fail('Unknown crop.');
+  const unlock = farmCropUnlockInfo(state, cropId);
+  if (!unlock.unlocked) return fail(`${def.name} locked: ${unlock.requirement}`);
   const cost = def.seedPriceCents * count;
   if (farm.cashCents < cost) return fail('Not enough cash for those seeds.');
   farm.cashCents -= cost;
@@ -226,7 +258,10 @@ export function buyFarmSeeds(state: GameState, cropId: string, count: number): A
 }
 
 export function selectFarmCrop(state: GameState, cropId: string): ActionResult {
-  const def = farmCropDef(cropId);
+  const def = farmCropDefOrNull(cropId);
+  if (!def) return fail('Unknown crop.');
+  const unlock = farmCropUnlockInfo(state, cropId);
+  if (!unlock.unlocked) return fail(`${def.name} locked: ${unlock.requirement}`);
   farmOf(state).selectedCropId = cropId;
   return { ok: true, events: [{ type: 'toast', target: `${def.name} selected.` }] };
 }
@@ -269,8 +304,9 @@ export function placePlayerAtTractorDismount(state: GameState): { x: number; y: 
  * Build a read-only parcel work plan. The app applies each UID through the existing
  * transactional per-plot actions as the tractor reaches it.
  */
-export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: number): ParcelWorkPlan {
+export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: number, cropId?: string): ParcelWorkPlan {
   const farm = farmOf(state);
+  const plannedCropId = cropId ?? farm.selectedCropId;
   const owned = parcelId === 'starter' ? farm.parcels.starterOwned : farm.parcels.northOwned;
   if (!owned) {
     return { parcelId, orderedPlotUids: [], plantPlotUids: [], harvestPlotUids: [] };
@@ -283,7 +319,7 @@ export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: nu
   return {
     parcelId,
     orderedPlotUids: orderedPlots.map((plot) => plot.uid),
-    plantPlotUids: orderedPlots.filter((plot) => !plot.crop).map((plot) => plot.uid),
+    plantPlotUids: !isFarmCropUnlocked(state, plannedCropId) ? [] : orderedPlots.filter((plot) => !plot.crop).map((plot) => plot.uid),
     harvestPlotUids: orderedPlots
       .filter((plot) => farmCropReady(plot, now))
       .map((plot) => plot.uid),
@@ -295,7 +331,10 @@ export function plantFarmCrop(state: GameState, plotUid: number, cropId: string,
   const plot = state.plots.find((candidate) => candidate.uid === plotUid);
   if (!plot || !isOwnedFieldTile(state, plot.x, plot.y)) return fail('This field is not owned.');
   if (plot.crop) return fail('That field section is already planted.');
-  const farmDef = farmCropDef(cropId);
+  const farmDef = farmCropDefOrNull(cropId);
+  if (!farmDef) return fail('Unknown crop.');
+  const unlock = farmCropUnlockInfo(state, cropId);
+  if (!unlock.unlocked) return fail(`${farmDef.name} locked: ${unlock.requirement}`);
   if ((farm.seeds[cropId] ?? 0) < 1) return fail(`No ${farmDef.name} seeds available.`);
   const speedBps = context === 'operatedTractor' && farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
       ? COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps : 0;
@@ -312,7 +351,8 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
   if (!plot?.crop) return fail('There is no crop to harvest.');
   if (isFarmCropWithered(plot.crop, now)) return fail('This crop has withered. Clear it before planting again.');
   if (!farmCropReady(plot, now)) return fail('This crop is still growing.');
-  const def = farmCropDef(plot.crop.defId);
+  const def = farmCropDefOrNull(plot.crop.defId);
+  if (!def) return fail('Unknown crop.');
   const bonus = context === 'operatedTractor' && farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
       ? COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits : 0;
   const amount = def.harvestYield + bonus;
@@ -402,7 +442,8 @@ export function purchaseBarnLoftExpansion(state: GameState): ActionResult {
 export function sellStoredCrop(state: GameState, cropId: string, count: number): ActionResult {
   if (!Number.isInteger(count) || count <= 0) return fail('Choose a positive sale quantity.');
   const farm = farmOf(state);
-  const def = farmCropDef(cropId);
+  const def = farmCropDefOrNull(cropId);
+  if (!def) return fail('Unknown crop.');
   const owned = farm.storage[cropId] ?? 0;
   if (count > owned) return fail(`Only ${owned} ${def.name} unit${owned === 1 ? '' : 's'} are stored.`);
   const quote = farm.market.quotes[cropId];

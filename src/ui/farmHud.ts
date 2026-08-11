@@ -1,6 +1,6 @@
 import type { GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
-import { farmOf, formatMoney, storageUsed } from '../core/farmBusiness';
+import { farmCropUnlockInfo, farmOf, formatMoney, storageUsed } from '../core/farmBusiness';
 import { h, spriteImg } from './dom';
 
 export interface FarmHudCallbacks {
@@ -146,9 +146,16 @@ export class FarmHud {
         ? 'Click open ground to drive. Click an owned field parcel for batch planting or harvesting.'
         : 'Select a crop, then click an empty field section to plant. Click a ready crop to harvest.';
     for (const [cropId, button] of this.cropButtons) {
+      const unlock = farmCropUnlockInfo(state, cropId);
+      const def = farmCropDef(cropId);
       button.classList.toggle('active', cropId === farm.selectedCropId);
+      button.classList.toggle('locked', !unlock.unlocked);
+      button.disabled = !unlock.unlocked;
       const seedCount = farm.seeds[cropId] ?? 0;
-      button.title = `${farmCropDef(cropId).name}: ${seedCount} seed${seedCount === 1 ? '' : 's'}`;
+      button.title = unlock.unlocked
+        ? `${def.name}: ${seedCount} seed${seedCount === 1 ? '' : 's'}`
+        : `${def.name} locked: ${unlock.requirement}`;
+      button.setAttribute('aria-label', unlock.unlocked ? `${def.name}, ${seedCount} seeds` : `${def.name}, locked. ${unlock.requirement}`);
       button.dataset.count = String(seedCount);
     }
   }

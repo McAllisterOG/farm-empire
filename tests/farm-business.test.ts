@@ -27,10 +27,11 @@ function plantAndMature(state: ReturnType<typeof makeFarm>, cropId = 'crop_corn'
 }
 
 describe('Farm Empire crop definitions', () => {
-  it('defines exactly the four V1 crops with valid business values', () => {
+  it('defines the four original crops plus the four County catalog crops', () => {
     const crops = allFarmCrops();
     expect(crops.map((crop) => crop.id)).toEqual([
       'crop_corn', 'crop_wheat', 'crop_soybean', 'crop_potato',
+      'crop_carrot', 'crop_tomato', 'crop_cabbage', 'crop_pumpkin',
     ]);
     for (const crop of crops) {
       expect(crop.seedPriceCents).toBeGreaterThan(0);

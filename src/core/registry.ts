@@ -41,6 +41,7 @@ export const questDef = (id: string) => must(REG.quests, id, 'quest');
 export const achievementDef = (id: string) => must(REG.achievements, id, 'achievement');
 export const neighborDef = (id: string) => must(REG.neighbors, id, 'neighbor');
 export const farmCropDef = (id: string) => must(REG.farmCrops, id, 'farm crop');
+export const farmCropDefOrNull = (id: string): FarmCropDef | undefined => REG.farmCrops.get(id);
 export const farmMarketEventDef = (id: string) => must(REG.farmMarketEvents, id, 'farm market event');
 
 export function allCrops(): CropDef[] { return [...REG.crops.values()]; }

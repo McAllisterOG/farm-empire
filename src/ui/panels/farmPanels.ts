@@ -1,7 +1,7 @@
 import type { ActionResult, GameState } from '../../core/types';
 import { allFarmCrops, farmCropDef } from '../../core/registry';
 import {
-  FIRST_PARCEL_PRICE_CENTS, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
+  FIRST_PARCEL_PRICE_CENTS, farmCropUnlockInfo, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
 import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT } from '../../data/farmEquipment.data';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
@@ -64,6 +64,9 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
   const list = h('div', { class: 'farm-card-list' });
   const rerender = (): void => renderSeedShop(body, state, actions);
   for (const def of allFarmCrops()) {
+    const unlock = farmCropUnlockInfo(state, def.id);
+    const gross = def.harvestYield * def.basePriceCents;
+    const margin = gross - def.seedPriceCents;
     list.append(h('div', { class: 'farm-card', 'data-testid': `seed-card-${def.id}` },
       spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-lg'),
       h('div', { class: 'farm-card-main' },
@@ -71,11 +74,12 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
         h('div', { class: 'farm-card-sub' },
           `${formatMoney(def.seedPriceCents)} per seed · ${Math.round(def.growMs / 1000)}s base growth · ${def.harvestYield} units + tractor bonus`,
         ),
+        h('div', { class: 'farm-card-sub' }, `${def.role} · Expected gross ${formatMoney(gross)} · margin ${formatMoney(margin)} · ${def.storageUnitsPerItem} barn/unit · ${unlock.unlocked ? unlock.requirement : `Locked: ${unlock.requirement}`}`),
         h('div', { class: 'farm-card-stock', 'data-testid': `seed-count-${def.id}` }, `Seeds owned: ${farm.seeds[def.id] ?? 0}`),
       ),
       h('div', { class: 'farm-card-actions' },
-        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `buy-one-${def.id}`, onclick: () => runAndRender(actions.buySeeds(def.id, 1), actions, rerender) }, 'Buy 1'),
-        h('button', { class: 'btn btn-sm', 'data-testid': `buy-five-${def.id}`, onclick: () => runAndRender(actions.buySeeds(def.id, 5), actions, rerender) }, 'Buy 5'),
+        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `buy-one-${def.id}`, ...(unlock.unlocked ? {} : { disabled: 'true', title: unlock.requirement }), onclick: () => runAndRender(actions.buySeeds(def.id, 1), actions, rerender) }, 'Buy 1'),
+        h('button', { class: 'btn btn-sm', 'data-testid': `buy-five-${def.id}`, ...(unlock.unlocked ? {} : { disabled: 'true', title: unlock.requirement }), onclick: () => runAndRender(actions.buySeeds(def.id, 5), actions, rerender) }, 'Buy 5'),
       ),
     ));
   }

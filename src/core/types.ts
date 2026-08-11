@@ -392,6 +392,9 @@ export interface DailyState {
 export interface FarmCropDef {
   id: string;
   name: string;
+  startingSeeds: number;
+  unlock: 'starter' | 'county-order' | 'north-parcel' | 'barn-loft';
+  role: string;
   seedPriceCents: number;
   growMs: number;
   witherMs: number;

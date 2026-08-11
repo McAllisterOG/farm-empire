@@ -3,7 +3,7 @@ import { cropDef, farmCropDef } from '../core/registry';
 import {
   NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, buyFarmSeeds, farmOf,
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
-  issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage,
+  issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
   sellStoredCrop, syncCashMirror, ownedFarmParcelAt, planParcelWork,
   placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
@@ -540,16 +540,19 @@ export class FarmEmpireApp {
   }
 
   private openTractorParcelMenu(parcelId: FarmParcelId, tx: number, ty: number, sx: number, sy: number): void {
-    const plan = planParcelWork(this.state, parcelId, Date.now());
+    const plan = planParcelWork(this.state, parcelId, Date.now(), farmOf(this.state).selectedCropId);
     const farm = farmOf(this.state);
     const crop = farmCropDef(farm.selectedCropId);
+    const cropUnlock = farmCropUnlockInfo(this.state, crop.id);
     const seedCount = farm.seeds[crop.id] ?? 0;
     const parcelName = parcelId === 'starter' ? 'Starter parcel' : 'Neighboring parcel';
     showActionMenu(sx, sy, `${parcelName} · 3×3 tractor work`, [
       {
-        label: `Plant ${crop.name} on ${plan.plantPlotUids.length} empty field section${plan.plantPlotUids.length === 1 ? '' : 's'} (${seedCount} seeds)`,
+        label: cropUnlock.unlocked
+          ? `Plant ${crop.name} on ${plan.plantPlotUids.length} empty field section${plan.plantPlotUids.length === 1 ? '' : 's'} (${seedCount} seeds)`
+          : `${crop.name} locked: ${cropUnlock.requirement}`,
         icon: `icon:seed_${crop.id.replace('crop_', '')}`,
-        disabled: plan.plantPlotUids.length === 0,
+        disabled: !cropUnlock.unlocked || plan.plantPlotUids.length === 0,
         onClick: () => this.startTractorJob('plant', parcelId, plan.plantPlotUids, crop.id),
       },
       {
@@ -619,6 +622,10 @@ export class FarmEmpireApp {
     }
     if (targetPlotUids.length === 0) {
       toast(`No eligible field sections for tractor ${kind}ing.`, 'bad');
+      return;
+    }
+    if (kind === 'plant' && cropId && !isFarmCropUnlocked(this.state, cropId)) {
+      toast(farmCropUnlockInfo(this.state, cropId).requirement, 'bad');
       return;
     }
     this.tractorJob = {
