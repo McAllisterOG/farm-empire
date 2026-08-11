@@ -723,7 +723,9 @@ function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
 
 function drawOldPickup(ctx: CanvasRenderingContext2D, x: number, y: number, scale: number, operating: boolean, moving: boolean, now: number, headingX = 1, headingY = 0, steer = 0, wheelPhase = 0): void {
   ctx.save(); ctx.translate(x, y); ctx.scale(scale * 1.35, scale * 1.35);
-  ctx.scale(headingX < 0 ? -1 : 1, 1);
+  const pose = farmUprightPose({ x: headingX, y: headingY });
+  ctx.rotate(pose.slope);
+  if (pose.mirrored) ctx.scale(-1, 1);
   ctx.fillStyle = 'rgba(40,30,20,.24)'; ctx.beginPath(); ctx.ellipse(0, 8, 32, 9, 0, 0, Math.PI * 2); ctx.fill();
   const roll = moving ? wheelPhase : 0;
   ctx.fillStyle = '#2d3438'; ctx.beginPath(); ctx.arc(-20, 5, 7, 0, Math.PI * 2); ctx.arc(20, 5, 7, 0, Math.PI * 2); ctx.fill();
