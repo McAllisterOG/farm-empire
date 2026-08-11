@@ -140,8 +140,8 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     const order = h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-work-order-market' },
       h('div', { class: 'farm-card-main' },
         h('div', { class: 'farm-card-title' }, COUNTY_PANTRY_CORN_ORDER.title),
-        h('div', { class: 'farm-card-sub' }, `County delivery: ${progress.storedUnits} / ${progress.requiredUnits} corn in barn · fixed ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)} payout`),
-        h('div', { class: 'farm-card-stock' }, countyDelivery.deliveryReady ? 'Ready for Eli to accept.' : 'Keep harvesting and storing corn.'),
+        h('div', { class: 'farm-card-sub' }, `County delivery: ${progress.storedUnits} / ${progress.requiredUnits} corn in pickup cargo · fixed ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)} payout`),
+        h('div', { class: 'farm-card-stock' }, countyDelivery.deliveryReady ? 'Ready for Eli to accept.' : 'Load the remaining corn into the pickup.'),
       ),
       h('button', {
         class: 'btn btn-primary btn-sm', 'data-testid': 'deliver-county-work-order',

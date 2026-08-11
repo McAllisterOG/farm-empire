@@ -45,7 +45,7 @@ export function fulfillCountyWorkOrder(state: GameState, context?: CountyDeliver
   if (!context || context.source !== 'pickup' || context.pickupPresent !== true) return fail('Bring the old pickup to the County Service Center before delivery.');
   const stored = pickupCropUnits(state, COUNTY_PANTRY_CORN_ORDER.cropId);
   if (stored < COUNTY_PANTRY_CORN_ORDER.requiredUnits) {
-    return fail(`The County Pantry needs ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} stored corn before delivery.`);
+    return fail(`The County Pantry needs ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} corn in pickup cargo before delivery.`);
   }
   farm.pickup.cargo.crops[COUNTY_PANTRY_CORN_ORDER.cropId] = stored - COUNTY_PANTRY_CORN_ORDER.requiredUnits;
   farm.cashCents += COUNTY_PANTRY_CORN_ORDER.payoutCents;
