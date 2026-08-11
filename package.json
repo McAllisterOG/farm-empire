@@ -3,6 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "main": "desktop/main.mjs",
+  "author": "Farm Empire",
   "description": "Farm Empire — an original isometric farming-business simulation built on the MIT-licensed Paradise Isle engine.",
   "scripts": {
     "dev": "vite",
@@ -11,11 +13,54 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "server": "node server/index.mjs"
+    "server": "node server/index.mjs",
+    "desktop:build": "node desktop/build.mjs",
+    "desktop:dev": "node desktop/dev.mjs",
+    "desktop:package:dir": "npm run desktop:build && electron-builder --win dir --x64",
+    "desktop:package:portable": "npm run desktop:build && electron-builder --win portable --x64",
+    "desktop:package:installer": "npm run desktop:build && electron-builder --win nsis --x64",
+    "desktop:package": "npm run desktop:build && electron-builder --win dir portable nsis --x64"
   },
   "devDependencies": {
+    "electron": "^37.0.0",
+    "electron-builder": "^26.0.0",
     "typescript": "^5.6.0",
     "vite": "^6.0.0",
     "vitest": "^2.1.0"
+  },
+  "build": {
+    "appId": "com.farmempire.desktop",
+    "productName": "Farm Empire",
+    "artifactName": "Farm Empire ${version} ${os} ${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/main.mjs",
+      "desktop/preload.mjs",
+      "desktop/policy.mjs",
+      "desktop/icon.svg",
+      "desktop/icon.png",
+      "desktop/icon.ico",
+      "package.json"
+    ],
+    "win": {
+      "target": ["dir", "portable", "nsis"],
+      "icon": "desktop/icon.ico",
+      "legalTrademarks": "Farm Empire",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Farm Empire",
+      "artifactName": "Farm Empire Setup ${version} ${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "Farm Empire Portable ${version} ${arch}.${ext}"
+    }
   }
 }
