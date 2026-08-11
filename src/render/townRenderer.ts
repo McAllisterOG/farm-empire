@@ -14,6 +14,7 @@ export interface TownRenderScene {
   clockMinute: number;
   gesturingNpcId: TownNpcDef['id'] | null;
   gestureUntil: number;
+  pickup?: { x: number; y: number };
 }
 
 interface TownDrawItem { depth: number; draw: () => void }
@@ -58,6 +59,13 @@ function drawTownName(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
   ctx.fillStyle = 'rgba(39,34,28,.58)'; ctx.fillRect(x - width / 2 - 4, y - 105 * zoom, width + 8, 15 * zoom); ctx.fillStyle = '#fff'; ctx.fillText(name, x, y - 94 * zoom); ctx.restore();
 }
 
+function drawFreightPickup(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  ctx.fillStyle = 'rgba(40,30,20,.25)'; ctx.beginPath(); ctx.ellipse(0, 7, 25, 7, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2d3438'; ctx.beginPath(); ctx.arc(-16, 4, 5, 0, Math.PI * 2); ctx.arc(16, 4, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#c75a3d'; ctx.fillRect(-22, -6, 44, 11); ctx.fillStyle = '#8d3d31'; ctx.fillRect(3, -19, 17, 14); ctx.fillStyle = '#b8d7dd'; ctx.fillRect(6, -17, 12, 8); ctx.restore();
+}
+
 export function renderTown(
   ctx: CanvasRenderingContext2D,
   camera: Camera,
@@ -84,6 +92,10 @@ export function renderTown(
   for (const npc of TOWN_NPCS) {
     const screen = project(camera, npc, true); const gesturing = scene.gesturingNpcId === npc.id && now < scene.gestureUntil;
     items.push({ depth: npc.x + npc.y + .4, draw: () => drawTownNpc(ctx, screen.x, screen.y, zoom, npc, now, gesturing) });
+  }
+  if (scene.pickup) {
+    const pickupScreen = project(camera, scene.pickup, true);
+    items.push({ depth: scene.pickup.x + scene.pickup.y + .3, draw: () => drawFreightPickup(ctx, pickupScreen.x, pickupScreen.y, zoom) });
   }
   const exitScreen = project(camera, TOWN_EXIT, true);
   items.push({ depth: TOWN_EXIT.x + TOWN_EXIT.y + .2, draw: () => drawTownExitSign(ctx, exitScreen.x, exitScreen.y, zoom) });

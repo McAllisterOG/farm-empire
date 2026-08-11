@@ -1,6 +1,7 @@
 import type { GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
 import { farmCropUnlockInfo, farmOf, formatMoney, storageUsed } from '../core/farmBusiness';
+import { pickupCargoUsed } from '../core/farmPickup';
 import { h, spriteImg } from './dom';
 
 export interface FarmHudCallbacks {
@@ -128,7 +129,7 @@ export class FarmHud {
     const farm = farmOf(state);
     this.cashEl.textContent = formatMoney(farm.cashCents);
     this.clockEl.textContent = `Day ${farm.clock.day} · ${clockText(farm.clock.minute)}`;
-    this.storageEl.textContent = `${storageUsed(state)} / ${farm.storageCapacity}`;
+    this.storageEl.textContent = `${storageUsed(state)} / ${farm.storageCapacity} · P ${pickupCargoUsed(state)} / 72`;
     this.selectedEl.textContent = farmCropDef(farm.selectedCropId).name;
     this.tractorEl.textContent = runtime?.working
       ? 'Field job active'

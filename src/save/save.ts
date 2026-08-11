@@ -49,7 +49,7 @@ const MIGRATIONS: Record<number, Migrator> = {
   5: (raw) => {
     const farm = raw.farm as Record<string, unknown> | undefined;
     if (farm && typeof farm === 'object' && !Array.isArray(farm)) {
-      const equipment = (farm.equipment && typeof farm.equipment === 'object' ? farm.equipment : {}) as Record<string, unknown>;
+      const equipment = (farm.equipment && typeof farm.equipment === 'object' && !Array.isArray(farm.equipment) ? farm.equipment : {}) as Record<string, unknown>;
       equipment.countyRowCropFieldKitOwned = true;
       farm.equipment = equipment;
     }
@@ -58,12 +58,17 @@ const MIGRATIONS: Record<number, Migrator> = {
   6: (raw) => {
     const farm = raw.farm as Record<string, unknown> | undefined;
     if (farm && typeof farm === 'object' && !Array.isArray(farm)) {
-      const equipment = (farm.equipment && typeof farm.equipment === 'object' ? farm.equipment : {}) as Record<string, unknown>;
+      const equipment = (farm.equipment && typeof farm.equipment === 'object' && !Array.isArray(farm.equipment) ? farm.equipment : {}) as Record<string, unknown>;
       equipment.barnLoftExpansionOwned = false;
       farm.equipment = equipment;
       farm.countyReliefClaimed = false;
     }
     raw.version = 7;
+  },
+  7: (raw) => {
+    // Pickup cargo is deliberately minimal; farm normalization supplies every
+    // missing or malformed field and preserves all prior business state.
+    raw.version = 8;
   },
 };
 

@@ -6,6 +6,7 @@ import {
 import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT } from '../../data/farmEquipment.data';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
+import { pickupCargoUsed, pickupCropUnits, pickupSeedUnits } from '../../core/farmPickup';
 import { h, spriteImg, clearChildren } from '../dom';
 import { closePanel, openPanel } from '../modal';
 
@@ -14,6 +15,10 @@ type Dispatch = (result: ActionResult) => void;
 export interface FarmPanelActions {
   buySeeds: (cropId: string, count: number) => ActionResult;
   sellCrop: (cropId: string, count: number) => ActionResult;
+  loadCrop?: (cropId: string, count: number) => ActionResult;
+  loadSeeds?: (cropId: string, count: number) => ActionResult;
+  unloadSeeds?: (cropId: string, count: number) => ActionResult;
+  pickupPresent?: boolean;
   buyLand: () => ActionResult;
   acceptCountyWorkOrder: () => ActionResult;
   fulfillCountyWorkOrder: () => ActionResult;
@@ -31,9 +36,11 @@ export interface CountyDeliveryMarketState {
 }
 
 /** Defaults closed so a new farm-side caller cannot accidentally expose County delivery. */
-export function countyDeliveryMarketState(state: GameState, context: FarmMarketContext = 'farm'): CountyDeliveryMarketState {
+export function countyDeliveryMarketState(state: GameState, context: FarmMarketContext = 'farm', pickupPresent?: boolean): CountyDeliveryMarketState {
   const showCountyOrder = context === 'town' && townContact(state).status === 'active';
-  const progress = countyWorkOrderProgress(state);
+  const progress = pickupPresent === false ? { storedUnits: 0, requiredUnits: COUNTY_PANTRY_CORN_ORDER.requiredUnits } : pickupCargoUsed(state) > 0
+    ? countyWorkOrderProgress(state, { pickupPresent: true, source: 'pickup' })
+    : countyWorkOrderProgress(state);
   return {
     showCountyOrder,
     deliveryReady: showCountyOrder && progress.storedUnits >= progress.requiredUnits,
@@ -59,7 +66,8 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
   const farm = farmOf(state);
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', {}, `Available cash: ${formatMoney(farm.cashCents)}`),
-    h('span', {}, 'Seed prices are paid immediately and inventory is saved.'),
+    h('span', {}, 'Town purchases enter the pickup; farm inventory can be loaded or unloaded here.'),
+    ...(actions.pickupPresent === false ? [h('strong', { class: 'panel-note' }, 'On foot: bring the pickup here to buy, load, sell, or deliver.')] : []),
   ));
   const list = h('div', { class: 'farm-card-list' });
   const rerender = (): void => renderSeedShop(body, state, actions);
@@ -75,11 +83,13 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
           `${formatMoney(def.seedPriceCents)} per seed · ${Math.round(def.growMs / 1000)}s base growth · ${def.harvestYield} units + tractor bonus`,
         ),
         h('div', { class: 'farm-card-sub' }, `${def.role} · Expected gross ${formatMoney(gross)} · margin ${formatMoney(margin)} · ${def.storageUnitsPerItem} barn/unit · ${unlock.unlocked ? unlock.requirement : `Locked: ${unlock.requirement}`}`),
-        h('div', { class: 'farm-card-stock', 'data-testid': `seed-count-${def.id}` }, `Seeds owned: ${farm.seeds[def.id] ?? 0}`),
+        h('div', { class: 'farm-card-stock', 'data-testid': `seed-count-${def.id}` }, `Farm seeds: ${farm.seeds[def.id] ?? 0} · Pickup: ${pickupSeedUnits(state, def.id)}`),
       ),
       h('div', { class: 'farm-card-actions' },
-        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `buy-one-${def.id}`, ...(unlock.unlocked ? {} : { disabled: 'true', title: unlock.requirement }), onclick: () => runAndRender(actions.buySeeds(def.id, 1), actions, rerender) }, 'Buy 1'),
-        h('button', { class: 'btn btn-sm', 'data-testid': `buy-five-${def.id}`, ...(unlock.unlocked ? {} : { disabled: 'true', title: unlock.requirement }), onclick: () => runAndRender(actions.buySeeds(def.id, 5), actions, rerender) }, 'Buy 5'),
+        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `buy-one-${def.id}`, ...(unlock.unlocked ? {} : { disabled: 'true', title: unlock.requirement }), onclick: () => runAndRender(actions.buySeeds(def.id, 1), actions, rerender) }, 'Buy 1 / Load'),
+        h('button', { class: 'btn btn-sm', 'data-testid': `buy-five-${def.id}`, ...(unlock.unlocked ? {} : { disabled: 'true', title: unlock.requirement }), onclick: () => runAndRender(actions.buySeeds(def.id, 5), actions, rerender) }, 'Buy 5 / Load'),
+        ...(actions.loadSeeds ? [h('button', { class: 'btn btn-sm', onclick: () => runAndRender(actions.loadSeeds!(def.id, 1), actions, rerender) }, 'Load farm seed')] : []),
+        ...(actions.unloadSeeds ? [h('button', { class: 'btn btn-sm', onclick: () => runAndRender(actions.unloadSeeds!(def.id, 1), actions, rerender) }, 'Unload 1')] : []),
       ),
     ));
   }
@@ -99,9 +109,10 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   clearChildren(body);
   const farm = farmOf(state);
   const used = storageUsed(state);
+  const pickupUsed = pickupCargoUsed(state);
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', { 'data-testid': 'market-cash' }, `Cash: ${formatMoney(farm.cashCents)}`),
-    h('strong', { 'data-testid': 'market-capacity' }, `Storage: ${used} / ${farm.storageCapacity}`),
+    h('strong', { 'data-testid': 'market-capacity' }, `Barn: ${used} / ${farm.storageCapacity} · Pickup: ${pickupUsed} / 72`),
     h('span', {}, `${storageRemaining(state)} capacity remaining. A full barn leaves mature crops safely in the field. ${farm.equipment.barnLoftExpansionOwned ? 'Barn Loft Expansion owned.' : 'Barn Loft Expansion is available through Mae after the neighboring parcel is owned.'}`),
   ));
 
@@ -118,9 +129,9 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   }
   body.append(events);
 
-  const countyDelivery = countyDeliveryMarketState(state, context);
+  const countyDelivery = countyDeliveryMarketState(state, context, actions.pickupPresent);
   if (countyDelivery.showCountyOrder) {
-    const progress = countyWorkOrderProgress(state);
+    const progress = countyWorkOrderProgress(state, { pickupPresent: true, source: 'pickup' });
     const order = h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-work-order-market' },
       h('div', { class: 'farm-card-main' },
         h('div', { class: 'farm-card-title' }, COUNTY_PANTRY_CORN_ORDER.title),
@@ -141,7 +152,7 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   for (const def of allFarmCrops()) {
     const quote = farm.market.quotes[def.id];
     const movement = marketMovement(quote.currentCents, quote.previousCents);
-    const stored = farm.storage[def.id] ?? 0;
+    const stored = context === 'town' ? pickupCropUnits(state, def.id) : farm.storage[def.id] ?? 0;
     const input = h('input', {
       class: 'market-qty', type: 'number', min: '1', max: String(Math.max(1, stored)), value: String(Math.max(1, Math.min(5, stored))),
       'aria-label': `${def.name} sale quantity`, 'data-testid': `sell-amount-${def.id}`,
@@ -155,13 +166,18 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
           `${formatMoney(quote.currentCents)} / unit · ${movement.direction === 'up' ? '▲' : movement.direction === 'down' ? '▼' : '•'} ${formatMoney(Math.abs(movement.delta))}`,
         ),
         h('div', { class: 'farm-card-sub' }, `Previous ${formatMoney(quote.previousCents)} · Base ${formatMoney(def.basePriceCents)}`),
-        h('div', { class: 'farm-card-stock', 'data-testid': `stored-${def.id}` }, `Stored: ${stored}`),
+        h('div', { class: 'farm-card-stock', 'data-testid': `stored-${def.id}` }, `${context === 'town' ? 'Pickup cargo' : 'Barn'}: ${stored}`),
       ),
       h('div', { class: 'market-sell-controls' },
         input,
-        h('button', { class: 'btn btn-sm', 'data-testid': `sell-one-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, 1), actions, rerender) }, 'Sell 1'),
-        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `sell-chosen-${def.id}`, onclick: sellChosen }, 'Sell amount'),
-        h('button', { class: 'btn btn-sm', 'data-testid': `sell-all-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, stored), actions, rerender) }, 'Sell all'),
+        ...(context === 'town' ? [
+          h('button', { class: 'btn btn-sm', 'data-testid': `sell-one-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, 1), actions, rerender) }, 'Sell 1'),
+          h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `sell-chosen-${def.id}`, onclick: sellChosen }, 'Sell amount'),
+          h('button', { class: 'btn btn-sm', 'data-testid': `sell-all-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, stored), actions, rerender) }, 'Sell all'),
+        ] : [
+          ...(actions.loadCrop ? [h('button', { class: 'btn btn-primary btn-sm', onclick: () => runAndRender(actions.loadCrop!(def.id, 1), actions, rerender) }, 'Load 1')] : []),
+          h('span', { class: 'panel-note' }, `Pickup: ${pickupCropUnits(state, def.id)}`),
+        ]),
       ),
     ));
   }
@@ -260,6 +276,8 @@ export interface FarmEquipmentOnFarmActions {
   operating: boolean;
   jobActive: boolean;
   onToggleOperating: () => void;
+  pickupOperating?: boolean;
+  onTogglePickup?: () => void;
   onClose: () => void;
 }
 
@@ -319,6 +337,11 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
           onToggleOperating?.();
         },
       }, operating ? jobActive ? 'Finish or cancel job before exiting' : 'Exit Tractor' : 'Operate Tractor')] : []),
+      ...(onFarm && actions.context === 'farm' && actions.onTogglePickup ? [h('button', {
+        class: 'btn equipment-operate', 'data-testid': actions.pickupOperating ? 'exit-pickup' : 'operate-pickup',
+        ...(jobActive || operating ? { disabled: 'true' } : {}),
+        onclick: () => { closePanel(); actions.onTogglePickup?.(); },
+      }, actions.pickupOperating ? 'Exit Pickup' : 'Operate Old Pickup')] : []),
       h('div', { class: 'panel-note', 'data-testid': onFarm ? 'farm-equipment-note' : 'town-equipment-note' }, !onFarm
         ? 'The Equipment Desk can review the tractor record here. Return to the farm to climb aboard and operate it.'
         : operating

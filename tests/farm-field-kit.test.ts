@@ -15,7 +15,7 @@ function farm() { return createFarmGame('Kit Test', 77, NOW); }
 describe('County Row-Crop Field Kit', () => {
   it('starts unowned and stays locked until the County Pantry order is complete', () => {
     const state = farm();
-    expect(SAVE_VERSION).toBe(7);
+    expect(SAVE_VERSION).toBe(8);
     expect(farmOf(state).equipment.countyRowCropFieldKitOwned).toBe(false);
     const before = farmOf(state).cashCents;
     expect(purchaseCountyRowCropFieldKit(state).ok).toBe(false);
@@ -79,7 +79,7 @@ describe('County Row-Crop Field Kit', () => {
     old.version = 5;
     delete old.farm.equipment.countyRowCropFieldKitOwned;
     const migrated = deserialize(JSON.stringify(old), NOW + 1);
-    expect(migrated.version).toBe(7);
+    expect(migrated.version).toBe(8);
     expect(farmOf(migrated).equipment.countyRowCropFieldKitOwned).toBe(true);
     expect(farmOf(migrated).cashCents).toBe(321_654);
     expect(farmOf(migrated).storage.crop_corn).toBe(7);

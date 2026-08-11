@@ -4,6 +4,8 @@ export interface TownTravelRuntime {
   operatingTractor: boolean;
   tractorMoving: boolean;
   tractorJobActive: boolean;
+  operatingPickup?: boolean;
+  pickupMoving?: boolean;
 }
 
 /** Logical farm coordinates. Town scene coordinates are deliberately separate. */
@@ -14,6 +16,8 @@ export function townTravelBlockReason(runtime: TownTravelRuntime): string | null
   if (runtime.tractorJobActive) return 'Finish or cancel the active field job before heading to town.';
   if (runtime.tractorMoving) return 'Park the tractor before heading to town.';
   if (runtime.operatingTractor) return 'Exit the tractor before heading to town.';
+  if (runtime.pickupMoving) return 'Park the pickup before heading to town.';
+  if (runtime.operatingPickup) return 'Drive the pickup to the gate before heading to town.';
   return null;
 }
 

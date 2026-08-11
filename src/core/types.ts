@@ -433,12 +433,26 @@ export interface FarmTownContactState {
   status: FarmTownContactStatus;
 }
 
+export interface FarmPickupCargo {
+  crops: Record<string, number>;
+  seeds: Record<string, number>;
+}
+
+export interface FarmPickupState {
+  id: 'old-pickup';
+  name: string;
+  x: number;
+  y: number;
+  cargo: FarmPickupCargo;
+}
+
 export interface FarmBusinessState {
   cashCents: number;
   seeds: Record<string, number>;
   storage: Record<string, number>;
   storageCapacity: number;
   countyReliefClaimed: boolean;
+  pickup: FarmPickupState;
   selectedCropId: string;
   townContact: FarmTownContactState;
   clock: FarmClockState;

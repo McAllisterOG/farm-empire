@@ -1,12 +1,13 @@
 import type { ActionResult, GameState } from '../core/types';
 import { farmCropDef } from '../core/registry';
 import {
-  NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, buyFarmSeeds, farmOf,
+  NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
   issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
-  sellStoredCrop, syncCashMirror, ownedFarmParcelAt, planParcelWork,
+  syncCashMirror, ownedFarmParcelAt, planParcelWork,
   placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
+import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, sellPickupCrop, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint } from '../render/farmLayout';
@@ -54,6 +55,9 @@ type FarmEmpireMode = 'farm' | 'town';
 
 interface CameraSnapshot { cx: number; cy: number; zoom: number }
 
+function failFarmSidePurchase(): ActionResult { return { ok: false, reason: 'Buy seeds in town with the pickup; farm inventory is not a shop.' }; }
+function failFarmSideSale(): ActionResult { return { ok: false, reason: 'Load produce into the pickup and bring it to the County Grain Exchange.' }; }
+
 export class FarmEmpireApp {
   state: GameState;
   private slot: number;
@@ -74,6 +78,10 @@ export class FarmEmpireApp {
   private hover: { tx: number; ty: number } | null = null;
   private walkTarget: { x: number; y: number; cb: (() => void) | null } | null = null;
   private operatingTractor = false;
+  private operatingPickup = false;
+  private pickupAtTown = false;
+  private pickupTarget: TractorMoveTarget | null = null;
+  private pickupMotion: TractorMotion = createTractorMotion();
   private tractorTarget: TractorMoveTarget | null = null;
   private tractorMotion: TractorMotion = createTractorMotion();
   private tractorJob: TractorJob | null = null;
@@ -160,11 +168,19 @@ export class FarmEmpireApp {
 
   private panelActions(): FarmPanelActions {
     return {
-      buySeeds: (cropId, count) => buyFarmSeeds(this.state, cropId, count),
-      sellCrop: (cropId, count) => sellStoredCrop(this.state, cropId, count),
+      pickupPresent: this.mode === 'farm' || this.pickupAtTown,
+      buySeeds: (cropId, count) => this.mode === 'town'
+        ? buyTownSeedsIntoPickup(this.state, cropId, count, this.pickupAtTown)
+        : failFarmSidePurchase(),
+      sellCrop: (cropId, count) => this.mode === 'town'
+        ? sellPickupCrop(this.state, cropId, count, this.pickupAtTown)
+        : failFarmSideSale(),
+      loadCrop: (cropId, count) => loadBarnCropToPickup(this.state, cropId, count),
+      loadSeeds: (cropId, count) => loadFarmSeedsToPickup(this.state, cropId, count),
+      unloadSeeds: (cropId, count) => unloadPickupSeedsToFarm(this.state, cropId, count),
       buyLand: () => purchaseNeighborParcel(this.state),
       acceptCountyWorkOrder: () => acceptCountyWorkOrder(this.state),
-      fulfillCountyWorkOrder: () => fulfillCountyWorkOrder(this.state),
+      fulfillCountyWorkOrder: () => fulfillCountyWorkOrder(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' }),
       issueCountyReliefSeed: () => issueCountyReliefSeed(this.state, Date.now()),
       purchaseBarnLoft: () => purchaseBarnLoftExpansion(this.state),
       dispatch: this.dispatch,
@@ -298,6 +314,10 @@ export class FarmEmpireApp {
         this.tractorTarget = null;
         this.tractorMotion = resetTractorMotion(this.tractorMotion);
         toast('Tractor drive cancelled.', 'good');
+      } else if (this.pickupTarget) {
+        this.pickupTarget = null;
+        this.pickupMotion = resetTractorMotion(this.pickupMotion);
+        toast('Pickup drive cancelled.', 'good');
       } else if (isActionMenuOpen()) hideActionMenu();
       else if (isPanelOpen()) closePanel();
     });
@@ -327,7 +347,13 @@ export class FarmEmpireApp {
         tractorJobActive: !!this.tractorJob,
       });
       if (blocked) toast(blocked, 'bad');
-      else this.walkNear(FARM_TOWN_GATE.x, FARM_TOWN_GATE.y, () => this.enterTown());
+      else if (this.operatingPickup) {
+        this.drivePickupTo(FARM_TOWN_GATE.x, FARM_TOWN_GATE.y, () => {
+          this.operatingPickup = false;
+          this.pickupAtTown = true;
+          this.enterTown();
+        });
+      } else this.walkNear(FARM_TOWN_GATE.x, FARM_TOWN_GATE.y, () => this.enterTown());
       return;
     }
     if (!this.operatingTractor && Math.hypot(clickLogical.x - this.scout.x, clickLogical.y - this.scout.y) <= 0.72) {
@@ -351,6 +377,11 @@ export class FarmEmpireApp {
     }
 
     const tractor = farm.equipment.tractor;
+    const pickup = farm.pickup;
+    if (Math.hypot(pickup.x - clickLogical.x, pickup.y - clickLogical.y) <= 0.9) {
+      this.togglePickupOperating();
+      return;
+    }
     if (Math.hypot(tractor.x - tx, tractor.y - ty) <= 0.8) {
       this.openEquipmentPanel();
       return;
@@ -367,6 +398,7 @@ export class FarmEmpireApp {
       return;
     }
     if (this.operatingTractor) this.driveTractorTo(tx, ty);
+    else if (this.operatingPickup) this.drivePickupTo(tx, ty);
     else this.walkNear(tx, ty, null);
   }
 
@@ -458,6 +490,11 @@ export class FarmEmpireApp {
       this.renderer.camera.cx = this.farmCamera.cx; this.renderer.camera.cy = this.farmCamera.cy; this.renderer.camera.zoom = this.farmCamera.zoom;
     } else this.renderer.centerOnFarm();
     this.farmCamera = null; this.hud.setMode('farm');
+    if (this.pickupAtTown) {
+      const pickup = farmOf(this.state).pickup;
+      pickup.x = FARM_TOWN_GATE.x; pickup.y = FARM_TOWN_GATE.y;
+      this.pickupAtTown = false;
+    }
     toast('Back at the farm.', 'good');
   }
 
@@ -469,6 +506,8 @@ export class FarmEmpireApp {
       operating: this.operatingTractor,
       jobActive: !!this.tractorJob || !!this.tractorTarget,
       onToggleOperating: () => this.toggleTractorOperating(),
+      pickupOperating: this.operatingPickup,
+      onTogglePickup: () => this.togglePickupOperating(),
       onClose: () => {
         this.equipmentPanelOpen = false;
       },
@@ -490,6 +529,10 @@ export class FarmEmpireApp {
 
   private toggleTractorOperating(): void {
     const tractor = farmOf(this.state).equipment.tractor;
+    if (!this.operatingTractor && this.operatingPickup) {
+      toast('Exit the pickup before operating the tractor.', 'bad');
+      return;
+    }
     if (this.tractorJob || this.tractorTarget) {
       toast('Finish or cancel the current tractor movement before exiting.', 'bad');
       return;
@@ -517,6 +560,28 @@ export class FarmEmpireApp {
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
+  private togglePickupOperating(): void {
+    if (this.operatingTractor || this.tractorJob || this.tractorTarget) {
+      toast('Exit the tractor before operating the pickup.', 'bad');
+      return;
+    }
+    const pickup = farmOf(this.state).pickup;
+    if (this.operatingPickup) {
+      this.operatingPickup = false;
+      this.pickupTarget = null;
+      this.pickupMotion = resetTractorMotion(this.pickupMotion);
+      this.playerActor.x = pickup.x + .7;
+      this.playerActor.y = pickup.y + .25;
+      toast('Exited the old pickup.', 'good');
+    } else {
+      this.operatingPickup = true;
+      this.walkTarget = null;
+      this.playerActor.walking = false;
+      toast('Operating the old pickup. Drive to the farm gate for County services.', 'good');
+    }
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
   private openScoutMenu(): void {
     const point = farmWorldPoint(this.scout);
     const sx = this.renderer.camera.sx(isoX(point.x, point.y));
@@ -537,6 +602,11 @@ export class FarmEmpireApp {
       y,
       cb: () => toast('Tractor parked.', 'good'),
     };
+  }
+
+  private drivePickupTo(x: number, y: number, cb: (() => void) | null = () => toast('Pickup parked.', 'good')): void {
+    if (!this.operatingPickup || this.pickupAtTown) return;
+    this.pickupTarget = { x, y, cb };
   }
 
   private openTractorParcelMenu(parcelId: FarmParcelId, tx: number, ty: number, sx: number, sy: number): void {
@@ -828,6 +898,15 @@ export class FarmEmpireApp {
         cb?.();
       }
     }
+    if (this.mode === 'farm' && this.pickupTarget) {
+      const pickup = farmOf(this.state).pickup;
+      const motionStep = advanceTractorMotion(pickup, this.pickupTarget, this.pickupMotion, dt);
+      pickup.x = motionStep.position.x; pickup.y = motionStep.position.y;
+      this.pickupMotion = motionStep.motion;
+      if (motionStep.arrived) {
+        const cb = this.pickupTarget.cb; this.pickupTarget = null; cb?.();
+      }
+    }
 
     if (this.mode === 'farm') this.updateTractorJob(now);
 
@@ -901,6 +980,7 @@ export class FarmEmpireApp {
         clockMinute: farm.clock.minute,
         gesturingNpcId: this.townGesture?.npcId ?? null,
         gestureUntil: this.townGesture?.until ?? 0,
+        pickup: this.pickupAtTown ? { x: 14, y: 12 } : undefined,
       };
       return scene;
     }
@@ -917,6 +997,13 @@ export class FarmEmpireApp {
         headingY: this.tractorMotion.headingY,
         steer: this.tractorMotion.steer,
         wheelPhase: this.tractorMotion.wheelPhase,
+      },
+      pickup: {
+        name: farm.pickup.name,
+        x: farm.pickup.x,
+        y: farm.pickup.y,
+        operating: this.operatingPickup,
+        moving: !!this.pickupTarget,
       },
       scout: { ...this.scout, facing: this.scoutFacing, scratching: Date.now() < this.scoutScratchUntil },
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,

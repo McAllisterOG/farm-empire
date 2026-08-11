@@ -5,6 +5,7 @@ import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farm
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
 import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT } from '../data/farmEquipment.data';
+import { PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, emptyPickupCargo } from './farmPickupData';
 
 export const STARTING_CASH_CENTS = 500_000;
 export const STARTING_STORAGE_CAPACITY = 150;
@@ -111,6 +112,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     storage,
     storageCapacity: STARTING_STORAGE_CAPACITY,
     countyReliefClaimed: false,
+    pickup: { id: PICKUP_ID, name: PICKUP_NAME, x: PICKUP_START.x, y: PICKUP_START.y, cargo: emptyPickupCargo() },
     selectedCropId: 'crop_corn',
     townContact: { status: 'unmet' },
     clock: { day: 1, minute: 8 * 60, lastRealAt: now },
@@ -129,6 +131,45 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
         harvestBonusUnits: 1,
       },
     },
+  };
+}
+
+function normalizePickup(rawPickup: unknown): FarmBusinessState['pickup'] {
+  const raw = objectRecord(rawPickup);
+  const rawCargo = objectRecord(raw.cargo);
+  const normalizeBag = (value: unknown): Record<string, number> => {
+    const source = objectRecord(value);
+    const bag: Record<string, number> = {};
+    for (const def of allFarmCrops()) {
+      const value = source[def.id];
+      if (Number.isInteger(value) && Number(value) > 0) bag[def.id] = Number(value);
+    }
+    return bag;
+  };
+  const rawCrops = normalizeBag(rawCargo.crops);
+  const rawSeeds = normalizeBag(rawCargo.seeds);
+  const crops: Record<string, number> = {};
+  const seeds: Record<string, number> = {};
+  let used = 0;
+  for (const def of allFarmCrops()) {
+    const cropCount = rawCrops[def.id] ?? 0;
+    const available = Math.floor(Math.max(0, PICKUP_CARGO_CAPACITY - used) / def.storageUnitsPerItem);
+    const kept = Math.min(cropCount, available);
+    if (kept > 0) crops[def.id] = kept;
+    used += kept * def.storageUnitsPerItem;
+  }
+  for (const def of allFarmCrops()) {
+    const available = Math.max(0, PICKUP_CARGO_CAPACITY - used);
+    const kept = Math.min(rawSeeds[def.id] ?? 0, available);
+    if (kept > 0) seeds[def.id] = kept;
+    used += kept;
+  }
+  return {
+    id: PICKUP_ID,
+    name: PICKUP_NAME,
+    x: clampNumber(raw.x, PICKUP_START.x),
+    y: clampNumber(raw.y, PICKUP_START.y),
+    cargo: { crops, seeds },
   };
 }
 
@@ -183,6 +224,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     storage,
     storageCapacity: loftOwned ? BARN_LOFT_EXPANSION.toCapacity : STARTING_STORAGE_CAPACITY,
     countyReliefClaimed: raw.countyReliefClaimed === true,
+    pickup: normalizePickup(raw.pickup),
     selectedCropId,
     townContact: { status: townStatus === 'offered' || townStatus === 'active' || townStatus === 'completed' ? townStatus : 'unmet' },
     clock: {
