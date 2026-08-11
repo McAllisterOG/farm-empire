@@ -1,10 +1,15 @@
 import { app, BrowserWindow, Menu, shell } from 'electron';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APP_ID, GITHUB_ATTRIBUTION_URL, isAllowedExternalUrl } from './policy.mjs';
+import { APP_ID, GITHUB_ATTRIBUTION_URL, isAllowedExternalUrl, isDevUrlEnabled } from './policy.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const isExplicitDev = process.env.FARM_EMPIRE_DEV === '1' && !!process.env.FARM_EMPIRE_DEV_URL;
+const isExplicitDev = isDevUrlEnabled({
+  isPackaged: app.isPackaged,
+  devFlag: process.env.FARM_EMPIRE_DEV,
+  devUrl: process.env.FARM_EMPIRE_DEV_URL,
+});
+const iconPath = app.isPackaged ? join(process.resourcesPath, 'icon.ico') : join(__dirname, 'icon.ico');
 
 app.setAppUserModelId(APP_ID);
 app.setPath('userData', join(app.getPath('appData'), 'Farm Empire'));
@@ -32,12 +37,11 @@ if (!app.requestSingleInstanceLock()) {
       resizable: true,
       show: false,
       title: 'Farm Empire',
-      icon: join(__dirname, 'icon.svg'),
+      icon: iconPath,
       webPreferences: {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
-        preload: join(__dirname, 'preload.mjs'),
       },
     });
 

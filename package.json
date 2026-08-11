@@ -38,12 +38,17 @@
     "files": [
       "dist/**/*",
       "desktop/main.mjs",
-      "desktop/preload.mjs",
       "desktop/policy.mjs",
       "desktop/icon.svg",
       "desktop/icon.png",
       "desktop/icon.ico",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "desktop/icon.ico",
+        "to": "icon.ico"
+      }
     ],
     "win": {
       "target": ["dir", "portable", "nsis"],
