@@ -6,7 +6,7 @@
 - **Branch:** `codex/first-town-contact`
 - **Head:** `f3a687c`
 - **Product state:** The physical farm/town hauling loop now has a first-play usability repair: fitted and bounded cameras, dependable recovery controls, title return without quitting, a dedicated barn cargo pad, context-correct vehicle panels, safe pickup/gateway separation, explicit watering guidance, and fuller farm/town edge framing. Save v8 and all business transactions remain compatible.
-- **Verification:** 170/170 tests passed; strict typecheck, Vite production build, and whitespace checks passed. Browser acceptance covered fresh $5,000 creation, farm/town framing at 2048x1152, 1280x720, and 760x640, aggressive pan clamping and recentering, hamburger menu/title return/re-entry, pickup and tractor panel separation, exact barn/pickup transfers, cargo-pad authority and away-from-pad rejection, pickup gate travel and safe return, pump guidance, responsive town footer, and zero console warnings/errors.
+- **Verification:** 170/170 tests passed; strict typecheck, Vite production build, whitespace checks, and full npm audit with zero findings passed. Browser acceptance covered fresh $5,000 creation, farm/town framing at 2048x1152, 1280x720, and 760x640, aggressive pan clamping and recentering, hamburger menu/title return/re-entry, pickup and tractor panel separation, exact barn/pickup transfers, cargo-pad authority and away-from-pad rejection, pickup gate travel and safe return, pump guidance, responsive town footer, and zero console warnings/errors. All three Windows x64 deliverables were rebuilt; the exact OneDrive Desktop shortcut opened one responsive packaged window and closed normally with zero residual game processes, while target, working directory, icon, executable, and app bundle were read back successfully.
 - **Review:** One bounded Luna Medium writer completed the repair. Independent Luna Medium review found stale cross-scene camera restoration and active-scene resize framing; both were repaired. Primary acceptance then caught and repaired a core/render dependency, on-foot town-save pickup teleport, input-listener duplication, cargo-pad/locked-field overlap, the road crossing the locked parcel, and legacy gate-position conflicts while preserving cargo.
 
 ## Current presentation
@@ -39,7 +39,7 @@
 
 ## Immediate authorized work
 
-No new feature package is authorized. Refresh the Windows Desktop artifacts with this accepted source, then owner-playtest the menu, camera, cargo pad, hauling route, and first farm/town loop before selecting Acreage & Field Geometry V2, Farmer Knowledge & Skills, or another finite package.
+No new feature package is authorized. Owner-playtest the refreshed Windows Desktop build's menu, camera, cargo pad, hauling route, and first farm/town loop before selecting Acreage & Field Geometry V2, Farmer Knowledge & Skills, or another finite package.
 
 ## Known limitations
 
