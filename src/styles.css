@@ -348,6 +348,16 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 }
 .set-about { margin-top: 16px; font-size: 11.5px; color: #9a8a78; line-height: 1.7; }
 
+.farm-audio-controls {
+  display: grid; gap: 7px; margin: 10px 0 12px; padding: 10px 12px;
+  border: 2px solid #e9d5a4; border-radius: 12px; background: #fff8e5;
+}
+.farm-audio-heading, .farm-audio-row { display: flex; align-items: center; gap: 10px; }
+.farm-audio-heading { justify-content: space-between; color: #315b3a; }
+.farm-audio-row > span { width: 72px; color: #6e664f; font-size: 12px; font-weight: 800; }
+.farm-audio-row input[type='range'] { flex: 1; min-width: 100px; accent-color: #4f884c; cursor: pointer; }
+.farm-audio-value { width: 38px; color: #786b4e; font-size: 11px; text-align: right; }
+
 /* ---------------- 对话框 ---------------- */
 
 .dialog-overlay {

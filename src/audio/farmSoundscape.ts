@@ -1,0 +1,225 @@
+import type { ManualFieldActionKind } from '../core/farmManualAction';
+import { setSound, setSoundVolume, sfx, sharedAudioContext } from './sound';
+
+export const FARM_AUDIO_SETTINGS_KEY = 'farm-empire:audio:v1';
+
+export interface FarmAudioSettings {
+  muted: boolean;
+  ambience: number;
+  effects: number;
+}
+
+export interface FarmAudioStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
+
+export const DEFAULT_FARM_AUDIO_SETTINGS: Readonly<FarmAudioSettings> = {
+  muted: false,
+  ambience: .34,
+  effects: .58,
+};
+
+function volume(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.min(1, value))
+    : fallback;
+}
+
+export function normalizeFarmAudioSettings(value: unknown): FarmAudioSettings {
+  if (!value || typeof value !== 'object') return { ...DEFAULT_FARM_AUDIO_SETTINGS };
+  const raw = value as Partial<FarmAudioSettings>;
+  return {
+    muted: typeof raw.muted === 'boolean' ? raw.muted : DEFAULT_FARM_AUDIO_SETTINGS.muted,
+    ambience: volume(raw.ambience, DEFAULT_FARM_AUDIO_SETTINGS.ambience),
+    effects: volume(raw.effects, DEFAULT_FARM_AUDIO_SETTINGS.effects),
+  };
+}
+
+export function readFarmAudioSettings(storage: FarmAudioStorage | null): FarmAudioSettings {
+  if (!storage) return { ...DEFAULT_FARM_AUDIO_SETTINGS };
+  try {
+    const raw = storage.getItem(FARM_AUDIO_SETTINGS_KEY);
+    return raw ? normalizeFarmAudioSettings(JSON.parse(raw)) : { ...DEFAULT_FARM_AUDIO_SETTINGS };
+  } catch {
+    return { ...DEFAULT_FARM_AUDIO_SETTINGS };
+  }
+}
+
+export function writeFarmAudioSettings(storage: FarmAudioStorage | null, settings: FarmAudioSettings): void {
+  if (!storage) return;
+  try {
+    storage.setItem(FARM_AUDIO_SETTINGS_KEY, JSON.stringify(normalizeFarmAudioSettings(settings)));
+  } catch {
+    // Audio preferences are optional and must never block gameplay.
+  }
+}
+
+export interface FarmSoundscapeSnapshot extends FarmAudioSettings {
+  started: boolean;
+  vehicle: 'tractor' | 'pickup' | null;
+  vehicleMoving: boolean;
+}
+
+export class FarmSoundscape {
+  private settings: FarmAudioSettings;
+  private ac: AudioContext | null = null;
+  private ambientGain: GainNode | null = null;
+  private windSource: AudioBufferSourceNode | null = null;
+  private engineGain: GainNode | null = null;
+  private engineOsc: OscillatorNode | null = null;
+  private nextWildlifeAt = 0;
+  private wildlifeIndex = 0;
+  private vehicle: 'tractor' | 'pickup' | null = null;
+  private vehicleMoving = false;
+
+  constructor(private readonly storage: FarmAudioStorage | null) {
+    this.settings = readFarmAudioSettings(storage);
+    this.syncLegacyEffects();
+  }
+
+  snapshot(): FarmSoundscapeSnapshot {
+    return { ...this.settings, started: !!this.ac, vehicle: this.vehicle, vehicleMoving: this.vehicleMoving };
+  }
+
+  updateSettings(next: Partial<FarmAudioSettings>): FarmAudioSettings {
+    this.settings = normalizeFarmAudioSettings({ ...this.settings, ...next });
+    writeFarmAudioSettings(this.storage, this.settings);
+    this.syncLegacyEffects();
+    this.applyMix();
+    return { ...this.settings };
+  }
+
+  ensureStarted(): void {
+    if (this.ac) {
+      if (this.ac.state === 'suspended') void this.ac.resume();
+      return;
+    }
+    try {
+      const ac = sharedAudioContext();
+      if (!ac) return;
+      this.ac = ac;
+      this.createWind(ac);
+      this.createEngine(ac);
+      this.applyMix();
+    } catch {
+      // Unsupported or blocked audio must never prevent the farm from loading.
+      this.destroy();
+    }
+  }
+
+  playManualAction(kind: ManualFieldActionKind): void {
+    this.ensureStarted();
+    if (kind === 'plant') sfx('plant');
+    else if (kind === 'water') sfx('water');
+    else if (kind === 'harvest') sfx('harvest');
+    else sfx('build');
+  }
+
+  playTransaction(kind: 'sell' | 'expand' | 'success' | 'error' | 'scout'): void {
+    this.ensureStarted();
+    if (kind === 'sell') sfx('coin');
+    else if (kind === 'expand') sfx('quest');
+    else if (kind === 'error') sfx('error');
+    else if (kind === 'scout') sfx('happy');
+    else sfx('click');
+  }
+
+  update(
+    now: number,
+    clockMinute: number,
+    mode: 'farm' | 'town',
+    vehicle: 'tractor' | 'pickup' | null,
+    vehicleMoving: boolean,
+  ): void {
+    this.vehicle = vehicle;
+    this.vehicleMoving = vehicleMoving;
+    if (!this.ac) return;
+    this.applyMix();
+    const ac = this.ac;
+    const effects = this.settings.muted ? 0 : this.settings.effects;
+    const engineLevel = !vehicle ? 0 : (vehicleMoving ? .052 : .018) * effects;
+    this.engineGain?.gain.setTargetAtTime(engineLevel, ac.currentTime, .08);
+    this.engineOsc?.frequency.setTargetAtTime(vehicle === 'pickup' ? (vehicleMoving ? 82 : 59) : (vehicleMoving ? 66 : 47), ac.currentTime, .09);
+
+    if (this.settings.muted || this.settings.ambience <= 0 || now < this.nextWildlifeAt) return;
+    const hour = ((clockMinute / 60) % 24 + 24) % 24;
+    const day = hour >= 5.5 && hour < 20;
+    this.playWildlife(day, mode);
+    const rhythm = day ? 8_500 : 3_600;
+    this.nextWildlifeAt = now + rhythm + (this.wildlifeIndex++ % 4) * 1_250;
+  }
+
+  destroy(): void {
+    try { this.windSource?.stop(); } catch { /* already stopped */ }
+    try { this.engineOsc?.stop(); } catch { /* already stopped */ }
+    this.windSource = null;
+    this.engineOsc = null;
+    this.ambientGain?.disconnect();
+    this.engineGain?.disconnect();
+    this.ambientGain = null;
+    this.engineGain = null;
+    this.ac = null;
+  }
+
+  private syncLegacyEffects(): void {
+    setSound(!this.settings.muted && this.settings.effects > 0);
+    setSoundVolume(this.settings.muted ? 0 : this.settings.effects);
+  }
+
+  private applyMix(): void {
+    if (!this.ac || !this.ambientGain) return;
+    const level = this.settings.muted ? 0 : .032 * this.settings.ambience;
+    this.ambientGain.gain.setTargetAtTime(level, this.ac.currentTime, .12);
+  }
+
+  private createWind(ac: AudioContext): void {
+    const length = ac.sampleRate * 4;
+    const buffer = ac.createBuffer(1, length, ac.sampleRate);
+    const data = buffer.getChannelData(0);
+    let seed = 0x51f15e;
+    let previous = 0;
+    for (let index = 0; index < length; index++) {
+      seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+      const white = ((seed >>> 0) / 0xffffffff) * 2 - 1;
+      previous = previous * .985 + white * .015;
+      data[index] = previous * .9;
+    }
+    const source = ac.createBufferSource();
+    source.buffer = buffer; source.loop = true;
+    const filter = ac.createBiquadFilter();
+    filter.type = 'lowpass'; filter.frequency.value = 850;
+    const gain = ac.createGain(); gain.gain.value = 0;
+    source.connect(filter).connect(gain).connect(ac.destination);
+    source.start();
+    this.windSource = source;
+    this.ambientGain = gain;
+  }
+
+  private createEngine(ac: AudioContext): void {
+    const osc = ac.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 48;
+    const filter = ac.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 260;
+    const gain = ac.createGain(); gain.gain.value = 0;
+    osc.connect(filter).connect(gain).connect(ac.destination); osc.start();
+    this.engineOsc = osc; this.engineGain = gain;
+  }
+
+  private playWildlife(day: boolean, mode: 'farm' | 'town'): void {
+    const ac = this.ac;
+    if (!ac || !this.ambientGain) return;
+    const base = day ? (mode === 'town' ? 1_450 : 1_820) : 3_900;
+    for (let index = 0; index < (day ? 2 : 3); index++) {
+      const start = ac.currentTime + index * (day ? .11 : .055);
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = day ? 'sine' : 'square';
+      osc.frequency.setValueAtTime(base + index * (day ? 410 : 180), start);
+      if (day) osc.frequency.exponentialRampToValueAtTime(base * 1.24 + index * 380, start + .09);
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime((day ? .065 : .018) * this.settings.ambience, start + .012);
+      gain.gain.exponentialRampToValueAtTime(.0001, start + (day ? .14 : .075));
+      osc.connect(gain).connect(ac.destination);
+      osc.start(start); osc.stop(start + .18);
+    }
+  }
+}

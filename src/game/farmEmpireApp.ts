@@ -15,6 +15,7 @@ import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
 import { recordFarmStat } from '../core/farmKnowledge';
+import { FarmSoundscape, type FarmAudioSettings } from '../audio/farmSoundscape';
 import {
   MANUAL_FIELD_ACTION_LABELS, createManualFieldAction, manualFieldActionComplete, manualFieldActionProgress,
   type ManualFieldAction, type ManualFieldActionKind,
@@ -76,6 +77,7 @@ export class FarmEmpireApp {
   private slot: number;
   private renderer: Renderer;
   private hud: FarmHud;
+  private farmAudio: FarmSoundscape;
   private playerActor: SceneActor;
   private playerFacing: FarmFacing = 'south';
   private mode: FarmEmpireMode = 'farm';
@@ -120,6 +122,10 @@ export class FarmEmpireApp {
     this.state = state;
     this.slot = slot;
     this.renderer = new Renderer(canvas);
+    let audioStorage: Storage | null = null;
+    try { audioStorage = window.localStorage; } catch { /* preferences stay in memory */ }
+    this.farmAudio = new FarmSoundscape(audioStorage);
+    this.farmAudio.ensureStarted();
     window.addEventListener('resize', this.onResize);
     this.playerActor = {
       avatar: state.player.avatar,
@@ -219,6 +225,7 @@ export class FarmEmpireApp {
     this.running = false;
     cancelAnimationFrame(this.raf);
     this.hud.destroy();
+    this.farmAudio.destroy();
     window.removeEventListener('beforeunload', this.save);
     window.removeEventListener('resize', this.onResize);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
@@ -254,6 +261,7 @@ export class FarmEmpireApp {
 
   dispatch = (result: ActionResult): void => {
     if (!result.ok) {
+      this.farmAudio.playTransaction('error');
       toast(result.reason || 'That action cannot be completed.', 'bad');
       return;
     }
@@ -268,8 +276,10 @@ export class FarmEmpireApp {
         toast(`Harvested ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} into the barn.`, 'good');
         floatText(this.playerScreenX(), this.playerScreenY() - 45, `+${event.amount ?? 0}`, 'float-good');
       } else if (event.type === 'sell') {
+        this.farmAudio.playTransaction('sell');
         toast(`Sold ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} for ${formatMoney(Number(event.data ?? 0))}.`, 'good');
       } else if (event.type === 'expand') {
+        this.farmAudio.playTransaction('expand');
         toast(`Neighboring acreage purchased. ${event.amount ?? farmParcelSectionCount('north')} field sections are now usable.`, 'good');
       } else if (event.type === 'toast' && event.target) {
         toast(event.target, 'good');
@@ -335,6 +345,7 @@ export class FarmEmpireApp {
     let dragging = false;
     let panning = false;
     const onPointerDown = (event: PointerEvent): void => {
+      this.farmAudio.ensureStarted();
       downX = event.clientX;
       downY = event.clientY;
       dragging = true;
@@ -673,6 +684,7 @@ export class FarmEmpireApp {
       toast('Operating the old tractor. Click ground to drive or a field parcel for batch work.', 'good');
     }
     this.hud.update(this.state, this.tractorHudRuntime());
+    this.farmAudio.playTransaction('success');
   }
 
   private openPickupPanel(): void {
@@ -709,9 +721,11 @@ export class FarmEmpireApp {
   }
 
   private openGameMenu(onBackToTitle: () => void): void {
+    this.farmAudio.ensureStarted();
     openPanel({ title: 'Farm Empire Menu', className: 'panel-menu', body: (body) => {
       body.append(
         h('p', {}, this.mode === 'town' ? 'County Service Center · farm business services are nearby.' : 'Park your pickup at the barn cargo pad to manage cargo.'),
+        this.farmAudioControls(),
         h('button', { class: 'btn btn-primary', onclick: () => closePanel() }, 'Resume'),
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
@@ -720,6 +734,44 @@ export class FarmEmpireApp {
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
+  }
+
+  private farmAudioControls(): HTMLElement {
+    const snapshot = this.farmAudio.snapshot();
+    const muteButton = h('button', {
+      class: `btn btn-sm ${snapshot.muted ? '' : 'btn-primary'}`,
+      'data-testid': 'farm-audio-mute',
+    }, snapshot.muted ? 'Muted' : 'On') as HTMLButtonElement;
+    muteButton.addEventListener('click', () => {
+      const settings = this.updateFarmAudioSettings({ muted: !this.farmAudio.snapshot().muted });
+      muteButton.textContent = settings.muted ? 'Muted' : 'On';
+      muteButton.classList.toggle('btn-primary', !settings.muted);
+    });
+    const slider = (label: string, key: 'ambience' | 'effects', testId: string): HTMLElement => {
+      const valueText = h('strong', { class: 'farm-audio-value' }, `${Math.round(snapshot[key] * 100)}%`);
+      const input = h('input', {
+        type: 'range', min: '0', max: '100', step: '1', value: String(Math.round(snapshot[key] * 100)),
+        'aria-label': `${label} volume`, 'data-testid': testId,
+      }) as HTMLInputElement;
+      input.addEventListener('input', () => {
+        const value = Math.max(0, Math.min(100, Number(input.value))) / 100;
+        const settings = this.updateFarmAudioSettings({ [key]: value });
+        valueText.textContent = `${Math.round(settings[key] * 100)}%`;
+      });
+      return h('label', { class: 'farm-audio-row' }, h('span', {}, label), input, valueText);
+    };
+    return h('div', { class: 'farm-audio-controls', 'data-testid': 'farm-audio-controls' },
+      h('div', { class: 'farm-audio-heading' }, h('strong', {}, 'Farm Sound'), muteButton),
+      slider('Ambience', 'ambience', 'farm-audio-ambience'),
+      slider('Effects', 'effects', 'farm-audio-effects'),
+    );
+  }
+
+  private updateFarmAudioSettings(next: Partial<FarmAudioSettings>): FarmAudioSettings {
+    const settings = this.farmAudio.updateSettings(next);
+    this.state.settings.sound = !settings.muted && settings.effects > 0;
+    this.state.settings.music = !settings.muted && settings.ambience > 0;
+    return settings;
   }
 
   private openFarmhouseOffice(): void {
@@ -756,6 +808,7 @@ export class FarmEmpireApp {
       toast('Operating the old pickup. Drive to the farm gate for County services.', 'good');
     }
     this.hud.update(this.state, this.tractorHudRuntime());
+    this.farmAudio.playTransaction('success');
   }
 
   private openScoutMenu(): void {
@@ -766,6 +819,7 @@ export class FarmEmpireApp {
       label: 'Give Scout scratches',
       onClick: () => {
         this.scoutScratchUntil = this.gameNow() + 1_200;
+        this.farmAudio.playTransaction('scout');
         toast('Scout wags and leans into the scratches.', 'good');
       },
     }]);
@@ -962,6 +1016,7 @@ export class FarmEmpireApp {
       ? plantFarmCrop(this.state, plotUid, String(job.cropId), this.gameNow(), 'operatedTractor')
       : harvestFarmCrop(this.state, plotUid, this.gameNow(), 'operatedTractor');
     if (result.ok) {
+      this.farmAudio.playManualAction(job.kind === 'plant' ? 'plant' : 'harvest');
       job.completed += 1;
       const harvest = result.events?.find((event) => event.type === 'harvest');
       floatText(
@@ -1077,6 +1132,7 @@ export class FarmEmpireApp {
     const dy = plot.y - this.playerActor.y;
     this.playerFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
     this.manualFieldAction = { ...createManualFieldAction(kind, plotUid, plot, this.gameNow()), apply };
+    this.farmAudio.playManualAction(kind);
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
@@ -1143,6 +1199,7 @@ export class FarmEmpireApp {
         plotUid: this.manualFieldAction.plotUid,
         progress: manualFieldActionProgress(this.manualFieldAction, this.gameNow()),
       } : null,
+      audio: this.farmAudio.snapshot(),
       fields,
       overlay: { actionMenu: isActionMenuOpen(), panel: isPanelOpen() },
     });
@@ -1265,6 +1322,10 @@ export class FarmEmpireApp {
       : updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.mode === 'town' || this.operatingTractor || this.operatingPickup || !!this.tractorJob);
     const scoutDx = this.scout.x - scoutBefore.x; const scoutDy = this.scout.y - scoutBefore.y;
     if (Math.hypot(scoutDx, scoutDy) > 0.0001) this.scoutFacing = Math.abs(scoutDx) >= Math.abs(scoutDy) ? (scoutDx > 0 ? 'east' : 'west') : (scoutDy > 0 ? 'south' : 'north');
+
+    const activeVehicle = this.operatingTractor ? 'tractor' : this.operatingPickup ? 'pickup' : null;
+    const vehicleMoving = this.operatingTractor ? !!this.tractorTarget : this.operatingPickup ? !!this.pickupTarget : false;
+    this.farmAudio.update(realNow, farmOf(this.state).clock.minute, this.mode, activeVehicle, vehicleMoving);
 
     this.renderer.render(this.buildScene(), now);
     this.hud.update(this.state, this.tractorHudRuntime());

@@ -9,9 +9,11 @@ type SfxName =
 
 let actx: AudioContext | null = null;
 let soundOn = true;
+let soundVolume = 1;
 let musicOn = true;
 let bgmTimer: number | null = null;
 let bgmGain: GainNode | null = null;
+let sfxMaster: GainNode | null = null;
 
 function ctx(): AudioContext | null {
   if (typeof AudioContext === 'undefined') return null;
@@ -20,8 +22,27 @@ function ctx(): AudioContext | null {
   return actx;
 }
 
+export function sharedAudioContext(): AudioContext | null {
+  return ctx();
+}
+
+function sfxOutput(ac: AudioContext): GainNode {
+  if (!sfxMaster) {
+    sfxMaster = ac.createGain();
+    sfxMaster.connect(ac.destination);
+  }
+  sfxMaster.gain.value = soundOn ? soundVolume : 0;
+  return sfxMaster;
+}
+
 export function setSound(on: boolean): void {
   soundOn = on;
+  if (actx && sfxMaster) sfxMaster.gain.value = soundOn ? soundVolume : 0;
+}
+
+export function setSoundVolume(volume: number): void {
+  soundVolume = Number.isFinite(volume) ? Math.max(0, Math.min(1, volume)) : 1;
+  if (actx && sfxMaster) sfxMaster.gain.value = soundOn ? soundVolume : 0;
 }
 
 export function setMusic(on: boolean): void {
@@ -45,7 +66,7 @@ function tone(
   gain.gain.setValueAtTime(0, t0);
   gain.gain.linearRampToValueAtTime(vol, t0 + 0.012);
   gain.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
-  osc.connect(gain).connect(ac.destination);
+  osc.connect(gain).connect(sfxOutput(ac));
   osc.start(t0);
   osc.stop(t0 + dur + 0.05);
 }
@@ -67,7 +88,7 @@ function noise(dur: number, vol = 0.1, delay = 0, lowpass = 2200): void {
   const gain = ac.createGain();
   gain.gain.setValueAtTime(vol, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-  src.connect(filter).connect(gain).connect(ac.destination);
+  src.connect(filter).connect(gain).connect(sfxOutput(ac));
   src.start(t0);
 }
 
