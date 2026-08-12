@@ -192,3 +192,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Save schema v10 persists only section soil conditions and the optional per-crop waiting flag. Existing crops migrate as established and retain their original timestamps; missing or malformed data fails open to playable growth rather than trapping a crop.
 - Rough, tilled, wet, needs-water, and stubble presentation must agree with hover labels, action menus, the Farmbook, the hand pump, and How to Play. Recurring moisture, weather, irrigation infrastructure, fertilizer, soil health, crop quality, workers, and economy rebalance remain separate packages.
 - This decision supersedes the earlier first-play guidance that all crops grow automatically; the hand pump itself remains a guidance landmark rather than a water inventory or irrigation system.
+
+## 2026-08-12 - Make the inherited tractor the first mechanization milestone
+
+**Status:** Approved by the owner
+
+- Fresh farms begin with the Old Red Tractor visibly awaiting restoration, while valid pre-v11 farms retain the operational tractor they already owned.
+- Manual section, row, and three-row work remains the complete path to the first County Pantry delivery. Completing that delivery unlocks a one-time 195,000-cent restoration at the County Equipment Desk.
+- Powered parcel planning and operated planting/harvest fail closed until restoration. The County Row-Crop Field Kit remains a separate 125,000-cent upgrade and cannot be installed before the base tractor is operational.
+- Save v11 persists the existing tractor status, treats missing or malformed current status as maintenance, and performs no automatic reward, crop, land, or economy changes. Starting cash remains $5,000.
+- Fuel, breakdown RNG, recurring condition, a dealership catalog, implements, combines, trailers, later machinery tiers, and an economy-wide rebalance remain separate packages.

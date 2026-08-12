@@ -64,6 +64,15 @@ Original prompt: Begin the first milestone from the complete Farm Empire master 
 - Browser acceptance verified exact 6-section row and 18-section block options, complete row preparation, safe partial cancellation at one committed section, exactly two seed-limited corn plantings, selection/HUD feedback, and zero console/page errors.
 - Desktop packaging completed under `release/field-efficiency-v1` through `desktop:build`; `app.asar` uses `./assets`, native CDP capture showed the rendered title screen, and the literal Desktop shortcut launched four responsive packaged processes with zero residue after cleanup.
 
+## 2026-08-12 - Old tractor restoration checkpoint
+
+- Fresh farms now inherit the Old Red Tractor in a visible repair state and use the complete manual section/row/three-row loop until the first County Pantry delivery proves the business.
+- The County Equipment Desk then offers one atomic $1,950 restoration. Powered planning and operated transactions fail closed before it; the existing $1,250 Row-Crop Field Kit stays behind the operational base machine.
+- Save schema v11 grandfathers valid pre-v11 farms as operational, defaults malformed current status to maintenance, and preserves crop, cash, cargo, land, and tractor coordinates.
+- Final automated boundary: 206/206 tests, strict typecheck, production build, desktop-specific build, and diff checks pass.
+- Browser acceptance verified the locked fresh state, exact restoration charge, immediate operation, save/reload, and zero console/page errors.
+- Desktop packaging completed under `release/tractor-restoration-v1`; bundled assets are relative, native CDP rendered title and farm, and the literal OneDrive Desktop shortcut launched four responsive packaged processes with zero residue after cleanup.
+
 ## Final acceptance
 
 - Bounded adversarial repair made malformed watering flags fail open to established growth and removed obsolete automatic-growth guidance from the pump and How to Play.

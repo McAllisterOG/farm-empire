@@ -270,3 +270,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** The primary completed one bounded audit covering deterministic order, parcel edges, cross-acreage isolation, resource exhaustion, transaction/cancellation boundaries, input blocking, visual hit agreement, sound fallback, package paths, and native cleanup. No high- or medium-severity issue remains.
 - **Known limitations:** Multi-section work uses the current direct walking model and short repeated actions. It does not add obstacle pathfinding, hired labor, stamina/tools, irrigation, or a new equipment/economy tier. Environmental audio is intentionally sparse pending a later recorded ambience/music direction.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Old Tractor Restoration V1 - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `68b15c1`
+- **Scope:** Turn the inherited tractor into the first manual-to-mechanized milestone. Fresh farms must complete the existing County Pantry hauling route before buying one fixed restoration; preserve all pre-v11 farms, manual fieldwork, crop rules, economy, land, storage, pickup, and town architecture. No fuel, breakdowns, implements, dealership, later machinery tier, or rebalance.
+- **Before / after:** Fresh farms previously received powered acreage work immediately, flattening the new manual row loop and making the tractor feel disconnected from progression. They now see a grey open-hood repair project, explicit HUD/Farmbook/office guidance, a disabled Operate control, a County-delivery prerequisite, and one $1,950 Equipment Desk transaction. Restoration immediately re-enables the existing deterministic tractor; the Row-Crop Field Kit remains the next distinct upgrade.
+- **Verification:** 206/206 tests passed; strict typecheck, Vite production build, desktop-specific build, and diff checks passed. Browser acceptance verified the fresh locked presentation, manual compatibility, County desk unlock, exact charge, operation, save-v11 reload, and zero console/page errors. `release/tractor-restoration-v1` contains relative bundled assets; packaged CDP rendered both title and farm, and the literal OneDrive Desktop shortcut launched four responsive processes with zero residue after cleanup.
+- **Review:** The primary completed one bounded audit of restoration prerequisites, insufficient-funds and duplicate-call immutability, manual/powered separation, field-kit ordering, pre-v11 grandfathering, malformed-current failure behavior, player guidance, Canvas repair-state readability, native packaging, and shortcut cleanup. No high- or medium-severity issue remains.
+- **Known limitations:** Restoration is one finite milestone rather than a condition simulation. Ongoing wear, repair parts, fuel, implements, later tractor/combine tiers, workers, managers, and a broad machinery economy remain deferred.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

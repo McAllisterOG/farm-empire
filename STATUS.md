@@ -4,16 +4,16 @@
 
 - **Date:** 2026-08-12
 - **Branch:** `codex/first-town-contact`
-- **Head:** `a0ee2d9`
-- **Product state:** Efficient Row Fieldwork & Homestead Scale is complete on top of Manual Fieldwork Feel. Every compatible field menu now offers one section, one full row, or a three-row block; the farmer walks a deterministic serpentine route, shows the remaining selection, reports live progress, caps planting to real seed, and preserves completed sections when Escape cancels unfinished work. The repetitive synthesized bird/cricket chirps were removed while wind, vehicles, actions, transactions, and Scout feedback remain. The farmhouse is larger and the barn slightly restrained so the home reads as a real homestead focal point. Save v10, economy, crops, land, pickup, tractor, and town behavior remain unchanged.
-- **Verification:** 201/201 tests passed; strict typecheck, Vite production build, and whitespace checks passed. Browser acceptance verified exact 6-section and 18-section choices, one complete row, partial three-row cancellation (one committed section only), seed-limited two-section corn planting, visible selection/progress, and zero console/page errors. The unpacked x64 build under `release/field-efficiency-v1` was built through the desktop-specific Vite pipeline; archive inspection confirmed relative assets, native CDP capture visibly confirmed the title screen, and the literal Desktop shortcut launched four responsive processes with zero remaining after cleanup.
-- **Review:** A bounded primary audit checked acreage isolation, edge clamping, deterministic route order, resource-limited planting, transactional commit/cancel boundaries, conflicting input, save neutrality, scale/hitbox agreement, audio fallback, and native packaging. No high- or medium-severity issue remains.
+- **Head:** `68b15c1`
+- **Product state:** Old Tractor Restoration V1 is complete on top of Efficient Row Fieldwork. Fresh farms now inherit a visibly disabled repair project rather than free powered acreage work. Manual section/row/three-row farming remains available; completing the first County Pantry delivery unlocks a one-time $1,950 restoration at the Equipment Desk, after which the existing operated tractor and later $1,250 Row-Crop Field Kit become available. Save v11 grandfathers valid pre-v11 farms as operational and fails malformed current status closed without changing the $5,000 start, crops, hauling, land, or market.
+- **Verification:** 206/206 tests passed; strict typecheck, Vite production build, desktop-specific build, and whitespace checks passed. Browser acceptance verified the fresh locked state, disabled farm operation, County-desk unlock and exact $1,950 charge, immediate tractor operation, v11 save/reload, and zero console/page errors. The unpacked x64 build under `release/tractor-restoration-v1` contains relative bundled assets; native CDP visibly confirmed the packaged title and playable farm, and the literal Desktop shortcut launched four responsive processes with zero remaining after cleanup.
+- **Review:** A bounded primary audit checked fresh/manual playability, transaction immutability and idempotence, powered-work guards, County/kit ordering, corrupt and old-save semantics, UI truth, visual state, packaged assets, shortcut routing, and native cleanup. No high- or medium-severity issue remains.
 
 ## Current presentation
 
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v10 adds per-section soil conditions defensively; v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
+- Existing plot IDs and planted crops remain compatible. Save schema v11 adds the fresh-farm tractor restoration milestone while preserving valid pre-v11 tractors as operational; v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
@@ -24,7 +24,7 @@
 - Farm-side Seed and Market surfaces are cargo-management points: crops and seed bags move reversibly between the barn/farm inventory and the pickup, while ordinary buying and selling are no longer available at the farm.
 - Feed & Seed purchases, Grain Exchange sales, and the County Pantry delivery require the pickup at the County Service Center. On-foot visits remain useful for dialogue and inspection but fail closed for cargo transactions.
 - Mae Carter's finite County Pantry corn order now measures real pickup corn; only Eli Morgan can consume exactly 12 hauled units and issue the atomic one-time payout.
-- The County Equipment Desk sells one $1,250 Row-Crop Field Kit after the first order; its planting and harvest bonuses apply only while the tractor is physically operated, with a visible toolbar that lowers during field work.
+- Fresh farms inherit the Old Red Tractor in a visible repair state. The first County delivery unlocks its one-time $1,950 restoration; only then does the Equipment Desk sell the $1,250 Row-Crop Field Kit, whose bonuses apply only while the tractor is physically operated.
 - Farm crops remain ready for a generous 15-minute real-time window, then visibly wither and can be cleared without refund so field sections are never permanently blocked.
 - A true zero-asset farm may receive exactly one lifetime wheat seed from Mae; the claim is persisted and cannot be recycled through intentional crop loss.
 - Owning the neighboring parcel unlocks a one-time $1,800 Barn Loft Expansion that raises storage from 150 to 200 and visibly adds a lean-to to the barn.
@@ -37,19 +37,19 @@
 - A humble presentation-only farmhouse, expanded town-edge homes/field cues, and one authoritative waypointed County road reduce empty visual space without inventing new services or crossing either workable acreage.
 - The hand pump now points players to the field menu for the required first watering; deeper irrigation infrastructure remains deferred.
 - Hovering focal objects now identifies what will open, and one authoritative hit-priority map routes pickup, tractor, Scout, farmhouse, pump, barn, doghouse, gateway, acreage, and fields to their correct interaction.
-- The Farmbook consolidates the eight-step prepare, plant, water, harvest, load, town, trade, and expand loop plus the live business snapshot and core routes without filling the world with buttons.
+- The Farmbook consolidates the nine-step prepare, plant, water, harvest, load, town, trade, restore, and expand loop plus the live business snapshot and core routes without filling the world with buttons.
 - Farmer Knowledge V1 derives five presentation-only ranks and short evidence-sourced field notes from real planting, harvesting, hauling, selling, expansion, and County milestones; it adds no hidden yield or cash modifier and no save field.
 - The homestead now has a larger farmhouse, pond, reeds, garden rows, flowers, destination pulses, and clearer field outlines; the County Service Center has larger edge homes, tighter framing, named hover cues, and a dedicated correctly scaled pickup bay away from the return sign.
 - A zero-asset procedural soundscape adds filtered rural wind, tractor and pickup idle/motion tone, field-action feedback, transaction cues, and Scout feedback. The repetitive pitched wildlife loop was removed after owner playtesting. Global mute plus separate ambience/effects levels persist locally across farm slots without changing gameplay saves.
 
 ## Immediate authorized work
 
-No new feature package is authorized. Owner-playtest the refreshed Windows Desktop build's row/three-row rhythm, quieter sound balance, first-watering clarity, tractor shortcut, hauling loop, and acreage scale before selecting the evidence-based economy study or another finite package.
+No additional feature package is currently active. Owner-playtest the refreshed Windows Desktop build's manual-to-mechanized progression, row/three-row rhythm, first-watering clarity, hauling loop, and acreage scale before selecting the evidence-based economy study or another finite package.
 
 ## Known limitations
 
 - Equipment modal state can remain stale during standalone driving until reopened.
-- Vehicle movement remains collision-free. Pickup gate travel follows the County road, while arbitrary yard/field clicks remain direct; trailers, implements, combines, condition, fuel, and a dealership economy remain deferred.
+- Vehicle movement remains collision-free. Pickup gate travel follows the County road, while arbitrary yard/field clicks remain direct; trailers, implements, combines, ongoing condition, fuel, and a dealership economy remain deferred.
 - The town currently has one compact service center and one freight pickup presence, with no interiors, traffic, schedules, or broad social simulation.
 - The town remains a separate Canvas destination rather than one continuous farm-to-town regional map; surrounding houses and fields are presentation cues only.
 - The town story currently contains one deliberate first contact and one finite hauled order; there is no general quest, reputation, deadline, or repeat-contract system.
@@ -58,7 +58,7 @@ No new feature package is authorized. Owner-playtest the refreshed Windows Deskt
 - Manual crops require one establishment watering, but recurring moisture, weather, irrigation equipment, fertilizer, soil health, and quality are not implemented. Farmer Knowledge still has no skill choices or economic modifiers.
 - Multi-section manual work intentionally automates walking and repeated short actions; it does not add pathfinding, stamina, tool durability, worker assignment, or a character-skill modifier.
 - Audio is an original procedural V1: quiet filtered wind replaces the removed recurring wildlife notes; no recorded soundtrack, voice acting, spatial occlusion, weather layers, or accessibility captions for environmental cues are included yet.
-- The humble farmhouse has no upgrade mechanics yet, and the correct starting availability/timing of the tractor remains an open progression decision.
+- The humble farmhouse has no upgrade mechanics yet. Tractor timing now has one finite first-restoration step, but later machinery tiers remain undesigned.
 - Starting cash remains $5,000; no economy values were changed during this repair, pending an evidence-based proportional economy study.
 - Crop withering uses wall-clock time and a 15-minute post-maturity window; this should be evaluated during the owner's first longer play session.
 - The branch has not been pushed; external GitHub authorization is still required.

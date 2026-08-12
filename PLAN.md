@@ -25,10 +25,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 19. **Manual Fieldwork Feel** - short save-neutral prepare, rework, plant, water, harvest, and clearing actions with action-specific Canvas tools/effects, HUD progress, safe cancellation, and commit-on-completion semantics.
 20. **Farm Soundscape & Tactile Feedback V1** - a restrained procedural farm ambience, clock-aware wildlife, vehicle idle/motion audio, action and transaction cues, and persistent mute/ambience/effects controls without bundled audio assets or save-schema changes.
 21. **Efficient Row Fieldwork & Homestead Scale** - section, row, and three-row manual work with deterministic acreage-bounded traversal, visible selection/progress, resource-aware planting, safe partial cancellation, quieter wind-only ambience, and a corrected farmhouse/barn hierarchy.
+22. **Old Tractor Restoration V1** - a fresh-farm repair project unlocked by the first County delivery, one atomic $1,950 Equipment Desk restoration, manual-first playability, visible repair-state art and guidance, powered-work enforcement, and save-v11 grandfathering.
 
 ## Current authorization
 
-No new feature package is currently authorized. Playtest the rebuilt Windows Desktop game with section/row/three-row fieldwork, the quieter soundscape, tractor shortcut, hauling loop, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
+No additional feature package is currently active. Playtest the rebuilt Windows Desktop game with section/row/three-row fieldwork, the first County delivery and tractor restoration, hauling, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
 
 ## Later directions
 
@@ -37,7 +38,7 @@ No new feature package is currently authorized. Playtest the rebuilt Windows Des
 - **Farmer Knowledge & Skills:** V1 now derives presentation-only ranks, next steps, and evidence-sourced notes from authentic actions. A later bounded package may add optional first-day tutorial choices or explicit skills only after their effects and save model are approved; do not revive the generic legacy XP/quest systems by default.
 - **Evidence-based economy study:** keep starting cash at $5,000 while authoritative agricultural sources are used to calibrate proportional yields, quantities, storage, seed, machinery, and land relationships. Favor a fun, legible abstraction over false literal realism; do not rebalance isolated values before the study.
 - **Town and county buildout:** add houses, roads, surrounding fields, services, and story in bounded stages. The County Service Center remains a separate scene today; a continuous farm-to-town regional map is a future architecture decision, not an assumed rewrite.
-- **Equipment progression timing:** manual fieldwork now scales from a section to three rows while the current tractor combines preparation and establishment across an acreage. Revisit whether the tractor should be available from the start and improve machinery tiers only alongside a coherent manual-to-mechanized progression plan.
+- **Equipment progression timing:** manual fieldwork now scales from a section to three rows; fresh farms restore the inherited tractor after proving the hauling loop, and that machine combines preparation and establishment across an acreage. Improve later machinery tiers only alongside a coherent manual-to-mechanized progression plan.
 - Equipment and logistics depth after the pickup loop is exercised: distinct implements, trailers, combines, condition, and genuine dealership actions.
 - Broader or repeat contracts only after a deliberate job, logistics, and save design.
 - Property-aware workers and managers after acreage, economy, storage, and machinery loops are proven fun.
