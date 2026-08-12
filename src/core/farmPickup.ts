@@ -2,9 +2,8 @@ import type { ActionResult, GameState } from './types';
 import { fail } from './types';
 import { farmCropDefOrNull } from './registry';
 import { farmOf, storageUsed, syncCashMirror } from './farmBusiness';
-import { pickupAtCargoPad } from '../render/farmLayout';
 
-import { PICKUP_CARGO_CAPACITY } from './farmPickupData';
+import { PICKUP_CARGO_CAPACITY, pickupAtCargoPad } from './farmPickupData';
 
 export { PICKUP_CARGO_CAPACITY } from './farmPickupData';
 

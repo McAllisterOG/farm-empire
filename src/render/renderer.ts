@@ -425,8 +425,10 @@ export class Renderer {
   }
 
   centerOnFarm(): void {
-    const point = farmWorldPoint({ x: 17, y: 16 });
-    this.camera.centerOnTile(point.x, point.y); this.camera.zoom = cameraFitZoom(farmCameraPolicy(), this.camera.viewW, this.camera.viewH); this.clampFarmCamera();
+    const policy = farmCameraPolicy();
+    this.camera.cx = (policy.bounds.minX + policy.bounds.maxX) / 2;
+    this.camera.cy = (policy.bounds.minY + policy.bounds.maxY) / 2;
+    this.camera.zoom = cameraFitZoom(policy, this.camera.viewW, this.camera.viewH); this.clampFarmCamera();
   }
 
   centerOnTown(): void {
@@ -567,9 +569,10 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
 function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
   // A restrained gravel lane connects the barn, field entrances, and town road.
   const lane = [{ x: 19, y: 14 }, { x: 23, y: 14 }, { x: 26, y: 17 }, { x: 29, y: 20 }, { x: 32, y: 23 }, { x: 35, y: 22 }, farmWorldPoint(FARM_TOWN_GATE)];
-  ctx.strokeStyle = '#b9a071'; ctx.lineWidth = 13 * zoom; ctx.lineCap = 'round'; ctx.beginPath();
+  ctx.lineCap = 'round'; ctx.strokeStyle = '#806344'; ctx.lineWidth = 25 * zoom; ctx.beginPath();
   lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.stroke();
-  ctx.strokeStyle = 'rgba(100, 75, 46, .35)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
+  ctx.beginPath(); lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
+  ctx.strokeStyle = '#c4ad7d'; ctx.lineWidth = 16 * zoom; ctx.stroke();
   const pad = farmWorldPoint(farmLandmarks().cargoPad);
   const px = camera.sx(isoX(pad.x, pad.y)); const py = camera.sy(isoY(pad.x, pad.y));
   ctx.fillStyle = 'rgba(164,137,91,.78)'; ctx.beginPath(); ctx.ellipse(px, py, 58 * zoom, 21 * zoom, 0, 0, Math.PI * 2); ctx.fill();

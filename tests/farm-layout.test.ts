@@ -3,9 +3,10 @@ import { createFarmGame } from '../src/core/state';
 import { NEIGHBOR_FIELD_TILES } from '../src/core/farmBusiness';
 import { deserialize } from '../src/save/save';
 import {
-  FARM_PLOT_SPAN, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint, farmLandmarks, pickupAtCargoPad,
+  FARM_PLOT_SPAN, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint, farmLandmarks,
 } from '../src/render/farmLayout';
 import { farmGroundVariant, farmTerrainBounds, intersectsFarmTerrain } from '../src/render/farmTerrain';
+import { pickupAtCargoPad } from '../src/core/farmPickupData';
 import { NOW } from './helpers';
 
 describe('Farm Empire presentation layout', () => {

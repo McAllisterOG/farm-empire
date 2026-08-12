@@ -4,6 +4,7 @@
  * larger physical property shown by the Canvas.
  */
 import type { FarmPlot } from '../core/types';
+import { PICKUP_CARGO_PAD } from '../core/farmPickupData';
 
 /** Logical plot centre-to-centre distance in presentation-world tiles. */
 export const FARM_PLOT_SPAN = 2.75;
@@ -22,17 +23,12 @@ export interface FarmLandmarks {
 export function farmLandmarks(): FarmLandmarks {
   const doghouse = { x: 10.3, y: 11.15 };
   const scoutHome = { x: 9.8, y: 11.6 };
-  const cargoPad = { x: 10.8, y: 6.7 };
+  const cargoPad = PICKUP_CARGO_PAD;
   return {
     doghouse,
     scoutHome,
     cargoPad,
   };
-}
-
-export function pickupAtCargoPad(pickup: FarmPoint, tolerance = 1.35): boolean {
-  const pad = farmLandmarks().cargoPad;
-  return Math.hypot(pickup.x - pad.x, pickup.y - pad.y) <= tolerance;
 }
 
 export function farmWorldPoint(point: FarmPoint): FarmPoint {

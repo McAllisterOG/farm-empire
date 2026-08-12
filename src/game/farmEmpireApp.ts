@@ -7,10 +7,11 @@ import {
   syncCashMirror, ownedFarmParcelAt, planParcelWork,
   placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
-import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoUsed, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
+import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
+import { pickupPositionForSave } from '../core/farmPickupData';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY } from '../render/iso';
-import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pickupAtCargoPad, pointInFarmBounds } from '../render/farmLayout';
+import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
@@ -54,7 +55,7 @@ interface TractorJob {
 
 type FarmEmpireMode = 'farm' | 'town';
 
-interface CameraSnapshot { cx: number; cy: number; zoom: number }
+interface CameraSnapshot { cx: number; cy: number; zoom: number; viewW: number; viewH: number }
 
 function failFarmSidePurchase(): ActionResult { return { ok: false, reason: 'Buy seeds in town with the pickup; farm inventory is not a shop.' }; }
 function failFarmSideSale(): ActionResult { return { ok: false, reason: 'Load produce into the pickup and bring it to the County Grain Exchange.' }; }
@@ -92,6 +93,7 @@ export class FarmEmpireApp {
   private lastFrame = 0;
   private lastSave: number;
   private devTools: HTMLElement | null = null;
+  private inputCleanup: (() => void) | null = null;
   private readonly onResize = (): void => { this.renderer.resize(); this.mode === 'town' ? this.renderer.clampTownCamera() : this.renderer.clampFarmCamera(); };
 
   constructor(canvas: HTMLCanvasElement, state: GameState, slot: number, onBackToTitle: () => void) {
@@ -172,7 +174,7 @@ export class FarmEmpireApp {
     return {
       context: this.mode,
       pickupPresent: this.mode === 'farm' || this.pickupAtTown,
-      cargoAtPad: this.mode === 'farm' && pickupAtCargoPad(farmOf(this.state).pickup),
+      cargoAtPad: this.mode === 'farm' && pickupIsAtCargoPad(this.state),
       buySeeds: (cropId, count) => this.mode === 'town'
         ? buyTownSeedsIntoPickup(this.state, cropId, count, this.pickupAtTown)
         : failFarmSidePurchase(),
@@ -199,6 +201,7 @@ export class FarmEmpireApp {
     window.removeEventListener('beforeunload', this.save);
     window.removeEventListener('resize', this.onResize);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.inputCleanup?.(); this.inputCleanup = null;
     this.devTools?.remove();
     delete (window as unknown as Record<string, unknown>).__FE__;
   }
@@ -210,8 +213,8 @@ export class FarmEmpireApp {
   save = (): void => {
     if (this.mode === 'town') {
       placePlayerAtTownReturn(this.state);
-      const pad = farmLandmarks().cargoPad;
-      farmOf(this.state).pickup.x = pad.x; farmOf(this.state).pickup.y = pad.y;
+      const position = pickupPositionForSave(this.pickupAtTown, farmOf(this.state).pickup);
+      farmOf(this.state).pickup.x = position.x; farmOf(this.state).pickup.y = position.y;
     } else if (this.operatingTractor) {
       placePlayerAtTractorDismount(this.state);
     } else if (this.operatingPickup) {
@@ -281,13 +284,13 @@ export class FarmEmpireApp {
     let downY = 0;
     let dragging = false;
     let panning = false;
-    canvas.addEventListener('pointerdown', (event) => {
+    const onPointerDown = (event: PointerEvent): void => {
       downX = event.clientX;
       downY = event.clientY;
       dragging = true;
       panning = false;
-    });
-    canvas.addEventListener('pointermove', (event) => {
+    };
+    const onPointerMove = (event: PointerEvent): void => {
       if (dragging) {
         const dx = event.clientX - downX;
         const dy = event.clientY - downY;
@@ -298,25 +301,25 @@ export class FarmEmpireApp {
         }
       }
       this.hover = this.mode === 'farm' ? this.farmTargetAtScreen(event.clientX, event.clientY) : null;
-    });
-    canvas.addEventListener('pointerup', (event) => {
+    };
+    const onPointerUp = (event: PointerEvent): void => {
       dragging = false;
       if (panning) {
         panning = false;
         return;
       }
       this.onClick(event.clientX, event.clientY);
-    });
-    canvas.addEventListener('pointerleave', () => {
+    };
+    const onPointerLeave = (): void => {
       dragging = false;
       this.hover = null;
-    });
-    canvas.addEventListener('wheel', (event) => {
+    };
+    const onWheel = (event: WheelEvent): void => {
       event.preventDefault();
       this.renderer.camera.zoomAt(event.deltaY < 0 ? 1.12 : 0.9, event.clientX, event.clientY);
       if (this.mode === 'town') this.renderer.clampTownCamera(); else this.renderer.clampFarmCamera();
-    }, { passive: false });
-    window.addEventListener('keydown', (event) => {
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return;
       if (this.mode === 'town') {
         if (isActionMenuOpen()) hideActionMenu();
@@ -336,7 +339,21 @@ export class FarmEmpireApp {
         toast('Pickup drive cancelled.', 'good');
       } else if (isActionMenuOpen()) hideActionMenu();
       else if (isPanelOpen()) closePanel();
-    });
+    };
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointerleave', onPointerLeave);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    window.addEventListener('keydown', onKeyDown);
+    this.inputCleanup = () => {
+      canvas.removeEventListener('pointerdown', onPointerDown);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointerleave', onPointerLeave);
+      canvas.removeEventListener('wheel', onWheel);
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }
 
   private onClick(sx: number, sy: number): void {
@@ -484,7 +501,7 @@ export class FarmEmpireApp {
     const returnPoint = placePlayerAtTownReturn(this.state);
     this.playerActor.x = returnPoint.x; this.playerActor.y = returnPoint.y; this.playerActor.walking = false;
     this.walkTarget = null; this.hover = null; this.cancelScoutApproach();
-    this.farmCamera = { cx: this.renderer.camera.cx, cy: this.renderer.camera.cy, zoom: this.renderer.camera.zoom };
+    this.farmCamera = { cx: this.renderer.camera.cx, cy: this.renderer.camera.cy, zoom: this.renderer.camera.zoom, viewW: this.renderer.camera.viewW, viewH: this.renderer.camera.viewH };
     this.townActor = { avatar: this.state.player.avatar, ...TOWN_SPAWN, walking: false };
     this.townFacing = 'north'; this.townTarget = null; this.townGesture = null; this.mode = 'town';
     this.renderer.centerOnTown(); this.hud.setMode('town');
@@ -511,8 +528,9 @@ export class FarmEmpireApp {
     this.townTarget = null; this.townActor.walking = false; this.townGesture = null; this.mode = 'farm';
     const returnPoint = placePlayerAtTownReturn(this.state);
     this.playerActor.x = returnPoint.x; this.playerActor.y = returnPoint.y; this.playerActor.walking = false;
-    if (this.farmCamera) {
+    if (this.farmCamera && this.farmCamera.viewW === this.renderer.camera.viewW && this.farmCamera.viewH === this.renderer.camera.viewH) {
       this.renderer.camera.cx = this.farmCamera.cx; this.renderer.camera.cy = this.farmCamera.cy; this.renderer.camera.zoom = this.farmCamera.zoom;
+      this.renderer.clampFarmCamera();
     } else this.renderer.centerOnFarm();
     this.farmCamera = null; this.hud.setMode('farm');
     if (this.pickupAtTown) {
@@ -585,8 +603,7 @@ export class FarmEmpireApp {
   }
 
   private openPickupPanel(): void {
-    const pickup = farmOf(this.state).pickup;
-    const atPad = pickupAtCargoPad(pickup);
+    const atPad = pickupIsAtCargoPad(this.state);
     openPanel({
       title: 'Old Pickup',
       body: (body) => body.append(

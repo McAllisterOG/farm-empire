@@ -6,10 +6,17 @@ import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pi
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../src/core/farmTownContact';
 import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
 import { deserialize, serialize } from '../src/save/save';
+import { pickupPositionForSave, PICKUP_START } from '../src/core/farmPickupData';
 
 const NOW = Date.UTC(2026, 0, 1);
 
 describe('old pickup cargo loop', () => {
+  it('only parks the pickup on save when it is actually in town', () => {
+    const elsewhere = { x: 18, y: 14 };
+    expect(pickupPositionForSave(false, elsewhere)).toEqual(elsewhere);
+    expect(pickupPositionForSave(true, elsewhere)).toEqual(PICKUP_START);
+  });
+
   it('rejects barn transfers away from the physical cargo pad without mutation', () => {
     const state = createFarmGame('Pickup', 2, NOW); const farm = farmOf(state);
     farm.storage.crop_wheat = 4; farm.pickup.x += 4;
