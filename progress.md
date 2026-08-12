@@ -52,6 +52,7 @@ Original prompt: Begin the first milestone from the complete Farm Empire master 
 - Final automated boundary: 198/198 tests, strict typecheck, production build, and diff checks pass.
 - Browser acceptance verified audio-control persistence across title return/re-entry, manual fieldwork, tractor idle/drive/cancel, compact 760x640 layout, and zero warning/error logs. The provided Playwright client emitted a valid fresh-farm screenshot and deterministic audio state.
 - Windows unpacked x64 packaging completed under `release/farm-soundscape-v1`; the real Desktop shortcut targets that build, four packaged processes responded in native smoke, and none remained afterward.
+- Release repair: the first soundscape artifact had been packaged after a normal web build, leaving absolute `/assets/...` references that produced a white Electron window. Rebuilt via `npm.cmd run desktop:build`, confirmed `./assets/...` inside `app.asar`, captured the rendered title and farm from the packaged process, and revalidated the literal Desktop shortcut with four responsive processes and zero residue.
 
 ## Final acceptance
 
