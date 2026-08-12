@@ -245,3 +245,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/manual-fieldwork-feel/win-unpacked/Farm Empire.exe` (225,442,304 bytes), `release/manual-fieldwork-feel/Farm Empire Portable 1.0.0 x64.exe` (89,921,247 bytes), and `release/manual-fieldwork-feel/Farm Empire Setup 1.0.0 x64.exe` (90,129,564 bytes), all generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the unpacked executable.
 - **Known limitations:** Actions are deliberately brief and save-neutral. There is no sound, stamina, tool durability, implement ownership, recurring moisture, weather, or character-skill modifier.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Farm Soundscape & Tactile Feedback V1 - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `ed05264`
+- **Scope:** Add a restrained original procedural sound layer and compact persistent audio controls across the existing farm loop. Preserve save v10, economy, progression, crops, acreage, hauling, tractor jobs, and town services; no downloaded audio assets, soundtrack, voice, or schema change.
+- **Result:** Filtered rural wind and clock-aware wildlife give the world a quiet ambient bed. Manual fieldwork, sales, expansion, errors, Scout, and operated tractor/pickup motion now have concise feedback. The game menu provides global mute plus separate ambience/effects sliders stored under an isolated local preference key.
+- **Verification:** 198/198 tests passed; strict typecheck, Vite production build, and diff checks passed. Browser acceptance covered preference persistence across title return/re-entry, manual-action and tractor paths, a 760x640 menu, and zero warning/error logs. The provided Playwright client emitted a valid screenshot and deterministic audio state. An unpacked x64 release was built under `release/farm-soundscape-v1`; the exact OneDrive Desktop shortcut targeted it, four native processes responded, and none remained after smoke cleanup.
+- **Review:** The primary checked blocked/unsupported audio, malformed or unavailable preference storage, shared SFX mixing, lifecycle cleanup, action/vehicle routing, save neutrality, compact presentation, and native cleanup. Audio startup was hardened to fail safely without blocking game construction.
+- **Artifacts:** `release/farm-soundscape-v1/win-unpacked/Farm Empire.exe` (225,442,304 bytes) and its bundled `resources/app.asar` (1,186,884 bytes), generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the unpacked executable and deployed icon.
+- **Known limitations:** This is a restrained zero-asset procedural V1 rather than a recorded soundtrack. It does not add voice, music composition, spatial occlusion, weather audio, or gameplay-affecting sound mechanics.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

@@ -45,6 +45,14 @@ Original prompt: Begin the first milestone from the complete Farm Empire master 
 - Browser acceptance completed prepare, safe cancellation, plant, water, mature, harvest, stubble, rework, save/title/reload, and visual inspection of all action feedback with no console/page errors. The provided Playwright client emitted a valid screenshot and deterministic text state.
 - Windows unpacked, portable, and NSIS x64 artifacts were rebuilt under `release/manual-fieldwork-feel`; the real Desktop shortcut targets that build, four packaged processes responded in native smoke, and none remained afterward.
 
+## 2026-08-12 - Farm soundscape checkpoint
+
+- Extended the existing zero-asset Web Audio engine with a bounded Farm Empire soundscape: filtered wind, clock-aware wildlife, tractor/pickup idle and motion tone, manual action cues, transaction feedback, and Scout feedback.
+- Added defensive locally persisted mute, ambience, and effects preferences plus compact game-menu controls. Gameplay saves and save schema remain unchanged.
+- Final automated boundary: 198/198 tests, strict typecheck, production build, and diff checks pass.
+- Browser acceptance verified audio-control persistence across title return/re-entry, manual fieldwork, tractor idle/drive/cancel, compact 760x640 layout, and zero warning/error logs. The provided Playwright client emitted a valid fresh-farm screenshot and deterministic audio state.
+- Windows unpacked x64 packaging completed under `release/farm-soundscape-v1`; the real Desktop shortcut targets that build, four packaged processes responded in native smoke, and none remained afterward.
+
 ## Final acceptance
 
 - Bounded adversarial repair made malformed watering flags fail open to established growth and removed obsolete automatic-growth guidance from the pump and How to Play.

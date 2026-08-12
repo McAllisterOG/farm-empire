@@ -4,10 +4,10 @@
 
 - **Date:** 2026-08-12
 - **Branch:** `codex/first-town-contact`
-- **Head:** `f7fcd4e`
-- **Product state:** Manual Fieldwork Feel is complete on top of Manual Farming & Field Lifecycle V1. Preparing, reworking, planting, watering, harvesting, and clearing now play as short visible, cancellable field actions instead of instant menu flips. Existing deterministic business transactions commit only after the action finishes; Escape cancels before mutation. Save v10, economy, crops, land, pickup, tractor, and town behavior remain unchanged.
-- **Verification:** 195/195 tests passed; strict typecheck, Vite production build, and whitespace checks passed. Browser acceptance completed prepare -> safe cancel -> plant -> water -> mature -> harvest -> stubble -> rework -> save/title/reload, visually inspected the hoe, seed, watering-can, harvest, field-progress, and HUD feedback, and found zero console/page errors. The provided web-game Playwright client produced a valid screenshot and deterministic text state. Unpacked, portable, and NSIS x64 builds completed under `release/manual-fieldwork-feel`; the exact Desktop shortcut targets that build, four native processes responded during smoke testing, and zero remained.
-- **Review:** A bounded primary audit checked commit-on-completion, Escape cancellation, save/destroy boundaries, conflicting input, manual/tractor separation, seed and barn accounting, deterministic test hooks, rendering depth, and native launch cleanup. One confusing status separator was repaired; no high- or medium-severity issue remains.
+- **Head:** `ed05264`
+- **Product state:** Farm Soundscape & Tactile Feedback V1 is complete on top of Manual Fieldwork Feel. The farm now has a restrained procedural wind bed, clock-aware wildlife, tractor and pickup idle/motion sound, field-action cues, transaction feedback, and a Scout cue. Compact persistent mute, ambience, and effects controls live in the game menu. Save v10, economy, crops, land, pickup, tractor, and town behavior remain unchanged.
+- **Verification:** 198/198 tests passed; strict typecheck, Vite production build, and whitespace checks passed. Browser acceptance verified persisted 20/80 audio settings across title return/re-entry, manual-action and tractor drive paths, the 760x640 menu, and zero warning/error logs. The provided web-game Playwright client produced a valid fresh-farm screenshot and deterministic audio state. The unpacked x64 build completed under `release/farm-soundscape-v1`; the exact Desktop shortcut targets that build, four native processes responded during smoke testing, and zero remained.
+- **Review:** A bounded primary audit checked disabled/unsupported audio, corrupt or blocked preference storage, shared SFX mixing, lifecycle cleanup, save neutrality, action/vehicle state routing, compact controls, and native launch cleanup. Audio initialization now fails safely without preventing the farm from loading; no high- or medium-severity issue remains.
 
 ## Current presentation
 
@@ -40,10 +40,11 @@
 - The Farmbook consolidates the eight-step prepare, plant, water, harvest, load, town, trade, and expand loop plus the live business snapshot and core routes without filling the world with buttons.
 - Farmer Knowledge V1 derives five presentation-only ranks and short evidence-sourced field notes from real planting, harvesting, hauling, selling, expansion, and County milestones; it adds no hidden yield or cash modifier and no save field.
 - The homestead now has a larger farmhouse, pond, reeds, garden rows, flowers, destination pulses, and clearer field outlines; the County Service Center has larger edge homes, tighter framing, named hover cues, and a dedicated correctly scaled pickup bay away from the return sign.
+- A zero-asset procedural soundscape adds filtered rural wind, clock-aware birds/night wildlife, tractor and pickup idle/motion tone, field-action feedback, transaction cues, and Scout feedback. Global mute plus separate ambience/effects levels persist locally across farm slots without changing gameplay saves.
 
 ## Immediate authorized work
 
-No new feature package is authorized. Owner-playtest the refreshed Windows Desktop build's manual field rhythm, first-watering clarity, stubble/rework pacing, tractor shortcut, hauling loop, and acreage scale before selecting the evidence-based economy study or another finite package.
+No new feature package is authorized. Owner-playtest the refreshed Windows Desktop build's manual field rhythm, sound balance, first-watering clarity, stubble/rework pacing, tractor shortcut, hauling loop, and acreage scale before selecting the evidence-based economy study or another finite package.
 
 ## Known limitations
 
@@ -55,7 +56,8 @@ No new feature package is authorized. Owner-playtest the refreshed Windows Deskt
 - Eight crops, two working acreages, one tractor kit, one storage upgrade, and one pickup provide a bounded progression loop; further land tiers, crop inputs/quality, trailers/implements, workers, and managers remain deferred.
 - The enlarged fields intentionally expose current economy/storage limits: a full 96-section planting can exceed practical starting capital and a mature tract can exceed barn capacity. Partial work is supported, but pricing, yields, storage, and machinery progression still require the planned evidence-based economy study.
 - Manual crops require one establishment watering, but recurring moisture, weather, irrigation equipment, fertilizer, soil health, and quality are not implemented. Farmer Knowledge still has no skill choices or economic modifiers.
-- Manual field actions are intentionally short presentation/runtime beats, not a stamina, tool-durability, or character-skill system. They do not yet include sound.
+- Manual field actions are intentionally short presentation/runtime beats, not a stamina, tool-durability, or character-skill system. Their procedural cues are intentionally concise and do not imply stamina or tool ownership.
+- Audio is an original procedural V1: no recorded soundtrack, voice acting, spatial occlusion, weather layers, or accessibility captions for environmental cues are included yet.
 - The humble farmhouse has no upgrade mechanics yet, and the correct starting availability/timing of the tractor remains an open progression decision.
 - Starting cash remains $5,000; no economy values were changed during this repair, pending an evidence-based proportional economy study.
 - Crop withering uses wall-clock time and a 15-minute post-maturity window; this should be evaluated during the owner's first longer play session.

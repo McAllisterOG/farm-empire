@@ -23,10 +23,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 17. **Player Experience & Homestead Expansion V1** - world-first context interactions, compact Farmbook guidance, action-derived Farmer Knowledge, authoritative hover/hit priority, corrected pickup/town routing, denser homestead and County presentation, and refreshed Windows builds without an economy or save-schema change.
 18. **Manual Farming & Field Lifecycle V1** - rough/prepared/stubble soil conditions, manual preparation and reworking, a required first watering, visible lifecycle feedback, an eight-step Farmbook route, save-v10 compatibility, and an integrated tractor prepare-and-establish shortcut.
 19. **Manual Fieldwork Feel** - short save-neutral prepare, rework, plant, water, harvest, and clearing actions with action-specific Canvas tools/effects, HUD progress, safe cancellation, and commit-on-completion semantics.
+20. **Farm Soundscape & Tactile Feedback V1** - a restrained procedural farm ambience, clock-aware wildlife, vehicle idle/motion audio, action and transaction cues, and persistent mute/ambience/effects controls without bundled audio assets or save-schema changes.
 
 ## Current authorization
 
-No new feature package is currently authorized. Playtest the rebuilt Windows Desktop game with the manual prepare/plant/water/harvest/rework rhythm, tractor shortcut, hauling loop, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
+No new feature package is currently authorized. Playtest the rebuilt Windows Desktop game with the manual prepare/plant/water/harvest/rework rhythm, soundscape, tractor shortcut, hauling loop, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
 
 ## Later directions
 
