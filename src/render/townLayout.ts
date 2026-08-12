@@ -8,6 +8,7 @@ export const TOWN_BOUNDS: Readonly<TownBounds> = Object.freeze({ minX: 2, minY: 
 export const TOWN_CAMERA = Object.freeze({ x: 12, y: 9, zoom: 0.88 });
 export const TOWN_SPAWN = Object.freeze({ x: 15.3, y: 13.7 });
 export const TOWN_EXIT = Object.freeze({ x: 16, y: 14.5 });
+export const TOWN_PICKUP_PARKING = Object.freeze({ x: 8.5, y: 13.6 });
 export const TOWN_INTERACTION_PRIORITY = ['npc', 'building', 'exit', 'ground'] as const;
 
 /** A single convex public surface, separated from every declared building footprint. */
@@ -36,6 +37,10 @@ export interface TownMovementCancellation {
 export function pointInTownBounds(point: TownPoint): boolean {
   return point.x >= TOWN_BOUNDS.minX && point.x <= TOWN_BOUNDS.maxX
     && point.y >= TOWN_BOUNDS.minY && point.y <= TOWN_BOUNDS.maxY;
+}
+
+export function townPickupHit(point: TownPoint, pickupPresent: boolean): boolean {
+  return pickupPresent && Math.hypot(point.x - TOWN_PICKUP_PARKING.x, point.y - TOWN_PICKUP_PARKING.y) <= 1.15;
 }
 
 /** Inclusive convex-polygon test; points on the paved edge remain walkable. */

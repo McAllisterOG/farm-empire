@@ -56,7 +56,7 @@ function runAndRender(result: ActionResult, actions: FarmPanelActions, rerender:
 
 export function openFarmSeedShop(state: GameState, actions: FarmPanelActions): void {
   const spec = {
-    title: 'Seed Supplier',
+    title: actions.context === 'town' ? 'County Feed & Seed' : 'Seed Bags & Pickup',
     className: 'panel-wide',
     body: (body: HTMLElement): void => renderSeedShop(body, state, actions),
   };
@@ -65,6 +65,7 @@ export function openFarmSeedShop(state: GameState, actions: FarmPanelActions): v
 
 function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelActions): void {
   clearChildren(body);
+  body.classList.toggle('farm-seed-transfer-context', actions.context === 'farm');
   const farm = farmOf(state);
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', {}, `Available cash: ${formatMoney(farm.cashCents)}`),
@@ -105,7 +106,7 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
 
 export function openFarmMarket(state: GameState, actions: FarmPanelActions, context: FarmMarketContext = 'farm'): void {
   const spec = {
-    title: 'Commodity Market & Barn Storage',
+    title: context === 'town' ? 'County Grain Exchange' : 'Barn & Pickup Cargo',
     className: 'panel-wide',
     body: (body: HTMLElement): void => renderMarket(body, state, actions, context),
   };
@@ -114,6 +115,8 @@ export function openFarmMarket(state: GameState, actions: FarmPanelActions, cont
 
 function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelActions, context: FarmMarketContext): void {
   clearChildren(body);
+  body.classList.toggle('farm-cargo-context', context === 'farm');
+  body.classList.remove('farm-seed-transfer-context');
   const farm = farmOf(state);
   const used = storageUsed(state);
   const pickupUsed = pickupCargoUsed(state);
@@ -124,6 +127,12 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     ...(context === 'farm' && !actions.cargoAtPad ? [h('strong', { class: 'panel-note', 'data-testid': 'cargo-pad-guidance' }, 'Park the pickup at the barn cargo pad to load or unload.')] : []),
   ));
 
+  if (context === 'farm') body.append(h('div', { class: 'cargo-panel-switch' },
+    h('strong', {}, 'Produce cargo'),
+    h('button', { class: 'btn btn-sm', 'data-testid': 'open-seed-cargo', onclick: () => openFarmSeedShop(state, actions) }, 'Seed Bags'),
+  ));
+
+  if (context === 'town') {
   const events = h('div', { class: 'market-events', 'data-testid': 'market-events' });
   if (farm.market.activeEvents.length === 0) {
     events.append(h('div', { class: 'market-event neutral' }, 'No active market event today.'));
@@ -136,6 +145,7 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     }
   }
   body.append(events);
+  }
 
   const countyDelivery = countyDeliveryMarketState(state, context, actions.pickupPresent);
   if (countyDelivery.showCountyOrder) {

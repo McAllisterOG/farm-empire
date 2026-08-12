@@ -3,6 +3,7 @@ import type { ActionResult, FarmTownContactState, GameState } from './types';
 import { fail } from './types';
 import { farmOf, syncCashMirror } from './farmBusiness';
 import { pickupCropUnits } from './farmPickup';
+import { recordFarmStat } from './farmKnowledge';
 
 export interface CountyDeliveryContext {
   pickupPresent: boolean;
@@ -50,6 +51,9 @@ export function fulfillCountyWorkOrder(state: GameState, context?: CountyDeliver
   farm.pickup.cargo.crops[COUNTY_PANTRY_CORN_ORDER.cropId] = stored - COUNTY_PANTRY_CORN_ORDER.requiredUnits;
   farm.cashCents += COUNTY_PANTRY_CORN_ORDER.payoutCents;
   farm.townContact.status = 'completed';
+  recordFarmStat(state, 'farmDeliveries');
+  recordFarmStat(state, 'itemsSold', COUNTY_PANTRY_CORN_ORDER.requiredUnits);
+  recordFarmStat(state, 'farmCashEarnedCents', COUNTY_PANTRY_CORN_ORDER.payoutCents);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: 'County Pantry order delivered. $85.00 received.' }] };
 }

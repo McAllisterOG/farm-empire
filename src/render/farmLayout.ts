@@ -15,6 +15,7 @@ export interface FarmPoint { x: number; y: number }
 export interface FarmBounds { minX: number; minY: number; maxX: number; maxY: number }
 
 export interface FarmLandmarks {
+  farmhouse: FarmPoint;
   doghouse: FarmPoint;
   scoutHome: FarmPoint;
   cargoPad: FarmPoint;
@@ -22,10 +23,12 @@ export interface FarmLandmarks {
 
 /** Farm-only landmarks are presentation anchors, never saved world state. */
 export function farmLandmarks(): FarmLandmarks {
+  const farmhouse = { x: 5.45, y: 4.35 };
   const doghouse = { x: 9.2, y: 13.55 };
   const scoutHome = { x: 9.15, y: 13.1 };
   const cargoPad = PICKUP_CARGO_PAD;
   return {
+    farmhouse,
     doghouse,
     scoutHome,
     cargoPad,

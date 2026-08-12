@@ -2,6 +2,7 @@ import type { ActionResult, GameState } from './types';
 import { fail } from './types';
 import { farmCropDefOrNull } from './registry';
 import { farmOf, storageUsed, syncCashMirror } from './farmBusiness';
+import { recordFarmStat } from './farmKnowledge';
 
 import { PICKUP_CARGO_CAPACITY, pickupAtCargoPad } from './farmPickupData';
 
@@ -68,6 +69,8 @@ export function loadBarnCropToPickup(state: GameState, cropId: string, count: nu
   if (needed > pickupCargoRemaining(state)) return fail(`Pickup cargo needs ${needed} open unit${needed === 1 ? '' : 's'}.`);
   farm.storage[cropId] = owned - count;
   farm.pickup.cargo.crops[cropId] = pickupCropUnits(state, cropId) + count;
+  recordFarmStat(state, 'farmCargoLoads');
+  recordFarmStat(state, 'farmCargoUnitsMoved', needed);
   return { ok: true, events: [{ type: 'toast', target: `Loaded ${count} ${def.name} into the pickup.` }] };
 }
 
@@ -99,6 +102,8 @@ export function loadFarmSeedsToPickup(state: GameState, cropId: string, count: n
   if (count > pickupCargoRemaining(state)) return fail(`Pickup cargo needs ${count} open unit${count === 1 ? '' : 's'}.`);
   farm.seeds[cropId] = owned - count;
   farm.pickup.cargo.seeds[cropId] = pickupSeedUnits(state, cropId) + count;
+  recordFarmStat(state, 'farmCargoLoads');
+  recordFarmStat(state, 'farmCargoUnitsMoved', count);
   return { ok: true, events: [{ type: 'toast', target: `Loaded ${count} ${def.name} seed${count === 1 ? '' : 's'} into the pickup.` }] };
 }
 
@@ -128,6 +133,7 @@ export function buyTownSeedsIntoPickup(state: GameState, cropId: string, count: 
   if (count > pickupCargoRemaining(state)) return fail(`Pickup cargo needs ${count} open unit${count === 1 ? '' : 's'}.`);
   farm.cashCents -= cost;
   farm.pickup.cargo.seeds[cropId] = pickupSeedUnits(state, cropId) + count;
+  recordFarmStat(state, 'farmCashSpentCents', cost);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: `Bought ${count} ${def.name} seed${count === 1 ? '' : 's'} into the pickup.` }] };
 }
@@ -145,6 +151,8 @@ export function sellPickupCrop(state: GameState, cropId: string, count: number, 
   const totalCents = quote.currentCents * count;
   farm.pickup.cargo.crops[cropId] = owned - count;
   farm.cashCents += totalCents;
+  recordFarmStat(state, 'itemsSold', count);
+  recordFarmStat(state, 'farmCashEarnedCents', totalCents);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'sell', target: cropId, amount: count, data: totalCents }] };
 }

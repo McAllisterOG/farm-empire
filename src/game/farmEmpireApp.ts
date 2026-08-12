@@ -14,14 +14,15 @@ import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../
 import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
+import { recordFarmStat } from '../core/farmKnowledge';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import type { TownNpcDef, TownServiceId } from '../data/town.data';
 import type { FarmFacing } from '../render/farmSprites';
-import { FARM_DECOR_MANIFEST } from '../render/farmDecor';
+import { farmInteractionAtWorldPoint, type FarmInteractionTarget } from '../render/farmInteractions';
 import {
-  TOWN_EXIT, TOWN_SPAWN, cancelTownMovement, townInteractionAt, type TownMoveTarget,
+  TOWN_EXIT, TOWN_PICKUP_PARKING, TOWN_SPAWN, cancelTownMovement, townInteractionAt, townPickupHit, type TownMoveTarget,
 } from '../render/townLayout';
 import { FarmHud } from '../ui/farmHud';
 import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMenu';
@@ -30,6 +31,7 @@ import { floatText, toast } from '../ui/toast';
 import {
   openCountyWorkOrder, openFarmEquipment, openFarmLand, openFarmMarket, openFarmSeedShop, type FarmPanelActions,
 } from '../ui/panels/farmPanels';
+import { openFarmOffice } from '../ui/panels/farmOffice';
 import { saveToSlot } from '../save/save';
 import { h } from '../ui/dom';
 
@@ -78,7 +80,8 @@ export class FarmEmpireApp {
   private scoutScratchUntil = 0;
   private scoutWaitingForScratch = false;
   private scoutFacing: FarmFacing = 'south';
-  private hover: { tx: number; ty: number } | null = null;
+  private hover: FarmInteractionTarget | null = null;
+  private townHover: { label: string; x: number; y: number } | null = null;
   private walkTarget: { x: number; y: number; cb: (() => void) | null } | null = null;
   private operatingTractor = false;
   private operatingPickup = false;
@@ -119,9 +122,8 @@ export class FarmEmpireApp {
     this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
-      onSeedShop: () => { this.cancelScoutApproach(); openFarmSeedShop(this.state, this.panelActions()); },
       onMarket: () => { this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions(), 'farm'); },
-      onLand: () => { this.cancelScoutApproach(); openFarmLand(this.state, this.panelActions()); },
+      onFarmbook: () => this.openFarmhouseOffice(),
       onEquipment: () => this.openEquipmentPanel(),
       onReturnFarm: () => this.requestReturnToFarm(),
       onSave: () => {
@@ -285,6 +287,28 @@ export class FarmEmpireApp {
     return { tx: Math.round(logical.x), ty: Math.round(logical.y) };
   }
 
+  private farmInteractionAtScreen(sx: number, sy: number): FarmInteractionTarget | null {
+    const world = this.renderer.camera.tilePointAt(sx, sy);
+    if (!pointInFarmBounds(world)) return null;
+    const farm = farmOf(this.state);
+    return farmInteractionAtWorldPoint(this.state, world, {
+      pickup: farm.pickup,
+      tractor: farm.equipment.tractor,
+      scout: this.scout,
+      now: Date.now(),
+    });
+  }
+
+  private townInteractionHintAtScreen(sx: number, sy: number): { label: string; x: number; y: number } | null {
+    const point = this.renderer.camera.tilePointAt(sx, sy);
+    if (townPickupHit(point, this.pickupAtTown)) return { label: `Old Pickup · Cargo ${pickupCargoUsed(this.state)} / 72`, ...TOWN_PICKUP_PARKING };
+    const interaction = townInteractionAt(point);
+    if (interaction.kind === 'npc') return { label: `${interaction.npc.name} · ${interaction.npc.role}`, x: interaction.npc.x, y: interaction.npc.y };
+    if (interaction.kind === 'building') return { label: interaction.building.name, ...interaction.building.door };
+    if (interaction.kind === 'exit') return { label: 'Return to Farm', ...TOWN_EXIT };
+    return null;
+  }
+
   private bindInput(canvas: HTMLCanvasElement): void {
     let downX = 0;
     let downY = 0;
@@ -306,7 +330,8 @@ export class FarmEmpireApp {
           if (this.mode === 'town') this.renderer.clampTownCamera(); else this.renderer.clampFarmCamera();
         }
       }
-      this.hover = this.mode === 'farm' ? this.farmTargetAtScreen(event.clientX, event.clientY) : null;
+      this.hover = this.mode === 'farm' ? this.farmInteractionAtScreen(event.clientX, event.clientY) : null;
+      this.townHover = this.mode === 'town' ? this.townInteractionHintAtScreen(event.clientX, event.clientY) : null;
     };
     const onPointerUp = (event: PointerEvent): void => {
       dragging = false;
@@ -319,6 +344,7 @@ export class FarmEmpireApp {
     const onPointerLeave = (): void => {
       dragging = false;
       this.hover = null;
+      this.townHover = null;
     };
     const onWheel = (event: WheelEvent): void => {
       event.preventDefault();
@@ -343,6 +369,10 @@ export class FarmEmpireApp {
         this.pickupTarget = null;
         this.pickupMotion = resetTractorMotion(this.pickupMotion);
         toast('Pickup drive cancelled.', 'good');
+      } else if (this.walkTarget) {
+        this.walkTarget = null;
+        this.playerActor.walking = false;
+        toast('Walk cancelled.', 'good');
       } else if (isActionMenuOpen()) hideActionMenu();
       else if (isPanelOpen()) closePanel();
     };
@@ -380,78 +410,89 @@ export class FarmEmpireApp {
     this.cancelScoutApproach();
     const worldPoint = this.renderer.camera.tilePointAt(sx, sy);
     if (!pointInFarmBounds(worldPoint)) return;
-    const clickLogical = farmLogicalPoint(worldPoint);
-    const pump = FARM_DECOR_MANIFEST.find((prop) => prop.type === 'hand-pump');
-    if (pump && Math.hypot(clickLogical.x - pump.x, clickLogical.y - pump.y) <= .8) {
-      toast('Hand pump: decorative for now. Crops grow automatically; watering and irrigation are not required.', 'good');
-      return;
-    }
     const farm = farmOf(this.state);
-    const pickup = farm.pickup;
-    if (Math.hypot(pickup.x - clickLogical.x, pickup.y - clickLogical.y) <= 0.9) {
+    const interaction = farmInteractionAtWorldPoint(this.state, worldPoint, {
+      pickup: farm.pickup,
+      tractor: farm.equipment.tractor,
+      scout: this.scout,
+      now: Date.now(),
+    });
+    if (interaction?.kind === 'pickup') {
       if (this.operatingPickup) this.togglePickupOperating(); else this.openPickupPanel();
       return;
     }
-    if (Math.hypot(clickLogical.x - FARM_TOWN_GATE.x, clickLogical.y - FARM_TOWN_GATE.y) <= 0.75) {
-      const blocked = townTravelBlockReason({
-        operatingTractor: this.operatingTractor,
-        tractorMoving: !!this.tractorTarget,
-        tractorJobActive: !!this.tractorJob,
-      });
-      if (blocked) toast(blocked, 'bad');
-      else if (this.operatingPickup) {
-        this.drivePickupRoute(farmTownRoadRouteFrom(pickup), () => {
-          this.operatingPickup = false;
-          this.pickupAtTown = true;
-          this.enterTown();
-        });
-      } else this.walkNear(FARM_TOWN_GATE.x, FARM_TOWN_GATE.y, () => this.enterTown());
-      return;
-    }
-    if (!this.operatingTractor && Math.hypot(clickLogical.x - this.scout.x, clickLogical.y - this.scout.y) <= 0.72) {
+    if (interaction?.kind === 'tractor') { this.openEquipmentPanel(); return; }
+    if (interaction?.kind === 'scout' || interaction?.kind === 'doghouse') {
+      if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to visit Scout.', 'bad'); return; }
       this.scoutWaitingForScratch = true;
       this.walkNear(this.scout.x, this.scout.y, () => { this.scoutWaitingForScratch = false; this.openScoutMenu(); });
+      return;
+    }
+    if (interaction?.kind === 'farmhouse') {
+      if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to use the farmhouse office.', 'bad'); return; }
+      this.walkNear(interaction.point.x, interaction.point.y, () => this.openFarmhouseOffice());
+      return;
+    }
+    if (interaction?.kind === 'pump') {
+      showActionMenu(sx, sy, 'Hand Pump', [
+        { label: 'Crops grow automatically', disabled: true, onClick: () => {} },
+        { label: 'Open Farmbook', onClick: () => this.openFarmhouseOffice() },
+      ]);
+      return;
+    }
+    if (interaction?.kind === 'town-gate') { this.openFarmGateMenu(sx, sy); return; }
+    if (interaction?.kind === 'locked-acreage') { openFarmLand(this.state, this.panelActions()); return; }
+    if (interaction?.kind === 'barn') {
+      if (this.operatingTractor) { toast('Exit the tractor to manage barn cargo.', 'bad'); return; }
+      if (this.operatingPickup) {
+        const pad = farmLandmarks().cargoPad;
+        this.drivePickupTo(pad.x, pad.y, () => { toast('Pickup parked at the cargo pad.', 'good'); this.openPickupPanel(); });
+      } else this.walkNear(interaction.point.x, interaction.point.y, () => openFarmMarket(this.state, this.panelActions(), 'farm'));
+      return;
+    }
+    if (interaction?.kind === 'field' && interaction.plotUid !== undefined) {
+      if (this.operatingTractor) {
+        const parcelId = ownedFarmParcelAt(this.state, interaction.point.x, interaction.point.y);
+        if (parcelId) this.openTractorParcelMenu(parcelId, interaction.point.x, interaction.point.y, sx, sy);
+      } else if (this.operatingPickup) this.drivePickupTo(interaction.point.x, interaction.point.y);
+      else this.walkNear(interaction.point.x, interaction.point.y, () => this.openPlotMenu(interaction.plotUid!, sx, sy));
       return;
     }
     const target = this.farmTargetAtScreen(sx, sy);
     if (!target) return;
     const { tx, ty } = target;
-
-    if (!farm.parcels.northOwned && NEIGHBOR_FIELD_TILES.some((tile) => tile.x === tx && tile.y === ty)) {
-      openFarmLand(this.state, this.panelActions());
-      return;
-    }
-
-    const plot = this.state.plots.find((candidate) => candidate.x === tx && candidate.y === ty);
-    if (plot && this.operatingTractor) {
-      const parcelId = ownedFarmParcelAt(this.state, tx, ty);
-      if (parcelId) this.openTractorParcelMenu(parcelId, tx, ty, sx, sy);
-      return;
-    }
-
-    const tractor = farm.equipment.tractor;
-    if (Math.hypot(tractor.x - tx, tractor.y - ty) <= 0.8) {
-      this.openEquipmentPanel();
-      return;
-    }
-
-    const barn = this.state.placements.find((placement) => placement.defId === 'bld_storage');
-    if (barn && tx >= barn.x && tx < barn.x + 2 && ty >= barn.y && ty < barn.y + 2) {
-      openFarmMarket(this.state, this.panelActions(), 'farm');
-      return;
-    }
-
-    if (plot) {
-      this.walkNear(tx, ty, () => this.openPlotMenu(plot.uid, sx, sy));
-      return;
-    }
     if (this.operatingTractor) this.driveTractorTo(tx, ty);
     else if (this.operatingPickup) this.drivePickupTo(tx, ty);
     else this.walkNear(tx, ty, null);
   }
 
+  private openFarmGateMenu(sx: number, sy: number): void {
+    const farm = farmOf(this.state);
+    const blocked = townTravelBlockReason({
+      operatingTractor: this.operatingTractor,
+      tractorMoving: !!this.tractorTarget,
+      tractorJobActive: !!this.tractorJob,
+    });
+    const travel = (): void => {
+      if (blocked) { toast(blocked, 'bad'); return; }
+      if (this.operatingPickup) {
+        this.drivePickupRoute(farmTownRoadRouteFrom(farm.pickup), () => {
+          this.operatingPickup = false;
+          this.pickupAtTown = true;
+          this.enterTown();
+        });
+      } else this.walkFarmRoute(farmTownRoadRouteFrom(this.playerActor), () => this.enterTown());
+    };
+    showActionMenu(sx, sy, 'County Road · 2 miles', [{
+      label: blocked ? blocked : this.operatingPickup ? 'Drive to County Service Center' : 'Go to County Service Center',
+      disabled: !!blocked,
+      onClick: travel,
+    }]);
+  }
+
   private onClickTown(sx: number, sy: number): void {
     const point = this.renderer.camera.tilePointAt(sx, sy);
+    if (townPickupHit(point, this.pickupAtTown)) { this.openPickupPanel(); return; }
     const interaction = townInteractionAt(point);
     if (interaction.kind === 'npc') {
       this.walkTownNear(interaction.npc.x, interaction.npc.y, () => {
@@ -506,10 +547,11 @@ export class FarmEmpireApp {
     if (blocked) { toast(blocked, 'bad'); return; }
     const returnPoint = placePlayerAtTownReturn(this.state);
     this.playerActor.x = returnPoint.x; this.playerActor.y = returnPoint.y; this.playerActor.walking = false;
-    this.walkTarget = null; this.hover = null; this.cancelScoutApproach();
+    this.walkTarget = null; this.hover = null; this.townHover = null; this.cancelScoutApproach();
     this.farmCamera = { cx: this.renderer.camera.cx, cy: this.renderer.camera.cy, zoom: this.renderer.camera.zoom, viewW: this.renderer.camera.viewW, viewH: this.renderer.camera.viewH };
     this.townActor = { avatar: this.state.player.avatar, ...TOWN_SPAWN, walking: false };
     this.townFacing = 'north'; this.townTarget = null; this.townGesture = null; this.mode = 'town';
+    recordFarmStat(this.state, 'farmTownVisits');
     this.renderer.centerOnTown(); this.hud.setMode('town');
     toast('Welcome to the County Service Center.', 'good');
   }
@@ -609,16 +651,33 @@ export class FarmEmpireApp {
   }
 
   private openPickupPanel(): void {
+    if (this.mode === 'town') {
+      openPanel({
+        title: 'Old Pickup · County Parking',
+        body: (body) => body.append(
+          h('div', { class: 'equipment-card', 'data-testid': 'town-pickup-panel' },
+            h('div', { class: 'pickup-panel-illustration' }, 'OLD PICKUP'),
+            h('div', { class: 'farm-card-title' }, `Cargo · ${pickupCargoUsed(this.state)} / 72`),
+            h('div', { class: 'farm-panel-summary' }, 'County services use cargo in this pickup.'),
+            h('button', { class: 'btn btn-primary', onclick: () => openFarmSeedShop(this.state, this.panelActions()) }, 'Feed & Seed'),
+            h('button', { class: 'btn', onclick: () => openFarmMarket(this.state, this.panelActions(), 'town') }, 'Grain Exchange'),
+            h('button', { class: 'btn', onclick: () => { closePanel(); this.requestReturnToFarm(); } }, 'Return to Farm'),
+          ),
+        ),
+      });
+      return;
+    }
     const atPad = pickupIsAtCargoPad(this.state);
     openPanel({
       title: 'Old Pickup',
       body: (body) => body.append(
         h('div', { class: 'equipment-card', 'data-testid': 'pickup-panel' },
           h('div', { class: 'pickup-panel-illustration' }, 'OLD PICKUP'),
-          h('div', { class: 'farm-card-title' }, 'Old Pickup cargo bed'),
+          h('div', { class: 'farm-card-title' }, `Cargo · ${pickupCargoUsed(this.state)} / 72`),
           h('div', { class: 'farm-panel-summary' }, `Cargo: ${pickupCargoUsed(this.state)} / 72 units`, atPad ? 'Parked at the barn cargo pad.' : 'Park at the barn cargo pad to manage cargo.'),
           h('button', { class: 'btn btn-primary', 'data-testid': this.operatingPickup ? 'exit-pickup' : 'operate-pickup', onclick: () => { closePanel(); this.togglePickupOperating(); } }, this.operatingPickup ? 'Exit Pickup' : 'Operate Pickup'),
-          h('button', { class: 'btn', 'data-testid': 'manage-pickup-cargo', onclick: () => { closePanel(); openFarmMarket(this.state, this.panelActions(), 'farm'); } }, atPad ? 'Manage Cargo' : 'Manage Cargo · park at pad'),
+          h('button', { class: 'btn', 'data-testid': 'manage-pickup-cargo', onclick: () => { closePanel(); openFarmMarket(this.state, this.panelActions(), 'farm'); } }, atPad ? 'Produce Cargo' : 'Produce Cargo · park at pad'),
+          h('button', { class: 'btn', 'data-testid': 'manage-pickup-seeds', onclick: () => { closePanel(); openFarmSeedShop(this.state, this.panelActions()); } }, atPad ? 'Seed Bags' : 'Seed Bags · park at pad'),
         ),
       ),
     });
@@ -629,12 +688,27 @@ export class FarmEmpireApp {
       body.append(
         h('p', {}, this.mode === 'town' ? 'County Service Center · farm business services are nearby.' : 'Park your pickup at the barn cargo pad to manage cargo.'),
         h('button', { class: 'btn btn-primary', onclick: () => closePanel() }, 'Resume'),
+        ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
         h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Plant and harvest into the barn. Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Return and park by the barn to unload seeds and crops. The tractor handles batch field work. Save and Recenter are always available.'), h('p', {}, 'Watering and irrigation are not gameplay requirements yet; crops grow automatically.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
+  }
+
+  private openFarmhouseOffice(): void {
+    this.cancelScoutApproach();
+    openFarmOffice(this.state, {
+      onSave: () => { this.save(); toast('Farm saved.', 'good'); },
+      onRecenter: () => {
+        closePanel();
+        if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm();
+      },
+      onLand: () => openFarmLand(this.state, this.panelActions()),
+      onCargo: () => openFarmMarket(this.state, this.panelActions(), 'farm'),
+      onTownRoad: () => { closePanel(); this.renderer.focusOnFarmPoint(FARM_TOWN_GATE); },
+    });
   }
 
   private togglePickupOperating(): void {
@@ -697,6 +771,16 @@ export class FarmEmpireApp {
     driveNext();
   }
 
+  private walkFarmRoute(points: readonly { x: number; y: number }[], finalCb: () => void): void {
+    const remaining = points.map((point) => ({ ...point }));
+    const walkNext = (): void => {
+      const next = remaining.shift();
+      if (!next) { finalCb(); return; }
+      this.walkNear(next.x, next.y, walkNext);
+    };
+    walkNext();
+  }
+
   private openTractorParcelMenu(parcelId: FarmParcelId, tx: number, ty: number, sx: number, sy: number): void {
     const plan = planParcelWork(this.state, parcelId, Date.now(), farmOf(this.state).selectedCropId);
     const farm = farmOf(this.state);
@@ -737,9 +821,14 @@ export class FarmEmpireApp {
         {
           label: `Plant ${def.name} (${count} seed${count === 1 ? '' : 's'})`,
           icon: `icon:seed_${def.id.replace('crop_', '')}`,
+          disabled: count <= 0,
           onClick: () => this.dispatch(plantFarmCrop(this.state, plotUid, def.id, Date.now(), 'manual')),
         },
-        { label: 'Open seed supplier', onClick: () => openFarmSeedShop(this.state, this.panelActions()) },
+        {
+          label: count > 0 ? 'More seeds are sold in town' : 'No seeds · see the Farmbook route',
+          disabled: count > 0,
+          onClick: () => this.openFarmhouseOffice(),
+        },
       ]);
       return;
     }
@@ -1068,7 +1157,8 @@ export class FarmEmpireApp {
         clockMinute: farm.clock.minute,
         gesturingNpcId: this.townGesture?.npcId ?? null,
         gestureUntil: this.townGesture?.until ?? 0,
-        pickup: this.pickupAtTown ? { x: 14, y: 12 } : undefined,
+        pickup: this.pickupAtTown ? { ...TOWN_PICKUP_PARKING } : undefined,
+        interactionHint: this.townHover ?? undefined,
       };
       return scene;
     }
@@ -1100,9 +1190,17 @@ export class FarmEmpireApp {
       scout: { ...this.scout, facing: this.scoutFacing, scratching: Date.now() < this.scoutScratchUntil },
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
       clockMinute: farm.clock.minute,
+      interactionHint: this.hover ? { kind: this.hover.kind, label: this.hover.label, ...this.hover.point } : undefined,
+      destination: this.tractorTarget
+        ? { x: this.tractorTarget.x, y: this.tractorTarget.y, kind: 'tractor' }
+        : this.pickupTarget
+          ? { x: this.pickupTarget.x, y: this.pickupTarget.y, kind: 'pickup' }
+          : this.walkTarget
+            ? { x: this.walkTarget.x, y: this.walkTarget.y, kind: 'walk' }
+            : undefined,
     };
-    if (this.hover) {
-      scene.hover = { tx: this.hover.tx, ty: this.hover.ty, ok: true };
+    if (this.hover && (this.hover.kind === 'field' || this.hover.kind === 'locked-acreage') && this.hover.plotX !== undefined && this.hover.plotY !== undefined) {
+      scene.hover = { tx: this.hover.plotX, ty: this.hover.plotY, ok: this.hover.kind === 'field' };
     }
     return scene;
   }

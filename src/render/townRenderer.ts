@@ -16,6 +16,7 @@ export interface TownRenderScene {
   gesturingNpcId: TownNpcDef['id'] | null;
   gestureUntil: number;
   pickup?: { x: number; y: number };
+  interactionHint?: { label: string; x: number; y: number };
 }
 
 interface TownDrawItem { depth: number; draw: () => void }
@@ -61,8 +62,8 @@ function drawTownName(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
 }
 
 function drawTownEdgeCluster(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
-  for (const house of [{ x: 3.6, y: 3.2 }, { x: 21.4, y: 15.2 }]) {
-    const p = project(camera, house, true); ctx.save(); ctx.translate(p.x, p.y); ctx.scale(zoom, zoom);
+  for (const house of [{ x: 3.6, y: 3.2 }, { x: 21.4, y: 15.2 }, { x: 22.2, y: 4.0 }]) {
+    const p = project(camera, house, true); ctx.save(); ctx.translate(p.x, p.y); ctx.scale(zoom * 1.45, zoom * 1.45);
     ctx.fillStyle = 'rgba(45,34,24,.2)'; ctx.beginPath(); ctx.ellipse(0, 3, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#caa66e'; ctx.fillRect(-17, -25, 34, 25); ctx.fillStyle = '#78533b'; ctx.beginPath(); ctx.moveTo(-22, -24); ctx.lineTo(0, -42); ctx.lineTo(22, -24); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#97b7b2'; ctx.fillRect(-11, -17, 7, 7); ctx.fillRect(5, -17, 7, 7); ctx.restore();
   }
@@ -99,7 +100,7 @@ export function renderTown(
   }
   if (scene.pickup) {
     const pickupScreen = project(camera, scene.pickup, true);
-    items.push({ depth: scene.pickup.x + scene.pickup.y + .3, draw: () => drawOldPickup(ctx, pickupScreen.x, pickupScreen.y, zoom, false, false, now) });
+    items.push({ depth: scene.pickup.x + scene.pickup.y + .3, draw: () => drawOldPickup(ctx, pickupScreen.x, pickupScreen.y, zoom * 1.24, false, false, now) });
   }
   const exitScreen = project(camera, TOWN_EXIT, true);
   items.push({ depth: TOWN_EXIT.x + TOWN_EXIT.y + .2, draw: () => drawTownExitSign(ctx, exitScreen.x, exitScreen.y, zoom) });
@@ -120,4 +121,12 @@ export function renderTown(
       const screen = project(camera, building.door, true); drawTownLampGlow(ctx, screen.x, screen.y, zoom, night * .7);
     }
   }
+  if (scene.interactionHint) drawTownInteractionHint(ctx, camera, zoom, scene.interactionHint);
+}
+
+function drawTownInteractionHint(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, hint: NonNullable<TownRenderScene['interactionHint']>): void {
+  const point = project(camera, hint, true); const y = point.y - 66 * zoom;
+  ctx.save(); ctx.font = `700 ${Math.max(11, 12 * zoom)}px Segoe UI, sans-serif`; const width = ctx.measureText(hint.label).width + 24;
+  ctx.fillStyle = 'rgba(31,48,34,.92)'; ctx.beginPath(); ctx.roundRect(point.x - width / 2, y - 18, width, 26, 8); ctx.fill();
+  ctx.strokeStyle = 'rgba(244,226,167,.78)'; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = '#fff8dc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(hint.label, point.x, y - 5); ctx.restore();
 }

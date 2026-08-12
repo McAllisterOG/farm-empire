@@ -71,6 +71,8 @@ export interface RenderScene {
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
     barnLoftOwned: boolean;
     clockMinute: number;
+    interactionHint?: { kind: string; label: string; x: number; y: number };
+    destination?: { kind: 'walk' | 'pickup' | 'tractor'; x: number; y: number };
   };
   /** Optional isolated County Service Center scene; never serialized. */
   town?: TownRenderScene;
@@ -455,7 +457,7 @@ export class Renderer {
     for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
       drawSprite(ctx, `tile:farmground:${farmGroundVariant(scene.seed, x, y)}`, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
     }
-    drawFarmyard(ctx, camera, zoom);
+    drawFarmyard(ctx, camera, zoom, now);
     for (const plot of scene.plots) drawFarmSection(ctx, camera, plot, now, zoom, false);
     for (const plot of scene.farm!.lockedTiles) drawFarmSection(ctx, camera, { ...plot, uid: -1, crop: null }, now, zoom, true);
     drawLockedParcelLabel(ctx, camera, scene, zoom);
@@ -465,6 +467,7 @@ export class Renderer {
       ctx.fillStyle = 'rgba(255, 239, 132, .18)'; ctx.fill();
       ctx.strokeStyle = 'rgba(255, 239, 132, .92)'; ctx.lineWidth = Math.max(1.5, zoom * 2); ctx.stroke();
     }
+    if (scene.farm!.destination) drawFarmDestination(ctx, camera, zoom, now, scene.farm!.destination);
 
     const items: DrawItem[] = [];
     const bob = Math.sin(now / 350) * 1.6;
@@ -480,6 +483,8 @@ export class Renderer {
     }
     const townGatePoint = farmWorldPoint(FARM_TOWN_GATE);
     items.push({ depth: townGatePoint.x + townGatePoint.y + .18, draw: () => drawFarmTownGateway(ctx, camera.sx(isoX(townGatePoint.x, townGatePoint.y)), camera.sy(isoY(townGatePoint.x, townGatePoint.y) + TILE_H / 2), zoom) });
+    const farmhousePoint = farmWorldPoint(farmLandmarks().farmhouse);
+    items.push({ depth: farmhousePoint.x + farmhousePoint.y + .19, draw: () => drawStarterFarmhouse(ctx, camera.sx(isoX(farmhousePoint.x, farmhousePoint.y)), camera.sy(isoY(farmhousePoint.x, farmhousePoint.y) + TILE_H / 2), zoom, now) });
     for (const plot of scene.plots) if (plot.crop) {
       const point = farmWorldPoint(plot);
       const stage = farmCropStage(plot.crop, now);
@@ -520,6 +525,13 @@ export class Renderer {
       drawFarmNightGlow(ctx, camera, zoom, na, now, doghousePoint, scene.placements);
     }
     if (scene.farm!.scout.scratching) drawScoutHeart(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y)) - 42 * zoom, zoom, now);
+    if (scene.farm!.interactionHint) drawFarmInteractionHint(ctx, camera, zoom, scene.farm!.interactionHint);
+  }
+
+  focusOnFarmPoint(point: { x: number; y: number }): void {
+    const world = farmWorldPoint(point);
+    this.camera.centerOnTile(world.x, world.y);
+    this.clampFarmCamera();
   }
 }
 
@@ -567,7 +579,7 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
   else if (stage === 'withered') drawSprite(ctx, 'fx:hungry', sx, sy - 56 * zoom + bob * zoom, zoom * 1.15);
 }
 
-function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
+function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number): void {
   // A restrained gravel lane connects the barn, field entrances, and town road.
   const lane = farmDriveLane();
   ctx.lineCap = 'round'; ctx.strokeStyle = '#806344'; ctx.lineWidth = 25 * zoom; ctx.beginPath();
@@ -578,14 +590,65 @@ function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: numbe
   const px = camera.sx(isoX(pad.x, pad.y)); const py = camera.sy(isoY(pad.x, pad.y));
   ctx.fillStyle = 'rgba(164,137,91,.78)'; ctx.beginPath(); ctx.ellipse(px, py, 58 * zoom, 21 * zoom, 0, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = 'rgba(91,68,42,.45)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
-  drawStarterFarmhouse(ctx, camera.sx(isoX(15, 12)), camera.sy(isoY(15, 12) + TILE_H / 2), zoom);
+  drawHomesteadLandscape(ctx, camera, zoom, now);
 }
 
-function drawStarterFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
-  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.3, zoom * 1.3);
-  ctx.fillStyle = 'rgba(48,35,24,.22)'; ctx.beginPath(); ctx.ellipse(0, 5, 38, 10, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#c2a276'; ctx.fillRect(-30, -38, 60, 40); ctx.fillStyle = '#6e5140'; ctx.beginPath(); ctx.moveTo(-36, -37); ctx.lineTo(0, -63); ctx.lineTo(36, -37); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#8a6951'; ctx.fillRect(-36, -37, 72, 5); ctx.fillStyle = '#554033'; ctx.fillRect(-8, -22, 16, 24); ctx.fillStyle = '#9fb5b0'; ctx.fillRect(-25, -27, 12, 11); ctx.fillRect(13, -27, 12, 11); ctx.strokeStyle = 'rgba(78,53,38,.5)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-20, -28); ctx.lineTo(-20, -15); ctx.moveTo(-27, -21); ctx.lineTo(-13, -21); ctx.moveTo(19, -28); ctx.lineTo(19, -15); ctx.stroke(); ctx.restore();
+function drawHomesteadLandscape(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number): void {
+  const pond = farmWorldPoint({ x: 1.05, y: 5.15 });
+  const pondX = camera.sx(isoX(pond.x, pond.y)); const pondY = camera.sy(isoY(pond.x, pond.y));
+  ctx.fillStyle = '#557f64'; ctx.beginPath(); ctx.ellipse(pondX, pondY, 54 * zoom, 22 * zoom, -.08, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5d9ba0'; ctx.beginPath(); ctx.ellipse(pondX, pondY, 44 * zoom, 17 * zoom, -.08, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(218,239,220,.42)'; ctx.lineWidth = Math.max(1, zoom * 1.5);
+  for (let line = -1; line <= 1; line++) { ctx.beginPath(); ctx.ellipse(pondX + line * 11 * zoom, pondY + Math.sin(now / 900 + line) * zoom, 13 * zoom, 3 * zoom, 0, 0, Math.PI * 2); ctx.stroke(); }
+  ctx.strokeStyle = '#476a35'; ctx.lineWidth = Math.max(1.5, 2 * zoom); ctx.lineCap = 'round';
+  for (const offset of [-42, -33, 31, 42]) { const sway = Math.sin(now / 1100 + offset) * 2 * zoom; ctx.beginPath(); ctx.moveTo(pondX + offset * zoom, pondY + 6 * zoom); ctx.lineTo(pondX + (offset + 2) * zoom + sway, pondY - 12 * zoom); ctx.stroke(); }
+
+  const garden = farmWorldPoint({ x: 3.75, y: 3.65 });
+  for (let row = 0; row < 3; row++) {
+    const a = { x: camera.sx(isoX(garden.x + row * .52, garden.y)), y: camera.sy(isoY(garden.x + row * .52, garden.y)) };
+    const b = { x: camera.sx(isoX(garden.x + row * .52, garden.y + 2.1)), y: camera.sy(isoY(garden.x + row * .52, garden.y + 2.1)) };
+    ctx.strokeStyle = '#7e5b37'; ctx.lineWidth = 6 * zoom; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.strokeStyle = row === 1 ? '#d9a641' : '#5e873d'; ctx.lineWidth = 2.5 * zoom; ctx.setLineDash([3 * zoom, 6 * zoom]); ctx.beginPath(); ctx.moveTo(a.x, a.y - 2 * zoom); ctx.lineTo(b.x, b.y - 2 * zoom); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const flowers = [
+    { x: 3.45, y: 3.25, color: '#f3cf58' }, { x: 3.7, y: 3.1, color: '#e98a9a' },
+    { x: 6.55, y: 4.55, color: '#f4df7f' }, { x: 6.8, y: 4.7, color: '#d9a1d8' },
+  ];
+  for (const flower of flowers) {
+    const point = farmWorldPoint(flower); const x = camera.sx(isoX(point.x, point.y)); const y = camera.sy(isoY(point.x, point.y));
+    ctx.fillStyle = flower.color; ctx.beginPath(); ctx.arc(x, y - 4 * zoom, Math.max(1.3, 2.2 * zoom), 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawStarterFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.55, zoom * 1.55);
+  ctx.fillStyle = 'rgba(48,35,24,.24)'; ctx.beginPath(); ctx.ellipse(0, 6, 47, 12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#876142'; ctx.fillRect(-38, -3, 76, 6);
+  ctx.fillStyle = '#d1b789'; ctx.fillRect(-34, -43, 68, 42);
+  ctx.fillStyle = '#b99a70'; for (let line = -38; line < -3; line += 7) ctx.fillRect(-34, line, 68, 1);
+  ctx.fillStyle = '#694a38'; ctx.beginPath(); ctx.moveTo(-42, -42); ctx.lineTo(0, -72); ctx.lineTo(42, -42); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#8b674b'; ctx.fillRect(-43, -43, 86, 6);
+  ctx.fillStyle = '#70503b'; ctx.fillRect(18, -71, 9, 23); ctx.fillStyle = '#907057'; ctx.fillRect(16, -74, 13, 5);
+  const smoke = Math.sin(now / 1000) * 2;
+  ctx.fillStyle = 'rgba(235,231,215,.48)'; ctx.beginPath(); ctx.arc(25 + smoke, -82, 4, 0, Math.PI * 2); ctx.arc(29 - smoke, -90, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5b4334'; ctx.fillRect(-8, -28, 16, 27); ctx.fillStyle = '#c79e4d'; ctx.beginPath(); ctx.arc(4, -14, 1.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#a7c5be'; ctx.fillRect(-28, -31, 13, 13); ctx.fillRect(15, -31, 13, 13);
+  ctx.strokeStyle = 'rgba(78,53,38,.55)'; ctx.lineWidth = 2; for (const wx of [-21.5, 21.5]) { ctx.beginPath(); ctx.moveTo(wx, -32); ctx.lineTo(wx, -17); ctx.moveTo(wx - 7, -24.5); ctx.lineTo(wx + 7, -24.5); ctx.stroke(); }
+  ctx.fillStyle = '#eee2bf'; ctx.fillRect(-40, -5, 80, 4); for (const post of [-32, 32]) ctx.fillRect(post - 2, -20, 4, 19);
+  ctx.fillStyle = '#8b674b'; ctx.fillRect(-42, -2, 84, 5); ctx.restore();
+}
+
+function drawFarmDestination(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number, destination: NonNullable<NonNullable<RenderScene['farm']>['destination']>): void {
+  const point = farmWorldPoint(destination); const x = camera.sx(isoX(point.x, point.y)); const y = camera.sy(isoY(point.x, point.y));
+  const pulse = 1 + Math.sin(now / 180) * .12;
+  ctx.save(); ctx.translate(x, y); ctx.scale(pulse, pulse); ctx.strokeStyle = destination.kind === 'walk' ? '#f5df84' : '#d8f0c1'; ctx.lineWidth = Math.max(1.5, 2.2 * zoom); ctx.globalAlpha = .8; ctx.beginPath(); ctx.ellipse(0, 0, 21 * zoom, 9 * zoom, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+}
+
+function drawFarmInteractionHint(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, hint: NonNullable<NonNullable<RenderScene['farm']>['interactionHint']>): void {
+  const point = farmWorldPoint(hint); const x = camera.sx(isoX(point.x, point.y)); const y = camera.sy(isoY(point.x, point.y)) - 52 * zoom;
+  ctx.save(); ctx.font = `700 ${Math.max(11, 12 * zoom)}px Segoe UI, sans-serif`; const width = ctx.measureText(hint.label).width + 24;
+  ctx.fillStyle = 'rgba(31,48,34,.9)'; ctx.beginPath(); ctx.roundRect(x - width / 2, y - 18, width, 26, 8); ctx.fill();
+  ctx.strokeStyle = 'rgba(244,226,167,.78)'; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = '#fff8dc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(hint.label, x, y - 5); ctx.restore();
 }
 
 function drawFarmTownGateway(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {

@@ -10,6 +10,7 @@ import {
   STARTER_FIELD_TILES, ensureOwnedFarmParcelPlots, farmParcelAtTile,
   farmParcelSectionCount, farmParcelTiles, type FarmParcelId,
 } from './farmParcels';
+import { recordFarmStat } from './farmKnowledge';
 
 export { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from './farmParcels';
 export type { FarmParcelId } from './farmParcels';
@@ -289,6 +290,7 @@ export function buyFarmSeeds(state: GameState, cropId: string, count: number): A
   if (farm.cashCents < cost) return fail('Not enough cash for those seeds.');
   farm.cashCents -= cost;
   farm.seeds[cropId] = (farm.seeds[cropId] ?? 0) + count;
+  recordFarmStat(state, 'farmCashSpentCents', cost);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: `Bought ${count} ${def.name} seed${count === 1 ? '' : 's'}.` }] };
 }
@@ -390,6 +392,8 @@ export function plantFarmCrop(state: GameState, plotUid: number, cropId: string,
   const preworkedMs = Math.max(0, farmDef.growMs - effectiveGrowMs);
   farm.seeds[cropId] -= 1;
   plot.crop = { defId: cropId, plantedAt: now, wateredBonusMs: preworkedMs, lastWateredAt: 0 };
+  recordFarmStat(state, 'plantings');
+  if (context === 'operatedTractor') recordFarmStat(state, 'farmTractorSections');
   return { ok: true, events: [{ type: 'plant', target: cropId, amount: 1 }] };
 }
 
@@ -410,6 +414,9 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
   }
   farm.storage[def.id] = (farm.storage[def.id] ?? 0) + amount;
   plot.crop = null;
+  recordFarmStat(state, 'harvests');
+  recordFarmStat(state, 'farmHarvestUnits', amount);
+  if (context === 'operatedTractor') recordFarmStat(state, 'farmTractorSections');
   return { ok: true, events: [{ type: 'harvest', target: def.id, amount }] };
 }
 
@@ -420,6 +427,7 @@ export function purchaseCountyRowCropFieldKit(state: GameState): ActionResult {
   if (farm.cashCents < COUNTY_ROW_CROP_FIELD_KIT.priceCents) return fail('Not enough cash for the County Row-Crop Field Kit.');
   farm.cashCents -= COUNTY_ROW_CROP_FIELD_KIT.priceCents;
   farm.equipment.countyRowCropFieldKitOwned = true;
+  recordFarmStat(state, 'farmCashSpentCents', COUNTY_ROW_CROP_FIELD_KIT.priceCents);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: 'County Row-Crop Field Kit purchased and installed.' }] };
 }
@@ -485,6 +493,7 @@ export function purchaseBarnLoftExpansion(state: GameState): ActionResult {
   farm.cashCents -= BARN_LOFT_EXPANSION.priceCents;
   farm.equipment.barnLoftExpansionOwned = true;
   farm.storageCapacity = BARN_LOFT_EXPANSION.toCapacity;
+  recordFarmStat(state, 'farmCashSpentCents', BARN_LOFT_EXPANSION.priceCents);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: 'Barn Loft Expansion purchased. Storage capacity is now 200.' }] };
 }
@@ -500,6 +509,8 @@ export function sellStoredCrop(state: GameState, cropId: string, count: number):
   const totalCents = quote.currentCents * count;
   farm.storage[cropId] = owned - count;
   farm.cashCents += totalCents;
+  recordFarmStat(state, 'itemsSold', count);
+  recordFarmStat(state, 'farmCashEarnedCents', totalCents);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'sell', target: cropId, amount: count, data: totalCents }] };
 }
@@ -515,6 +526,8 @@ export function purchaseNeighborParcel(state: GameState): ActionResult {
     state.uidCounter += 1;
     state.plots.push({ uid: state.uidCounter, x: tile.x, y: tile.y, crop: null });
   }
+  recordFarmStat(state, 'expansions');
+  recordFarmStat(state, 'farmCashSpentCents', FIRST_PARCEL_PRICE_CENTS);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'expand', amount: farmParcelSectionCount('north') }] };
 }

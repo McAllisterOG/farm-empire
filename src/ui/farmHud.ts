@@ -2,14 +2,14 @@ import type { GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
 import { farmCropUnlockInfo, farmOf, formatMoney, storageUsed } from '../core/farmBusiness';
 import { pickupCargoUsed } from '../core/farmPickup';
+import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../core/farmKnowledge';
 import { h, spriteImg } from './dom';
 
 export interface FarmHudCallbacks {
   onSelectCrop: (cropId: string) => void;
-  onSeedShop: () => void;
   onMarket: () => void;
-  onLand: () => void;
   onEquipment: () => void;
+  onFarmbook: () => void;
   onReturnFarm: () => void;
   onSave: () => void;
   onMenu: () => void;
@@ -44,6 +44,7 @@ export class FarmHud {
   private storageButton: HTMLButtonElement;
   private equipmentButton: HTMLButtonElement;
   private locationStat: HTMLElement;
+  private farmbookButton: HTMLButtonElement;
   private farmControls: HTMLElement;
   private townControls: HTMLElement;
   private mode: FarmHudMode = 'farm';
@@ -60,6 +61,7 @@ export class FarmHud {
     this.storageButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'storage-button', onclick: cb.onMarket }, h('span', {}, 'Barn'), this.storageEl) as HTMLButtonElement;
     this.equipmentButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'equipment-button', onclick: cb.onEquipment }, h('span', {}, 'Old Tractor'), this.tractorEl) as HTMLButtonElement;
     this.locationStat = h('div', { class: 'farm-stat town-location-stat hidden', 'data-testid': 'town-location-stat' }, h('span', {}, 'Location'), h('strong', {}, 'County Service Center'));
+    this.farmbookButton = h('button', { class: 'btn btn-primary farmbook-button', 'data-testid': 'farmbook-button', onclick: cb.onFarmbook }, 'Farmbook') as HTMLButtonElement;
 
     const top = h('div', { class: 'farm-hud-top' },
       h('div', { class: 'farm-brand' }, h('span', { class: 'farm-brand-mark' }, 'FE'), h('div', {},
@@ -90,10 +92,7 @@ export class FarmHud {
       h('div', { class: 'farm-selected' }, h('span', {}, 'Selected crop'), this.selectedEl),
       cropStrip,
       h('div', { class: 'farm-actions' },
-        h('button', { class: 'btn btn-primary', 'data-testid': 'seed-shop-button', onclick: cb.onSeedShop }, 'Buy Seeds'),
-        h('button', { class: 'btn', 'data-testid': 'market-button', onclick: cb.onMarket }, 'Market & Storage'),
-        h('button', { class: 'btn', 'data-testid': 'land-button', onclick: cb.onLand }, 'Land'),
-        h('button', { class: 'btn', 'data-testid': 'save-button', onclick: cb.onSave }, 'Save'),
+        this.farmbookButton,
       ),
     );
     this.townControls = h('div', { class: 'farm-hud-town-controls hidden' },
@@ -133,6 +132,12 @@ export class FarmHud {
     this.clockEl.textContent = `Day ${farm.clock.day} · ${clockText(farm.clock.minute)}`;
     this.storageEl.textContent = `${storageUsed(state)} / ${farm.storageCapacity} · P ${pickupCargoUsed(state)} / 72`;
     this.selectedEl.textContent = farmCropDef(farm.selectedCropId).name;
+    const knowledge = farmerKnowledgeSummary(state);
+    const guide = farmGuideSteps(state);
+    const nextGuide = nextFarmGuideStep(state);
+    this.farmbookButton.textContent = `Farmbook · ${guide.filter((step) => step.done).length}/${guide.length}`;
+    this.farmbookButton.title = `${knowledge.level.name}${nextGuide ? ` · Next: ${nextGuide.label}` : ' · Core route complete'}`;
+    if (this.mode === 'farm') this.brandSubEl.textContent = `${knowledge.level.name} · Farming Business`;
     this.tractorEl.textContent = runtime?.working
       ? 'Field job active'
       : runtime?.operating
@@ -147,7 +152,7 @@ export class FarmHud {
       ? 'The tractor is working section by section. Press Escape to cancel safely.'
       : runtime?.operating
         ? 'Click open ground to drive. Click an owned field parcel for batch planting or harvesting.'
-        : 'Select a crop, then click an empty field section to plant. Click a ready crop to harvest.';
+        : nextGuide ? `Next · ${nextGuide.label} — ${nextGuide.hint}` : 'Core farm route complete. Keep growing the operation your way.';
     for (const [cropId, button] of this.cropButtons) {
       const unlock = farmCropUnlockInfo(state, cropId);
       const def = farmCropDef(cropId);

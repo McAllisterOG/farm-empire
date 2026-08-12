@@ -41,8 +41,8 @@ export function farmCameraPolicy(): CameraPolicy {
     bounds: tileBoundsToWorld(property.minX, property.minY, property.maxX, property.maxY),
     fitBounds: tileBoundsToWorld(home.minX, home.minY, home.maxX, home.maxY),
     padding: 70,
-    minZoom: .38,
+    minZoom: .46,
     maxZoom: 1.15,
   };
 }
-export function townCameraPolicy(): CameraPolicy { return { bounds: tileBoundsToWorld(2, 2, 24, 18), padding: 60, minZoom: .58, maxZoom: 1.2 }; }
+export function townCameraPolicy(): CameraPolicy { return { bounds: tileBoundsToWorld(2, 2, 24, 18), padding: 60, minZoom: .72, maxZoom: 1.2 }; }
