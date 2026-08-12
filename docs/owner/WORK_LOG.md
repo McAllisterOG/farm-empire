@@ -294,3 +294,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** The primary audited derived-state authority, no-schema behavior, transaction preservation, visual/hit agreement, nearby overlap priority, UI truth, package paths, and native cleanup. No high- or medium-severity issue remains.
 - **Known limitations:** The tier is a visible land-ownership reward, not a separate renovation system. There are no interiors, rooms, household mechanics, additional home tiers, or functional bonuses.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## County Freight Board V1 - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `44c8408`
+- **Scope:** Add one repeatable town job that makes the established grow, store, load, drive, and deliver loop worth revisiting after the first Pantry story order. Preserve starting cash, crop/market values, acreage, storage, machinery, field lifecycle, farmhouse progression, and all existing transactions; no reputation, deadlines, penalties, multiple-job board, or generic quest system.
+- **Result:** Eli's Grain Exchange now posts one deterministic unlocked-crop haul per saved farm day. Acceptance locks the exact crop, quantity, and a 25% premium over the current quote; active work survives market/day changes and save/reload, requires exact pickup cargo, pays atomically once, closes the route for the completion day, and refreshes on a later day. Mae, How to Play, the Farmbook snapshot, and deterministic browser text state expose concise status. Save v12 adds only the active snapshot and last completion day with defensive migration and normalization.
+- **Verification:** 217/217 tests passed; strict typecheck, Vite production build, desktop-specific build, and diff checks passed. Browser acceptance used the physical pickup/County road and covered visible offer, acceptance, loaded readiness, exact cargo removal and payout, same-day closure, town save and safe farm reload, next-day refresh, normal and 760x640 layouts, and zero console/page errors. Screenshots and text state were inspected. The unpacked bundle uses relative assets and contains both the Board and stale-offer guard; native CDP rendered the packaged title without errors, and the literal OneDrive Desktop shortcut launched four responsive processes from the new release with zero residue after cleanup.
+- **Review:** The primary audited deterministic selection, unlock monotonicity, price snapshots, stale visible cards, active-contract day rollover, pickup-only authority, insufficient and duplicate immutability, save migration/defaults, corrupt bounds, context-safe UI, compact layout, packaged asset paths, and native cleanup. No high- or medium-severity finding remains.
+- **Artifacts:** `release/county-freight-v1/win-unpacked/Farm Empire.exe` (225,442,304 bytes) and `resources/app.asar` (1,250,857 bytes), generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets this unpacked build and its Farm Empire icon.
+- **Known limitations:** The Board intentionally offers one route at a time. It has no offer choice, deadline, penalty, negotiation, reputation, contract chain, special cargo, traffic, or hauling scene.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

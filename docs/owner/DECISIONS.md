@@ -211,3 +211,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The larger painter, interaction radius and label, farmhouse-office title, operation snapshot, land-record copy, and purchase feedback must change together so the visible reward and usable target agree.
 - Homestead Growth V1 adds no separate purchase, cash effect, save-schema field, migration, production bonus, capacity, room system, or hidden Farmer Knowledge modifier.
 - Further farmhouse tiers, renovations, interiors, household systems, and functional property bonuses remain deferred until a deliberate upgrade and economy model is approved.
+
+## 2026-08-12 - Give the proven farm one repeatable County haul
+
+**Status:** Approved by the owner
+
+- Completing the one-time County Pantry introduction unlocks one deterministic Freight Board offer per saved farm day at Eli's Grain Exchange; offers select only crops already unlocked by authoritative farm milestones.
+- Acceptance snapshots crop, exact quantity, issued day, and a fixed 25% premium over that day's posted market quote. Accepted terms persist without a deadline and do not change when the market or day advances.
+- Fulfillment requires the physical pickup at the County Service Center, consumes the exact saved crop quantity, records the current day as completed, credits integer cents atomically once, and cannot post another route until a later farm day.
+- Save v12 persists only the active contract snapshot and last completion day. Old/missing state receives no payout or completion; malformed terms fail closed within known crop, template, cargo, day, and payout bounds.
+- Multiple offers, negotiation, deadlines, penalties, reputation, contract chains, special cargo, and a generic quest system remain deferred.

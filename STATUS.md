@@ -4,16 +4,16 @@
 
 - **Date:** 2026-08-12
 - **Branch:** `codex/first-town-contact`
-- **Head:** `66c031f`
-- **Product state:** Homestead Growth V1 is complete on top of Old Tractor Restoration and Efficient Row Fieldwork. Fresh farms inherit a visibly disabled tractor repair project; manual farming and the County route unlock its one-time $1,950 restoration. Buying the existing $6,500 neighboring acreage now also transforms the humble home into a clearly wider two-story farmhouse with a gable and porch, while its interaction name, hit target, office title, and business snapshot update from the same saved land authority. No new home price, save field, or economy modifier was added; save v11 and every existing transaction remain intact.
-- **Verification:** 208/208 tests passed; strict typecheck, Vite production build, desktop-specific build, and whitespace checks passed. Browser acceptance verified the starter/expanded house comparison, exact acreage purchase to 132 sections and $0 from $6,500, updated office/hit target, save/reload, and zero console/page errors, in addition to the tractor restoration route. The unpacked x64 build under `release/homestead-growth-v1` contains relative bundled assets; native CDP visibly confirmed the packaged title and playable farm, and the literal Desktop shortcut launched four responsive processes with zero remaining after cleanup.
-- **Review:** Bounded primary audits checked tractor restoration and homestead derivation, transaction/save neutrality, fresh and old-save behavior, land authority, interaction/visual agreement, UI truth, package assets, shortcut routing, and native cleanup. No high- or medium-severity issue remains.
+- **Head:** `44c8408`
+- **Product state:** County Freight Board V1 is complete on top of Homestead Growth, Old Tractor Restoration, and Efficient Row Fieldwork. Completing the finite County Pantry introduction now unlocks one deterministic paid crop haul per farm day at Eli's Grain Exchange. Only already-unlocked crops can be offered; acceptance snapshots the crop, quantity, and a 25% premium over that day's posted price; the contract persists without a deadline and consumes exact pickup cargo for one atomic payout. Save v12 preserves active terms and same-day completion while every existing crop, field, market, land, machinery, and farmhouse transaction remains intact.
+- **Verification:** 217/217 tests passed; strict typecheck, Vite production build, desktop-specific build, and whitespace checks passed. Browser acceptance followed the physical pickup road route through offer, accept, ready, exact delivery, same-day closure, save/reload, next-day refresh, and compact 760x640 presentation with deterministic text-state agreement and zero console/page errors. The unpacked x64 build under `release/county-freight-v1` contains relative bundled assets and the new contract code; native CDP visibly confirmed the packaged title, and the literal Desktop shortcut launched four responsive processes from the new build with zero remaining after cleanup.
+- **Review:** A bounded primary audit checked deterministic offer generation, unlock filtering, quote snapshots, stale-card rejection, pickup authority, atomic and duplicate-safe fulfillment, migration/default behavior, corrupt contract bounds, UI context, compact presentation, package assets, shortcut routing, and native cleanup. No high- or medium-severity issue remains.
 
 ## Current presentation
 
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v11 adds the fresh-farm tractor restoration milestone while preserving valid pre-v11 tractors as operational; v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
+- Existing plot IDs and planted crops remain compatible. Save schema v12 adds the persistent County freight snapshot and completion day; v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
@@ -24,6 +24,7 @@
 - Farm-side Seed and Market surfaces are cargo-management points: crops and seed bags move reversibly between the barn/farm inventory and the pickup, while ordinary buying and selling are no longer available at the farm.
 - Feed & Seed purchases, Grain Exchange sales, and the County Pantry delivery require the pickup at the County Service Center. On-foot visits remain useful for dialogue and inspection but fail closed for cargo transactions.
 - Mae Carter's finite County Pantry corn order now measures real pickup corn; only Eli Morgan can consume exactly 12 hauled units and issue the atomic one-time payout.
+- After that first delivery, Eli's County Freight Board posts one deterministic unlocked-crop haul per farm day. Accepted terms retain their exact quantity and 25% posted-rate premium across later market/day changes; exact pickup delivery pays once and a new route waits until a later farm day.
 - Fresh farms inherit the Old Red Tractor in a visible repair state. The first County delivery unlocks its one-time $1,950 restoration; only then does the Equipment Desk sell the $1,250 Row-Crop Field Kit, whose bonuses apply only while the tractor is physically operated.
 - Farm crops remain ready for a generous 15-minute real-time window, then visibly wither and can be cleared without refund so field sections are never permanently blocked.
 - A true zero-asset farm may receive exactly one lifetime wheat seed from Mae; the claim is persisted and cannot be recycled through intentional crop loss.
@@ -44,7 +45,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Owner-playtest the refreshed Windows Desktop build's manual-to-mechanized progression, acreage-driven farmhouse growth, row/three-row rhythm, first-watering clarity, hauling loop, and acreage scale before selecting the evidence-based economy study or another finite package.
+No additional feature package is currently active. Owner-playtest the refreshed Windows Desktop build's daily Freight Board rhythm alongside the first County delivery, tractor restoration, row/three-row fieldwork, acreage-driven farmhouse growth, storage pressure, and pickup capacity before selecting the evidence-based economy study or another finite package.
 
 ## Known limitations
 
@@ -52,7 +53,7 @@ No additional feature package is currently active. Owner-playtest the refreshed 
 - Vehicle movement remains collision-free. Pickup gate travel follows the County road, while arbitrary yard/field clicks remain direct; trailers, implements, combines, ongoing condition, fuel, and a dealership economy remain deferred.
 - The town currently has one compact service center and one freight pickup presence, with no interiors, traffic, schedules, or broad social simulation.
 - The town remains a separate Canvas destination rather than one continuous farm-to-town regional map; surrounding houses and fields are presentation cues only.
-- The town story currently contains one deliberate first contact and one finite hauled order; there is no general quest, reputation, deadline, or repeat-contract system.
+- The County Freight Board offers one generated haul at a time and no deadline or penalty. There is no multi-job choice, negotiation, reputation, contract chain, hauling traffic, or general quest system yet.
 - Eight crops, two working acreages, one tractor kit, one storage upgrade, and one pickup provide a bounded progression loop; further land tiers, crop inputs/quality, trailers/implements, workers, and managers remain deferred.
 - The enlarged fields intentionally expose current economy/storage limits: a full 96-section planting can exceed practical starting capital and a mature tract can exceed barn capacity. Partial work is supported, but pricing, yields, storage, and machinery progression still require the planned evidence-based economy study.
 - Manual crops require one establishment watering, but recurring moisture, weather, irrigation equipment, fertilizer, soil health, and quality are not implemented. Farmer Knowledge still has no skill choices or economic modifiers.

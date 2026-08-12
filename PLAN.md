@@ -27,10 +27,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 21. **Efficient Row Fieldwork & Homestead Scale** - section, row, and three-row manual work with deterministic acreage-bounded traversal, visible selection/progress, resource-aware planting, safe partial cancellation, quieter wind-only ambience, and a corrected farmhouse/barn hierarchy.
 22. **Old Tractor Restoration V1** - a fresh-farm repair project unlocked by the first County delivery, one atomic $1,950 Equipment Desk restoration, manual-first playability, visible repair-state art and guidance, powered-work enforcement, and save-v11 grandfathering.
 23. **Homestead Growth V1** - a save-neutral starter-to-expanded farmhouse transformation derived from neighboring-acreage ownership, with matched interaction bounds, office identity, land messaging, and no new economy value or persistence field.
+24. **County Freight Board V1** - one deterministic unlocked-crop haul per farm day after the Pantry introduction, accepted quote snapshots, exact pickup-only atomic delivery, same-day replay prevention, stale-offer protection, and defensive save-v12 persistence.
 
 ## Current authorization
 
-No additional feature package is currently active. Playtest the rebuilt Windows Desktop game with section/row/three-row fieldwork, the first County delivery and tractor restoration, acreage-driven farmhouse growth, hauling, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
+No additional feature package is currently active. Playtest the rebuilt Windows Desktop game with section/row/three-row fieldwork, the first County delivery and tractor restoration, the daily Freight Board, acreage-driven farmhouse growth, hauling, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
 
 ## Later directions
 
@@ -41,6 +42,6 @@ No additional feature package is currently active. Playtest the rebuilt Windows 
 - **Town and county buildout:** add houses, roads, surrounding fields, services, and story in bounded stages. The County Service Center remains a separate scene today; a continuous farm-to-town regional map is a future architecture decision, not an assumed rewrite.
 - **Equipment progression timing:** manual fieldwork now scales from a section to three rows; fresh farms restore the inherited tractor after proving the hauling loop, and that machine combines preparation and establishment across an acreage. Improve later machinery tiers only alongside a coherent manual-to-mechanized progression plan.
 - Equipment and logistics depth after the pickup loop is exercised: distinct implements, trailers, combines, condition, and genuine dealership actions.
-- Broader or repeat contracts only after a deliberate job, logistics, and save design.
+- **Further contract depth:** Freight Board V1 now supports one persistent premium haul at a time. Multiple simultaneous jobs, deadlines, penalties, negotiation, reputation, contract chains, and special cargo still require deliberate logistics, economy, and save design.
 - Property-aware workers and managers after acreage, economy, storage, and machinery loops are proven fun.
 - Further environment art and ambient farm life after the current benchmark presentation is reviewed in play.
