@@ -171,3 +171,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Pickup gate travel uses one authoritative logical County-road route that is also rendered on screen. The cargo pad, road, fields, barn, gate, Scout, and farmyard decor must remain mutually legible and non-conflicting.
 - Starting cash remains $5,000 and the first land price remains $6,500. Crop prices, yields, barn capacity, and machinery progression were deliberately not rebalanced inside the geometry package; those relationships require the separate evidence-based economy study.
 - Further land tiers, irrigation, farmer knowledge levels, workers/managers, farmhouse upgrades, and tractor availability changes remain separate packages.
+
+## 2026-08-12 - Make the world itself the primary farm interface
+
+**Status:** Approved by the owner
+
+- Visible focal objects own their context action. One explicit hit-priority map resolves overlaps so pickup, tractor, Scout, farmhouse, pump, barn, doghouse, gateway, acreage, and field clicks cannot silently open unrelated controls.
+- A compact Farmbook consolidates progression guidance, farm records, cargo, land, road, save, and recenter routes. It replaces redundant farm-footer buttons rather than adding another persistent control cluster.
+- Farmer Knowledge V1 is derived from authoritative business stats and milestones, uses short evidence-sourced notes, and remains presentation-only. It adds no hidden economic modifier, parallel inventory, or save-schema field.
+- Farm and town pickup authority remains physical: transfers happen at the barn pad, County commerce requires the pickup in town, and the dedicated County parking bay stays separate from the return sign.
+- Deeper tutorial branches, skill effects, irrigation, workers, economy rebalance, new acreage, town interiors, and broader social systems remain separate future packages.

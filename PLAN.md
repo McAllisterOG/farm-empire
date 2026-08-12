@@ -20,16 +20,17 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 14. **Old Pickup & County Haul Loop** - an owned-from-start drivable pickup, persistent 72-unit mixed cargo, reversible barn/seed transfers, pickup-gated town commerce and County delivery, save v8, direction-aware motion, and a rebuilt Desktop release.
 15. **First-Play Usability & World Framing Repair** - bounded scene-aware cameras, dependable recentering, a persistent hamburger menu and title return, a physical barn cargo pad, context-correct pickup/tractor panels, safe gate returns, accurate watering guidance, and stronger farm/town edge framing.
 16. **Acreage & Field Geometry V2** - a 6x6 starter acreage, an 8x12 neighboring commercial tract, save-v9 legacy expansion, data-defined parcel geometry, seed/storage-aware tractor plans, a routed County road, and home-focused whole-property camera bounds.
+17. **Player Experience & Homestead Expansion V1** - world-first context interactions, compact Farmbook guidance, action-derived Farmer Knowledge, authoritative hover/hit priority, corrected pickup/town routing, denser homestead and County presentation, and refreshed Windows builds without an economy or save-schema change.
 
 ## Current authorization
 
-No new feature package is currently authorized. Playtest the rebuilt Windows Desktop game with the larger fields, then use the observed tractor pacing, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
+No new feature package is currently authorized. Playtest the rebuilt Windows Desktop game with its world-first interactions, Farmbook, hauling loop, knowledge pacing, and larger fields, then use observed friction, tractor pacing, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
 
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
 - **Farmhouse and property progression:** retain the new humble starter farmhouse as presentation-only for now; later visual tiers may reflect property growth after an upgrade/economy model is approved.
-- **Farmer Knowledge & Skills:** design an optional first-day tutorial and farm-specific character progression around authentic actions and short, evidence-sourced farming facts. Do not revive the generic legacy XP/quest systems by default.
+- **Farmer Knowledge & Skills:** V1 now derives presentation-only ranks, next steps, and evidence-sourced notes from authentic actions. A later bounded package may add optional first-day tutorial choices or explicit skills only after their effects and save model are approved; do not revive the generic legacy XP/quest systems by default.
 - **Evidence-based economy study:** keep starting cash at $5,000 while authoritative agricultural sources are used to calibrate proportional yields, quantities, storage, seed, machinery, and land relationships. Favor a fun, legible abstraction over false literal realism; do not rebalance isolated values before the study.
 - **Town and county buildout:** add houses, roads, surrounding fields, services, and story in bounded stages. The County Service Center remains a separate scene today; a continuous farm-to-town regional map is a future architecture decision, not an assumed rewrite.
 - **Equipment progression timing:** revisit whether the tractor should be available from the start and improve machinery scale/art only alongside a coherent manual-to-mechanized progression plan.
