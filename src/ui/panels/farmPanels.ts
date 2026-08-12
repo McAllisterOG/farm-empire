@@ -3,13 +3,13 @@ import { allFarmCrops, farmCropDef } from '../../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, cheapestFarmSeed, farmCropUnlockInfo, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
-import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT, OLD_TRACTOR_RESTORATION } from '../../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../../data/farmEquipment.data';
 import { farmParcelDef, farmParcelSectionCount } from '../../core/farmParcels';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
 import { countyFreightTemplate, COUNTY_FREIGHT_PREMIUM_BPS } from '../../data/countyFreight.data';
 import { countyFreightBoardState, countyFreightProgress } from '../../core/farmCountyFreight';
-import { pickupCargoUsed, pickupCropUnits, pickupSeedUnits } from '../../core/farmPickup';
+import { pickupCargoCapacity, pickupCargoUsed, pickupCropUnits, pickupSeedUnits } from '../../core/farmPickup';
 import { h, spriteImg, clearChildren } from '../dom';
 import { closePanel, openPanel } from '../modal';
 
@@ -140,7 +140,7 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   const pickupUsed = pickupCargoUsed(state);
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', { 'data-testid': 'market-cash' }, `Cash: ${formatMoney(farm.cashCents)}`),
-    h('strong', { 'data-testid': 'market-capacity' }, `Barn: ${used} / ${farm.storageCapacity} · Pickup: ${pickupUsed} / 72`),
+    h('strong', { 'data-testid': 'market-capacity' }, `Barn: ${used} / ${farm.storageCapacity} · Pickup: ${pickupUsed} / ${pickupCargoCapacity(state)}`),
     h('span', {}, context === 'town' ? (actions.pickupPresent ? 'Town services use pickup cargo only.' : 'On foot: bring the pickup to buy, sell, or deliver.') : `${storageRemaining(state)} barn capacity remaining. Load or unload cargo here; ordinary sales happen in town.`),
     ...(context === 'farm' && !actions.cargoAtPad ? [h('strong', { class: 'panel-note', 'data-testid': 'cargo-pad-guidance' }, 'Park the pickup at the barn cargo pad to load or unload.')] : []),
   ));
@@ -369,6 +369,7 @@ export interface FarmEquipmentTownActions {
   context: 'town';
   onRestoreTractor?: () => ActionResult;
   onPurchaseKit?: () => ActionResult;
+  onPurchaseTrailer?: () => ActionResult;
   dispatch?: Dispatch;
   onClose: () => void;
 }
@@ -389,6 +390,8 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
   const countyComplete = farmOf(state).townContact.status === 'completed';
   const kitOwned = farmOf(state).equipment.countyRowCropFieldKitOwned;
   const kitUnlocked = countyComplete && restored;
+  const trailerOwned = farmOf(state).equipment.countyUtilityTrailerOwned;
+  const trailerUnlocked = farmOf(state).countyFreight.lastCompletedDay > 0;
   openPanel({
     title: onFarm ? 'Farm Equipment' : 'Farm Services Equipment Desk',
     onClose: actions.onClose,
@@ -426,6 +429,21 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
           actions.dispatch?.(result);
           if (result.ok) openFarmEquipment(state, actions);
         } }, `Purchase for ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)}`)] : []),
+      ),
+      h('div', { class: 'equipment-kit', 'data-testid': 'county-utility-trailer' },
+        h('div', { class: 'farm-card-title' }, COUNTY_UTILITY_TRAILER.name),
+        h('p', {}, `One-time upgrade · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · doubles pickup cargo from ${COUNTY_UTILITY_TRAILER.fromCapacity} to ${COUNTY_UTILITY_TRAILER.toCapacity} units`),
+        h('div', { class: 'equipment-mode', 'data-testid': 'county-utility-trailer-status' }, trailerOwned
+          ? `Owned · attached · ${pickupCargoCapacity(state)} cargo units`
+          : trailerUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · complete one Freight Board haul'),
+        ...(!onFarm && !trailerOwned && trailerUnlocked && actions.context === 'town' ? [h('button', {
+          class: 'btn btn-primary', 'data-testid': 'buy-county-utility-trailer', onclick: () => {
+            const result = actions.onPurchaseTrailer?.();
+            if (!result) return;
+            actions.dispatch?.(result);
+            if (result.ok) openFarmEquipment(state, actions);
+          },
+        }, `Purchase for ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)}`)] : []),
       ),
       h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, !onFarm
         ? restored ? 'Equipment record on file - tractor operation is available back at the farm' : 'Inherited tractor on file - restoration is handled at this desk'

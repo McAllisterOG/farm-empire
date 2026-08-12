@@ -491,6 +491,7 @@ export interface FarmBusinessState {
   equipment: {
     countyRowCropFieldKitOwned: boolean;
     barnLoftExpansionOwned: boolean;
+    countyUtilityTrailerOwned: boolean;
     tractor: {
       id: string;
       name: string;

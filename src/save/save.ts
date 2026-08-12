@@ -117,6 +117,13 @@ const MIGRATIONS: Record<number, Migrator> = {
     // normalization. No offer, payout, or completion is granted by migration.
     raw.version = 12;
   },
+  12: (raw) => {
+    // Trailer ownership did not exist in v12; never grant it from a stray key.
+    const farm = raw.farm && typeof raw.farm === 'object' ? raw.farm as Record<string, unknown> : null;
+    const equipment = farm?.equipment && typeof farm.equipment === 'object' ? farm.equipment as Record<string, unknown> : null;
+    if (equipment) delete equipment.countyUtilityTrailerOwned;
+    raw.version = 13;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

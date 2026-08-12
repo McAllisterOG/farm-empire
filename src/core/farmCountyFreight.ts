@@ -84,6 +84,7 @@ export function fulfillCountyFreightContract(state: GameState, context?: CountyF
   const loaded = pickupCropUnits(state, active.cropId);
   const crop = farmCropDef(active.cropId);
   if (loaded < active.requiredUnits) return fail(`Load ${active.requiredUnits} ${crop.name} units into the pickup before delivery.`);
+  const firstFreightDelivery = farm.countyFreight.lastCompletedDay < 1;
 
   farm.pickup.cargo.crops[active.cropId] = loaded - active.requiredUnits;
   farm.countyFreight.active = null;
@@ -93,5 +94,5 @@ export function fulfillCountyFreightContract(state: GameState, context?: CountyF
   recordFarmStat(state, 'itemsSold', active.requiredUnits);
   recordFarmStat(state, 'farmCashEarnedCents', active.payoutCents);
   syncCashMirror(state);
-  return { ok: true, events: [{ type: 'toast', target: `${crop.name} freight delivered. $${(active.payoutCents / 100).toFixed(2)} received.` }] };
+  return { ok: true, events: [{ type: 'toast', target: `${crop.name} freight delivered. $${(active.payoutCents / 100).toFixed(2)} received.${firstFreightDelivery ? ' County Utility Trailer unlocked at the Equipment Desk.' : ''}` }] };
 }

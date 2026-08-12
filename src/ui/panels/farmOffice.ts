@@ -1,7 +1,7 @@
 import type { GameState } from '../../core/types';
 import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../../core/farmKnowledge';
 import { farmOf, formatMoney, storageUsed } from '../../core/farmBusiness';
-import { pickupCargoUsed } from '../../core/farmPickup';
+import { pickupCargoCapacity, pickupCargoUsed } from '../../core/farmPickup';
 import { countyFreightBoardState } from '../../core/farmCountyFreight';
 import { h } from '../dom';
 import { openPanel } from '../modal';
@@ -56,7 +56,8 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
       h('div', { class: 'farmbook-snapshot' },
         h('div', {}, h('span', {}, 'Cash'), h('strong', {}, formatMoney(farm.cashCents))),
         h('div', {}, h('span', {}, 'Barn'), h('strong', {}, `${storageUsed(state)} / ${farm.storageCapacity}`)),
-        h('div', {}, h('span', {}, 'Pickup'), h('strong', {}, `${pickupCargoUsed(state)} / 72`)),
+        h('div', {}, h('span', {}, 'Pickup'), h('strong', {}, `${pickupCargoUsed(state)} / ${pickupCargoCapacity(state)}`)),
+        h('div', {}, h('span', {}, 'Trailer'), h('strong', {}, farm.equipment.countyUtilityTrailerOwned ? 'County utility trailer' : 'Not owned')),
         h('div', {}, h('span', {}, 'Land'), h('strong', {}, farm.parcels.northOwned ? '2 acreages' : '1 acreage')),
         h('div', {}, h('span', {}, 'Tractor'), h('strong', {}, farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Restoration needed')),
         h('div', {}, h('span', {}, 'Home'), h('strong', {}, farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),

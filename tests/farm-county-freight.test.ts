@@ -132,7 +132,7 @@ describe('County Freight Board', () => {
     };
     const normalized = deserialize(JSON.stringify(corrupt), NOW + 2);
     expect(farmOf(normalized).countyFreight.active).toBeNull();
-    expect(farmOf(normalized).countyFreight.lastCompletedDay).toBe(farmOf(normalized).clock.day);
-    expect(countyFreightOffer(normalized)).toBeNull();
+    expect(farmOf(normalized).countyFreight.lastCompletedDay).toBe(0);
+    expect(countyFreightOffer(normalized)).not.toBeNull();
   });
 });

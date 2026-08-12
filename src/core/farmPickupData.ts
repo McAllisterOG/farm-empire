@@ -3,7 +3,10 @@ import { FARM_TOWN_GATE } from './townGateway';
 
 export const PICKUP_ID = 'old-pickup' as const;
 export const PICKUP_NAME = 'Old Pickup';
-export const PICKUP_CARGO_CAPACITY = 72;
+export const PICKUP_BASE_CARGO_CAPACITY = 72;
+export const PICKUP_TRAILER_CARGO_CAPACITY = 144;
+/** @deprecated Prefer pickupCargoCapacity(state) for player-facing and transaction logic. */
+export const PICKUP_CARGO_CAPACITY = PICKUP_BASE_CARGO_CAPACITY;
 // Keep the cargo pad visually clear of the barn while remaining close enough
 // that loading and unloading still reads as one compact farmyard interaction.
 export const PICKUP_START = Object.freeze({ x: 6.25, y: 5.1 });

@@ -15,7 +15,7 @@ export interface TownRenderScene {
   clockMinute: number;
   gesturingNpcId: TownNpcDef['id'] | null;
   gestureUntil: number;
-  pickup?: { x: number; y: number };
+  pickup?: { x: number; y: number; trailerOwned: boolean };
   interactionHint?: { label: string; x: number; y: number };
 }
 
@@ -100,7 +100,7 @@ export function renderTown(
   }
   if (scene.pickup) {
     const pickupScreen = project(camera, scene.pickup, true);
-    items.push({ depth: scene.pickup.x + scene.pickup.y + .3, draw: () => drawOldPickup(ctx, pickupScreen.x, pickupScreen.y, zoom * 1.24, false, false, now) });
+    items.push({ depth: scene.pickup.x + scene.pickup.y + .3, draw: () => drawOldPickup(ctx, pickupScreen.x, pickupScreen.y, zoom * 1.24, false, false, now, 1, 0, 0, 0, scene.pickup!.trailerOwned) });
   }
   const exitScreen = project(camera, TOWN_EXIT, true);
   items.push({ depth: TOWN_EXIT.x + TOWN_EXIT.y + .2, draw: () => drawTownExitSign(ctx, exitScreen.x, exitScreen.y, zoom) });

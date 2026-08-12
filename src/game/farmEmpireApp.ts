@@ -2,13 +2,13 @@ import type { ActionResult, GameState } from '../core/types';
 import { farmCropDef } from '../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
-  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
+  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseCountyUtilityTrailer, purchaseNeighborParcel, selectFarmCrop,
   issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
   syncCashMirror, ownedFarmParcelAt, planParcelWork, farmFieldCondition, tillFarmField, waterFarmCrop,
   placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
 import { farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
-import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
+import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { pickupPositionForSave } from '../core/farmPickupData';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY } from '../render/iso';
@@ -355,7 +355,7 @@ export class FarmEmpireApp {
 
   private townInteractionHintAtScreen(sx: number, sy: number): { label: string; x: number; y: number } | null {
     const point = this.renderer.camera.tilePointAt(sx, sy);
-    if (townPickupHit(point, this.pickupAtTown)) return { label: `Old Pickup · Cargo ${pickupCargoUsed(this.state)} / 72`, ...TOWN_PICKUP_PARKING };
+    if (townPickupHit(point, this.pickupAtTown)) return { label: `Old Pickup · Cargo ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)}`, ...TOWN_PICKUP_PARKING };
     const interaction = townInteractionAt(point);
     if (interaction.kind === 'npc') return { label: `${interaction.npc.name} · ${interaction.npc.role}`, x: interaction.npc.x, y: interaction.npc.y };
     if (interaction.kind === 'building') return { label: interaction.building.name, ...interaction.building.door };
@@ -592,6 +592,7 @@ export class FarmEmpireApp {
           context: 'town',
           onRestoreTractor: () => restoreOldTractor(this.state),
           onPurchaseKit: () => purchaseCountyRowCropFieldKit(this.state),
+          onPurchaseTrailer: () => purchaseCountyUtilityTrailer(this.state),
           dispatch: this.dispatch,
           onClose: () => {},
         }),
@@ -726,7 +727,7 @@ export class FarmEmpireApp {
         body: (body) => body.append(
           h('div', { class: 'equipment-card', 'data-testid': 'town-pickup-panel' },
             h('div', { class: 'pickup-panel-illustration' }, 'OLD PICKUP'),
-            h('div', { class: 'farm-card-title' }, `Cargo · ${pickupCargoUsed(this.state)} / 72`),
+            h('div', { class: 'farm-card-title' }, `Cargo · ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)}`),
             h('div', { class: 'farm-panel-summary' }, 'County services use cargo in this pickup.'),
             h('button', { class: 'btn btn-primary', onclick: () => openFarmSeedShop(this.state, this.panelActions()) }, 'Feed & Seed'),
             h('button', { class: 'btn', onclick: () => openFarmMarket(this.state, this.panelActions(), 'town') }, 'Grain Exchange'),
@@ -742,8 +743,8 @@ export class FarmEmpireApp {
       body: (body) => body.append(
         h('div', { class: 'equipment-card', 'data-testid': 'pickup-panel' },
           h('div', { class: 'pickup-panel-illustration' }, 'OLD PICKUP'),
-          h('div', { class: 'farm-card-title' }, `Cargo · ${pickupCargoUsed(this.state)} / 72`),
-          h('div', { class: 'farm-panel-summary' }, `Cargo: ${pickupCargoUsed(this.state)} / 72 units`, atPad ? 'Parked at the barn cargo pad.' : 'Park at the barn cargo pad to manage cargo.'),
+          h('div', { class: 'farm-card-title' }, `Cargo · ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)}`),
+          h('div', { class: 'farm-panel-summary' }, `Cargo: ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)} units`, atPad ? 'Parked at the barn cargo pad.' : 'Park at the barn cargo pad to manage cargo.'),
           h('button', { class: 'btn btn-primary', 'data-testid': this.operatingPickup ? 'exit-pickup' : 'operate-pickup', onclick: () => { closePanel(); this.togglePickupOperating(); } }, this.operatingPickup ? 'Exit Pickup' : 'Operate Pickup'),
           h('button', { class: 'btn', 'data-testid': 'manage-pickup-cargo', onclick: () => { closePanel(); openFarmMarket(this.state, this.panelActions(), 'farm'); } }, atPad ? 'Produce Cargo' : 'Produce Cargo · park at pad'),
           h('button', { class: 'btn', 'data-testid': 'manage-pickup-seeds', onclick: () => { closePanel(); openFarmSeedShop(this.state, this.panelActions()); } }, atPad ? 'Seed Bags' : 'Seed Bags · park at pad'),
@@ -762,7 +763,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks tractor restoration and one paid Freight Board haul per farm day at Eli\'s Grain Exchange. Save and Recenter are always available.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks tractor restoration and one paid Freight Board haul per farm day at Eli\'s Grain Exchange. Finish your first freight haul to unlock the 144-unit County Utility Trailer at Farm Services. Save and Recenter are always available.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1383,7 +1384,7 @@ export class FarmEmpireApp {
       selectedCrop: farm.selectedCropId,
       cashCents: farm.cashCents,
       barn: { used: storageUsed(this.state), capacity: farm.storageCapacity },
-      pickup: { x: farm.pickup.x, y: farm.pickup.y, operating: this.operatingPickup, atTown: this.pickupAtTown },
+      pickup: { x: farm.pickup.x, y: farm.pickup.y, operating: this.operatingPickup, atTown: this.pickupAtTown, cargoUsed: pickupCargoUsed(this.state), cargoCapacity: pickupCargoCapacity(this.state), trailerOwned: farm.equipment.countyUtilityTrailerOwned },
       tractor: { x: farm.equipment.tractor.x, y: farm.equipment.tractor.y, operating: this.operatingTractor, working: !!this.tractorJob },
       countyFreight: (() => {
         const board = countyFreightBoardState(this.state);
@@ -1430,6 +1431,15 @@ export class FarmEmpireApp {
     addButton('dev-fund-land', 'Fund land test', () => {
       farmOf(this.state).cashCents = 1_000_000;
       syncCashMirror(this.state);
+    });
+    addButton('dev-unlock-trailer', 'Unlock trailer test', () => {
+      const farm = farmOf(this.state);
+      farm.townContact.status = 'completed';
+      farm.countyFreight.active = null;
+      farm.countyFreight.lastCompletedDay = Math.max(1, farm.clock.day);
+      farm.cashCents = Math.max(farm.cashCents, 500_000);
+      syncCashMirror(this.state);
+      this.hud.update(this.state, this.tractorHudRuntime());
     });
     addButton('dev-open-first-plot', 'Open first plot', () => {
       const plot = this.state.plots[0];
@@ -1563,7 +1573,7 @@ export class FarmEmpireApp {
         clockMinute: farm.clock.minute,
         gesturingNpcId: this.townGesture?.npcId ?? null,
         gestureUntil: this.townGesture?.until ?? 0,
-        pickup: this.pickupAtTown ? { ...TOWN_PICKUP_PARKING } : undefined,
+        pickup: this.pickupAtTown ? { ...TOWN_PICKUP_PARKING, trailerOwned: farm.equipment.countyUtilityTrailerOwned } : undefined,
         interactionHint: this.townHover ?? undefined,
       };
       return scene;
@@ -1589,6 +1599,7 @@ export class FarmEmpireApp {
         y: farm.pickup.y,
         operating: this.operatingPickup,
         moving: !!this.pickupTarget,
+        trailerOwned: farm.equipment.countyUtilityTrailerOwned,
         headingX: this.pickupMotion.headingX,
         headingY: this.pickupMotion.headingY,
         steer: this.pickupMotion.steer,

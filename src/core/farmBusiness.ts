@@ -4,9 +4,9 @@ import type {
 import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
-import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
 import { COUNTY_FREIGHT_TEMPLATES } from '../data/countyFreight.data';
-import { PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
+import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, PICKUP_TRAILER_CARGO_CAPACITY, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
 import {
   STARTER_FIELD_TILES, ensureOwnedFarmParcelPlots, farmParcelAtTile,
   farmParcelSectionCount, farmParcelTiles, type FarmParcelId,
@@ -117,6 +117,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     equipment: {
       countyRowCropFieldKitOwned: false,
       barnLoftExpansionOwned: false,
+      countyUtilityTrailerOwned: false,
       tractor: {
         id: 'old-tractor',
         name: 'Old Red Tractor',
@@ -130,7 +131,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
   };
 }
 
-function normalizePickup(rawPickup: unknown): FarmBusinessState['pickup'] {
+function normalizePickup(rawPickup: unknown, capacity: number): FarmBusinessState['pickup'] {
   const raw = objectRecord(rawPickup);
   const rawCargo = objectRecord(raw.cargo);
   const normalizeBag = (value: unknown): Record<string, number> => {
@@ -149,13 +150,13 @@ function normalizePickup(rawPickup: unknown): FarmBusinessState['pickup'] {
   let used = 0;
   for (const def of allFarmCrops()) {
     const cropCount = rawCrops[def.id] ?? 0;
-    const available = Math.floor(Math.max(0, PICKUP_CARGO_CAPACITY - used) / def.storageUnitsPerItem);
+    const available = Math.floor(Math.max(0, capacity - used) / def.storageUnitsPerItem);
     const kept = Math.min(cropCount, available);
     if (kept > 0) crops[def.id] = kept;
     used += kept * def.storageUnitsPerItem;
   }
   for (const def of allFarmCrops()) {
-    const available = Math.max(0, PICKUP_CARGO_CAPACITY - used);
+    const available = Math.max(0, capacity - used);
     const kept = Math.min(rawSeeds[def.id] ?? 0, available);
     if (kept > 0) seeds[def.id] = kept;
     used += kept;
@@ -181,6 +182,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const rawTractor = objectRecord(rawEquipment.tractor);
   const rawKitOwned = rawEquipment.countyRowCropFieldKitOwned;
   const rawLoftOwned = rawEquipment.barnLoftExpansionOwned;
+  const trailerOwned = rawEquipment.countyUtilityTrailerOwned === true;
   const townStatus = objectRecord(raw.townContact).status;
   const rawCountyFreight = objectRecord(raw.countyFreight);
   const rawSeeds = objectRecord(raw.seeds);
@@ -233,7 +235,12 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     && freightRequiredUnits === freightTemplate.requiredUnits
     && freightRequiredUnits * freightDef.storageUnitsPerItem <= PICKUP_CARGO_CAPACITY
     && freightPayoutCents >= 1 && freightPayoutCents <= freightRequiredUnits * freightDef.basePriceCents * 2;
-  const lastCompletedDay = Math.min(clockDay, clampInt(rawCountyFreight.lastCompletedDay, 0));
+  const rawLastCompletedDay = rawCountyFreight.lastCompletedDay;
+  const lastCompletedDay = Number.isInteger(rawLastCompletedDay)
+    && Number(rawLastCompletedDay) >= 1
+    && Number(rawLastCompletedDay) <= clockDay
+    ? Number(rawLastCompletedDay)
+    : 0;
   state.farm = {
     cashCents: clampInt(raw.cashCents, STARTING_CASH_CENTS),
     seeds,
@@ -241,7 +248,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     storageCapacity: loftOwned ? BARN_LOFT_EXPANSION.toCapacity : STARTING_STORAGE_CAPACITY,
     fieldConditions: {},
     countyReliefClaimed: raw.countyReliefClaimed === true,
-    pickup: normalizePickup(raw.pickup),
+    pickup: normalizePickup(raw.pickup, trailerOwned ? PICKUP_TRAILER_CARGO_CAPACITY : PICKUP_BASE_CARGO_CAPACITY),
     selectedCropId,
     townContact: { status: townStatus === 'offered' || townStatus === 'active' || townStatus === 'completed' ? townStatus : 'unmet' },
     countyFreight: {
@@ -271,6 +278,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     equipment: {
       countyRowCropFieldKitOwned: rawKitOwned === true,
       barnLoftExpansionOwned: loftOwned,
+      countyUtilityTrailerOwned: trailerOwned,
       tractor: {
         id: String(rawTractor.id || defaults.equipment.tractor.id),
         name: String(rawTractor.name || defaults.equipment.tractor.name),
@@ -550,6 +558,18 @@ export function purchaseCountyRowCropFieldKit(state: GameState): ActionResult {
   recordFarmStat(state, 'farmCashSpentCents', COUNTY_ROW_CROP_FIELD_KIT.priceCents);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: 'County Row-Crop Field Kit purchased and installed.' }] };
+}
+
+export function purchaseCountyUtilityTrailer(state: GameState): ActionResult {
+  const farm = farmOf(state);
+  if (farm.countyFreight.lastCompletedDay < 1) return fail('Complete one County Freight Board haul before buying the utility trailer.');
+  if (farm.equipment.countyUtilityTrailerOwned) return fail('The County Utility Trailer is already owned.');
+  if (farm.cashCents < COUNTY_UTILITY_TRAILER.priceCents) return fail('Not enough cash for the County Utility Trailer.');
+  farm.cashCents -= COUNTY_UTILITY_TRAILER.priceCents;
+  farm.equipment.countyUtilityTrailerOwned = true;
+  recordFarmStat(state, 'farmCashSpentCents', COUNTY_UTILITY_TRAILER.priceCents);
+  syncCashMirror(state);
+  return { ok: true, events: [{ type: 'toast', target: 'County Utility Trailer purchased. Pickup cargo capacity is now 144.' }] };
 }
 
 function farmCropReady(plot: FarmPlot, now: number): boolean {

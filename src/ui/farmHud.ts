@@ -1,7 +1,7 @@
 import type { GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
 import { farmCropUnlockInfo, farmOf, formatMoney, storageUsed } from '../core/farmBusiness';
-import { pickupCargoUsed } from '../core/farmPickup';
+import { pickupCargoCapacity, pickupCargoUsed } from '../core/farmPickup';
 import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../core/farmKnowledge';
 import { h, spriteImg } from './dom';
 
@@ -136,7 +136,7 @@ export class FarmHud {
     const farm = farmOf(state);
     this.cashEl.textContent = formatMoney(farm.cashCents);
     this.clockEl.textContent = `Day ${farm.clock.day} · ${clockText(farm.clock.minute)}`;
-    this.storageEl.textContent = `${storageUsed(state)} / ${farm.storageCapacity} · P ${pickupCargoUsed(state)} / 72`;
+    this.storageEl.textContent = `${storageUsed(state)} / ${farm.storageCapacity} · P ${pickupCargoUsed(state)} / ${pickupCargoCapacity(state)}`;
     this.selectedEl.textContent = farmCropDef(farm.selectedCropId).name;
     const knowledge = farmerKnowledgeSummary(state);
     const guide = farmGuideSteps(state);

@@ -4,9 +4,9 @@ import { farmCropDefOrNull } from './registry';
 import { farmOf, storageUsed, syncCashMirror } from './farmBusiness';
 import { recordFarmStat } from './farmKnowledge';
 
-import { PICKUP_CARGO_CAPACITY, pickupAtCargoPad } from './farmPickupData';
+import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_TRAILER_CARGO_CAPACITY, pickupAtCargoPad } from './farmPickupData';
 
-export { PICKUP_CARGO_CAPACITY } from './farmPickupData';
+export { PICKUP_BASE_CARGO_CAPACITY, PICKUP_TRAILER_CARGO_CAPACITY } from './farmPickupData';
 
 function validCount(value: number): boolean {
   return Number.isSafeInteger(value) && value > 0;
@@ -35,8 +35,14 @@ export function pickupCargoUsed(state: GameState): number {
   return used;
 }
 
+export function pickupCargoCapacity(state: GameState): number {
+  return farmOf(state).equipment.countyUtilityTrailerOwned
+    ? PICKUP_TRAILER_CARGO_CAPACITY
+    : PICKUP_BASE_CARGO_CAPACITY;
+}
+
 export function pickupCargoRemaining(state: GameState): number {
-  return Math.max(0, PICKUP_CARGO_CAPACITY - pickupCargoUsed(state));
+  return Math.max(0, pickupCargoCapacity(state) - pickupCargoUsed(state));
 }
 
 export function pickupHasCargo(state: GameState): boolean {

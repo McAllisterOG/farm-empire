@@ -19,3 +19,11 @@ export const BARN_LOFT_EXPANSION = {
   fromCapacity: 150,
   toCapacity: 200,
 } as const;
+
+export const COUNTY_UTILITY_TRAILER = {
+  id: 'county-utility-trailer',
+  name: 'County Utility Trailer',
+  priceCents: 240_000,
+  fromCapacity: 72,
+  toCapacity: 144,
+} as const;
