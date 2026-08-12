@@ -158,3 +158,16 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The hand pump remains decorative until irrigation is deliberately designed; player guidance must say that crops currently grow automatically.
 - The humble farmhouse, road, town-edge houses, and distant field cues are presentation-only. The town keeps exactly three functional services and remains a separate scene.
 - Starting cash remains $5,000. Larger acreage, farmhouse upgrades, farmer knowledge levels, economy research, and starter-equipment timing are recorded future packages rather than being silently folded into this repair.
+
+## 2026-08-12 - Establish commercial-scale working acreage
+
+**Status:** Approved by the owner
+
+- The starter acreage is now 6x6, or 36 workable field sections. The neighboring acreage is 8x12, or 96 sections, making it 2.67 times the starter's working area. This supersedes the earlier 3x3 parcel geometry while retaining `field section` as the individual workable unit.
+- Parcel rectangles and labels are data-defined and shared by plot creation, ownership lookup, purchase, rendering, input, tractor planning, and tests; new acreage must not be recreated through scattered coordinate constants.
+- Save schema v9 adds missing sections for every owned acreage without replacing existing plot UIDs, crops, cargo, or business state. Legacy gate/player relocation is a one-time v8-to-v9 migration concern rather than a rule applied to every later load.
+- Tractor acreage plans remain deterministic and serpentine, but stop at the selected crop's actual seed count or the barn's actual remaining capacity. The vehicle must not traverse dozens of impossible actions merely to report skips.
+- The whole property has bounded camera and terrain limits, while the default recenter uses a separate homestead-focused fit. Larger acreage should feel physical without turning the farm back into a tiny island in empty space.
+- Pickup gate travel uses one authoritative logical County-road route that is also rendered on screen. The cargo pad, road, fields, barn, gate, Scout, and farmyard decor must remain mutually legible and non-conflicting.
+- Starting cash remains $5,000 and the first land price remains $6,500. Crop prices, yields, barn capacity, and machinery progression were deliberately not rebalanced inside the geometry package; those relationships require the separate evidence-based economy study.
+- Further land tiers, irrigation, farmer knowledge levels, workers/managers, farmhouse upgrades, and tractor availability changes remain separate packages.

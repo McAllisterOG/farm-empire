@@ -4,16 +4,16 @@
 
 - **Date:** 2026-08-12
 - **Branch:** `codex/first-town-contact`
-- **Head:** `f3a687c`
-- **Product state:** The physical farm/town hauling loop now has a first-play usability repair: fitted and bounded cameras, dependable recovery controls, title return without quitting, a dedicated barn cargo pad, context-correct vehicle panels, safe pickup/gateway separation, explicit watering guidance, and fuller farm/town edge framing. Save v8 and all business transactions remain compatible.
-- **Verification:** 170/170 tests passed; strict typecheck, Vite production build, whitespace checks, and full npm audit with zero findings passed. Browser acceptance covered fresh $5,000 creation, farm/town framing at 2048x1152, 1280x720, and 760x640, aggressive pan clamping and recentering, hamburger menu/title return/re-entry, pickup and tractor panel separation, exact barn/pickup transfers, cargo-pad authority and away-from-pad rejection, pickup gate travel and safe return, pump guidance, responsive town footer, and zero console warnings/errors. All three Windows x64 deliverables were rebuilt; the exact OneDrive Desktop shortcut opened one responsive packaged window and closed normally with zero residual game processes, while target, working directory, icon, executable, and app bundle were read back successfully.
-- **Review:** One bounded Luna Medium writer completed the repair. Independent Luna Medium review found stale cross-scene camera restoration and active-scene resize framing; both were repaired. Primary acceptance then caught and repaired a core/render dependency, on-foot town-save pickup teleport, input-listener duplication, cargo-pad/locked-field overlap, the road crossing the locked parcel, and legacy gate-position conflicts while preserving cargo.
+- **Head:** `1e18b3c`
+- **Product state:** Acreage & Field Geometry V2 is complete. A fresh farm now starts with a 6x6, 36-section working acreage and can buy an 8x12, 96-section neighboring commercial tract. Save v9 expands owned legacy land without replacing existing plots or crops, tractor jobs stop at real seed/storage limits, the County road routes around both fields, and the bounded camera keeps the homestead readable without shrinking the new property back into a miniature map.
+- **Verification:** 177/177 tests passed; strict typecheck, Vite production build, whitespace checks, and full npm audit with zero findings passed. Browser acceptance covered fresh and expanded acreage at 2048x1152, 1280x720, and 760x640; the 96-section purchase; seed-limited 6x6 and 8x12 tractor plans; a completed neighboring-field tractor job; the visible pickup cargo pad and transfer UI; menu/recenter recovery; and expanded-farm save/reload. The unpacked, portable, and NSIS x64 builds were rebuilt. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the current unpacked executable and launched one responsive native window; only the new test processes were closed.
+- **Review:** A bounded adversarial review found two migration-only persistence hazards, a corrupt UID-counter failure, a render/logical road-clearance mismatch, and over-broad camera fitting. The repair moved legacy relocation to the v8-to-v9 migration only, preserved ordinary v9 pickup/player positions, hardened acreage UID allocation, aligned decor clearance with presentation scale, and separated whole-property bounds from the default home focus.
 
 ## Current presentation
 
-- A saved logical plot now presents as one large 2.75-world-tile field section.
-- Each owned parcel reads as a 3x3 block of large field sections on a flat rectangular mainland.
-- Saved coordinates, economy, crop counts, land ownership, and tractor jobs remain compatible; save schema v8 adds only the normalized pickup position and cargo while preserving the existing contact, field-kit, relief, loft, and catalog state.
+- A saved logical plot presents as one large 2.75-world-tile field section.
+- The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
+- Existing plot IDs and planted crops remain compatible. Save schema v9 adds missing owned acreage sections defensively while preserving pickup cargo, contact, field-kit, relief, loft, and catalog state.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
@@ -34,22 +34,22 @@
 - Farm Empire now runs from `Farm Empire.lnk` on the real Windows Desktop without a terminal, browser tab, development server, or internet. The packaged shell loads only bundled files, keeps Node unavailable to game content, and stores saves under the stable `%APPDATA%\Farm Empire` profile.
 - Farm and town cameras now fit their current scene, clamp panning so the playable mainland cannot be lost, refit on resize, and expose a persistent top-right menu with Resume, Save, Recenter, How to Play, and Save & Return to Farms.
 - The pickup now parks at a visible barn cargo pad that is clear of the neighboring field and town gate. Produce/seed transfer is available only there, with explicit guidance elsewhere; old saves parked exactly under the gate sign normalize safely to the pad without losing cargo.
-- A humble presentation-only farmhouse, expanded town-edge homes/field cues, and a routed two-layer farm road reduce empty visual space without inventing new services, changing saves, or crossing the locked parcel.
+- A humble presentation-only farmhouse, expanded town-edge homes/field cues, and one authoritative waypointed County road reduce empty visual space without inventing new services or crossing either workable acreage.
 - The hand pump now states that watering is not yet a gameplay system and crops currently grow automatically.
 
 ## Immediate authorized work
 
-No new feature package is authorized. Owner-playtest the refreshed Windows Desktop build's menu, camera, cargo pad, hauling route, and first farm/town loop before selecting Acreage & Field Geometry V2, Farmer Knowledge & Skills, or another finite package.
+No new feature package is authorized. Owner-playtest the refreshed Windows Desktop build's 6x6 starter acreage, 8x12 expansion, tractor pacing, storage pressure, and camera framing before selecting the evidence-based economy study, Farmer Knowledge & Skills, or another finite package.
 
 ## Known limitations
 
 - Equipment modal state can remain stale during standalone driving until reopened.
-- Vehicle movement remains direct and collision-free; routed roads, trailers, implements, combines, condition, fuel, and a dealership economy remain deferred.
+- Vehicle movement remains collision-free. Pickup gate travel follows the County road, while arbitrary yard/field clicks remain direct; trailers, implements, combines, condition, fuel, and a dealership economy remain deferred.
 - The town currently has one compact service center and one freight pickup presence, with no interiors, traffic, schedules, or broad social simulation.
 - The town remains a separate Canvas destination rather than one continuous farm-to-town regional map; surrounding houses and fields are presentation cues only.
 - The town story currently contains one deliberate first contact and one finite hauled order; there is no general quest, reputation, deadline, or repeat-contract system.
-- Eight crops, one neighboring parcel, one tractor kit, one storage upgrade, and one pickup provide a bounded progression loop; additional acreage, crop inputs/quality, trailers/implements, workers, and managers remain deferred.
-- Current field geometry is still much smaller than the owner's desired future acreage. Expanding it safely requires a coordinated property, save, tractor-time, yield, storage, and economy design.
+- Eight crops, two working acreages, one tractor kit, one storage upgrade, and one pickup provide a bounded progression loop; further land tiers, crop inputs/quality, trailers/implements, workers, and managers remain deferred.
+- The enlarged fields intentionally expose current economy/storage limits: a full 96-section planting can exceed practical starting capital and a mature tract can exceed barn capacity. Partial work is supported, but pricing, yields, storage, and machinery progression still require the planned evidence-based economy study.
 - Watering/irrigation and farmer knowledge levels are not implemented. The pump is decorative and guidance now says so accurately.
 - The humble farmhouse has no upgrade mechanics yet, and the correct starting availability/timing of the tractor remains an open progression decision.
 - Starting cash remains $5,000; no economy values were changed during this repair, pending an evidence-based proportional economy study.
