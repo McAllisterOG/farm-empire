@@ -16,7 +16,7 @@ describe('Old Tractor Restoration', () => {
     const state = freshFarm();
     const farm = farmOf(state);
     const plot = state.plots[0];
-    expect(SAVE_VERSION).toBe(13);
+    expect(SAVE_VERSION).toBe(14);
     expect(farm.equipment.tractor.status).toBe('maintenance');
     expect(planParcelWork(state, 'starter', NOW).orderedPlotUids).toEqual([]);
     farm.seeds.crop_corn = 2;

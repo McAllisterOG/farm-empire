@@ -19,6 +19,7 @@ export interface FarmLandmarks {
   doghouse: FarmPoint;
   scoutHome: FarmPoint;
   cargoPad: FarmPoint;
+  farmhandHome: FarmPoint;
 }
 
 export type FarmhousePresentationTier = 'starter' | 'expanded';
@@ -39,11 +40,13 @@ export function farmLandmarks(): FarmLandmarks {
   const doghouse = { x: 9.2, y: 13.55 };
   const scoutHome = { x: 9.15, y: 13.1 };
   const cargoPad = PICKUP_CARGO_PAD;
+  const farmhandHome = { x: 4.3, y: 5.65 };
   return {
     farmhouse,
     doghouse,
     scoutHome,
     cargoPad,
+    farmhandHome,
   };
 }
 

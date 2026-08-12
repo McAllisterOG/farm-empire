@@ -34,6 +34,7 @@ export interface SceneActor {
   walking: boolean;
   name?: string;
   facing?: FarmFacing;
+  variant?: 'owner' | 'farmhand';
 }
 
 /** 渲染层看到的统一场景描述 */
@@ -78,6 +79,8 @@ export interface RenderScene {
     destination?: { kind: 'walk' | 'pickup' | 'tractor'; x: number; y: number };
     manualAction?: { kind: ManualFieldActionKind; x: number; y: number; progress: number };
     manualSelection?: { x: number; y: number }[];
+    farmhandAction?: { kind: ManualFieldActionKind; x: number; y: number; progress: number };
+    farmhandSelection?: { x: number; y: number }[];
   };
   /** Optional isolated County Service Center scene; never serialized. */
   town?: TownRenderScene;
@@ -480,6 +483,12 @@ export class Renderer {
       ctx.stroke();
       ctx.restore();
     }
+    for (const plot of scene.farm!.farmhandSelection ?? []) {
+      farmFootprintPath(ctx, camera, farmPlotFootprint(plot));
+      ctx.fillStyle = 'rgba(94, 145, 79, .12)'; ctx.fill();
+      ctx.save(); ctx.setLineDash([Math.max(4, 7 * zoom), Math.max(3, 5 * zoom)]);
+      ctx.strokeStyle = 'rgba(126, 184, 104, .9)'; ctx.lineWidth = Math.max(1.5, zoom * 2); ctx.stroke(); ctx.restore();
+    }
 
     if (scene.hover) {
       farmFootprintPath(ctx, camera, farmPlotFootprint({ x: scene.hover.tx, y: scene.hover.ty }));
@@ -533,7 +542,7 @@ export class Renderer {
       const point = farmWorldPoint(actor);
       items.push({ depth: point.x + point.y + 0.4, draw: () => {
         const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y) + TILE_H / 2);
-        drawFarmFarmer(ctx, sx, sy, zoom, actor.avatar, actor.facing ?? 'south', actor.walking ? Math.floor(now / 100) % FARM_WALK_FRAME_COUNT : 0, now);
+        drawFarmFarmer(ctx, sx, sy, zoom, actor.avatar, actor.facing ?? 'south', actor.walking ? Math.floor(now / 100) % FARM_WALK_FRAME_COUNT : 0, now, actor.variant ?? 'owner');
         if (actor.name) drawFarmName(ctx, sx, sy, actor.name, zoom);
       } });
     }
@@ -542,6 +551,22 @@ export class Renderer {
       const point = farmWorldPoint(action);
       items.push({
         depth: point.x + point.y + .42,
+        draw: () => drawManualFieldAction(
+          ctx,
+          camera.sx(isoX(point.x, point.y)),
+          camera.sy(isoY(point.x, point.y) + TILE_H / 2),
+          zoom,
+          now,
+          action.kind,
+          action.progress,
+        ),
+      });
+    }
+    if (scene.farm!.farmhandAction) {
+      const action = scene.farm!.farmhandAction;
+      const point = farmWorldPoint(action);
+      items.push({
+        depth: point.x + point.y + .43,
         draw: () => drawManualFieldAction(
           ctx,
           camera.sx(isoX(point.x, point.y)),
@@ -846,19 +871,19 @@ function drawFarmDoghouse(ctx: CanvasRenderingContext2D, x: number, y: number, z
   ctx.fillStyle = '#f0d39a'; ctx.font = '700 7px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('SCOUT', 0, -31); ctx.restore();
 }
 
-function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, avatar: AvatarConfig, facing: FarmFacing, frame: number, now: number): void {
+function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, avatar: AvatarConfig, facing: FarmFacing, frame: number, now: number, variant: 'owner' | 'farmhand' = 'owner'): void {
   const walk = frame % FARM_WALK_FRAME_COUNT; const bob = walk ? (walk === 1 ? -2 : walk === 3 ? 1 : 0) : Math.sin(now / 700) * .8;
   const skin = avatar.skin.includes('deep') ? '#7a4d38' : avatar.skin.includes('tan') ? '#bd8056' : '#f0c29b';
   const hair = avatar.hair.includes('black') ? '#25201e' : '#70422c';
   ctx.save(); ctx.translate(x, y + bob * zoom); ctx.scale(zoom * 2, zoom * 2);
   ctx.fillStyle = 'rgba(38,30,24,.22)'; ctx.beginPath(); ctx.ellipse(0, 2, 16, 5, 0, 0, Math.PI * 2); ctx.fill();
   const swing = walk ? (walk % 2 ? 4 : -4) : 0;
-  ctx.strokeStyle = '#365b9a'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-5, -20); ctx.lineTo(-7 + swing, -8); ctx.moveTo(5, -20); ctx.lineTo(7 - swing, -8); ctx.stroke();
+  ctx.strokeStyle = variant === 'farmhand' ? '#48633f' : '#365b9a'; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-5, -20); ctx.lineTo(-7 + swing, -8); ctx.moveTo(5, -20); ctx.lineTo(7 - swing, -8); ctx.stroke();
   ctx.strokeStyle = '#5a3825'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(-4, -9); ctx.lineTo(-5 - swing, 0); ctx.moveTo(4, -9); ctx.lineTo(5 + swing, 0); ctx.stroke();
-  ctx.fillStyle = '#3e78a8'; ctx.fillRect(-9, -29, 18, 21); ctx.fillStyle = '#f0dfb5'; ctx.fillRect(-5, -29, 10, 13); ctx.fillStyle = '#d99b3d'; ctx.fillRect(-9, -29, 18, 4);
+  ctx.fillStyle = variant === 'farmhand' ? '#c98f35' : '#3e78a8'; ctx.fillRect(-9, -29, 18, 21); ctx.fillStyle = '#f0dfb5'; ctx.fillRect(-5, -29, 10, 13); ctx.fillStyle = variant === 'farmhand' ? '#577044' : '#d99b3d'; ctx.fillRect(-9, -29, 18, 4);
   ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(0, -38, 9, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = hair; ctx.beginPath(); ctx.arc(0, -42, 9, Math.PI, 0); ctx.fill();
-  ctx.fillStyle = '#c58a2e'; ctx.fillRect(-11, -49, 22, 4); ctx.fillRect(-6, -54, 12, 7);
+  ctx.fillStyle = variant === 'farmhand' ? '#4f6c43' : '#c58a2e'; ctx.fillRect(-11, -49, 22, 4); ctx.fillRect(-6, -54, 12, 7);
   if (facing !== 'north') { ctx.fillStyle = '#fff'; const eyeX = facing === 'east' ? 3 : facing === 'west' ? -3 : 0; ctx.fillRect(eyeX - 2, -39, 2, 2); }
   if (facing === 'south') { ctx.fillStyle = '#fff'; ctx.fillRect(2, -39, 2, 2); ctx.strokeStyle = '#9f5d4e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, -35, 3, 0, Math.PI); ctx.stroke(); }
   if (facing === 'north') { ctx.fillStyle = hair; ctx.fillRect(-8, -43, 16, 10); ctx.strokeStyle = '#f0dfb5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5, -28); ctx.lineTo(-5, -18); ctx.moveTo(5, -28); ctx.lineTo(5, -18); ctx.stroke(); }

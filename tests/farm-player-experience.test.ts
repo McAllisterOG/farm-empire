@@ -82,6 +82,17 @@ describe('authoritative farm object interactions', () => {
     expect(farmInteractionAtWorldPoint(state, farmWorldPoint(FARM_TOWN_GATE), rt)?.kind).toBe('pickup');
   });
 
+  it('gives the hired farmhand a distinct interaction target without outranking vehicles', () => {
+    const state = makeFarm();
+    const rt = runtime(state);
+    const farmhand = { x: 4.3, y: 5.65 };
+    expect(farmInteractionAtWorldPoint(state, farmWorldPoint(farmhand), { ...rt, farmhand })).toMatchObject({
+      kind: 'farmhand',
+      label: 'Mara Bell · County Farmhand',
+    });
+    expect(farmInteractionAtWorldPoint(state, farmWorldPoint(farmhand), { ...rt, farmhand, pickup: farmhand })?.kind).toBe('pickup');
+  });
+
   it('routes each visible homestead landmark to its own concise action target', () => {
     const state = makeFarm();
     const rt = runtime(state);

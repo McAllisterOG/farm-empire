@@ -7,7 +7,7 @@ import {
   syncCashMirror, ownedFarmParcelAt, planParcelWork, farmFieldCondition, tillFarmField, waterFarmCrop,
   placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
-import { farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
+import { ensureOwnedFarmParcelPlots, farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { pickupPositionForSave } from '../core/farmPickupData';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
@@ -24,8 +24,10 @@ import {
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
 import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
+import { hireFirstFarmhand, startFarmhandShift, type FarmhandWorkKind } from '../core/farmWorkforce';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import type { TownNpcDef, TownServiceId } from '../data/town.data';
+import { FIRST_FARMHAND } from '../data/farmWorkforce.data';
 import type { FarmFacing } from '../render/farmSprites';
 import { farmInteractionAtWorldPoint, type FarmInteractionTarget } from '../render/farmInteractions';
 import {
@@ -39,6 +41,7 @@ import {
   openCountyWorkOrder, openFarmEquipment, openFarmLand, openFarmMarket, openFarmSeedShop, type FarmPanelActions,
 } from '../ui/panels/farmPanels';
 import { openFarmOffice } from '../ui/panels/farmOffice';
+import { openFarmWorkforce } from '../ui/panels/farmWorkforce';
 import { saveToSlot } from '../save/save';
 import { h } from '../ui/dom';
 
@@ -86,6 +89,17 @@ interface ManualFieldJob {
   lastFailure?: string;
 }
 
+interface FarmhandJob {
+  kind: FarmhandWorkKind;
+  parcelId: FarmParcelId;
+  cropId?: string;
+  targetPlotUids: number[];
+  nextIndex: number;
+  completed: number;
+  skipped: number;
+  lastFailure?: string;
+}
+
 type FarmEmpireMode = 'farm' | 'town';
 
 interface CameraSnapshot { cx: number; cy: number; zoom: number; viewW: number; viewH: number }
@@ -124,6 +138,11 @@ export class FarmEmpireApp {
   private tractorJob: TractorJob | null = null;
   private manualFieldAction: RunningManualFieldAction | null = null;
   private manualFieldJob: ManualFieldJob | null = null;
+  private farmhandActor: SceneActor;
+  private farmhandFacing: FarmFacing = 'south';
+  private farmhandTarget: { x: number; y: number; plotUid?: number } | null = null;
+  private farmhandAction: RunningManualFieldAction | null = null;
+  private farmhandJob: FarmhandJob | null = null;
   private equipmentPanelOpen = false;
   private running = true;
   private raf = 0;
@@ -157,6 +176,8 @@ export class FarmEmpireApp {
     };
     this.townActor = { avatar: state.player.avatar, ...TOWN_SPAWN, walking: false };
     const scoutHome = farmLandmarks().scoutHome;
+    const farmhandHome = farmLandmarks().farmhandHome;
+    this.farmhandActor = { avatar: FIRST_FARMHAND.avatar, ...farmhandHome, walking: false, name: FIRST_FARMHAND.name, variant: 'farmhand' };
     this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
@@ -348,6 +369,7 @@ export class FarmEmpireApp {
     return farmInteractionAtWorldPoint(this.state, world, {
       pickup: farm.pickup,
       tractor: farm.equipment.tractor,
+      farmhand: farm.workforce.farmhandHired ? this.farmhandActor : undefined,
       scout: this.scout,
       now: this.gameNow(),
     });
@@ -432,6 +454,7 @@ export class FarmEmpireApp {
         toast('Walk cancelled.', 'good');
       } else if (isActionMenuOpen()) hideActionMenu();
       else if (isPanelOpen()) closePanel();
+      else if (this.farmhandJob) this.cancelFarmhandJob();
     };
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
@@ -476,6 +499,7 @@ export class FarmEmpireApp {
     const interaction = farmInteractionAtWorldPoint(this.state, worldPoint, {
       pickup: farm.pickup,
       tractor: farm.equipment.tractor,
+      farmhand: farm.workforce.farmhandHired ? this.farmhandActor : undefined,
       scout: this.scout,
       now: this.gameNow(),
     });
@@ -484,6 +508,11 @@ export class FarmEmpireApp {
       return;
     }
     if (interaction?.kind === 'tractor') { this.openEquipmentPanel(); return; }
+    if (interaction?.kind === 'farmhand') {
+      if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to talk with Mara.', 'bad'); return; }
+      this.walkNear(interaction.point.x, interaction.point.y, () => this.openWorkforcePanel('farm'));
+      return;
+    }
     if (interaction?.kind === 'scout' || interaction?.kind === 'doghouse') {
       if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to visit Scout.', 'bad'); return; }
       this.scoutWaitingForScratch = true;
@@ -513,8 +542,12 @@ export class FarmEmpireApp {
       return;
     }
     if (interaction?.kind === 'field' && interaction.plotUid !== undefined) {
+      const parcelId = ownedFarmParcelAt(this.state, interaction.point.x, interaction.point.y);
+      if (parcelId && this.farmhandJob?.parcelId === parcelId) {
+        toast(`${FIRST_FARMHAND.name} is working this acreage. Use the other field or stop her assignment from Workforce.`, 'bad');
+        return;
+      }
       if (this.operatingTractor) {
-        const parcelId = ownedFarmParcelAt(this.state, interaction.point.x, interaction.point.y);
         if (parcelId) this.openTractorParcelMenu(parcelId, interaction.point.x, interaction.point.y, sx, sy);
       } else if (this.operatingPickup) this.drivePickupTo(interaction.point.x, interaction.point.y);
       else this.walkNear(interaction.point.x, interaction.point.y, () => this.openPlotMenu(interaction.plotUid!, sx, sy));
@@ -597,6 +630,7 @@ export class FarmEmpireApp {
           onClose: () => {},
         }),
       },
+      { label: 'Workforce Desk', onClick: () => this.openWorkforcePanel('town') },
       { label: 'County Work Order', onClick: () => this.openCountyWorkOrder() },
     ]);
   }
@@ -763,7 +797,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks tractor restoration and one paid Freight Board haul per farm day at Eli\'s Grain Exchange. Finish your first freight haul to unlock the 144-unit County Utility Trailer at Farm Services. Save and Recenter are always available.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks tractor restoration and one paid Freight Board haul per farm day at Eli\'s Grain Exchange. Finish your first freight haul to unlock the 144-unit County Utility Trailer at Farm Services.'), h('p', {}, 'After the County introduction and neighboring acreage purchase, hire Mara at the Farm Services Workforce Desk. Her daily shift can complete whole-acreage assignments while you handle the rest of the business. Save and Recenter are always available.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -818,6 +852,27 @@ export class FarmEmpireApp {
       onLand: () => openFarmLand(this.state, this.panelActions()),
       onCargo: () => openFarmMarket(this.state, this.panelActions(), 'farm'),
       onTownRoad: () => { closePanel(); this.renderer.focusOnFarmPoint(FARM_TOWN_GATE); },
+      onWorkforce: () => this.openWorkforcePanel('farm'),
+    });
+  }
+
+  private openWorkforcePanel(context: 'farm' | 'town' = this.mode): void {
+    const job = this.farmhandJob;
+    openFarmWorkforce(this.state, {
+      context,
+      now: this.gameNow(),
+      activeJob: job ? {
+        parcelId: job.parcelId,
+        kind: job.kind,
+        completed: job.completed,
+        skipped: job.skipped,
+        total: job.targetPlotUids.length,
+      } : null,
+      hire: context === 'town' ? () => hireFirstFarmhand(this.state) : undefined,
+      startWork: context === 'farm' ? (parcelId, kind) => this.startFarmhandJob(parcelId, kind) : undefined,
+      cancelWork: context === 'farm' ? () => this.cancelFarmhandJob() : undefined,
+      dispatch: this.dispatch,
+      onClose: () => {},
     });
   }
 
@@ -1080,7 +1135,7 @@ export class FarmEmpireApp {
     this.save();
   }
 
-  private tractorHudRuntime(): { operating: boolean; working: boolean; statusText: string; manualWorking?: boolean } {
+  private tractorHudRuntime(): { operating: boolean; working: boolean; statusText: string; manualWorking?: boolean; farmhandWorking?: boolean } {
     const manualJob = this.manualFieldJob;
     if (manualJob) {
       const total = manualJob.targetPlotUids.length;
@@ -1117,6 +1172,18 @@ export class FarmEmpireApp {
     }
     if (this.operatingTractor && this.tractorTarget) {
       return { operating: true, working: false, statusText: 'Driving tractor · press Escape to stop' };
+    }
+    const farmhandJob = this.farmhandJob;
+    if (farmhandJob) {
+      const total = farmhandJob.targetPlotUids.length;
+      const current = Math.min(total, farmhandJob.nextIndex + 1);
+      const progress = this.farmhandAction ? Math.round(manualFieldActionProgress(this.farmhandAction, this.gameNow()) * 100) : 0;
+      return {
+        operating: this.operatingTractor,
+        working: false,
+        farmhandWorking: true,
+        statusText: `${FIRST_FARMHAND.name} · ${MANUAL_FIELD_ACTION_LABELS[farmhandJob.kind]} · ${farmhandJob.completed}/${total} complete${farmhandJob.skipped ? ` · ${farmhandJob.skipped} skipped` : ''} · section ${current}/${total}${this.farmhandAction ? ` · ${progress}%` : ''}`,
+      };
     }
     return {
       operating: this.operatingTractor,
@@ -1245,6 +1312,114 @@ export class FarmEmpireApp {
     return clearWitheredFarmCrop(this.state, plotUid, this.gameNow());
   }
 
+  private startFarmhandJob(parcelId: FarmParcelId, kind: FarmhandWorkKind): ActionResult {
+    if (this.farmhandJob) return { ok: false, reason: `${FIRST_FARMHAND.name} already has an acreage assignment.` };
+    const start = startFarmhandShift(this.state, parcelId, kind, this.gameNow(), farmOf(this.state).selectedCropId);
+    if (!start.result.ok || !start.plan) return start.result;
+    this.farmhandJob = {
+      kind,
+      parcelId,
+      cropId: start.plan.cropId,
+      targetPlotUids: start.plan.targetPlotUids,
+      nextIndex: 0,
+      completed: 0,
+      skipped: 0,
+    };
+    this.farmhandAction = null;
+    this.farmhandTarget = null;
+    this.beginFarmhandJobStep();
+    this.hud.update(this.state, this.tractorHudRuntime());
+    return start.result;
+  }
+
+  private beginFarmhandJobStep(): void {
+    const job = this.farmhandJob;
+    if (!job || this.farmhandAction || this.farmhandTarget) return;
+    while (job.nextIndex < job.targetPlotUids.length) {
+      const plotUid = job.targetPlotUids[job.nextIndex];
+      const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+      if (!plot) {
+        job.skipped += 1;
+        job.lastFailure = 'A planned field section was unavailable.';
+        job.nextIndex += 1;
+        continue;
+      }
+      this.farmhandTarget = { x: plot.x + .62, y: plot.y + .18, plotUid };
+      return;
+    }
+    this.finishFarmhandJob();
+  }
+
+  private startFarmhandAction(plotUid: number): void {
+    const job = this.farmhandJob;
+    const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+    if (!job || !plot) return;
+    const dx = plot.x - this.farmhandActor.x; const dy = plot.y - this.farmhandActor.y;
+    this.farmhandFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
+    this.farmhandAction = {
+      ...createManualFieldAction(job.kind, plotUid, plot, this.gameNow()),
+      apply: () => this.applyManualFieldAction(job.kind, plotUid, job.cropId),
+    };
+  }
+
+  private updateFarmhand(now: number, dt: number): void {
+    const action = this.farmhandAction;
+    if (action) {
+      if (!manualFieldActionComplete(action, now)) return;
+      this.farmhandAction = null;
+      const result = action.apply();
+      const job = this.farmhandJob;
+      if (!job) return;
+      if (result.ok) job.completed += 1;
+      else {
+        job.skipped += 1;
+        job.lastFailure = result.reason || 'A field section changed before Mara reached it.';
+      }
+      job.nextIndex += 1;
+      this.beginFarmhandJobStep();
+      return;
+    }
+    const target = this.farmhandTarget;
+    if (target) {
+      const dx = target.x - this.farmhandActor.x; const dy = target.y - this.farmhandActor.y;
+      const distance = Math.hypot(dx, dy); const step = 4.8 / 1_000 * dt;
+      if (distance <= step) {
+        this.farmhandActor.x = target.x; this.farmhandActor.y = target.y;
+        this.farmhandActor.walking = false; this.farmhandTarget = null;
+        if (target.plotUid !== undefined) this.startFarmhandAction(target.plotUid);
+      } else {
+        this.farmhandActor.x += dx / distance * step; this.farmhandActor.y += dy / distance * step;
+        this.farmhandActor.walking = true;
+        this.farmhandFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
+      }
+      return;
+    }
+    if (this.farmhandJob) this.beginFarmhandJobStep();
+  }
+
+  private finishFarmhandJob(): void {
+    const job = this.farmhandJob;
+    if (!job) return;
+    const parcel = farmParcelDef(job.parcelId);
+    this.farmhandJob = null; this.farmhandAction = null;
+    const home = farmLandmarks().farmhandHome;
+    this.farmhandTarget = { ...home };
+    toast(`${FIRST_FARMHAND.name} finished ${parcel.name}: ${job.completed} completed${job.skipped ? `, ${job.skipped} skipped` : ''}.${job.skipped && job.lastFailure ? ` ${job.lastFailure}` : ''}`, job.completed > 0 ? 'good' : 'bad');
+    if (job.completed > 0) this.save();
+  }
+
+  private cancelFarmhandJob(): void {
+    const job = this.farmhandJob;
+    if (!job) return;
+    const untouched = Math.max(0, job.targetPlotUids.length - job.completed - job.skipped);
+    this.farmhandJob = null; this.farmhandAction = null;
+    const home = farmLandmarks().farmhandHome;
+    this.farmhandTarget = { ...home };
+    toast(`${FIRST_FARMHAND.name}'s assignment stopped: ${job.completed} completed, ${job.skipped} skipped, ${untouched} not attempted. Today's shift remains paid.`, 'good');
+    if (job.completed > 0) this.save();
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
   private beginManualFieldJobStep(): void {
     const job = this.manualFieldJob;
     if (!job || this.manualFieldAction || this.walkTarget) return;
@@ -1359,6 +1534,7 @@ export class FarmEmpireApp {
     const now = this.gameNow();
     advanceFarmClock(this.state, now);
     this.updateManualFieldAction(now);
+    this.updateFarmhand(now, Math.max(0, Math.min(5_000, Math.floor(ms))));
     this.renderer.render(this.buildScene(), now);
     this.hud.update(this.state, this.tractorHudRuntime());
     return this.renderGameToText();
@@ -1386,6 +1562,19 @@ export class FarmEmpireApp {
       barn: { used: storageUsed(this.state), capacity: farm.storageCapacity },
       pickup: { x: farm.pickup.x, y: farm.pickup.y, operating: this.operatingPickup, atTown: this.pickupAtTown, cargoUsed: pickupCargoUsed(this.state), cargoCapacity: pickupCargoCapacity(this.state), trailerOwned: farm.equipment.countyUtilityTrailerOwned },
       tractor: { x: farm.equipment.tractor.x, y: farm.equipment.tractor.y, operating: this.operatingTractor, working: !!this.tractorJob },
+      workforce: {
+        hired: farm.workforce.farmhandHired,
+        lastShiftPaidDay: farm.workforce.lastShiftPaidDay,
+        farmhand: { x: this.farmhandActor.x, y: this.farmhandActor.y, walking: this.farmhandActor.walking },
+        job: this.farmhandJob ? {
+          parcelId: this.farmhandJob.parcelId,
+          kind: this.farmhandJob.kind,
+          completed: this.farmhandJob.completed,
+          skipped: this.farmhandJob.skipped,
+          total: this.farmhandJob.targetPlotUids.length,
+          nextIndex: this.farmhandJob.nextIndex,
+        } : null,
+      },
       countyFreight: (() => {
         const board = countyFreightBoardState(this.state);
         const progress = countyFreightProgress(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' });
@@ -1441,6 +1630,15 @@ export class FarmEmpireApp {
       syncCashMirror(this.state);
       this.hud.update(this.state, this.tractorHudRuntime());
     });
+    addButton('dev-unlock-farmhand', 'Unlock farmhand test', () => {
+      const farm = farmOf(this.state);
+      farm.townContact.status = 'completed';
+      farm.parcels.northOwned = true;
+      ensureOwnedFarmParcelPlots(this.state, farm.parcels);
+      farm.cashCents = Math.max(farm.cashCents, 500_000);
+      syncCashMirror(this.state);
+      this.hud.update(this.state, this.tractorHudRuntime());
+    });
     addButton('dev-open-first-plot', 'Open first plot', () => {
       const plot = this.state.plots[0];
       if (!plot) return;
@@ -1473,6 +1671,7 @@ export class FarmEmpireApp {
     const dt = this.lastFrame ? Math.min(100, realNow - this.lastFrame) : 16;
     this.lastFrame = realNow;
     advanceFarmClock(this.state, now);
+    this.updateFarmhand(now, dt);
     if (this.mode === 'farm') this.updateManualFieldAction(now);
 
     if (this.mode === 'farm' && this.tractorTarget) {
@@ -1578,7 +1777,15 @@ export class FarmEmpireApp {
       };
       return scene;
     }
-    scene.actors = this.operatingTractor || this.operatingPickup ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing }];
+    scene.actors = [
+      ...((this.operatingTractor || this.operatingPickup) ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing, variant: 'owner' as const }]),
+      ...(farm.workforce.farmhandHired ? [{
+        ...this.farmhandActor,
+        name: this.farmhandAction ? undefined : FIRST_FARMHAND.name,
+        facing: this.farmhandFacing,
+        variant: 'farmhand' as const,
+      }] : []),
+    ];
     scene.farm = {
       lockedTiles: farm.parcels.northOwned ? [] : NEIGHBOR_FIELD_TILES,
       fieldConditions: farm.fieldConditions,
@@ -1618,6 +1825,18 @@ export class FarmEmpireApp {
       } : undefined,
       manualSelection: this.manualFieldJob
         ? this.manualFieldJob.targetPlotUids.slice(this.manualFieldJob.nextIndex).flatMap((plotUid) => {
+          const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+          return plot ? [{ x: plot.x, y: plot.y }] : [];
+        })
+        : undefined,
+      farmhandAction: this.farmhandAction ? {
+        kind: this.farmhandAction.kind,
+        x: this.farmhandAction.x,
+        y: this.farmhandAction.y,
+        progress: manualFieldActionProgress(this.farmhandAction, this.gameNow()),
+      } : undefined,
+      farmhandSelection: this.farmhandJob
+        ? this.farmhandJob.targetPlotUids.slice(this.farmhandJob.nextIndex).flatMap((plotUid) => {
           const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
           return plot ? [{ x: plot.x, y: plot.y }] : [];
         })

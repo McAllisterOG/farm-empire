@@ -22,6 +22,7 @@ export interface TractorHudRuntime {
   working: boolean;
   statusText?: string;
   manualWorking?: boolean;
+  farmhandWorking?: boolean;
 }
 
 function clockText(minute: number): string {
@@ -149,8 +150,8 @@ export class FarmHud {
       : runtime?.operating
         ? 'Operating'
         : farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Needs restoration';
-    this.operationEl.classList.toggle('hidden', this.mode === 'town' || (!runtime?.operating && !runtime?.manualWorking));
-    this.operationEl.classList.toggle('working', !!runtime?.working || !!runtime?.manualWorking);
+    this.operationEl.classList.toggle('hidden', this.mode === 'town' || (!runtime?.operating && !runtime?.manualWorking && !runtime?.farmhandWorking));
+    this.operationEl.classList.toggle('working', !!runtime?.working || !!runtime?.manualWorking || !!runtime?.farmhandWorking);
     this.operationEl.textContent = runtime?.statusText ?? '';
     this.helpEl.textContent = this.mode === 'town'
       ? 'Click a townsperson or storefront for service. Walk only on the paved center.'

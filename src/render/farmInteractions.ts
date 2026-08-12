@@ -9,7 +9,7 @@ import {
 } from './farmLayout';
 
 export type FarmInteractionKind =
-  | 'pickup' | 'tractor' | 'scout' | 'farmhouse' | 'barn' | 'pump'
+  | 'pickup' | 'tractor' | 'farmhand' | 'scout' | 'farmhouse' | 'barn' | 'pump'
   | 'doghouse' | 'town-gate' | 'locked-acreage' | 'field';
 
 export interface FarmInteractionTarget {
@@ -25,6 +25,7 @@ export interface FarmInteractionRuntime {
   pickup: FarmPoint;
   tractor: FarmPoint;
   scout: FarmPoint;
+  farmhand?: FarmPoint;
   now: number;
 }
 
@@ -43,6 +44,7 @@ export function farmInteractionAtWorldPoint(
   const logical = farmLogicalPoint(worldPoint);
   if (near(logical, runtime.pickup, 1.05)) return { kind: 'pickup', label: 'Old Pickup', point: { ...runtime.pickup } };
   if (near(logical, runtime.tractor, 1.0)) return { kind: 'tractor', label: 'Old Tractor', point: { ...runtime.tractor } };
+  if (runtime.farmhand && near(logical, runtime.farmhand, .8)) return { kind: 'farmhand', label: 'Mara Bell · County Farmhand', point: { ...runtime.farmhand } };
   if (near(logical, runtime.scout, .8)) return { kind: 'scout', label: 'Scout', point: { ...runtime.scout } };
 
   const landmarks = farmLandmarks();

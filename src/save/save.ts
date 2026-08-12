@@ -124,6 +124,12 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (equipment) delete equipment.countyUtilityTrailerOwned;
     raw.version = 13;
   },
+  13: (raw) => {
+    // Workforce is a new v14 system. Migration never grants a hire or wage.
+    const farm = raw.farm && typeof raw.farm === 'object' ? raw.farm as Record<string, unknown> : null;
+    if (farm) delete farm.workforce;
+    raw.version = 14;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

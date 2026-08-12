@@ -82,6 +82,7 @@ export function farmKnowledgePoints(state: GameState): number {
   if (farm.parcels.northOwned) points += 25;
   if (farm.equipment.countyRowCropFieldKitOwned) points += 15;
   if (farm.equipment.barnLoftExpansionOwned) points += 15;
+  if (farm.workforce.farmhandHired) points += 15;
   return points;
 }
 

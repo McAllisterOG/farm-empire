@@ -12,6 +12,7 @@ export interface FarmOfficeActions {
   onLand: () => void;
   onCargo: () => void;
   onTownRoad: () => void;
+  onWorkforce: () => void;
 }
 
 export function openFarmOffice(state: GameState, actions: FarmOfficeActions): void {
@@ -62,12 +63,14 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('div', {}, h('span', {}, 'Tractor'), h('strong', {}, farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Restoration needed')),
         h('div', {}, h('span', {}, 'Home'), h('strong', {}, farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),
         h('div', {}, h('span', {}, 'Freight'), h('strong', {}, freightStatus)),
+        h('div', {}, h('span', {}, 'Workforce'), h('strong', {}, farm.workforce.farmhandHired ? 'Mara Bell · hired' : farm.parcels.northOwned && farm.townContact.status === 'completed' ? 'Hiring unlocked' : 'Not hired')),
       ),
     ),
     h('div', { class: 'farmbook-actions' },
       h('button', { class: 'btn btn-primary', onclick: actions.onCargo }, 'Barn & Cargo'),
       h('button', { class: 'btn', onclick: actions.onLand }, 'Land Records'),
       h('button', { class: 'btn', onclick: actions.onTownRoad }, 'County Road'),
+      h('button', { class: 'btn', 'data-testid': 'farmbook-workforce', onclick: actions.onWorkforce }, 'Workforce'),
       h('button', { class: 'btn', onclick: actions.onSave }, 'Save Farm'),
       h('button', { class: 'btn', onclick: actions.onRecenter }, 'Recenter'),
     ),
