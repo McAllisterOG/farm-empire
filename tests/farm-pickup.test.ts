@@ -7,6 +7,7 @@ import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } f
 import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
 import { deserialize, serialize } from '../src/save/save';
 import { pickupPositionForSave, PICKUP_START } from '../src/core/farmPickupData';
+import { FARM_TOWN_GATE } from '../src/core/townGateway';
 
 const NOW = Date.UTC(2026, 0, 1);
 
@@ -15,6 +16,17 @@ describe('old pickup cargo loop', () => {
     const elsewhere = { x: 18, y: 14 };
     expect(pickupPositionForSave(false, elsewhere)).toEqual(elsewhere);
     expect(pickupPositionForSave(true, elsewhere)).toEqual(PICKUP_START);
+  });
+
+  it('sanitizes only the legacy gate-conflict pickup position and preserves cargo', () => {
+    const state = createFarmGame('Pickup', 21, NOW) as unknown as Record<string, unknown>;
+    const farm = state.farm as Record<string, unknown>;
+    farm.pickup = { x: FARM_TOWN_GATE.x, y: FARM_TOWN_GATE.y, cargo: { crops: { crop_corn: 4 }, seeds: {} } };
+    const loaded = deserialize(JSON.stringify(state), NOW + 1);
+    expect(farmOf(loaded).pickup).toMatchObject({ x: PICKUP_START.x, y: PICKUP_START.y, cargo: { crops: { crop_corn: 4 } } });
+    farm.pickup = { x: 18, y: 14, cargo: { crops: { crop_corn: 4 }, seeds: {} } };
+    const unrelated = deserialize(JSON.stringify(state), NOW + 2);
+    expect(farmOf(unrelated).pickup).toMatchObject({ x: 18, y: 14, cargo: { crops: { crop_corn: 4 } } });
   });
 
   it('rejects barn transfers away from the physical cargo pad without mutation', () => {
@@ -88,8 +100,8 @@ describe('old pickup cargo loop', () => {
     const loaded = deserialize(JSON.stringify(state), NOW + 1);
     const pickup = farmOf(loaded).pickup;
     expect(pickup.id).toBe('old-pickup');
-    expect(pickup.x).toBe(10.8);
-    expect(pickup.y).toBe(6.7);
+    expect(pickup.x).toBe(PICKUP_START.x);
+    expect(pickup.y).toBe(PICKUP_START.y);
     expect(pickupCargoUsed(loaded)).toBeLessThanOrEqual(72);
   });
 });

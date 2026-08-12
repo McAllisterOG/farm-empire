@@ -5,6 +5,7 @@
  */
 import type { FarmPlot } from '../core/types';
 import { PICKUP_CARGO_PAD } from '../core/farmPickupData';
+import { FARM_TOWN_GATE } from '../core/townGateway';
 
 /** Logical plot centre-to-centre distance in presentation-world tiles. */
 export const FARM_PLOT_SPAN = 2.75;
@@ -33,6 +34,14 @@ export function farmLandmarks(): FarmLandmarks {
 
 export function farmWorldPoint(point: FarmPoint): FarmPoint {
   return { x: point.x * FARM_PLOT_SPAN, y: point.y * FARM_PLOT_SPAN };
+}
+
+/** Presentation-world route kept above the north parcel's field footprints. */
+export function farmDriveLane(): readonly FarmPoint[] {
+  return [
+    { x: 19, y: 14 }, { x: 24, y: 14.5 }, { x: 36.5, y: 14.5 }, { x: 38, y: 17.5 },
+    farmWorldPoint(FARM_TOWN_GATE),
+  ];
 }
 
 export function farmLogicalPoint(point: FarmPoint): FarmPoint {

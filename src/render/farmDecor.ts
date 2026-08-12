@@ -4,7 +4,7 @@
  * never saved state.
  */
 import { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from '../core/farmBusiness';
-import { farmLandmarks, farmMainlandBounds, farmPlotFootprint, farmWorldPoint, type FarmBounds, type FarmPoint } from './farmLayout';
+import { farmDriveLane, farmLandmarks, farmMainlandBounds, farmPlotFootprint, farmWorldPoint, type FarmBounds, type FarmPoint } from './farmLayout';
 
 export type FarmDecorType = 'hay-bale' | 'crate-pallet' | 'water-trough' | 'hand-pump';
 
@@ -85,7 +85,7 @@ export function farmDecorIsSafe(point: FarmPoint): boolean {
   const blocked = [farmWorldPoint({ x: 8, y: 5 }), farmWorldPoint({ x: 9, y: 11 }), farmWorldPoint(landmarks.doghouse), farmWorldPoint(landmarks.scoutHome)];
   if (blocked.some((anchor) => Math.hypot(projected.x - anchor.x, projected.y - anchor.y) < 2.25)) return false;
   // The middle of the deliberately broad gravel route stays clear.
-  const lane = [{ x: 6.91, y: 5.09 }, { x: 8.36, y: 5.09 }, { x: 9.45, y: 6.18 }, { x: 10.55, y: 7.27 }, { x: 11.64, y: 8.36 }];
+  const lane = farmDriveLane();
   return !lane.slice(1).some((end, index) => distanceToSegment(point, lane[index], end) < .35);
 }
 

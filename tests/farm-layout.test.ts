@@ -1,20 +1,37 @@
 import { describe, expect, it } from 'vitest';
 import { createFarmGame } from '../src/core/state';
-import { NEIGHBOR_FIELD_TILES } from '../src/core/farmBusiness';
+import { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from '../src/core/farmBusiness';
+import { pickupAtCargoPad, PICKUP_CARGO_PAD, PICKUP_CARGO_PAD_TOLERANCE } from '../src/core/farmPickupData';
+import { FARM_TOWN_GATE } from '../src/core/townGateway';
 import { deserialize } from '../src/save/save';
 import {
-  FARM_PLOT_SPAN, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint, farmLandmarks,
+  FARM_PLOT_SPAN, farmDriveLane, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint, farmLandmarks,
 } from '../src/render/farmLayout';
 import { farmGroundVariant, farmTerrainBounds, intersectsFarmTerrain } from '../src/render/farmTerrain';
-import { pickupAtCargoPad } from '../src/core/farmPickupData';
 import { NOW } from './helpers';
 
 describe('Farm Empire presentation layout', () => {
   it('keeps the pickup cargo pad deterministic with a strict boundary', () => {
     const pad = farmLandmarks().cargoPad;
     expect(pickupAtCargoPad(pad)).toBe(true);
-    expect(pickupAtCargoPad({ x: pad.x + 1.35, y: pad.y })).toBe(true);
-    expect(pickupAtCargoPad({ x: pad.x + 1.36, y: pad.y })).toBe(false);
+    expect(pickupAtCargoPad({ x: pad.x + .79, y: pad.y })).toBe(true);
+    expect(pickupAtCargoPad({ x: pad.x + .81, y: pad.y })).toBe(false);
+  });
+
+  it('keeps the pad and nearest rounded drive target outside fields and gate conflict', () => {
+    const pad = PICKUP_CARGO_PAD;
+    const fields = [...STARTER_FIELD_TILES, ...NEIGHBOR_FIELD_TILES].map((point) => ({ ...point, uid: -1, crop: null }));
+    expect(farmPlotAtWorldPoint(fields, farmWorldPoint(pad))).toBeUndefined();
+    expect(pickupAtCargoPad({ x: Math.round(pad.x), y: Math.round(pad.y) }, PICKUP_CARGO_PAD_TOLERANCE)).toBe(true);
+    expect(Math.hypot(pad.x - FARM_TOWN_GATE.x, pad.y - FARM_TOWN_GATE.y)).toBeGreaterThan(.9);
+    expect(Math.hypot(pad.x - 8, pad.y - 5)).toBeGreaterThan(.8);
+    const worldFields = fields.map((point) => farmPlotFootprint(point));
+    const lane = farmDriveLane();
+    for (let i = 0; i < lane.length - 1; i += 1) for (let step = 0; step <= 20; step += 1) {
+      const ratio = step / 20;
+      const point = { x: lane[i].x + (lane[i + 1].x - lane[i].x) * ratio, y: lane[i].y + (lane[i + 1].y - lane[i].y) * ratio };
+      expect(worldFields.some((field) => point.x >= field.minX && point.x <= field.maxX && point.y >= field.minY && point.y <= field.maxY)).toBe(false);
+    }
   });
   it('round trips logical and fractional actor coordinates through its single projection', () => {
     for (const point of [{ x: 5, y: 7 }, { x: 8.5, y: 10.25 }, { x: 12.75, y: 6.125 }]) {

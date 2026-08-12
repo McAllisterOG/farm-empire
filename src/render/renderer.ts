@@ -15,7 +15,7 @@ import { FARM_TOWN_GATE } from '../core/townGateway';
 import { Camera } from './camera';
 import { diamondPath, isoX, isoY, TILE_H, TILE_W } from './iso';
 import { charKey, drawSprite } from './sprites';
-import { farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint, farmLandmarks } from './farmLayout';
+import { farmDriveLane, farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint, farmLandmarks } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
 import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
@@ -568,7 +568,7 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
 
 function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
   // A restrained gravel lane connects the barn, field entrances, and town road.
-  const lane = [{ x: 19, y: 14 }, { x: 23, y: 14 }, { x: 26, y: 17 }, { x: 29, y: 20 }, { x: 32, y: 23 }, { x: 35, y: 22 }, farmWorldPoint(FARM_TOWN_GATE)];
+  const lane = farmDriveLane();
   ctx.lineCap = 'round'; ctx.strokeStyle = '#806344'; ctx.lineWidth = 25 * zoom; ctx.beginPath();
   lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.stroke();
   ctx.beginPath(); lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });

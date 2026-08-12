@@ -5,7 +5,7 @@ import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farm
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
 import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT } from '../data/farmEquipment.data';
-import { PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, emptyPickupCargo } from './farmPickupData';
+import { PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
 
 export const STARTING_CASH_CENTS = 500_000;
 export const STARTING_STORAGE_CAPACITY = 150;
@@ -164,11 +164,12 @@ function normalizePickup(rawPickup: unknown): FarmBusinessState['pickup'] {
     if (kept > 0) seeds[def.id] = kept;
     used += kept;
   }
+  const position = sanitizePickupPosition(raw.x, raw.y);
   return {
     id: PICKUP_ID,
     name: PICKUP_NAME,
-    x: Number.isFinite(Number(raw.x)) && Number(raw.x) >= 0 && Number(raw.x) <= 24 ? Number(raw.x) : PICKUP_START.x,
-    y: Number.isFinite(Number(raw.y)) && Number(raw.y) >= 0 && Number(raw.y) <= 24 ? Number(raw.y) : PICKUP_START.y,
+    x: position.x,
+    y: position.y,
     cargo: { crops, seeds },
   };
 }
