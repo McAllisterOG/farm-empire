@@ -23,6 +23,7 @@ import {
 } from '../core/farmManualAction';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
+import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import type { TownNpcDef, TownServiceId } from '../data/town.data';
 import type { FarmFacing } from '../render/farmSprites';
@@ -236,6 +237,8 @@ export class FarmEmpireApp {
       buyLand: () => purchaseNeighborParcel(this.state),
       acceptCountyWorkOrder: () => acceptCountyWorkOrder(this.state),
       fulfillCountyWorkOrder: () => fulfillCountyWorkOrder(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' }),
+      acceptCountyFreight: (offerId) => acceptCountyFreightOffer(this.state, offerId),
+      fulfillCountyFreight: () => fulfillCountyFreightContract(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' }),
       issueCountyReliefSeed: () => issueCountyReliefSeed(this.state, this.gameNow()),
       purchaseBarnLoft: () => purchaseBarnLoftExpansion(this.state),
       dispatch: this.dispatch,
@@ -759,7 +762,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks restoration of the inherited tractor at the Equipment Desk. Save and Recenter are always available.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks tractor restoration and one paid Freight Board haul per farm day at Eli\'s Grain Exchange. Save and Recenter are always available.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1382,6 +1385,17 @@ export class FarmEmpireApp {
       barn: { used: storageUsed(this.state), capacity: farm.storageCapacity },
       pickup: { x: farm.pickup.x, y: farm.pickup.y, operating: this.operatingPickup, atTown: this.pickupAtTown },
       tractor: { x: farm.equipment.tractor.x, y: farm.equipment.tractor.y, operating: this.operatingTractor, working: !!this.tractorJob },
+      countyFreight: (() => {
+        const board = countyFreightBoardState(this.state);
+        const progress = countyFreightProgress(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' });
+        return {
+          unlocked: board.unlocked,
+          offer: board.offer,
+          active: board.active,
+          completedToday: board.completedToday,
+          pickupProgress: progress,
+        };
+      })(),
       manualFieldAction: this.manualFieldAction ? {
         kind: this.manualFieldAction.kind,
         plotUid: this.manualFieldAction.plotUid,

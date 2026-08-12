@@ -7,6 +7,8 @@ import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT, OLD_TR
 import { farmParcelDef, farmParcelSectionCount } from '../../core/farmParcels';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
+import { countyFreightTemplate, COUNTY_FREIGHT_PREMIUM_BPS } from '../../data/countyFreight.data';
+import { countyFreightBoardState, countyFreightProgress } from '../../core/farmCountyFreight';
 import { pickupCargoUsed, pickupCropUnits, pickupSeedUnits } from '../../core/farmPickup';
 import { h, spriteImg, clearChildren } from '../dom';
 import { closePanel, openPanel } from '../modal';
@@ -26,6 +28,8 @@ export interface FarmPanelActions {
   buyLand: () => ActionResult;
   acceptCountyWorkOrder: () => ActionResult;
   fulfillCountyWorkOrder: () => ActionResult;
+  acceptCountyFreight: (offerId: string) => ActionResult;
+  fulfillCountyFreight: () => ActionResult;
   issueCountyReliefSeed: () => ActionResult;
   purchaseBarnLoft: () => ActionResult;
   dispatch: Dispatch;
@@ -37,6 +41,20 @@ export type FarmMarketContext = 'farm' | 'town';
 export interface CountyDeliveryMarketState {
   showCountyOrder: boolean;
   deliveryReady: boolean;
+}
+
+export interface CountyFreightMarketState {
+  showBoard: boolean;
+  deliveryReady: boolean;
+}
+
+export function countyFreightMarketState(state: GameState, context: FarmMarketContext = 'farm', pickupPresent?: boolean): CountyFreightMarketState {
+  const board = countyFreightBoardState(state);
+  const progress = countyFreightProgress(state, { pickupPresent: pickupPresent === true, source: 'pickup' });
+  return {
+    showBoard: context === 'town' && board.unlocked,
+    deliveryReady: context === 'town' && !!board.active && pickupPresent === true && progress.loadedUnits >= progress.requiredUnits,
+  };
 }
 
 /** Defaults closed so a new farm-side caller cannot accidentally expose County delivery. */
@@ -165,6 +183,46 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     body.append(order);
   }
 
+  const freightMarket = countyFreightMarketState(state, context, actions.pickupPresent);
+  if (freightMarket.showBoard) {
+    const board = countyFreightBoardState(state);
+    if (board.active) {
+      const contract = board.active;
+      const template = countyFreightTemplate(contract.cropId);
+      const crop = farmCropDef(contract.cropId);
+      const progress = countyFreightProgress(state, { pickupPresent: actions.pickupPresent, source: 'pickup' });
+      body.append(h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-freight-active' },
+        h('div', { class: 'farm-card-main' },
+          h('div', { class: 'farm-card-title' }, `County Freight Board · ${template.title}`),
+          h('div', { class: 'farm-card-sub' }, `${template.buyer} · ${progress.loadedUnits} / ${contract.requiredUnits} ${crop.name} in pickup cargo`),
+          h('div', { class: 'farm-card-stock' }, `Accepted Day ${contract.issuedDay} · locked payout ${formatMoney(contract.payoutCents)} · no deadline`),
+        ),
+        h('button', {
+          class: 'btn btn-primary btn-sm', 'data-testid': 'deliver-county-freight',
+          ...(freightMarket.deliveryReady ? {} : { disabled: 'true' }),
+          onclick: () => runAndRender(actions.fulfillCountyFreight(), actions, rerender),
+        }, `Deliver ${contract.requiredUnits}`),
+      ));
+    } else if (board.offer) {
+      const offer = board.offer;
+      const template = countyFreightTemplate(offer.cropId);
+      const crop = farmCropDef(offer.cropId);
+      body.append(h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-freight-offer' },
+        h('div', { class: 'farm-card-main' },
+          h('div', { class: 'farm-card-title' }, `County Freight Board · ${template.title}`),
+          h('div', { class: 'farm-card-sub' }, `${template.buyer} requests ${offer.requiredUnits} ${crop.name}.`),
+          h('div', { class: 'farm-card-stock' }, `${formatMoney(offer.payoutCents)} locked payout · ${(COUNTY_FREIGHT_PREMIUM_BPS / 100).toFixed(0)}% above today's posted rate · persists until delivered`),
+        ),
+        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': 'accept-county-freight', onclick: () => runAndRender(actions.acceptCountyFreight(offer.id), actions, rerender) }, 'Accept Haul'),
+      ));
+    } else {
+      body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-freight-completed-today' },
+        h('strong', {}, 'County Freight Board · route complete'),
+        h('span', {}, 'Eli will post another crop haul on the next farm day.'),
+      ));
+    }
+  }
+
   const rerender = (): void => renderMarket(body, state, actions, context);
   const list = h('div', { class: 'farm-card-list market-list' });
   for (const def of allFarmCrops()) {
@@ -234,9 +292,16 @@ function renderCountyWorkOrder(body: HTMLElement, state: GameState, actions: Far
   );
   body.append(relief);
   if (status === 'completed') {
+    const freight = countyFreightBoardState(state);
+    const freightLine = freight.active
+      ? `Active freight: ${countyFreightTemplate(freight.active.cropId).title} · ${countyFreightProgress(state, { pickupPresent: actions.pickupPresent, source: 'pickup' }).loadedUnits} / ${freight.active.requiredUnits} loaded.`
+      : freight.offer
+        ? `Today's Freight Board offer is posted at Eli's Grain Exchange.`
+        : 'Today\'s freight route is complete; a new offer posts next farm day.';
     body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-completed' },
       h('strong', {}, 'First delivery recorded'),
       h('span', {}, 'Mae Carter: The County Pantry has your corn, and your farm is on the board now. The Equipment Desk can restore that inherited tractor when you are ready.'),
+      h('span', { 'data-testid': 'county-freight-mae-status' }, freightLine),
     ));
     return;
   }

@@ -435,6 +435,19 @@ export interface FarmTownContactState {
   status: FarmTownContactStatus;
 }
 
+export interface FarmCountyFreightContract {
+  id: string;
+  issuedDay: number;
+  cropId: string;
+  requiredUnits: number;
+  payoutCents: number;
+}
+
+export interface FarmCountyFreightState {
+  active: FarmCountyFreightContract | null;
+  lastCompletedDay: number;
+}
+
 export interface FarmPickupCargo {
   crops: Record<string, number>;
   seeds: Record<string, number>;
@@ -464,6 +477,7 @@ export interface FarmBusinessState {
   pickup: FarmPickupState;
   selectedCropId: string;
   townContact: FarmTownContactState;
+  countyFreight: FarmCountyFreightState;
   clock: FarmClockState;
   market: {
     quotes: Record<string, FarmMarketQuote>;

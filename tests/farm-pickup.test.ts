@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import '../src/data';
-import { createFarmGame } from '../src/core/state';
+import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { farmOf } from '../src/core/farmBusiness';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoRemaining, pickupCargoUsed, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../src/core/farmTownContact';
@@ -74,7 +74,7 @@ describe('old pickup cargo loop', () => {
     expect(farm.pickup.cargo.crops.crop_corn).toBe(0);
     expect(farm.cashCents).toBe(508_500);
     const loaded = deserialize(serialize(state, NOW + 1), NOW + 2);
-    expect(loaded.version).toBe(11);
+    expect(loaded.version).toBe(SAVE_VERSION);
     expect(farmOf(loaded).pickup.id).toBe('old-pickup');
     expect(fulfillCountyWorkOrder(loaded, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
   });

@@ -112,6 +112,11 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (tractor) tractor.status = 'operational';
     raw.version = 11;
   },
+  11: (raw) => {
+    // The repeatable County freight board is supplied by defensive farm
+    // normalization. No offer, payout, or completion is granted by migration.
+    raw.version = 12;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

@@ -5,6 +5,7 @@ import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farm
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
 import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
+import { COUNTY_FREIGHT_TEMPLATES } from '../data/countyFreight.data';
 import { PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
 import {
   STARTER_FIELD_TILES, ensureOwnedFarmParcelPlots, farmParcelAtTile,
@@ -109,6 +110,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     pickup: { id: PICKUP_ID, name: PICKUP_NAME, x: PICKUP_START.x, y: PICKUP_START.y, cargo: emptyPickupCargo() },
     selectedCropId: 'crop_corn',
     townContact: { status: 'unmet' },
+    countyFreight: { active: null, lastCompletedDay: 0 },
     clock: { day: 1, minute: 8 * 60, lastRealAt: now },
     market: { quotes, activeEvents: [], lastUpdatedDay: 1 },
     parcels: { starterOwned: true, northOwned: false },
@@ -180,6 +182,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const rawKitOwned = rawEquipment.countyRowCropFieldKitOwned;
   const rawLoftOwned = rawEquipment.barnLoftExpansionOwned;
   const townStatus = objectRecord(raw.townContact).status;
+  const rawCountyFreight = objectRecord(raw.countyFreight);
   const rawSeeds = objectRecord(raw.seeds);
   const rawStorage = objectRecord(raw.storage);
   const rawFieldConditions = objectRecord(raw.fieldConditions);
@@ -214,6 +217,23 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
 
   const northOwned = rawParcels.northOwned === true;
   const loftOwned = rawLoftOwned === true && northOwned;
+  const clockDay = clampInt(rawClock.day, 1, 1);
+  const rawActiveFreight = objectRecord(rawCountyFreight.active);
+  const freightCropId = String(rawActiveFreight.cropId ?? '');
+  const freightIssuedDay = clampInt(rawActiveFreight.issuedDay, 0);
+  const freightRequiredUnits = clampInt(rawActiveFreight.requiredUnits, 0);
+  const freightPayoutCents = clampInt(rawActiveFreight.payoutCents, 0);
+  const freightId = String(rawActiveFreight.id ?? '');
+  const freightTemplate = COUNTY_FREIGHT_TEMPLATES.find((candidate) => candidate.cropId === freightCropId);
+  const freightDef = farmCropDefOrNull(freightCropId);
+  const validActiveFreight = townStatus === 'completed'
+    && !!freightTemplate && !!freightDef
+    && freightId === `county-freight-${freightIssuedDay}-${freightCropId}`
+    && freightIssuedDay >= 1 && freightIssuedDay <= clockDay
+    && freightRequiredUnits === freightTemplate.requiredUnits
+    && freightRequiredUnits * freightDef.storageUnitsPerItem <= PICKUP_CARGO_CAPACITY
+    && freightPayoutCents >= 1 && freightPayoutCents <= freightRequiredUnits * freightDef.basePriceCents * 2;
+  const lastCompletedDay = Math.min(clockDay, clampInt(rawCountyFreight.lastCompletedDay, 0));
   state.farm = {
     cashCents: clampInt(raw.cashCents, STARTING_CASH_CENTS),
     seeds,
@@ -224,8 +244,18 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     pickup: normalizePickup(raw.pickup),
     selectedCropId,
     townContact: { status: townStatus === 'offered' || townStatus === 'active' || townStatus === 'completed' ? townStatus : 'unmet' },
+    countyFreight: {
+      active: validActiveFreight ? {
+        id: freightId,
+        issuedDay: freightIssuedDay,
+        cropId: freightCropId,
+        requiredUnits: freightRequiredUnits,
+        payoutCents: freightPayoutCents,
+      } : null,
+      lastCompletedDay,
+    },
     clock: {
-      day: clampInt(rawClock.day, 1, 1),
+      day: clockDay,
       minute: clampInt(rawClock.minute, 8 * 60) % 1_440,
       lastRealAt: clampInt(rawClock.lastRealAt, now, 1),
     },

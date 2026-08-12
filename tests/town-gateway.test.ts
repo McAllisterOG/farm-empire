@@ -3,7 +3,7 @@ import { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from '../src/core/farmBusin
 import {
   FARM_TOWN_GATE, FARM_TOWN_RETURN, placePlayerAtTownReturn, townTravelBlockReason,
 } from '../src/core/townGateway';
-import { createFarmGame } from '../src/core/state';
+import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { TOWN_BUILDINGS, TOWN_NPCS, TOWN_SERVICE_IDS } from '../src/data/town.data';
 import { serialize } from '../src/save/save';
 import {
@@ -118,7 +118,7 @@ describe('Town Gateway travel and save boundary', () => {
     expect(player.py).toBe(FARM_TOWN_RETURN.y);
     expect(saved).not.toHaveProperty('town');
     expect(saved.farm).not.toHaveProperty('town');
-    expect(saved.version).toBe(11);
+    expect(saved.version).toBe(SAVE_VERSION);
   });
 
   it('makes the town Equipment Desk incapable of operating the tractor', () => {

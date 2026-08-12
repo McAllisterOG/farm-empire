@@ -2,6 +2,7 @@ import type { GameState } from '../../core/types';
 import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../../core/farmKnowledge';
 import { farmOf, formatMoney, storageUsed } from '../../core/farmBusiness';
 import { pickupCargoUsed } from '../../core/farmPickup';
+import { countyFreightBoardState } from '../../core/farmCountyFreight';
 import { h } from '../dom';
 import { openPanel } from '../modal';
 
@@ -23,6 +24,8 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
     ? Math.round(knowledge.pointsIntoLevel / knowledge.pointsForLevel * 100)
     : 100;
   const ownedSections = state.plots.length;
+  const freight = countyFreightBoardState(state);
+  const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offer ? 'Offer posted' : 'Route complete today';
   openPanel({ title: farm.parcels.northOwned ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
       h('div', { class: 'farmbook-level-mark' }, String(knowledge.level.level)),
@@ -57,6 +60,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('div', {}, h('span', {}, 'Land'), h('strong', {}, farm.parcels.northOwned ? '2 acreages' : '1 acreage')),
         h('div', {}, h('span', {}, 'Tractor'), h('strong', {}, farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Restoration needed')),
         h('div', {}, h('span', {}, 'Home'), h('strong', {}, farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),
+        h('div', {}, h('span', {}, 'Freight'), h('strong', {}, freightStatus)),
       ),
     ),
     h('div', { class: 'farmbook-actions' },

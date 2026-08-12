@@ -81,6 +81,15 @@ Original prompt: Begin the first milestone from the complete Farm Empire master 
 - Browser acceptance captured the starter/expanded comparison, exact purchase to 132 sections, expanded office/hit behavior, reload, and zero console/page errors.
 - Desktop packaging completed under `release/homestead-growth-v1`; bundled assets are relative, native CDP rendered title and farm, and the literal OneDrive Desktop shortcut launched four responsive processes with zero residue after cleanup.
 
+## 2026-08-12 - County Freight Board V1 in progress
+
+- Added a save-v12 County freight contract snapshot with one deterministic unlocked-crop offer per farm day after the first Pantry delivery.
+- Acceptance locks crop, quantity, and a 25% premium over the posted quote; delivery consumes exact pickup cargo, pays atomically once, and waits for a later farm day before offering another route.
+- The Grain Exchange now owns offer, active-load, delivery, and completed-today states; Mae, How to Play, the Farmbook snapshot, and `render_game_to_text` expose concise status.
+- Final boundary: 217/217 tests, strict typecheck, production and desktop-specific builds, and diff checks pass.
+- Browser acceptance followed the physical pickup road route and verified offer, acceptance, loaded readiness, exact payout/cargo removal, same-day closure, safe farm reload, next-day refresh, stale-card rejection, compact 760x640 layout, deterministic text state, and zero console/page errors. All screenshots were visually inspected.
+- The unpacked Windows build under `release/county-freight-v1` contains relative bundled assets and the new Freight Board code. Native CDP rendered the existing player profile at the title screen without errors; the literal OneDrive Desktop shortcut launched four responsive processes from the new build and left zero residue after cleanup.
+
 ## Final acceptance
 
 - Bounded adversarial repair made malformed watering flags fail open to established growth and removed obsolete automatic-growth guidance from the pump and How to Play.
