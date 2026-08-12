@@ -4,7 +4,7 @@ import type {
 import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
-import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT } from '../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
 import { PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
 import {
   STARTER_FIELD_TILES, ensureOwnedFarmParcelPlots, farmParcelAtTile,
@@ -118,7 +118,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
       tractor: {
         id: 'old-tractor',
         name: 'Old Red Tractor',
-        status: 'operational',
+        status: 'maintenance',
         x: 9,
         y: 11,
         workSpeedBonusBps: 2_000,
@@ -244,7 +244,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
       tractor: {
         id: String(rawTractor.id || defaults.equipment.tractor.id),
         name: String(rawTractor.name || defaults.equipment.tractor.name),
-        status: rawTractor.status === 'maintenance' ? 'maintenance' : 'operational',
+        status: rawTractor.status === 'operational' ? 'operational' : 'maintenance',
         x: clampNumber(rawTractor.x, defaults.equipment.tractor.x),
         y: clampNumber(rawTractor.y, defaults.equipment.tractor.y),
         workSpeedBonusBps: clampInt(rawTractor.workSpeedBonusBps, 2_000),
@@ -407,7 +407,7 @@ export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: nu
   const farm = farmOf(state);
   const plannedCropId = cropId ?? farm.selectedCropId;
   const owned = parcelId === 'starter' ? farm.parcels.starterOwned : farm.parcels.northOwned;
-  if (!owned) {
+  if (!owned || farm.equipment.tractor.status !== 'operational') {
     return { parcelId, orderedPlotUids: [], plantPlotUids: [], harvestPlotUids: [] };
   }
 
@@ -443,6 +443,7 @@ export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: nu
 
 export function plantFarmCrop(state: GameState, plotUid: number, cropId: string, now: number, context: FarmWorkContext = 'manual'): ActionResult {
   const farm = farmOf(state);
+  if (context === 'operatedTractor' && farm.equipment.tractor.status !== 'operational') return fail('Restore the old tractor before using powered field work.');
   const plot = state.plots.find((candidate) => candidate.uid === plotUid);
   if (!plot || !isOwnedFieldTile(state, plot.x, plot.y)) return fail('This field is not owned.');
   if (plot.crop) return fail('That field section is already planted.');
@@ -473,6 +474,7 @@ export function plantFarmCrop(state: GameState, plotUid: number, cropId: string,
 
 export function harvestFarmCrop(state: GameState, plotUid: number, now: number, context: FarmWorkContext = 'manual'): ActionResult {
   const farm = farmOf(state);
+  if (context === 'operatedTractor' && farm.equipment.tractor.status !== 'operational') return fail('Restore the old tractor before using powered field work.');
   const plot = state.plots.find((candidate) => candidate.uid === plotUid);
   if (!plot?.crop) return fail('There is no crop to harvest.');
   if (isFarmCropWithered(plot.crop, now)) return fail('This crop has withered. Clear it before planting again.');
@@ -495,9 +497,22 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
   return { ok: true, events: [{ type: 'harvest', target: def.id, amount }] };
 }
 
+export function restoreOldTractor(state: GameState): ActionResult {
+  const farm = farmOf(state);
+  if (farm.equipment.tractor.status === 'operational') return fail('The old tractor is already restored and operational.');
+  if (farm.townContact.status !== 'completed') return fail('Complete the County Pantry order before the Equipment Desk can restore the tractor.');
+  if (farm.cashCents < OLD_TRACTOR_RESTORATION.priceCents) return fail('Not enough cash for the Old Tractor Restoration.');
+  farm.cashCents -= OLD_TRACTOR_RESTORATION.priceCents;
+  farm.equipment.tractor.status = 'operational';
+  recordFarmStat(state, 'farmCashSpentCents', OLD_TRACTOR_RESTORATION.priceCents);
+  syncCashMirror(state);
+  return { ok: true, events: [{ type: 'toast', target: 'The old tractor is restored and ready for field work.' }] };
+}
+
 export function purchaseCountyRowCropFieldKit(state: GameState): ActionResult {
   const farm = farmOf(state);
   if (farm.townContact.status !== 'completed') return fail('Complete the County Pantry order before buying this field kit.');
+  if (farm.equipment.tractor.status !== 'operational') return fail('Restore the old tractor before installing the County Row-Crop Field Kit.');
   if (farm.equipment.countyRowCropFieldKitOwned) return fail('The County Row-Crop Field Kit is already installed.');
   if (farm.cashCents < COUNTY_ROW_CROP_FIELD_KIT.priceCents) return fail('Not enough cash for the County Row-Crop Field Kit.');
   farm.cashCents -= COUNTY_ROW_CROP_FIELD_KIT.priceCents;

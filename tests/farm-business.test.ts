@@ -15,6 +15,7 @@ import { NOW } from './helpers';
 
 function makeFarm(seed = 4242) {
   const state = createFarmGame('Test Farm', seed, NOW);
+  farmOf(state).equipment.tractor.status = 'operational';
   farmOf(state).equipment.countyRowCropFieldKitOwned = true;
   return state;
 }

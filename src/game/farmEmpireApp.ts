@@ -5,7 +5,7 @@ import {
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
   issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
   syncCashMirror, ownedFarmParcelAt, planParcelWork, farmFieldCondition, tillFarmField, waterFarmCrop,
-  placePlayerAtTractorDismount, storageUsed, type FarmParcelId, type ParcelWorkKind,
+  placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
 import { farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
@@ -585,7 +585,13 @@ export class FarmEmpireApp {
       { label: 'Land Records', onClick: () => openFarmLand(this.state, this.panelActions()) },
       {
         label: 'Equipment Desk',
-        onClick: () => openFarmEquipment(this.state, { context: 'town', onPurchaseKit: () => purchaseCountyRowCropFieldKit(this.state), dispatch: this.dispatch, onClose: () => {} }),
+        onClick: () => openFarmEquipment(this.state, {
+          context: 'town',
+          onRestoreTractor: () => restoreOldTractor(this.state),
+          onPurchaseKit: () => purchaseCountyRowCropFieldKit(this.state),
+          dispatch: this.dispatch,
+          onClose: () => {},
+        }),
       },
       { label: 'County Work Order', onClick: () => this.openCountyWorkOrder() },
     ]);
@@ -687,7 +693,7 @@ export class FarmEmpireApp {
       return;
     }
     if (!this.operatingTractor && tractor.status !== 'operational') {
-      toast('The tractor is in maintenance and cannot be operated.', 'bad');
+      toast('Restore the inherited tractor at the County Equipment Desk before operating it.', 'bad');
       return;
     }
     if (this.operatingTractor) {
@@ -753,7 +759,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. The tractor combines preparation and planting for batch field work. Save and Recenter are always available.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks restoration of the inherited tractor at the Equipment Desk. Save and Recenter are always available.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });

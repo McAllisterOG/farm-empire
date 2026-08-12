@@ -600,6 +600,9 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .tractor-illustration { width: 130px; padding: 20px; border-radius: 10px; background: #b74832; color: #fff1c9; font-weight: 900; text-align: center; }
 .equipment-status { width: fit-content; padding: 4px 8px; border-radius: 8px; font-size: 12px; font-weight: 900; }
 .equipment-status.operational { color: #2f713e; background: #e2f1d8; }
+.equipment-status.maintenance { color: #8b542f; background: #f4e1c3; }
+.equipment-kit { display: flex; flex-direction: column; gap: 5px; padding: 10px 11px; border: 1px solid #dfcf9d; border-radius: 10px; background: #fff9e9; }
+.equipment-kit p { margin: 0; color: #75664c; font-size: 12px; line-height: 1.35; }
 .equipment-mode { padding: 8px 10px; border-radius: 9px; background: #f3ecd9; color: #5f513a; font-size: 12.5px; font-weight: 800; }
 .equipment-operate { width: fit-content; }
 .equipment-operate:disabled { opacity: 0.55; cursor: not-allowed; }

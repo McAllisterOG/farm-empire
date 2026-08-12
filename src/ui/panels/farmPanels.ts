@@ -3,7 +3,7 @@ import { allFarmCrops, farmCropDef } from '../../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, cheapestFarmSeed, farmCropUnlockInfo, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
-import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT } from '../../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT, OLD_TRACTOR_RESTORATION } from '../../data/farmEquipment.data';
 import { farmParcelDef, farmParcelSectionCount } from '../../core/farmParcels';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
@@ -236,7 +236,7 @@ function renderCountyWorkOrder(body: HTMLElement, state: GameState, actions: Far
   if (status === 'completed') {
     body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-completed' },
       h('strong', {}, 'First delivery recorded'),
-      h('span', {}, 'Mae Carter: The County Pantry has your corn, and your farm is on the board now.'),
+      h('span', {}, 'Mae Carter: The County Pantry has your corn, and your farm is on the board now. The Equipment Desk can restore that inherited tractor when you are ready.'),
     ));
     return;
   }
@@ -302,6 +302,7 @@ export interface FarmEquipmentOnFarmActions {
 
 export interface FarmEquipmentTownActions {
   context: 'town';
+  onRestoreTractor?: () => ActionResult;
   onPurchaseKit?: () => ActionResult;
   dispatch?: Dispatch;
   onClose: () => void;
@@ -319,22 +320,41 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
   const operating = actions.context === 'farm' ? actions.operating : false;
   const jobActive = actions.context === 'farm' ? actions.jobActive : false;
   const onToggleOperating = actions.context === 'farm' ? actions.onToggleOperating : null;
+  const restored = tractor.status === 'operational';
+  const countyComplete = farmOf(state).townContact.status === 'completed';
   const kitOwned = farmOf(state).equipment.countyRowCropFieldKitOwned;
-  const kitUnlocked = farmOf(state).townContact.status === 'completed';
+  const kitUnlocked = countyComplete && restored;
   openPanel({
     title: onFarm ? 'Farm Equipment' : 'Farm Services Equipment Desk',
     onClose: actions.onClose,
     body: (body) => body.append(h('div', { class: 'equipment-card', 'data-testid': 'tractor-panel' },
       h('div', { class: 'tractor-illustration' }, 'TRACTOR'),
       h('div', { class: 'farm-card-title' }, tractor.name),
-      h('div', { class: `equipment-status ${tractor.status}` }, `Status: ${tractor.status === 'operational' ? 'Operational' : 'Maintenance'}`),
+      h('div', { class: `equipment-status ${tractor.status}` }, `Status: ${restored ? 'Operational' : 'Awaiting restoration'}`),
+      h('div', { class: 'equipment-kit', 'data-testid': 'tractor-restoration' },
+        h('div', { class: 'farm-card-title' }, OLD_TRACTOR_RESTORATION.name),
+        h('p', {}, `One-time restoration · ${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)} · returns the inherited tractor to dependable field service`),
+        h('div', { class: 'equipment-mode', 'data-testid': 'tractor-restoration-status' }, restored
+          ? 'Complete · tractor operational'
+          : countyComplete ? 'Unlocked at the County Equipment Desk' : 'Locked · prove the farm with the County Pantry delivery'),
+        ...(!onFarm && !restored && countyComplete && actions.context === 'town' ? [h('button', {
+          class: 'btn btn-primary', 'data-testid': 'restore-old-tractor', onclick: () => {
+            const result = actions.onRestoreTractor?.();
+            if (!result) return;
+            actions.dispatch?.(result);
+            if (result.ok) openFarmEquipment(state, actions);
+          },
+        }, `Restore for ${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)}`)] : []),
+      ),
       h('p', {}, kitOwned
         ? `Installed effect: +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% operated tractor crop cycles and +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} operated tractor harvest unit.`
         : 'Base crop time and yield apply until the County Row-Crop Field Kit is installed.'),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-field-kit' },
         h('div', { class: 'farm-card-title' }, COUNTY_ROW_CROP_FIELD_KIT.name),
         h('p', {}, `One-time upgrade · ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)} · +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% operated tractor crop speed · +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} operated tractor harvest unit`),
-        h('div', { class: 'equipment-mode', 'data-testid': 'county-field-kit-status' }, kitOwned ? 'Owned · installed' : kitUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · complete the County Pantry order'),
+        h('div', { class: 'equipment-mode', 'data-testid': 'county-field-kit-status' }, kitOwned
+          ? 'Owned · installed'
+          : kitUnlocked ? 'Unlocked at the County Equipment Desk' : countyComplete ? 'Locked · restore the tractor first' : 'Locked · complete the County Pantry order'),
         ...(!onFarm && !kitOwned && kitUnlocked && actions.context === 'town' ? [h('button', { class: 'btn btn-primary', 'data-testid': 'buy-county-field-kit', onclick: () => {
           const result = actions.onPurchaseKit?.();
           if (!result) return;
@@ -343,24 +363,24 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
         } }, `Purchase for ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)}`)] : []),
       ),
       h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, !onFarm
-        ? 'Equipment record on file - tractor operation is available back at the farm'
+        ? restored ? 'Equipment record on file - tractor operation is available back at the farm' : 'Inherited tractor on file - restoration is handled at this desk'
         : operating
           ? jobActive ? 'Operating - field job in progress' : 'Operating - ready to drive or work a parcel'
-          : 'Parked - select Operate to climb aboard'),
+          : restored ? 'Parked - select Operate to climb aboard' : 'Parked - restoration required before operation'),
       ...(onFarm ? [h('button', {
         class: 'btn btn-primary equipment-operate',
         'data-testid': operating ? 'exit-tractor' : 'operate-tractor',
-        ...(jobActive ? { disabled: 'true' } : {}),
+        ...(jobActive || !restored ? { disabled: 'true' } : {}),
         onclick: () => {
           closePanel();
           onToggleOperating?.();
         },
-      }, operating ? jobActive ? 'Finish or cancel job before exiting' : 'Exit Tractor' : 'Operate Tractor')] : []),
+      }, operating ? jobActive ? 'Finish or cancel job before exiting' : 'Exit Tractor' : restored ? 'Operate Tractor' : 'Restoration Required')] : []),
       h('div', { class: 'panel-note', 'data-testid': onFarm ? 'farm-equipment-note' : 'town-equipment-note' }, !onFarm
-        ? 'The Equipment Desk can review the tractor record here. Return to the farm to climb aboard and operate it.'
+        ? restored ? 'The Equipment Desk can review the tractor record here. Return to the farm to climb aboard and operate it.' : countyComplete ? 'The County delivery is complete. Restore the tractor here when the business can afford it.' : 'Complete Mae and Eli’s first County Pantry delivery to unlock restoration work.'
         : operating
           ? 'Click open ground to drive. Click an owned field section to choose acreage planting or harvesting. Escape cancels active work.'
-          : 'The driver is hidden while aboard. Tractor position is saved; active field jobs safely reset after reload.'),
+          : restored ? 'The driver is hidden while aboard. Tractor position is saved; active field jobs safely reset after reload.' : 'Work sections or rows by hand, complete the County Pantry delivery, then visit the Equipment Desk in town.'),
     )),
   });
 }

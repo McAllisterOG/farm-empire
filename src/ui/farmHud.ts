@@ -148,7 +148,7 @@ export class FarmHud {
       ? 'Field job active'
       : runtime?.operating
         ? 'Operating'
-        : farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Maintenance';
+        : farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Needs restoration';
     this.operationEl.classList.toggle('hidden', this.mode === 'town' || (!runtime?.operating && !runtime?.manualWorking));
     this.operationEl.classList.toggle('working', !!runtime?.working || !!runtime?.manualWorking);
     this.operationEl.textContent = runtime?.statusText ?? '';

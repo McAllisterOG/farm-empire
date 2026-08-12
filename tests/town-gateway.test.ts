@@ -118,7 +118,7 @@ describe('Town Gateway travel and save boundary', () => {
     expect(player.py).toBe(FARM_TOWN_RETURN.y);
     expect(saved).not.toHaveProperty('town');
     expect(saved.farm).not.toHaveProperty('town');
-    expect(saved.version).toBe(10);
+    expect(saved.version).toBe(11);
   });
 
   it('makes the town Equipment Desk incapable of operating the tractor', () => {

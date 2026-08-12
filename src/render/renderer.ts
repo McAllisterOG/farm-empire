@@ -980,6 +980,24 @@ function drawOldTractor(
   ctx.fillRect(-16, -27, 37, 18);
   ctx.fillStyle = status === 'operational' ? '#d06442' : '#9a9285';
   ctx.fillRect(-20, -24, 8, 11);
+  if (status === 'maintenance') {
+    // An open hood, exposed engine, and wheel chock make the starting repair
+    // state readable without adding another gameplay object or hit target.
+    ctx.fillStyle = '#4b4a43';
+    ctx.fillRect(8, -25, 9, 13);
+    ctx.fillStyle = '#d7b96f';
+    for (const engineX of [10, 13, 16]) ctx.fillRect(engineX, -23, 1.4, 9);
+    ctx.save();
+    ctx.translate(17, -29);
+    ctx.rotate(-.38);
+    ctx.fillStyle = '#8f867b';
+    ctx.fillRect(-8, -3, 19, 5);
+    ctx.restore();
+    ctx.fillStyle = '#c88a38';
+    ctx.fillRect(-32, -3, 9, 5);
+    ctx.fillStyle = '#5e432a';
+    ctx.fillRect(-31, -4, 7, 2);
+  }
   ctx.fillStyle = '#8f3027';
   ctx.fillRect(-10, -41, 17, 16);
   ctx.fillStyle = '#b9d7df';

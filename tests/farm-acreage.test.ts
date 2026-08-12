@@ -40,7 +40,7 @@ describe('Acreage & Field Geometry V2', () => {
     farmOf(state).pickup.x = LEGACY_FARM_TOWN_GATE.x; farmOf(state).pickup.y = LEGACY_FARM_TOWN_GATE.y;
     farmOf(state).pickup.cargo.crops.crop_corn = 4;
     const loaded = deserialize(JSON.stringify(state), NOW + 5_000);
-    expect(loaded.version).toBe(10);
+    expect(loaded.version).toBe(11);
     expect(loaded.plots).toHaveLength(36);
     expect(loaded.plots.find((plot) => plot.uid === 1)?.crop?.defId).toBe('crop_corn');
     expect(new Set(loaded.plots.map((plot) => plot.uid)).size).toBe(loaded.plots.length);

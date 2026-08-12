@@ -1,7 +1,7 @@
 import { FARMER_KNOWLEDGE_LEVELS, type FarmerKnowledgeLevelDef } from '../data/farmKnowledge.data';
 import type { GameState } from './types';
 
-export type FarmGuideStepId = 'prepare' | 'plant' | 'water' | 'harvest' | 'load' | 'town' | 'trade' | 'expand';
+export type FarmGuideStepId = 'prepare' | 'plant' | 'water' | 'harvest' | 'load' | 'town' | 'trade' | 'restore' | 'expand';
 
 export interface FarmGuideStep {
   id: FarmGuideStepId;
@@ -55,6 +55,7 @@ export function farmGuideSteps(state: GameState): readonly FarmGuideStep[] {
     { id: 'load', label: 'Load the pickup', hint: 'Park beside the barn, then click the truck or barn.', done: loaded },
     { id: 'town', label: 'Reach County services', hint: 'Click the road gate; drive for cargo service.', done: visited },
     { id: 'trade', label: 'Complete a sale or delivery', hint: 'Eli handles crops at the Grain Exchange.', done: traded },
+    { id: 'restore', label: 'Restore the old tractor', hint: 'After the Pantry delivery, use the County Equipment Desk.', done: farm.equipment.tractor.status === 'operational' },
     { id: 'expand', label: 'Buy neighboring acreage', hint: 'Click the locked field or use the farmhouse records.', done: farm.parcels.northOwned },
   ];
 }
@@ -77,6 +78,7 @@ export function farmKnowledgePoints(state: GameState): number {
   points += Math.min(30, safeStat(state, 'farmTractorSections'));
   if (farm.townContact.status === 'active') points += 8;
   if (farm.townContact.status === 'completed') points += 20;
+  if (farm.equipment.tractor.status === 'operational') points += 15;
   if (farm.parcels.northOwned) points += 25;
   if (farm.equipment.countyRowCropFieldKitOwned) points += 15;
   if (farm.equipment.barnLoftExpansionOwned) points += 15;

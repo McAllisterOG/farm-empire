@@ -100,6 +100,18 @@ const MIGRATIONS: Record<number, Migrator> = {
     // defensive normalization. Existing crops retain their growth timestamps.
     raw.version = 10;
   },
+  10: (raw) => {
+    // Tractor restoration begins with v11. Pre-v11 farms already owned an
+    // operational tractor, so preserve that established progression state.
+    const farm = raw.farm && typeof raw.farm === 'object' && !Array.isArray(raw.farm)
+      ? raw.farm as Record<string, unknown> : null;
+    const equipment = farm?.equipment && typeof farm.equipment === 'object' && !Array.isArray(farm.equipment)
+      ? farm.equipment as Record<string, unknown> : null;
+    const tractor = equipment?.tractor && typeof equipment.tractor === 'object' && !Array.isArray(equipment.tractor)
+      ? equipment.tractor as Record<string, unknown> : null;
+    if (tractor) tractor.status = 'operational';
+    raw.version = 11;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

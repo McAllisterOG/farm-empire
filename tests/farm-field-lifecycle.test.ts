@@ -61,6 +61,7 @@ describe('manual field lifecycle', () => {
 
   it('keeps current tractor planting as an integrated prepare-and-establish pass', () => {
     const state = makeFarm(); const farm = farmOf(state); const plot = state.plots[0];
+    farm.equipment.tractor.status = 'operational';
     farm.seeds.crop_corn = 1;
     expect(farmFieldCondition(state, plot.uid).soil).toBe('rough');
     expect(plantFarmCrop(state, plot.uid, 'crop_corn', NOW, 'operatedTractor').ok).toBe(true);

@@ -69,7 +69,7 @@ function renderTitle(root: HTMLElement): void {
           }),
         },
         h('div', { class: 'slot-name' }, '+ Start a New Farm'),
-        h('div', { class: 'slot-sub' }, 'Fresh $5,000 business · one field · barn · old tractor'),
+        h('div', { class: 'slot-sub' }, 'Fresh $5,000 business · one acreage · barn · inherited tractor project'),
         ),
       ));
     }

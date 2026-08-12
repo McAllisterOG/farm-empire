@@ -74,7 +74,7 @@ describe('old pickup cargo loop', () => {
     expect(farm.pickup.cargo.crops.crop_corn).toBe(0);
     expect(farm.cashCents).toBe(508_500);
     const loaded = deserialize(serialize(state, NOW + 1), NOW + 2);
-    expect(loaded.version).toBe(10);
+    expect(loaded.version).toBe(11);
     expect(farmOf(loaded).pickup.id).toBe('old-pickup');
     expect(fulfillCountyWorkOrder(loaded, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
   });

@@ -25,9 +25,9 @@ function runtime(state: ReturnType<typeof makeFarm>): FarmInteractionRuntime {
 }
 
 describe('Farmbook progress and Farmer Knowledge', () => {
-  it('starts with a concise eight-step route and advances from saved-compatible evidence', () => {
+  it('starts with a concise nine-step route and advances from saved-compatible evidence', () => {
     const state = makeFarm();
-    expect(farmGuideSteps(state)).toHaveLength(8);
+    expect(farmGuideSteps(state)).toHaveLength(9);
     expect(farmGuideSteps(state).every((step) => !step.done)).toBe(true);
     expect(nextFarmGuideStep(state)?.id).toBe('prepare');
     expect(farmerKnowledgeSummary(state).level.name).toBe('New Hand');
@@ -39,8 +39,9 @@ describe('Farmbook progress and Farmer Knowledge', () => {
     state.stats.farmCargoLoads = 1;
     state.stats.farmTownVisits = 1;
     state.stats.itemsSold = 1;
+    farmOf(state).equipment.tractor.status = 'operational';
     farmOf(state).parcels.northOwned = true;
-    expect(farmGuideSteps(state).map((step) => step.done)).toEqual([true, true, true, true, true, true, true, true]);
+    expect(farmGuideSteps(state).map((step) => step.done)).toEqual([true, true, true, true, true, true, true, true, true]);
     expect(nextFarmGuideStep(state)).toBeNull();
     expect(farmKnowledgePoints(state)).toBeGreaterThan(0);
   });
@@ -57,6 +58,7 @@ describe('Farmbook progress and Farmer Knowledge', () => {
   it('tracks planting, harvest, tractor work, and cargo loading through real transactions', () => {
     const state = makeFarm();
     const farm = farmOf(state);
+    farm.equipment.tractor.status = 'operational';
     farm.seeds.crop_corn = 1;
     const plot = state.plots[0];
     expect(plantFarmCrop(state, plot.uid, 'crop_corn', NOW, 'operatedTractor').ok).toBe(true);
