@@ -22,6 +22,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 16. **Acreage & Field Geometry V2** - a 6x6 starter acreage, an 8x12 neighboring commercial tract, save-v9 legacy expansion, data-defined parcel geometry, seed/storage-aware tractor plans, a routed County road, and home-focused whole-property camera bounds.
 17. **Player Experience & Homestead Expansion V1** - world-first context interactions, compact Farmbook guidance, action-derived Farmer Knowledge, authoritative hover/hit priority, corrected pickup/town routing, denser homestead and County presentation, and refreshed Windows builds without an economy or save-schema change.
 18. **Manual Farming & Field Lifecycle V1** - rough/prepared/stubble soil conditions, manual preparation and reworking, a required first watering, visible lifecycle feedback, an eight-step Farmbook route, save-v10 compatibility, and an integrated tractor prepare-and-establish shortcut.
+19. **Manual Fieldwork Feel** - short save-neutral prepare, rework, plant, water, harvest, and clearing actions with action-specific Canvas tools/effects, HUD progress, safe cancellation, and commit-on-completion semantics.
 
 ## Current authorization
 

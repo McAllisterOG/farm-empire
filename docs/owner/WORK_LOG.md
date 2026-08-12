@@ -233,3 +233,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/manual-fields-v1/win-unpacked/Farm Empire.exe` (225,442,304 bytes), `release/manual-fields-v1/Farm Empire Portable 1.0.0 x64.exe` (89,916,701 bytes), and `release/manual-fields-v1/Farm Empire Setup 1.0.0 x64.exe` (90,125,015 bytes), all generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the unpacked executable and deployed icon.
 - **Known limitations:** Watering is one establishment action only. Recurring moisture, weather, irrigation equipment, fertilizer, soil health, quality, manual action animations, and an implement progression remain deferred; economy values are unchanged.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Manual Fieldwork Feel - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `f7fcd4e`
+- **Scope:** Make the existing manual lifecycle feel physical and understandable through short runtime actions for prepare, rework, plant, water, harvest, and clearing. Preserve save v10, economy, land, hauling, tractor jobs, town, and all existing transaction rules; no stamina, tool durability, weather, recurring irrigation, skills, audio, or rebalance.
+- **Result:** Each manual action now presents a field-level tool/effect and progress label plus concise HUD status. Existing deterministic core actions apply only when the short action completes; Escape cancels before mutation, and conflicting world/panel input explains the active work instead of opening another surface.
+- **Verification:** 195/195 tests passed; strict typecheck, Vite production build, and diff checks passed. Browser acceptance covered prepare, mutation-safe cancellation, plant, water, mature, exact harvest, stubble, rework, save/title/reload, visual inspection, and zero console/page errors. The provided Playwright client emitted valid screenshot/text-state evidence. Unpacked, portable, and NSIS x64 artifacts were rebuilt under `release/manual-fieldwork-feel`; the Desktop shortcut targets that build, four native processes responded, and none remained after smoke cleanup.
+- **Artifacts:** `release/manual-fieldwork-feel/win-unpacked/Farm Empire.exe` (225,442,304 bytes), `release/manual-fieldwork-feel/Farm Empire Portable 1.0.0 x64.exe` (89,921,247 bytes), and `release/manual-fieldwork-feel/Farm Empire Setup 1.0.0 x64.exe` (90,129,564 bytes), all generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the unpacked executable.
+- **Known limitations:** Actions are deliberately brief and save-neutral. There is no sound, stamina, tool durability, implement ownership, recurring moisture, weather, or character-skill modifier.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

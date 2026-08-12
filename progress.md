@@ -36,6 +36,15 @@ Original prompt: Begin the first milestone from the complete Farm Empire master 
 - The provided web-game Playwright client captured a valid fresh-farm screenshot and deterministic text state.
 - Windows unpacked, portable, and NSIS x64 artifacts were rebuilt under `release/manual-fields-v1`. The real Desktop shortcut targets that build; native smoke found four responsive packaged processes and zero residual processes after cleanup.
 
+## 2026-08-12 - Manual fieldwork feel checkpoint
+
+- Added save-neutral runtime actions for prepare, rework, plant, water, harvest, and withered clearing. Each has a short deterministic duration and applies the existing transaction only on completion.
+- Escape cancels an active manual action before it commits, and world clicks are blocked with explicit feedback while work is underway.
+- Added action-specific Canvas tools/effects, a field-level progress label, concise HUD progress, and deterministic text-state exposure.
+- Final automated boundary: 195/195 tests, strict typecheck, production build, and diff checks pass.
+- Browser acceptance completed prepare, safe cancellation, plant, water, mature, harvest, stubble, rework, save/title/reload, and visual inspection of all action feedback with no console/page errors. The provided Playwright client emitted a valid screenshot and deterministic text state.
+- Windows unpacked, portable, and NSIS x64 artifacts were rebuilt under `release/manual-fieldwork-feel`; the real Desktop shortcut targets that build, four packaged processes responded in native smoke, and none remained afterward.
+
 ## Final acceptance
 
 - Bounded adversarial repair made malformed watering flags fail open to established growth and removed obsolete automatic-growth guidance from the pump and How to Play.
