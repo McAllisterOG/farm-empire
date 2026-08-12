@@ -23,6 +23,7 @@ import { farmNightAlpha as farmClockNightAlpha, nightAlphaAtHour as clockNightAl
 import { renderTown, type TownRenderScene } from './townRenderer';
 import { TOWN_CAMERA } from './townLayout';
 import { tractorToolbarPoseFromRenderState } from '../core/farmTractorMotion';
+import { MANUAL_FIELD_ACTION_LABELS, type ManualFieldActionKind } from '../core/farmManualAction';
 import { clampCameraCenter, clampCameraZoom, cameraFitCenter, cameraFitZoom, farmCameraPolicy, townCameraPolicy } from './cameraPolicy';
 import { drawOldPickup } from './pickupPainter';
 
@@ -74,6 +75,7 @@ export interface RenderScene {
     clockMinute: number;
     interactionHint?: { kind: string; label: string; x: number; y: number };
     destination?: { kind: 'walk' | 'pickup' | 'tractor'; x: number; y: number };
+    manualAction?: { kind: ManualFieldActionKind; x: number; y: number; progress: number };
   };
   /** Optional isolated County Service Center scene; never serialized. */
   town?: TownRenderScene;
@@ -522,6 +524,22 @@ export class Renderer {
         if (actor.name) drawFarmName(ctx, sx, sy, actor.name, zoom);
       } });
     }
+    if (scene.farm!.manualAction) {
+      const action = scene.farm!.manualAction;
+      const point = farmWorldPoint(action);
+      items.push({
+        depth: point.x + point.y + .42,
+        draw: () => drawManualFieldAction(
+          ctx,
+          camera.sx(isoX(point.x, point.y)),
+          camera.sy(isoY(point.x, point.y) + TILE_H / 2),
+          zoom,
+          now,
+          action.kind,
+          action.progress,
+        ),
+      });
+    }
     items.sort((a, b) => a.depth - b.depth); items.forEach((item) => item.draw());
     const na = farmNightAlpha(scene.farm!.clockMinute);
     if (na > .01) {
@@ -598,6 +616,75 @@ function drawFarmSection(
       ctx.beginPath(); ctx.moveTo(x, y + 1.5 * zoom); ctx.lineTo(x, y - 4 * zoom); ctx.stroke();
     }
   }
+}
+
+function drawManualFieldAction(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  zoom: number,
+  now: number,
+  kind: ManualFieldActionKind,
+  progress: number,
+): void {
+  const p = Math.max(0, Math.min(1, progress));
+  const phase = Math.sin(p * Math.PI * 3.5);
+  ctx.save();
+  ctx.translate(x, y - 8 * zoom);
+  ctx.scale(zoom, zoom);
+
+  ctx.fillStyle = 'rgba(41, 34, 24, .82)';
+  ctx.beginPath(); ctx.roundRect(-61, -77, 122, 24, 7); ctx.fill();
+  ctx.font = '600 11px "Segoe UI", sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#fff8dc';
+  ctx.fillText(MANUAL_FIELD_ACTION_LABELS[kind], 0, -65);
+  ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(-51, -49, 102, 5);
+  ctx.fillStyle = '#f0cf68'; ctx.fillRect(-51, -49, 102 * p, 5);
+
+  if (kind === 'prepare' || kind === 'rework' || kind === 'clear') {
+    ctx.save(); ctx.rotate(-.7 + phase * .24);
+    ctx.strokeStyle = '#7a5436'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-18, -31); ctx.lineTo(19, 20); ctx.stroke();
+    ctx.strokeStyle = '#b8afa0'; ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(12, 22); ctx.lineTo(29, 12); ctx.stroke(); ctx.restore();
+    ctx.fillStyle = kind === 'clear' ? '#d6ad57' : '#725038';
+    for (let i = 0; i < 5; i++) {
+      const spread = (p * 59 + i * 17) % 43;
+      ctx.beginPath(); ctx.ellipse(-22 + spread, 25 - ((i * 7 + p * 23) % 18), 2.6, 1.5, i, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (kind === 'plant') {
+    ctx.fillStyle = '#c68f3e';
+    for (let i = 0; i < 7; i++) {
+      const t = Math.max(0, Math.min(1, p * 1.45 - i * .065));
+      const sx = -28 + i * 9; const sy = 7 + Math.sin(t * Math.PI) * -22 + t * 17;
+      ctx.beginPath(); ctx.ellipse(sx, sy, 2.8, 4.2, .55, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(95,66,39,.7)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-35, 27); ctx.lineTo(35, 27); ctx.stroke();
+  } else if (kind === 'water') {
+    ctx.save(); ctx.translate(-12, 5); ctx.rotate(-.2 + phase * .05);
+    ctx.fillStyle = '#6d96a0'; ctx.strokeStyle = '#31545d'; ctx.lineWidth = 2;
+    ctx.fillRect(-14, -13, 26, 23); ctx.strokeRect(-14, -13, 26, 23);
+    ctx.beginPath(); ctx.arc(-1, -13, 9, Math.PI, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(12, -8); ctx.lineTo(31, -18); ctx.lineTo(34, -14); ctx.lineTo(14, -2); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#72bdd5';
+    for (let i = 0; i < 6; i++) {
+      const drop = (p * 2.4 + i * .17) % 1;
+      ctx.beginPath(); ctx.ellipse(19 + i * 5, -6 + drop * 36, 1.8, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  } else {
+    ctx.strokeStyle = '#d6d0bd'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(4, 4, 27, -.25, 2.1); ctx.stroke();
+    ctx.strokeStyle = '#805231'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(20, 19); ctx.lineTo(35, 34); ctx.stroke();
+    ctx.strokeStyle = '#d6ad57'; ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const sx = -32 + i * 12; const sway = Math.sin(now / 90 + i) * 2;
+      ctx.beginPath(); ctx.moveTo(sx, 30); ctx.lineTo(sx + sway, 10); ctx.stroke();
+    }
+  }
+  ctx.restore();
 }
 
 function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: FarmPlot, stage: string, zoom: number, now: number, bob: number): void {

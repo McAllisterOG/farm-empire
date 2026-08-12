@@ -21,6 +21,7 @@ export interface TractorHudRuntime {
   operating: boolean;
   working: boolean;
   statusText?: string;
+  manualWorking?: boolean;
 }
 
 function clockText(minute: number): string {
@@ -56,7 +57,12 @@ export class FarmHud {
     this.storageEl = h('strong', { 'data-testid': 'storage-summary' }, '0 / 0');
     this.selectedEl = h('strong', { 'data-testid': 'selected-crop' }, 'Corn');
     this.tractorEl = h('strong', { 'data-testid': 'tractor-status' }, 'Operational');
-    this.operationEl = h('div', { class: 'farm-operation-status hidden', 'data-testid': 'tractor-operation-status' });
+    this.operationEl = h('div', {
+      class: 'farm-operation-status hidden',
+      role: 'status',
+      'aria-live': 'polite',
+      'data-testid': 'tractor-operation-status',
+    });
     this.brandSubEl = h('div', { class: 'farm-brand-sub' }, 'Farming Business V1');
     this.storageButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'storage-button', onclick: cb.onMarket }, h('span', {}, 'Barn'), this.storageEl) as HTMLButtonElement;
     this.equipmentButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'equipment-button', onclick: cb.onEquipment }, h('span', {}, 'Old Tractor'), this.tractorEl) as HTMLButtonElement;
@@ -143,11 +149,13 @@ export class FarmHud {
       : runtime?.operating
         ? 'Operating'
         : farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Maintenance';
-    this.operationEl.classList.toggle('hidden', this.mode === 'town' || !runtime?.operating);
-    this.operationEl.classList.toggle('working', !!runtime?.working);
+    this.operationEl.classList.toggle('hidden', this.mode === 'town' || (!runtime?.operating && !runtime?.manualWorking));
+    this.operationEl.classList.toggle('working', !!runtime?.working || !!runtime?.manualWorking);
     this.operationEl.textContent = runtime?.statusText ?? '';
     this.helpEl.textContent = this.mode === 'town'
       ? 'Click a townsperson or storefront for service. Walk only on the paved center.'
+      : runtime?.manualWorking
+        ? 'Manual fieldwork commits when the short action finishes. Press Escape to cancel without changing the field.'
       : runtime?.working
       ? 'The tractor is working section by section. Press Escape to cancel safely.'
       : runtime?.operating

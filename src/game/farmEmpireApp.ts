@@ -15,6 +15,10 @@ import { isoX, isoY } from '../render/iso';
 import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
 import { recordFarmStat } from '../core/farmKnowledge';
+import {
+  MANUAL_FIELD_ACTION_LABELS, createManualFieldAction, manualFieldActionComplete, manualFieldActionProgress,
+  type ManualFieldAction, type ManualFieldActionKind,
+} from '../core/farmManualAction';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
@@ -56,6 +60,10 @@ interface TractorJob {
   waitUntil: number;
 }
 
+interface RunningManualFieldAction extends ManualFieldAction {
+  apply: () => ActionResult;
+}
+
 type FarmEmpireMode = 'farm' | 'town';
 
 interface CameraSnapshot { cx: number; cy: number; zoom: number; viewW: number; viewH: number }
@@ -91,6 +99,7 @@ export class FarmEmpireApp {
   private tractorTarget: TractorMoveTarget | null = null;
   private tractorMotion: TractorMotion = createTractorMotion();
   private tractorJob: TractorJob | null = null;
+  private manualFieldAction: RunningManualFieldAction | null = null;
   private equipmentPanelOpen = false;
   private running = true;
   private raf = 0;
@@ -123,15 +132,15 @@ export class FarmEmpireApp {
     this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
-      onMarket: () => { this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions(), 'farm'); },
-      onFarmbook: () => this.openFarmhouseOffice(),
-      onEquipment: () => this.openEquipmentPanel(),
+      onMarket: () => { if (this.manualActionBlocksUi()) return; this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions(), 'farm'); },
+      onFarmbook: () => { if (!this.manualActionBlocksUi()) this.openFarmhouseOffice(); },
+      onEquipment: () => { if (!this.manualActionBlocksUi()) this.openEquipmentPanel(); },
       onReturnFarm: () => this.requestReturnToFarm(),
       onSave: () => {
         this.save();
         toast(this.mode === 'town' ? 'Farm business saved from town.' : 'Farm saved.', 'good');
       },
-      onMenu: () => this.openGameMenu(onBackToTitle),
+      onMenu: () => { if (!this.manualActionBlocksUi()) this.openGameMenu(onBackToTitle); },
     });
     this.bindInput(canvas);
     this.renderer.centerOnFarm();
@@ -370,7 +379,8 @@ export class FarmEmpireApp {
         this.cancelTownWalk();
         return;
       }
-      if (this.scoutWaitingForScratch) this.cancelScoutApproach();
+      if (this.manualFieldAction) this.cancelManualFieldAction();
+      else if (this.scoutWaitingForScratch) this.cancelScoutApproach();
       else if (this.tractorJob) this.cancelTractorJob();
       else if (this.tractorTarget) {
         this.tractorTarget = null;
@@ -410,6 +420,10 @@ export class FarmEmpireApp {
     }
     if (this.mode === 'town') {
       this.onClickTown(sx, sy);
+      return;
+    }
+    if (this.manualFieldAction) {
+      toast(`${MANUAL_FIELD_ACTION_LABELS[this.manualFieldAction.kind]} in progress. Press Escape to cancel.`, 'bad');
       return;
     }
     if (this.tractorJob) {
@@ -831,7 +845,7 @@ export class FarmEmpireApp {
         const stubble = condition.soil === 'stubble';
         showActionMenu(sx, sy, stubble ? 'Harvest stubble' : 'Rough field section', [{
           label: stubble ? 'Rework stubble' : 'Prepare soil',
-          onClick: () => this.dispatch(tillFarmField(this.state, plotUid)),
+          onClick: () => this.startManualFieldAction(stubble ? 'rework' : 'prepare', plotUid, () => tillFarmField(this.state, plotUid)),
         }]);
         return;
       }
@@ -842,7 +856,7 @@ export class FarmEmpireApp {
           label: `Plant ${def.name} (${count} seed${count === 1 ? '' : 's'})`,
           icon: `icon:seed_${def.id.replace('crop_', '')}`,
           disabled: count <= 0,
-          onClick: () => this.dispatch(plantFarmCrop(this.state, plotUid, def.id, this.gameNow(), 'manual')),
+          onClick: () => this.startManualFieldAction('plant', plotUid, () => plantFarmCrop(this.state, plotUid, def.id, this.gameNow(), 'manual')),
         },
         {
           label: count > 0 ? 'More seeds are sold in town' : 'No seeds · see the Farmbook route',
@@ -858,21 +872,21 @@ export class FarmEmpireApp {
     if (isFarmCropWithered(plot.crop, now)) {
       showActionMenu(sx, sy, `${def.name} · Withered`, [{
         label: 'Clear withered section (no refund)', icon: 'fx:hungry',
-        onClick: () => this.dispatch(clearWitheredFarmCrop(this.state, plotUid, this.gameNow())),
+        onClick: () => this.startManualFieldAction('clear', plotUid, () => clearWitheredFarmCrop(this.state, plotUid, this.gameNow())),
       }]);
       return;
     }
     if (stage === 'needs-water') {
       showActionMenu(sx, sy, `${def.name} · Needs water`, [{
         label: `Water ${def.name} to start growth`, icon: 'fx:drop',
-        onClick: () => this.dispatch(waterFarmCrop(this.state, plotUid, this.gameNow())),
+        onClick: () => this.startManualFieldAction('water', plotUid, () => waterFarmCrop(this.state, plotUid, this.gameNow())),
       }]);
       return;
     }
     if (stage === 'ready') {
       showActionMenu(sx, sy, `${def.name} · Ready`, [{
         label: 'Harvest into barn', icon: 'fx:ready',
-        onClick: () => this.dispatch(harvestFarmCrop(this.state, plotUid, this.gameNow(), 'manual')),
+        onClick: () => this.startManualFieldAction('harvest', plotUid, () => harvestFarmCrop(this.state, plotUid, this.gameNow(), 'manual')),
       }]);
     } else {
       showActionMenu(sx, sy, `${def.name} · ${stage}`, [{
@@ -992,7 +1006,17 @@ export class FarmEmpireApp {
     this.save();
   }
 
-  private tractorHudRuntime(): { operating: boolean; working: boolean; statusText: string } {
+  private tractorHudRuntime(): { operating: boolean; working: boolean; statusText: string; manualWorking?: boolean } {
+    const manual = this.manualFieldAction;
+    if (manual) {
+      const progress = Math.round(manualFieldActionProgress(manual, this.gameNow()) * 100);
+      return {
+        operating: false,
+        working: false,
+        manualWorking: true,
+        statusText: `${MANUAL_FIELD_ACTION_LABELS[manual.kind]} | ${progress}% | Escape cancels safely`,
+      };
+    }
     const job = this.tractorJob;
     if (job) {
       const total = job.targetPlotUids.length;
@@ -1043,6 +1067,41 @@ export class FarmEmpireApp {
     }
   }
 
+  private startManualFieldAction(kind: ManualFieldActionKind, plotUid: number, apply: () => ActionResult): void {
+    if (this.mode !== 'farm' || this.operatingTractor || this.operatingPickup || this.manualFieldAction) return;
+    const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+    if (!plot) return;
+    this.walkTarget = null;
+    this.playerActor.walking = false;
+    const dx = plot.x - this.playerActor.x;
+    const dy = plot.y - this.playerActor.y;
+    this.playerFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
+    this.manualFieldAction = { ...createManualFieldAction(kind, plotUid, plot, this.gameNow()), apply };
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
+  private cancelManualFieldAction(): void {
+    const action = this.manualFieldAction;
+    if (!action) return;
+    this.manualFieldAction = null;
+    toast(`${MANUAL_FIELD_ACTION_LABELS[action.kind]} cancelled. Nothing changed.`, 'good');
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
+  private manualActionBlocksUi(): boolean {
+    const action = this.manualFieldAction;
+    if (!action) return false;
+    toast(`${MANUAL_FIELD_ACTION_LABELS[action.kind]} in progress. Finish it or press Escape to cancel.`, 'bad');
+    return true;
+  }
+
+  private updateManualFieldAction(now: number): void {
+    const action = this.manualFieldAction;
+    if (!action || !manualFieldActionComplete(action, now)) return;
+    this.manualFieldAction = null;
+    this.dispatch(action.apply());
+  }
+
   private gameNow(): number {
     return Date.now() + this.simulationOffsetMs;
   }
@@ -1051,6 +1110,7 @@ export class FarmEmpireApp {
     if (Number.isFinite(ms) && ms > 0) this.simulationOffsetMs += Math.floor(ms);
     const now = this.gameNow();
     advanceFarmClock(this.state, now);
+    this.updateManualFieldAction(now);
     this.renderer.render(this.buildScene(), now);
     this.hud.update(this.state, this.tractorHudRuntime());
     return this.renderGameToText();
@@ -1078,6 +1138,11 @@ export class FarmEmpireApp {
       barn: { used: storageUsed(this.state), capacity: farm.storageCapacity },
       pickup: { x: farm.pickup.x, y: farm.pickup.y, operating: this.operatingPickup, atTown: this.pickupAtTown },
       tractor: { x: farm.equipment.tractor.x, y: farm.equipment.tractor.y, operating: this.operatingTractor, working: !!this.tractorJob },
+      manualFieldAction: this.manualFieldAction ? {
+        kind: this.manualFieldAction.kind,
+        plotUid: this.manualFieldAction.plotUid,
+        progress: manualFieldActionProgress(this.manualFieldAction, this.gameNow()),
+      } : null,
       fields,
       overlay: { actionMenu: isActionMenuOpen(), panel: isPanelOpen() },
     });
@@ -1131,6 +1196,7 @@ export class FarmEmpireApp {
     const dt = this.lastFrame ? Math.min(100, realNow - this.lastFrame) : 16;
     this.lastFrame = realNow;
     advanceFarmClock(this.state, now);
+    if (this.mode === 'farm') this.updateManualFieldAction(now);
 
     if (this.mode === 'farm' && this.tractorTarget) {
       const tractor = farmOf(this.state).equipment.tractor;
@@ -1261,6 +1327,12 @@ export class FarmEmpireApp {
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
       clockMinute: farm.clock.minute,
       interactionHint: this.hover ? { kind: this.hover.kind, label: this.hover.label, ...this.hover.point } : undefined,
+      manualAction: this.manualFieldAction ? {
+        kind: this.manualFieldAction.kind,
+        x: this.manualFieldAction.x,
+        y: this.manualFieldAction.y,
+        progress: manualFieldActionProgress(this.manualFieldAction, this.gameNow()),
+      } : undefined,
       destination: this.tractorTarget
         ? { x: this.tractorTarget.x, y: this.tractorTarget.y, kind: 'tractor' }
         : this.pickupTarget
