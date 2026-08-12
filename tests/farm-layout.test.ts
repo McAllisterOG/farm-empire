@@ -3,6 +3,7 @@ import { createFarmGame } from '../src/core/state';
 import { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from '../src/core/farmBusiness';
 import { pickupAtCargoPad, PICKUP_CARGO_PAD, PICKUP_CARGO_PAD_TOLERANCE } from '../src/core/farmPickupData';
 import { FARM_TOWN_GATE } from '../src/core/townGateway';
+import { farmParcelSectionCount } from '../src/core/farmParcels';
 import { deserialize } from '../src/save/save';
 import {
   FARM_PLOT_SPAN, farmDriveLane, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint, farmLandmarks,
@@ -71,9 +72,10 @@ describe('Farm Empire presentation layout', () => {
     expect(farmPlotAtWorldPoint(state.plots, { x: bounds.minX - 0.01, y: (bounds.minY + bounds.maxY) / 2 })).toBeUndefined();
   });
 
-  it('keeps the nine starter sections distinct with yard and neighbor separation', () => {
+  it('keeps the 36 starter sections distinct with yard and neighbor separation', () => {
     const state = createFarmGame('Layout', 99, NOW);
     const starter = state.plots.map(farmPlotFootprint);
+    expect(state.plots).toHaveLength(farmParcelSectionCount('starter'));
     expect(farmPlotAtWorldPoint(state.plots, farmWorldPoint({ x: 8.5, y: 7 }))).toBeUndefined();
     expect(starter[0].maxX).toBeLessThan(starter[1].minX);
     expect(farmPlotAtWorldPoint(NEIGHBOR_FIELD_TILES.map((point) => ({ ...point, uid: -1, crop: null })), farmWorldPoint({ x: 10, y: 7 }))).toBeTruthy();
@@ -91,7 +93,7 @@ describe('Farm Empire presentation layout', () => {
 });
 
 describe('literal v4 Farm Empire save compatibility', () => {
-  it('deserializes original coordinates, crops, placements, player, tractor, storage, market and land without layout migration', () => {
+  it('preserves original coordinates, crops, placements, actors and business state while expanding owned acreage', () => {
     const raw = createFarmGame('Old Save', 42, NOW) as unknown as Record<string, unknown>;
     const state = raw as unknown as ReturnType<typeof createFarmGame>;
     state.plots[0].crop = { defId: 'crop_corn', plantedAt: NOW - 1000, wateredBonusMs: 20, lastWateredAt: NOW - 500 };
@@ -100,7 +102,9 @@ describe('literal v4 Farm Empire save compatibility', () => {
     state.farm!.storage.crop_corn = 19; state.farm!.market.quotes.crop_corn.currentCents = 321; state.farm!.parcels.northOwned = true;
     const literalV4 = JSON.stringify({ ...raw, version: 4 });
     const loaded = deserialize(literalV4, NOW + 20_000);
-    expect(loaded.plots.map((plot) => ({ uid: plot.uid, x: plot.x, y: plot.y, crop: plot.crop?.defId }))).toEqual(state.plots.map((plot) => ({ uid: plot.uid, x: plot.x, y: plot.y, crop: plot.crop?.defId })));
+    const originalPlots = state.plots.map((plot) => ({ uid: plot.uid, x: plot.x, y: plot.y, crop: plot.crop?.defId }));
+    expect(loaded.plots.slice(0, originalPlots.length).map((plot) => ({ uid: plot.uid, x: plot.x, y: plot.y, crop: plot.crop?.defId }))).toEqual(originalPlots);
+    expect(loaded.plots).toHaveLength(farmParcelSectionCount('starter') + farmParcelSectionCount('north'));
     expect(loaded.placements).toEqual(state.placements);
     expect(loaded.player.px).toBe(8.375); expect(loaded.player.py).toBe(10.625);
     expect(loaded.farm!.equipment.tractor.x).toBe(9.125); expect(loaded.farm!.equipment.tractor.y).toBe(11.75);

@@ -7,8 +7,29 @@ export interface TownTravelRuntime {
 }
 
 /** Logical farm coordinates. Town scene coordinates are deliberately separate. */
-export const FARM_TOWN_GATE = Object.freeze({ x: 13.4, y: 7.0 });
-export const FARM_TOWN_RETURN = Object.freeze({ x: 13.05, y: 7.55 });
+export const LEGACY_FARM_TOWN_GATE = Object.freeze({ x: 13.4, y: 7.0 });
+export const LEGACY_FARM_TOWN_RETURN = Object.freeze({ x: 13.05, y: 7.55 });
+export const FARM_TOWN_GATE = Object.freeze({ x: 19.3, y: 9.0 });
+export const FARM_TOWN_RETURN = Object.freeze({ x: 18.7, y: 9.65 });
+
+/** Logical centerline around—not through—the two working acreages. */
+export const FARM_TOWN_ROAD_WAYPOINTS = Object.freeze([
+  { x: 8.75, y: 6.25 },
+  { x: 8.75, y: 15.55 },
+  { x: 18.35, y: 15.55 },
+  { x: 18.35, y: 9.65 },
+  FARM_TOWN_GATE,
+] as const);
+
+export function farmTownRoadRouteFrom(point: { x: number; y: number }): { x: number; y: number }[] {
+  let nearest = 0;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  FARM_TOWN_ROAD_WAYPOINTS.forEach((waypoint, index) => {
+    const distance = Math.hypot(point.x - waypoint.x, point.y - waypoint.y);
+    if (distance < nearestDistance) { nearest = index; nearestDistance = distance; }
+  });
+  return FARM_TOWN_ROAD_WAYPOINTS.slice(nearest).map((waypoint) => ({ ...waypoint }));
+}
 
 export function townTravelBlockReason(runtime: TownTravelRuntime): string | null {
   if (runtime.tractorJobActive) return 'Finish or cancel the active field job before heading to town.';

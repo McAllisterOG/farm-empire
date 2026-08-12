@@ -23,7 +23,7 @@ import { farmNightAlpha as farmClockNightAlpha, nightAlphaAtHour as clockNightAl
 import { renderTown, type TownRenderScene } from './townRenderer';
 import { TOWN_CAMERA } from './townLayout';
 import { tractorToolbarPoseFromRenderState } from '../core/farmTractorMotion';
-import { clampCameraCenter, clampCameraZoom, cameraFitZoom, farmCameraPolicy, townCameraPolicy } from './cameraPolicy';
+import { clampCameraCenter, clampCameraZoom, cameraFitCenter, cameraFitZoom, farmCameraPolicy, townCameraPolicy } from './cameraPolicy';
 import { drawOldPickup } from './pickupPainter';
 
 export interface SceneActor {
@@ -426,8 +426,9 @@ export class Renderer {
 
   centerOnFarm(): void {
     const policy = farmCameraPolicy();
-    this.camera.cx = (policy.bounds.minX + policy.bounds.maxX) / 2;
-    this.camera.cy = (policy.bounds.minY + policy.bounds.maxY) / 2;
+    const center = cameraFitCenter(policy);
+    this.camera.cx = center.cx;
+    this.camera.cy = center.cy;
     this.camera.zoom = cameraFitZoom(policy, this.camera.viewW, this.camera.viewH); this.clampFarmCamera();
   }
 

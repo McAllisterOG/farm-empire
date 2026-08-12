@@ -4,7 +4,9 @@ import { FARM_TOWN_GATE } from './townGateway';
 export const PICKUP_ID = 'old-pickup' as const;
 export const PICKUP_NAME = 'Old Pickup';
 export const PICKUP_CARGO_CAPACITY = 72;
-export const PICKUP_START = Object.freeze({ x: 7.4, y: 5.7 });
+// Keep the cargo pad visually clear of the barn while remaining close enough
+// that loading and unloading still reads as one compact farmyard interaction.
+export const PICKUP_START = Object.freeze({ x: 6.25, y: 5.1 });
 export const PICKUP_CARGO_PAD = PICKUP_START;
 export const PICKUP_CARGO_PAD_TOLERANCE = .8;
 export const PICKUP_GATE_CONFLICT_TOLERANCE = .9;

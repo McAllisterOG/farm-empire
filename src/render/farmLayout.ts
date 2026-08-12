@@ -5,7 +5,7 @@
  */
 import type { FarmPlot } from '../core/types';
 import { PICKUP_CARGO_PAD } from '../core/farmPickupData';
-import { FARM_TOWN_GATE } from '../core/townGateway';
+import { FARM_TOWN_ROAD_WAYPOINTS } from '../core/townGateway';
 
 /** Logical plot centre-to-centre distance in presentation-world tiles. */
 export const FARM_PLOT_SPAN = 2.75;
@@ -22,8 +22,8 @@ export interface FarmLandmarks {
 
 /** Farm-only landmarks are presentation anchors, never saved world state. */
 export function farmLandmarks(): FarmLandmarks {
-  const doghouse = { x: 10.3, y: 11.15 };
-  const scoutHome = { x: 9.8, y: 11.6 };
+  const doghouse = { x: 9.2, y: 13.55 };
+  const scoutHome = { x: 9.15, y: 13.1 };
   const cargoPad = PICKUP_CARGO_PAD;
   return {
     doghouse,
@@ -36,12 +36,9 @@ export function farmWorldPoint(point: FarmPoint): FarmPoint {
   return { x: point.x * FARM_PLOT_SPAN, y: point.y * FARM_PLOT_SPAN };
 }
 
-/** Presentation-world route kept above the north parcel's field footprints. */
+/** Presentation-world projection of the authoritative logical farm road. */
 export function farmDriveLane(): readonly FarmPoint[] {
-  return [
-    { x: 19, y: 14 }, { x: 24, y: 14.5 }, { x: 36.5, y: 14.5 }, { x: 38, y: 17.5 },
-    farmWorldPoint(FARM_TOWN_GATE),
-  ];
+  return [farmWorldPoint(farmLandmarks().cargoPad), ...FARM_TOWN_ROAD_WAYPOINTS.map(farmWorldPoint)];
 }
 
 export function farmLogicalPoint(point: FarmPoint): FarmPoint {
@@ -87,7 +84,12 @@ export function farmPlotAtWorldPoint<T extends Pick<FarmPlot, 'x' | 'y'>>(plots:
 
 /** Deterministic rectangular mainland bounds in presentation-world tile units. */
 export function farmMainlandBounds(): FarmBounds {
-  return { minX: 2, minY: 2, maxX: 43, maxY: 39 };
+  return { minX: 0, minY: 0, maxX: 58, maxY: 46 };
+}
+
+/** Default camera focus: the working homestead, not the entire commercial tract. */
+export function farmHomeFocusBounds(): FarmBounds {
+  return { minX: 0, minY: 7, maxX: 30, maxY: 40 };
 }
 
 export function pointInFarmBounds(point: FarmPoint, bounds = farmMainlandBounds()): boolean {

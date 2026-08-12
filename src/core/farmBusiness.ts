@@ -6,23 +6,19 @@ import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
 import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT } from '../data/farmEquipment.data';
 import { PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
+import {
+  STARTER_FIELD_TILES, ensureOwnedFarmParcelPlots, farmParcelAtTile,
+  farmParcelSectionCount, farmParcelTiles, type FarmParcelId,
+} from './farmParcels';
+
+export { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from './farmParcels';
+export type { FarmParcelId } from './farmParcels';
 
 export const STARTING_CASH_CENTS = 500_000;
 export const STARTING_STORAGE_CAPACITY = 150;
 export const FIRST_PARCEL_PRICE_CENTS = 650_000;
 export const GAME_MINUTES_PER_REAL_SECOND = 8;
 
-export const STARTER_FIELD_TILES = Array.from({ length: 9 }, (_, i) => ({
-  x: 5 + (i % 3),
-  y: 7 + Math.floor(i / 3),
-}));
-
-export const NEIGHBOR_FIELD_TILES = Array.from({ length: 9 }, (_, i) => ({
-  x: 10 + (i % 3),
-  y: 7 + Math.floor(i / 3),
-}));
-
-export type FarmParcelId = 'starter' | 'north';
 export type ParcelWorkKind = 'plant' | 'harvest';
 export type FarmWorkContext = 'manual' | 'operatedTractor';
 
@@ -62,10 +58,6 @@ export interface ParcelWorkPlan {
 }
 
 export const TRACTOR_DISMOUNT_OFFSET = { x: 0.75, y: 0.25 } as const;
-
-function parcelTiles(parcelId: FarmParcelId): { x: number; y: number }[] {
-  return parcelId === 'starter' ? STARTER_FIELD_TILES : NEIGHBOR_FIELD_TILES;
-}
 
 /** Stable row-by-row route with alternating direction, independent of plot array order. */
 export function serpentineFieldTiles(tiles: readonly { x: number; y: number }[]): { x: number; y: number }[] {
@@ -257,6 +249,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     },
   };
   if (!isFarmCropUnlocked(state, state.farm.selectedCropId)) state.farm.selectedCropId = 'crop_corn';
+  ensureOwnedFarmParcelPlots(state, state.farm.parcels);
   syncCashMirror(state);
   return state.farm;
 }
@@ -311,19 +304,15 @@ export function selectFarmCrop(state: GameState, cropId: string): ActionResult {
 
 export function isOwnedFieldTile(state: GameState, x: number, y: number): boolean {
   const farm = farmOf(state);
-  if (STARTER_FIELD_TILES.some((tile) => tile.x === x && tile.y === y)) return farm.parcels.starterOwned;
-  if (NEIGHBOR_FIELD_TILES.some((tile) => tile.x === x && tile.y === y)) return farm.parcels.northOwned;
-  return false;
+  const parcelId = farmParcelAtTile(x, y);
+  return parcelId === 'starter' ? farm.parcels.starterOwned : parcelId === 'north' ? farm.parcels.northOwned : false;
 }
 
 export function ownedFarmParcelAt(state: GameState, x: number, y: number): FarmParcelId | null {
   const farm = farmOf(state);
-  if (farm.parcels.starterOwned && STARTER_FIELD_TILES.some((tile) => tile.x === x && tile.y === y)) {
-    return 'starter';
-  }
-  if (farm.parcels.northOwned && NEIGHBOR_FIELD_TILES.some((tile) => tile.x === x && tile.y === y)) {
-    return 'north';
-  }
+  const parcelId = farmParcelAtTile(x, y);
+  if (parcelId === 'starter' && farm.parcels.starterOwned) return parcelId;
+  if (parcelId === 'north' && farm.parcels.northOwned) return parcelId;
   return null;
 }
 
@@ -356,16 +345,32 @@ export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: nu
   }
 
   const plotByCoordinate = new Map(state.plots.map((plot) => [`${plot.x}:${plot.y}`, plot]));
-  const orderedPlots = serpentineFieldTiles(parcelTiles(parcelId))
+  const orderedPlots = serpentineFieldTiles(farmParcelTiles(parcelId))
     .map((tile) => plotByCoordinate.get(`${tile.x}:${tile.y}`))
     .filter((plot): plot is FarmPlot => !!plot);
+  const availableSeeds = Math.max(0, Math.floor(farm.seeds[plannedCropId] ?? 0));
+  const plantPlotUids = !isFarmCropUnlocked(state, plannedCropId) ? [] : orderedPlots
+    .filter((plot) => !plot.crop)
+    .slice(0, availableSeeds)
+    .map((plot) => plot.uid);
+  let freeCapacity = storageRemaining(state);
+  const harvestPlotUids: number[] = [];
+  for (const plot of orderedPlots) {
+    if (!farmCropReady(plot, now) || !plot.crop) continue;
+    const def = farmCropDefOrNull(plot.crop.defId);
+    if (!def) continue;
+    const bonus = farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
+      ? COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits : 0;
+    const needed = (def.harvestYield + bonus) * def.storageUnitsPerItem;
+    if (needed > freeCapacity) continue;
+    harvestPlotUids.push(plot.uid);
+    freeCapacity -= needed;
+  }
   return {
     parcelId,
     orderedPlotUids: orderedPlots.map((plot) => plot.uid),
-    plantPlotUids: !isFarmCropUnlocked(state, plannedCropId) ? [] : orderedPlots.filter((plot) => !plot.crop).map((plot) => plot.uid),
-    harvestPlotUids: orderedPlots
-      .filter((plot) => farmCropReady(plot, now))
-      .map((plot) => plot.uid),
+    plantPlotUids,
+    harvestPlotUids,
   };
 }
 
@@ -505,13 +510,13 @@ export function purchaseNeighborParcel(state: GameState): ActionResult {
   if (farm.cashCents < FIRST_PARCEL_PRICE_CENTS) return fail('Not enough cash to purchase this parcel.');
   farm.cashCents -= FIRST_PARCEL_PRICE_CENTS;
   farm.parcels.northOwned = true;
-  for (const tile of NEIGHBOR_FIELD_TILES) {
+  for (const tile of farmParcelTiles('north')) {
     if (state.plots.some((plot) => plot.x === tile.x && plot.y === tile.y)) continue;
     state.uidCounter += 1;
     state.plots.push({ uid: state.uidCounter, x: tile.x, y: tile.y, crop: null });
   }
   syncCashMirror(state);
-  return { ok: true, events: [{ type: 'expand', amount: 9 }] };
+  return { ok: true, events: [{ type: 'expand', amount: farmParcelSectionCount('north') }] };
 }
 
 function eventModifierBps(events: ActiveFarmMarketEvent[], cropId: string): number {

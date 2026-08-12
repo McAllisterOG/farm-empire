@@ -6,6 +6,8 @@ import type { GameState } from '../core/types';
 import { SAVE_VERSION, createFarmGame, emptyStats } from '../core/state';
 import { initNeighbors } from '../core/social';
 import { normalizeFarmBusinessState } from '../core/farmBusiness';
+import { PICKUP_START } from '../core/farmPickupData';
+import { FARM_TOWN_RETURN, LEGACY_FARM_TOWN_GATE, LEGACY_FARM_TOWN_RETURN } from '../core/townGateway';
 
 export const SLOT_COUNT = 3;
 const KEY_PREFIX = 'farm-empire:save:';
@@ -69,6 +71,29 @@ const MIGRATIONS: Record<number, Migrator> = {
     // Pickup cargo is deliberately minimal; farm normalization supplies every
     // missing or malformed field and preserves all prior business state.
     raw.version = 8;
+  },
+  8: (raw) => {
+    // Acreage v2 adds missing owned sections during defensive farm normalization.
+    // Existing UIDs, crops, cargo, ownership, and business values are preserved.
+    const player = raw.player && typeof raw.player === 'object' && !Array.isArray(raw.player)
+      ? raw.player as Record<string, unknown> : null;
+    if (player) {
+      const px = Number(player.px); const py = Number(player.py);
+      const atLegacyAnchor = [LEGACY_FARM_TOWN_GATE, LEGACY_FARM_TOWN_RETURN]
+        .some((anchor) => Number.isFinite(px) && Number.isFinite(py) && Math.hypot(px - anchor.x, py - anchor.y) <= .9);
+      if (atLegacyAnchor) { player.px = FARM_TOWN_RETURN.x; player.py = FARM_TOWN_RETURN.y; }
+    }
+    const farm = raw.farm && typeof raw.farm === 'object' && !Array.isArray(raw.farm)
+      ? raw.farm as Record<string, unknown> : null;
+    const pickup = farm?.pickup && typeof farm.pickup === 'object' && !Array.isArray(farm.pickup)
+      ? farm.pickup as Record<string, unknown> : null;
+    if (pickup) {
+      const x = Number(pickup.x); const y = Number(pickup.y);
+      if (Number.isFinite(x) && Number.isFinite(y) && Math.hypot(x - LEGACY_FARM_TOWN_GATE.x, y - LEGACY_FARM_TOWN_GATE.y) <= .9) {
+        pickup.x = PICKUP_START.x; pickup.y = PICKUP_START.y;
+      }
+    }
+    raw.version = 9;
   },
 };
 

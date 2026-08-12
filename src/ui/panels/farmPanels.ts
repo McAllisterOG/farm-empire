@@ -4,6 +4,7 @@ import {
   FIRST_PARCEL_PRICE_CENTS, cheapestFarmSeed, farmCropUnlockInfo, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
 import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT } from '../../data/farmEquipment.data';
+import { farmParcelDef, farmParcelSectionCount } from '../../core/farmParcels';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
 import { pickupCargoUsed, pickupCropUnits, pickupSeedUnits } from '../../core/farmPickup';
@@ -261,21 +262,23 @@ function renderLand(body: HTMLElement, state: GameState, actions: FarmPanelActio
   clearChildren(body);
   const farm = farmOf(state);
   const owned = farm.parcels.northOwned;
+  const parcel = farmParcelDef('north');
+  const sectionCount = farmParcelSectionCount('north');
   const rerender = (): void => renderLand(body, state, actions);
   body.append(h('div', { class: `land-card ${owned ? 'owned' : 'locked'}`, 'data-testid': 'neighbor-parcel-card' },
     h('div', { class: 'land-card-badge' }, owned ? 'OWNED' : 'LOCKED'),
-    h('div', { class: 'farm-card-title' }, 'Neighboring Field Parcel'),
+    h('div', { class: 'farm-card-title' }, parcel.name),
     h('div', { class: 'land-price', 'data-testid': 'parcel-price' }, formatMoney(FIRST_PARCEL_PRICE_CENTS)),
-    h('p', {}, 'Adds nine adjacent usable field sections. Ownership is permanent and saved; repeat purchases are blocked.'),
+    h('p', {}, `Adds ${sectionCount} usable field sections across an ${parcel.columns}×${parcel.rows} commercial acreage. Ownership is permanent and saved; repeat purchases are blocked.`),
     owned
       ? h('div', { class: 'owned-mark', 'data-testid': 'parcel-owned' }, 'Purchased · field sections unlocked')
       : h('button', { class: 'btn btn-primary', 'data-testid': 'buy-parcel-button', onclick: () => runAndRender(actions.buyLand(), actions, rerender) }, 'Purchase Parcel'),
   ));
   const selected = farmCropDef(farm.selectedCropId);
-  const nineSectionSeedCapital = selected.seedPriceCents * 9;
+  const acreageSeedCapital = selected.seedPriceCents * sectionCount;
   body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'land-working-capital' },
     h('strong', {}, `Cash after parcel: ${formatMoney(farm.cashCents - (owned ? 0 : FIRST_PARCEL_PRICE_CENTS))}`),
-    h('span', {}, `Nine additional field sections need ${formatMoney(nineSectionSeedCapital)} in ${selected.name} seed capital at current prices. This is planning guidance, not a purchase block.`),
+    h('span', {}, `A full ${sectionCount}-section planting needs ${formatMoney(acreageSeedCapital)} in ${selected.name} seed capital at current prices. You can work any portion of the acreage; this is planning guidance, not a purchase block.`),
   ));
 }
 
@@ -346,7 +349,7 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
       h('div', { class: 'panel-note', 'data-testid': onFarm ? 'farm-equipment-note' : 'town-equipment-note' }, !onFarm
         ? 'The Equipment Desk can review the tractor record here. Return to the farm to climb aboard and operate it.'
         : operating
-          ? 'Click open ground to drive. Click an owned 3x3 field to choose batch planting or harvesting. Escape cancels active work.'
+          ? 'Click open ground to drive. Click an owned field section to choose acreage planting or harvesting. Escape cancels active work.'
           : 'The driver is hidden while aboard. Tractor position is saved; active field jobs safely reset after reload.'),
     )),
   });

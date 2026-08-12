@@ -1,7 +1,8 @@
 import { isoX, isoY } from './iso';
+import { farmHomeFocusBounds, farmMainlandBounds } from './farmLayout';
 
 export interface WorldRect { minX: number; minY: number; maxX: number; maxY: number }
-export interface CameraPolicy { bounds: WorldRect; padding: number; minZoom: number; maxZoom: number }
+export interface CameraPolicy { bounds: WorldRect; fitBounds?: WorldRect; padding: number; minZoom: number; maxZoom: number }
 
 export function tileBoundsToWorld(minX: number, minY: number, maxX: number, maxY: number): WorldRect {
   const points = [{ x: isoX(minX, minY), y: isoY(minX, minY) }, { x: isoX(maxX, minY), y: isoY(maxX, minY) }, { x: isoX(minX, maxY), y: isoY(minX, maxY) }, { x: isoX(maxX, maxY), y: isoY(maxX, maxY) }];
@@ -9,8 +10,9 @@ export function tileBoundsToWorld(minX: number, minY: number, maxX: number, maxY
 }
 
 export function cameraFitZoom(policy: CameraPolicy, viewW: number, viewH: number): number {
-  const width = Math.max(1, policy.bounds.maxX - policy.bounds.minX);
-  const height = Math.max(1, policy.bounds.maxY - policy.bounds.minY);
+  const fit = policy.fitBounds ?? policy.bounds;
+  const width = Math.max(1, fit.maxX - fit.minX);
+  const height = Math.max(1, fit.maxY - fit.minY);
   return Math.max(policy.minZoom, Math.min(policy.maxZoom, Math.min((viewW - policy.padding * 2) / width, (viewH - policy.padding * 2) / height)));
 }
 
@@ -27,5 +29,20 @@ export function clampCameraZoom(zoom: number, policy: CameraPolicy): number {
   return Math.max(policy.minZoom, Math.min(policy.maxZoom, Number.isFinite(zoom) ? zoom : policy.minZoom));
 }
 
-export function farmCameraPolicy(): CameraPolicy { return { bounds: tileBoundsToWorld(2, 2, 43, 39), padding: 70, minZoom: .48, maxZoom: 1.15 }; }
+export function cameraFitCenter(policy: CameraPolicy): { cx: number; cy: number } {
+  const fit = policy.fitBounds ?? policy.bounds;
+  return { cx: (fit.minX + fit.maxX) / 2, cy: (fit.minY + fit.maxY) / 2 };
+}
+
+export function farmCameraPolicy(): CameraPolicy {
+  const property = farmMainlandBounds();
+  const home = farmHomeFocusBounds();
+  return {
+    bounds: tileBoundsToWorld(property.minX, property.minY, property.maxX, property.maxY),
+    fitBounds: tileBoundsToWorld(home.minX, home.minY, home.maxX, home.maxY),
+    padding: 70,
+    minZoom: .38,
+    maxZoom: 1.15,
+  };
+}
 export function townCameraPolicy(): CameraPolicy { return { bounds: tileBoundsToWorld(2, 2, 24, 18), padding: 60, minZoom: .58, maxZoom: 1.2 }; }

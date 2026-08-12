@@ -9,6 +9,7 @@ import {
   purchaseNeighborParcel, sellStoredCrop, serpentineFieldTiles, storageUsed,
   updateFarmMarketToDay,
 } from '../src/core/farmBusiness';
+import { farmParcelSectionCount, farmParcelTiles } from '../src/core/farmParcels';
 import { deserialize, serialize } from '../src/save/save';
 import { NOW } from './helpers';
 
@@ -106,6 +107,7 @@ describe('tractor parcel work planning and transactional steps', () => {
   it('plans only empty and ready plots in route order and rejects a locked parcel', () => {
     const state = makeFarm();
     plantAndMature(state, 'crop_corn', 1);
+    const readyUid = state.plots[1].uid;
     farmOf(state).seeds.crop_wheat = 1;
     expect(plantFarmCrop(state, state.plots[4].uid, 'crop_wheat', NOW).ok).toBe(true);
     state.plots.reverse();
@@ -115,11 +117,9 @@ describe('tractor parcel work planning and transactional steps', () => {
       const plot = state.plots.find((candidate) => candidate.uid === uid)!;
       return `${plot.x},${plot.y}`;
     });
-    expect(coordinates(plan.orderedPlotUids)).toEqual([
-      '5,7', '6,7', '7,7', '7,8', '6,8', '5,8', '5,9', '6,9', '7,9',
-    ]);
-    expect(plan.harvestPlotUids).toEqual([state.plots.find((plot) => plot.x === 6 && plot.y === 7)!.uid]);
-    expect(plan.plantPlotUids).toHaveLength(7);
+    expect(coordinates(plan.orderedPlotUids)).toEqual(serpentineFieldTiles(farmParcelTiles('starter')).map((tile) => `${tile.x},${tile.y}`));
+    expect(plan.harvestPlotUids).toEqual([readyUid]);
+    expect(plan.plantPlotUids).toHaveLength(1);
     expect(planParcelWork(state, 'north', NOW).orderedPlotUids).toEqual([]);
   });
 
@@ -127,11 +127,11 @@ describe('tractor parcel work planning and transactional steps', () => {
     const state = makeFarm();
     const farm = farmOf(state);
     farm.seeds.crop_soybean = 3;
-    const plan = planParcelWork(state, 'starter', NOW);
+    const plan = planParcelWork(state, 'starter', NOW, 'crop_soybean');
     const results = plan.plantPlotUids.map((uid) => plantFarmCrop(state, uid, 'crop_soybean', NOW));
 
     expect(results.filter((result) => result.ok)).toHaveLength(3);
-    expect(results.filter((result) => !result.ok)).toHaveLength(6);
+    expect(results.filter((result) => !result.ok)).toHaveLength(0);
     expect(farm.seeds.crop_soybean).toBe(0);
     expect(state.plots.filter((plot) => plot.crop?.defId === 'crop_soybean')).toHaveLength(3);
   });
@@ -146,7 +146,7 @@ describe('tractor parcel work planning and transactional steps', () => {
     const results = plan.harvestPlotUids.map((uid) => harvestFarmCrop(state, uid, NOW, 'operatedTractor'));
 
     expect(results.filter((result) => result.ok)).toHaveLength(2);
-    expect(results.filter((result) => !result.ok)).toHaveLength(1);
+    expect(results.filter((result) => !result.ok)).toHaveLength(0);
     expect(farm.storage.crop_corn).toBe(perTileYield * 2);
     expect(state.plots.filter((plot) => plot.crop?.defId === 'crop_corn')).toHaveLength(1);
   });
@@ -217,7 +217,7 @@ describe('deterministic commodity market', () => {
 });
 
 describe('land and save compatibility', () => {
-  it('validates the parcel price, unlocks nine tiles once, and prevents repeat purchase', () => {
+  it('validates the parcel price, unlocks the full neighboring acreage once, and prevents repeat purchase', () => {
     const state = makeFarm();
     const farm = farmOf(state);
     farm.cashCents = FIRST_PARCEL_PRICE_CENTS - 1;
@@ -226,9 +226,9 @@ describe('land and save compatibility', () => {
     const beforePlots = state.plots.length;
     expect(purchaseNeighborParcel(state).ok).toBe(true);
     expect(farm.cashCents).toBe(0);
-    expect(state.plots.length).toBe(beforePlots + 9);
+    expect(state.plots.length).toBe(beforePlots + farmParcelSectionCount('north'));
     expect(purchaseNeighborParcel(state).ok).toBe(false);
-    expect(state.plots.length).toBe(beforePlots + 9);
+    expect(state.plots.length).toBe(beforePlots + farmParcelSectionCount('north'));
   });
 
   it('serializes and reloads Farm Empire cash, crops, storage, market, events, time, tractor, and land', () => {

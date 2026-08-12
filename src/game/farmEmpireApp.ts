@@ -1,12 +1,13 @@
 import type { ActionResult, GameState } from '../core/types';
 import { farmCropDef } from '../core/registry';
 import {
-  NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
+  FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
   issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
   syncCashMirror, ownedFarmParcelAt, planParcelWork,
   placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
+import { farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { pickupPositionForSave } from '../core/farmPickupData';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
@@ -15,7 +16,7 @@ import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, 
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
-import { FARM_TOWN_GATE, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
+import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import type { TownNpcDef, TownServiceId } from '../data/town.data';
 import type { FarmFacing } from '../render/farmSprites';
 import { FARM_DECOR_MANIFEST } from '../render/farmDecor';
@@ -247,7 +248,7 @@ export class FarmEmpireApp {
       } else if (event.type === 'sell') {
         toast(`Sold ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} for ${formatMoney(Number(event.data ?? 0))}.`, 'good');
       } else if (event.type === 'expand') {
-        toast('Neighboring parcel purchased. Nine field sections are now usable.', 'good');
+        toast(`Neighboring acreage purchased. ${event.amount ?? farmParcelSectionCount('north')} field sections are now usable.`, 'good');
       } else if (event.type === 'toast' && event.target) {
         toast(event.target, 'good');
       }
@@ -399,7 +400,7 @@ export class FarmEmpireApp {
       });
       if (blocked) toast(blocked, 'bad');
       else if (this.operatingPickup) {
-        this.drivePickupTo(FARM_TOWN_GATE.x, FARM_TOWN_GATE.y, () => {
+        this.drivePickupRoute(farmTownRoadRouteFrom(pickup), () => {
           this.operatingPickup = false;
           this.pickupAtTown = true;
           this.enterTown();
@@ -685,14 +686,25 @@ export class FarmEmpireApp {
     this.pickupTarget = { x, y, cb };
   }
 
+  private drivePickupRoute(points: readonly { x: number; y: number }[], finalCb: () => void): void {
+    if (!this.operatingPickup || this.pickupAtTown) return;
+    const remaining = points.map((point) => ({ ...point }));
+    const driveNext = (): void => {
+      const next = remaining.shift();
+      if (!next) { finalCb(); return; }
+      this.drivePickupTo(next.x, next.y, driveNext);
+    };
+    driveNext();
+  }
+
   private openTractorParcelMenu(parcelId: FarmParcelId, tx: number, ty: number, sx: number, sy: number): void {
     const plan = planParcelWork(this.state, parcelId, Date.now(), farmOf(this.state).selectedCropId);
     const farm = farmOf(this.state);
     const crop = farmCropDef(farm.selectedCropId);
     const cropUnlock = farmCropUnlockInfo(this.state, crop.id);
     const seedCount = farm.seeds[crop.id] ?? 0;
-    const parcelName = parcelId === 'starter' ? 'Starter parcel' : 'Neighboring parcel';
-    showActionMenu(sx, sy, `${parcelName} · 3×3 tractor work`, [
+    const parcel = farmParcelDef(parcelId);
+    showActionMenu(sx, sy, `${parcel.name} · ${parcel.columns}×${parcel.rows} tractor work`, [
       {
         label: cropUnlock.unlocked
           ? `Plant ${crop.name} on ${plan.plantPlotUids.length} empty field section${plan.plantPlotUids.length === 1 ? '' : 's'} (${seedCount} seeds)`
@@ -882,7 +894,7 @@ export class FarmEmpireApp {
     return {
       operating: this.operatingTractor,
       working: false,
-      statusText: this.operatingTractor ? 'Operating old tractor · ready to drive or work a 3×3 parcel' : '',
+      statusText: this.operatingTractor ? 'Operating old tractor · click a field for acreage work' : '',
     };
   }
 
@@ -1063,7 +1075,7 @@ export class FarmEmpireApp {
     scene.actors = this.operatingTractor || this.operatingPickup ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing }];
     scene.farm = {
       lockedTiles: farm.parcels.northOwned ? [] : NEIGHBOR_FIELD_TILES,
-      parcelLabel: `${formatMoney(650_000)} · 9 field sections`,
+      parcelLabel: `${formatMoney(FIRST_PARCEL_PRICE_CENTS)} · ${farmParcelSectionCount('north')} field sections`,
       tractor: {
         ...farm.equipment.tractor,
         operating: this.operatingTractor,

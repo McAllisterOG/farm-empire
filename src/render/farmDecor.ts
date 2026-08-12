@@ -4,7 +4,7 @@
  * never saved state.
  */
 import { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from '../core/farmBusiness';
-import { farmDriveLane, farmLandmarks, farmMainlandBounds, farmPlotFootprint, farmWorldPoint, type FarmBounds, type FarmPoint } from './farmLayout';
+import { FARM_PLOT_SPAN, farmDriveLane, farmLandmarks, farmMainlandBounds, farmPlotFootprint, farmWorldPoint, type FarmBounds, type FarmPoint } from './farmLayout';
 
 export type FarmDecorType = 'hay-bale' | 'crate-pallet' | 'water-trough' | 'hand-pump';
 
@@ -26,32 +26,32 @@ export interface FarmFenceCue {
 
 /** Small, deliberately finite prop cluster: decoration rather than a new system. */
 export const FARM_DECOR_MANIFEST: readonly FarmDecor[] = [
-  { id: 'hay-west', type: 'hay-bale', x: 10.15, y: 4.45 },
-  { id: 'hay-east', type: 'hay-bale', x: 10.55, y: 4.45 },
-  { id: 'hay-yard', type: 'hay-bale', x: 10.65, y: 4.8 },
-  { id: 'crate-pallet', type: 'crate-pallet', x: 9.75, y: 4.95 },
-  { id: 'water-trough', type: 'water-trough', x: 7.05, y: 11.45 },
-  { id: 'hand-pump', type: 'hand-pump', x: 6.65, y: 10.75 },
+  { id: 'hay-west', type: 'hay-bale', x: 8.75, y: 3.45 },
+  { id: 'hay-east', type: 'hay-bale', x: 9.15, y: 3.45 },
+  { id: 'hay-yard', type: 'hay-bale', x: 9.25, y: 3.8 },
+  { id: 'crate-pallet', type: 'crate-pallet', x: 8.65, y: 4.15 },
+  { id: 'water-trough', type: 'water-trough', x: 9.2, y: 8.25 },
+  { id: 'hand-pump', type: 'hand-pump', x: 9.2, y: 7.05 },
 ] as const;
 
 /** Open gaps deliberately leave the barnyard and parcel approaches passable-looking. */
 export const FARM_FENCE_MANIFEST: readonly FarmFenceCue[] = [
-  { id: 'northwest-line', x: 8.4, y: 4.0, direction: 'east-west' },
-  { id: 'northwest-corner', x: 3.9, y: 8.2, direction: 'north-south' },
-  { id: 'southwest-line', x: 8.7, y: 36.9, direction: 'east-west' },
-  { id: 'southwest-corner', x: 3.9, y: 31.7, direction: 'north-south' },
-  { id: 'northeast-line', x: 36.7, y: 4.0, direction: 'east-west' },
-  { id: 'northeast-corner', x: 41.0, y: 8.5, direction: 'north-south' },
-  { id: 'southeast-line', x: 36.7, y: 36.9, direction: 'east-west' },
-  { id: 'southeast-corner', x: 41.0, y: 31.2, direction: 'north-south' },
-  { id: 'parcel-gate', x: 22.0, y: 22.35, direction: 'east-west', gate: true },
-  { id: 'yard-gate', x: 20.6, y: 16.4, direction: 'north-south', gate: true },
+  { id: 'northwest-line', x: 7.0, y: 2.0, direction: 'east-west' },
+  { id: 'northwest-corner', x: 2.0, y: 7.5, direction: 'north-south' },
+  { id: 'southwest-line', x: 10.0, y: 44.0, direction: 'east-west' },
+  { id: 'southwest-corner', x: 2.0, y: 38.0, direction: 'north-south' },
+  { id: 'northeast-line', x: 50.0, y: 2.0, direction: 'east-west' },
+  { id: 'northeast-corner', x: 56.0, y: 8.0, direction: 'north-south' },
+  { id: 'southeast-line', x: 50.0, y: 44.0, direction: 'east-west' },
+  { id: 'southeast-corner', x: 56.0, y: 38.0, direction: 'north-south' },
+  { id: 'parcel-gate', x: 24.1, y: 42.6, direction: 'east-west', gate: true },
+  { id: 'yard-gate', x: 24.1, y: 17.3, direction: 'north-south', gate: true },
 ] as const;
 
 /** Fixed logical anchors fade in only with the farm's saved night clock. */
 export const FARM_FIREFLY_ANCHORS: readonly FarmPoint[] = [
-  { x: 4.20, y: 10.45 }, { x: 4.75, y: 10.95 }, { x: 8.25, y: 3.85 },
-  { x: 8.75, y: 4.15 }, { x: 13.05, y: 5.10 }, { x: 13.55, y: 5.65 },
+  { x: 1.15, y: 5.25 }, { x: 1.5, y: 5.7 }, { x: 8.15, y: 2.15 },
+  { x: 8.6, y: 2.45 }, { x: 18.35, y: 6.15 }, { x: 18.75, y: 6.6 },
 ] as const;
 
 /** Fixed windbreak anchors, kept outside the working fields. */
@@ -86,7 +86,7 @@ export function farmDecorIsSafe(point: FarmPoint): boolean {
   if (blocked.some((anchor) => Math.hypot(projected.x - anchor.x, projected.y - anchor.y) < 2.25)) return false;
   // The middle of the deliberately broad gravel route stays clear.
   const lane = farmDriveLane();
-  return !lane.slice(1).some((end, index) => distanceToSegment(point, lane[index], end) < .35);
+  return !lane.slice(1).some((end, index) => distanceToSegment(projected, lane[index], end) < FARM_PLOT_SPAN * .35);
 }
 
 function pointInBounds(point: FarmPoint, bounds: FarmBounds): boolean {

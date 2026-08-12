@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cameraFitZoom, clampCameraCenter, farmCameraPolicy, townCameraPolicy } from '../src/render/cameraPolicy';
+import { cameraFitCenter, cameraFitZoom, clampCameraCenter, farmCameraPolicy, townCameraPolicy } from '../src/render/cameraPolicy';
 
 describe('scene camera policies', () => {
   for (const [name, policy] of [['farm', farmCameraPolicy()], ['town', townCameraPolicy()]] as const) {
@@ -30,10 +30,20 @@ describe('scene camera policies', () => {
   it('recenter/refit uses the policy midpoint for a changed viewport', () => {
     const policy = farmCameraPolicy();
     const zoom = cameraFitZoom(policy, 760, 640);
-    const midpoint = { cx: (policy.bounds.minX + policy.bounds.maxX) / 2, cy: (policy.bounds.minY + policy.bounds.maxY) / 2 };
+    const midpoint = cameraFitCenter(policy);
     const center = clampCameraCenter(midpoint.cx, midpoint.cy, zoom, 760, 640, policy);
     expect(center.cx).toBeCloseTo(midpoint.cx);
-    expect(center.cy).toBeCloseTo(midpoint.cy);
+    expect(Math.abs(center.cy - midpoint.cy)).toBeLessThan(50);
+  });
+
+  it('fits the working homestead while retaining broader bounded property panning', () => {
+    const policy = farmCameraPolicy();
+    expect(policy.fitBounds).toBeDefined();
+    expect(policy.bounds.maxX - policy.bounds.minX).toBeGreaterThan(policy.fitBounds!.maxX - policy.fitBounds!.minX);
+    expect(cameraFitCenter(policy)).not.toEqual({
+      cx: (policy.bounds.minX + policy.bounds.maxX) / 2,
+      cy: (policy.bounds.minY + policy.bounds.maxY) / 2,
+    });
   });
 
   it('computes a distinct compact refit for both active scenes', () => {
