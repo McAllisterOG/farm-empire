@@ -3,7 +3,7 @@
  * 支持渲染玩家自己的岛、NPC 邻居岛、好友快照岛（三者都归一成 RenderScene）。
  */
 import type {
-  AnimalInstance, AvatarConfig, BeastInstance, FarmPlot, GameState, Placement, Terrain,
+  AnimalInstance, AvatarConfig, BeastInstance, FarmFieldCondition, FarmPlot, GameState, Placement, Terrain,
 } from '../core/types';
 import { buildTerrain } from '../core/island';
 import { buildingDef } from '../core/registry';
@@ -53,6 +53,7 @@ export interface RenderScene {
   /** Optional Farm Empire overlay data; legacy scenes omit it. */
   farm?: {
     lockedTiles: { x: number; y: number }[];
+    fieldConditions: Record<string, FarmFieldCondition>;
     parcelLabel: string;
     tractor: {
       name: string;
@@ -458,8 +459,11 @@ export class Renderer {
       drawSprite(ctx, `tile:farmground:${farmGroundVariant(scene.seed, x, y)}`, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
     }
     drawFarmyard(ctx, camera, zoom, now);
-    for (const plot of scene.plots) drawFarmSection(ctx, camera, plot, now, zoom, false);
-    for (const plot of scene.farm!.lockedTiles) drawFarmSection(ctx, camera, { ...plot, uid: -1, crop: null }, now, zoom, true);
+    for (const plot of scene.plots) drawFarmSection(
+      ctx, camera, plot, now, zoom, false,
+      scene.farm!.fieldConditions[String(plot.uid)] ?? { soil: plot.crop ? 'tilled' : 'rough' },
+    );
+    for (const plot of scene.farm!.lockedTiles) drawFarmSection(ctx, camera, { ...plot, uid: -1, crop: null }, now, zoom, true, { soil: 'rough' });
     drawLockedParcelLabel(ctx, camera, scene, zoom);
 
     if (scene.hover) {
@@ -546,13 +550,37 @@ function farmFootprintPath(ctx: CanvasRenderingContext2D, camera: Camera, footpr
   corners.slice(1).forEach((point) => ctx.lineTo(point.x, point.y)); ctx.closePath();
 }
 
-function drawFarmSection(ctx: CanvasRenderingContext2D, camera: Camera, plot: FarmPlot, now: number, zoom: number, locked: boolean): void {
+function drawFarmSection(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  plot: FarmPlot,
+  now: number,
+  zoom: number,
+  locked: boolean,
+  condition: FarmFieldCondition,
+): void {
   const footprint = farmPlotFootprint(plot);
   farmFootprintPath(ctx, camera, footprint);
   const wet = !!plot.crop && now - plot.crop.lastWateredAt < WATER_COOLDOWN_MS;
-  ctx.fillStyle = locked ? 'rgba(119, 88, 57, .46)' : wet ? '#6c4930' : '#95643f'; ctx.fill();
+  ctx.fillStyle = locked
+    ? 'rgba(119, 88, 57, .46)'
+    : wet ? '#67452f'
+      : condition.soil === 'rough' ? '#8c6947'
+        : condition.soil === 'stubble' ? '#99774b'
+          : '#95643f';
+  ctx.fill();
   ctx.strokeStyle = locked ? '#6d452c' : '#593a27'; ctx.lineWidth = Math.max(1.2, zoom * 1.7); ctx.stroke();
   if (locked) return;
+  if (condition.soil === 'rough' && !plot.crop) {
+    ctx.fillStyle = 'rgba(91,62,38,.38)';
+    for (let index = 0; index < 9; index++) {
+      const px = footprint.minX + (index % 3 + .55) * (footprint.maxX - footprint.minX) / 3;
+      const py = footprint.minY + (Math.floor(index / 3) + .5 + (index % 2) * .08) * (footprint.maxY - footprint.minY) / 3;
+      const x = camera.sx(isoX(px, py)); const y = camera.sy(isoY(px, py));
+      ctx.beginPath(); ctx.ellipse(x, y, 3.5 * zoom, 1.6 * zoom, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    return;
+  }
   // Furrows use the actual large footprint, rather than duplicating old tile artwork.
   ctx.strokeStyle = wet ? 'rgba(56, 35, 21, .46)' : 'rgba(78, 46, 27, .42)'; ctx.lineWidth = Math.max(1, zoom * 1.25);
   for (let index = 1; index < 5; index++) {
@@ -560,6 +588,15 @@ function drawFarmSection(ctx: CanvasRenderingContext2D, camera: Camera, plot: Fa
     const a = { x: camera.sx(isoX(x, footprint.minY)), y: camera.sy(isoY(x, footprint.minY)) };
     const b = { x: camera.sx(isoX(x, footprint.maxY)), y: camera.sy(isoY(x, footprint.maxY)) };
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  if (condition.soil === 'stubble' && !plot.crop) {
+    ctx.strokeStyle = 'rgba(222,181,93,.72)'; ctx.lineWidth = Math.max(1.2, zoom * 1.8); ctx.lineCap = 'round';
+    for (let row = 0; row < 4; row++) for (let col = 0; col < 5; col++) {
+      const px = footprint.minX + (col + .5) * (footprint.maxX - footprint.minX) / 5;
+      const py = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / 4;
+      const x = camera.sx(isoX(px, py)); const y = camera.sy(isoY(px, py));
+      ctx.beginPath(); ctx.moveTo(x, y + 1.5 * zoom); ctx.lineTo(x, y - 4 * zoom); ctx.stroke();
+    }
   }
 }
 
@@ -571,12 +608,18 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
     const y = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / 4;
     const sx = camera.sx(isoX(x, y)); const sy = camera.sy(isoY(x, y) + TILE_H / 2);
     // Separate row phases read as a breeze across the section, not a global bob.
-    const sway = Math.sin(now / 720 + row * 1.17 + col * .34 + plot.x * .7 + plot.y) * (stage === 'seedling' ? .45 : 1.15) * zoom;
-    drawSprite(ctx, `crop:${plot.crop!.defId}:${stage}`, sx + sway, sy, zoom * .54);
+    const spriteStage = stage === 'needs-water' ? 'seedling' : stage;
+    const sway = Math.sin(now / 720 + row * 1.17 + col * .34 + plot.x * .7 + plot.y) * (spriteStage === 'seedling' ? .45 : 1.15) * zoom;
+    drawSprite(ctx, `crop:${plot.crop!.defId}:${spriteStage}`, sx + sway, sy, zoom * .54);
   }
   const centre = farmWorldPoint(plot); const sx = camera.sx(isoX(centre.x, centre.y)); const sy = camera.sy(isoY(centre.x, centre.y) + TILE_H / 2);
   if (stage === 'ready') drawSprite(ctx, 'fx:ready', sx, sy - 67 * zoom + bob * zoom, zoom * 1.15);
   else if (stage === 'withered') drawSprite(ctx, 'fx:hungry', sx, sy - 56 * zoom + bob * zoom, zoom * 1.15);
+  else if (stage === 'needs-water') {
+    ctx.save(); ctx.translate(sx, sy - 56 * zoom + bob * zoom); ctx.scale(zoom, zoom);
+    ctx.fillStyle = '#75b9d0'; ctx.strokeStyle = '#315c68'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0, -10); ctx.bezierCurveTo(-7, -2, -8, 3, 0, 7); ctx.bezierCurveTo(8, 3, 7, -2, 0, -10); ctx.fill(); ctx.stroke(); ctx.restore();
+  }
 }
 
 function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number): void {

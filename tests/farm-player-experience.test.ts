@@ -25,20 +25,22 @@ function runtime(state: ReturnType<typeof makeFarm>): FarmInteractionRuntime {
 }
 
 describe('Farmbook progress and Farmer Knowledge', () => {
-  it('starts with a concise six-step route and advances from saved-compatible evidence', () => {
+  it('starts with a concise eight-step route and advances from saved-compatible evidence', () => {
     const state = makeFarm();
-    expect(farmGuideSteps(state)).toHaveLength(6);
+    expect(farmGuideSteps(state)).toHaveLength(8);
     expect(farmGuideSteps(state).every((step) => !step.done)).toBe(true);
-    expect(nextFarmGuideStep(state)?.id).toBe('plant');
+    expect(nextFarmGuideStep(state)?.id).toBe('prepare');
     expect(farmerKnowledgeSummary(state).level.name).toBe('New Hand');
 
     state.stats.plantings = 1;
+    state.stats.farmSectionsTilled = 1;
+    state.stats.farmSectionsWatered = 1;
     state.stats.harvests = 1;
     state.stats.farmCargoLoads = 1;
     state.stats.farmTownVisits = 1;
     state.stats.itemsSold = 1;
     farmOf(state).parcels.northOwned = true;
-    expect(farmGuideSteps(state).map((step) => step.done)).toEqual([true, true, true, true, true, true]);
+    expect(farmGuideSteps(state).map((step) => step.done)).toEqual([true, true, true, true, true, true, true, true]);
     expect(nextFarmGuideStep(state)).toBeNull();
     expect(farmKnowledgePoints(state)).toBeGreaterThan(0);
   });
@@ -102,7 +104,7 @@ describe('authoritative farm object interactions', () => {
     const rt = runtime(state);
     expect(farmInteractionAtWorldPoint(state, farmWorldPoint({ x: 10, y: 3 }), rt)?.kind).toBe('locked-acreage');
     const plot = state.plots[0];
-    expect(farmInteractionAtWorldPoint(state, farmWorldPoint(plot), rt)).toMatchObject({ kind: 'field', label: 'Open Field Section', plotUid: plot.uid });
+    expect(farmInteractionAtWorldPoint(state, farmWorldPoint(plot), rt)).toMatchObject({ kind: 'field', label: 'Rough Soil · Prepare', plotUid: plot.uid });
     plot.crop = { defId: 'crop_corn', plantedAt: NOW - farmCropDef('crop_corn').growMs - 1, wateredBonusMs: 0, lastWateredAt: 0 };
     expect(farmInteractionAtWorldPoint(state, farmWorldPoint(plot), rt)?.label).toBe('Corn · Ready');
   });

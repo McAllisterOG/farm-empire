@@ -4,8 +4,8 @@ import {
   FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseNeighborParcel, selectFarmCrop,
   issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
-  syncCashMirror, ownedFarmParcelAt, planParcelWork,
-  placePlayerAtTractorDismount, type FarmParcelId, type ParcelWorkKind,
+  syncCashMirror, ownedFarmParcelAt, planParcelWork, farmFieldCondition, tillFarmField, waterFarmCrop,
+  placePlayerAtTractorDismount, storageUsed, type FarmParcelId, type ParcelWorkKind,
 } from '../core/farmBusiness';
 import { farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
@@ -96,6 +96,7 @@ export class FarmEmpireApp {
   private raf = 0;
   private lastFrame = 0;
   private lastSave: number;
+  private simulationOffsetMs = 0;
   private devTools: HTMLElement | null = null;
   private inputCleanup: (() => void) | null = null;
   private readonly onResize = (): void => {
@@ -174,6 +175,9 @@ export class FarmEmpireApp {
       returnFarm: () => this.returnToFarm(),
     });
     (window as unknown as Record<string, unknown>).__FE__ = debug;
+    const browserHooks = window as unknown as Record<string, unknown>;
+    browserHooks.render_game_to_text = () => this.renderGameToText();
+    browserHooks.advanceTime = (ms: number) => this.advanceTestTime(ms);
     if (import.meta.env.DEV) this.devTools = this.createDevTools();
     this.loop();
   }
@@ -196,7 +200,7 @@ export class FarmEmpireApp {
       buyLand: () => purchaseNeighborParcel(this.state),
       acceptCountyWorkOrder: () => acceptCountyWorkOrder(this.state),
       fulfillCountyWorkOrder: () => fulfillCountyWorkOrder(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' }),
-      issueCountyReliefSeed: () => issueCountyReliefSeed(this.state, Date.now()),
+      issueCountyReliefSeed: () => issueCountyReliefSeed(this.state, this.gameNow()),
       purchaseBarnLoft: () => purchaseBarnLoftExpansion(this.state),
       dispatch: this.dispatch,
     };
@@ -211,7 +215,10 @@ export class FarmEmpireApp {
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.inputCleanup?.(); this.inputCleanup = null;
     this.devTools?.remove();
-    delete (window as unknown as Record<string, unknown>).__FE__;
+    const browserHooks = window as unknown as Record<string, unknown>;
+    delete browserHooks.__FE__;
+    delete browserHooks.render_game_to_text;
+    delete browserHooks.advanceTime;
   }
 
   private onVisibilityChange = (): void => {
@@ -243,7 +250,11 @@ export class FarmEmpireApp {
     }
     for (const event of result.events ?? []) {
       if (event.type === 'plant') {
-        toast(`${farmCropDef(String(event.target)).name} planted.`, 'good');
+        const crop = farmCropDef(String(event.target)).name;
+        const established = !!(event.data as { established?: boolean } | undefined)?.established;
+        toast(established ? `${crop} planted and established.` : `${crop} planted. Water this section to start growth.`, 'good');
+      } else if (event.type === 'water') {
+        toast(`${farmCropDef(String(event.target)).name} watered. Growth has started.`, 'good');
       } else if (event.type === 'harvest') {
         toast(`Harvested ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} into the barn.`, 'good');
         floatText(this.playerScreenX(), this.playerScreenY() - 45, `+${event.amount ?? 0}`, 'float-good');
@@ -295,7 +306,7 @@ export class FarmEmpireApp {
       pickup: farm.pickup,
       tractor: farm.equipment.tractor,
       scout: this.scout,
-      now: Date.now(),
+      now: this.gameNow(),
     });
   }
 
@@ -415,7 +426,7 @@ export class FarmEmpireApp {
       pickup: farm.pickup,
       tractor: farm.equipment.tractor,
       scout: this.scout,
-      now: Date.now(),
+      now: this.gameNow(),
     });
     if (interaction?.kind === 'pickup') {
       if (this.operatingPickup) this.togglePickupOperating(); else this.openPickupPanel();
@@ -435,7 +446,7 @@ export class FarmEmpireApp {
     }
     if (interaction?.kind === 'pump') {
       showActionMenu(sx, sy, 'Hand Pump', [
-        { label: 'Crops grow automatically', disabled: true, onClick: () => {} },
+        { label: 'Water new seedlings from their field menu', disabled: true, onClick: () => {} },
         { label: 'Open Farmbook', onClick: () => this.openFarmhouseOffice() },
       ]);
       return;
@@ -496,7 +507,7 @@ export class FarmEmpireApp {
     const interaction = townInteractionAt(point);
     if (interaction.kind === 'npc') {
       this.walkTownNear(interaction.npc.x, interaction.npc.y, () => {
-        this.townGesture = { npcId: interaction.npc.id, until: Date.now() + 1_200 };
+        this.townGesture = { npcId: interaction.npc.id, until: this.gameNow() + 1_200 };
         if (interaction.npc.id === 'mae-carter') this.openCountyWorkOrder();
         else this.openTownService(interaction.service, interaction.npc.name, interaction.npc.x, interaction.npc.y);
       });
@@ -691,7 +702,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Plant and harvest into the barn. Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Return and park by the barn to unload seeds and crops. The tractor handles batch field work. Save and Recenter are always available.'), h('p', {}, 'Watering and irrigation are not gameplay requirements yet; crops grow automatically.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. The tractor combines preparation and planting for batch field work. Save and Recenter are always available.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -740,7 +751,7 @@ export class FarmEmpireApp {
     showActionMenu(sx, sy, 'Scout · farm dog', [{
       label: 'Give Scout scratches',
       onClick: () => {
-        this.scoutScratchUntil = Date.now() + 1_200;
+        this.scoutScratchUntil = this.gameNow() + 1_200;
         toast('Scout wags and leans into the scratches.', 'good');
       },
     }]);
@@ -782,7 +793,7 @@ export class FarmEmpireApp {
   }
 
   private openTractorParcelMenu(parcelId: FarmParcelId, tx: number, ty: number, sx: number, sy: number): void {
-    const plan = planParcelWork(this.state, parcelId, Date.now(), farmOf(this.state).selectedCropId);
+    const plan = planParcelWork(this.state, parcelId, this.gameNow(), farmOf(this.state).selectedCropId);
     const farm = farmOf(this.state);
     const crop = farmCropDef(farm.selectedCropId);
     const cropUnlock = farmCropUnlockInfo(this.state, crop.id);
@@ -791,7 +802,7 @@ export class FarmEmpireApp {
     showActionMenu(sx, sy, `${parcel.name} · ${parcel.columns}×${parcel.rows} tractor work`, [
       {
         label: cropUnlock.unlocked
-          ? `Plant ${crop.name} on ${plan.plantPlotUids.length} empty field section${plan.plantPlotUids.length === 1 ? '' : 's'} (${seedCount} seeds)`
+          ? `Prepare & plant ${crop.name} on ${plan.plantPlotUids.length} field section${plan.plantPlotUids.length === 1 ? '' : 's'} (${seedCount} seeds)`
           : `${crop.name} locked: ${cropUnlock.requirement}`,
         icon: `icon:seed_${crop.id.replace('crop_', '')}`,
         disabled: !cropUnlock.unlocked || plan.plantPlotUids.length === 0,
@@ -815,14 +826,23 @@ export class FarmEmpireApp {
     if (!plot) return;
     const farm = farmOf(this.state);
     if (!plot.crop) {
+      const condition = farmFieldCondition(this.state, plotUid);
+      if (condition.soil !== 'tilled') {
+        const stubble = condition.soil === 'stubble';
+        showActionMenu(sx, sy, stubble ? 'Harvest stubble' : 'Rough field section', [{
+          label: stubble ? 'Rework stubble' : 'Prepare soil',
+          onClick: () => this.dispatch(tillFarmField(this.state, plotUid)),
+        }]);
+        return;
+      }
       const def = farmCropDef(farm.selectedCropId);
       const count = farm.seeds[def.id] ?? 0;
-      showActionMenu(sx, sy, 'Empty field section', [
+      showActionMenu(sx, sy, 'Prepared field section', [
         {
           label: `Plant ${def.name} (${count} seed${count === 1 ? '' : 's'})`,
           icon: `icon:seed_${def.id.replace('crop_', '')}`,
           disabled: count <= 0,
-          onClick: () => this.dispatch(plantFarmCrop(this.state, plotUid, def.id, Date.now(), 'manual')),
+          onClick: () => this.dispatch(plantFarmCrop(this.state, plotUid, def.id, this.gameNow(), 'manual')),
         },
         {
           label: count > 0 ? 'More seeds are sold in town' : 'No seeds · see the Farmbook route',
@@ -833,19 +853,26 @@ export class FarmEmpireApp {
       return;
     }
     const def = farmCropDef(plot.crop.defId);
-    const now = Date.now();
+    const now = this.gameNow();
     const stage = farmCropStage(plot.crop, now);
     if (isFarmCropWithered(plot.crop, now)) {
       showActionMenu(sx, sy, `${def.name} · Withered`, [{
         label: 'Clear withered section (no refund)', icon: 'fx:hungry',
-        onClick: () => this.dispatch(clearWitheredFarmCrop(this.state, plotUid, Date.now())),
+        onClick: () => this.dispatch(clearWitheredFarmCrop(this.state, plotUid, this.gameNow())),
+      }]);
+      return;
+    }
+    if (stage === 'needs-water') {
+      showActionMenu(sx, sy, `${def.name} · Needs water`, [{
+        label: `Water ${def.name} to start growth`, icon: 'fx:drop',
+        onClick: () => this.dispatch(waterFarmCrop(this.state, plotUid, this.gameNow())),
       }]);
       return;
     }
     if (stage === 'ready') {
       showActionMenu(sx, sy, `${def.name} · Ready`, [{
         label: 'Harvest into barn', icon: 'fx:ready',
-        onClick: () => this.dispatch(harvestFarmCrop(this.state, plotUid, Date.now(), 'manual')),
+        onClick: () => this.dispatch(harvestFarmCrop(this.state, plotUid, this.gameNow(), 'manual')),
       }]);
     } else {
       showActionMenu(sx, sy, `${def.name} · ${stage}`, [{
@@ -883,7 +910,7 @@ export class FarmEmpireApp {
       nextIndex: 0,
       completed: 0,
       skipped: 0,
-      waitUntil: Date.now(),
+      waitUntil: this.gameNow(),
     };
     const label = kind === 'plant' ? `Planting ${farmCropDef(String(cropId)).name}` : 'Harvesting ready crops';
     toast(`${label} across ${targetPlotUids.length} field section${targetPlotUids.length === 1 ? '' : 's'}.`, 'good');
@@ -918,8 +945,8 @@ export class FarmEmpireApp {
     const job = this.tractorJob;
     if (!job || job.targetPlotUids[job.nextIndex] !== plotUid) return;
     const result = job.kind === 'plant'
-      ? plantFarmCrop(this.state, plotUid, String(job.cropId), Date.now(), 'operatedTractor')
-      : harvestFarmCrop(this.state, plotUid, Date.now(), 'operatedTractor');
+      ? plantFarmCrop(this.state, plotUid, String(job.cropId), this.gameNow(), 'operatedTractor')
+      : harvestFarmCrop(this.state, plotUid, this.gameNow(), 'operatedTractor');
     if (result.ok) {
       job.completed += 1;
       const harvest = result.events?.find((event) => event.type === 'harvest');
@@ -934,7 +961,7 @@ export class FarmEmpireApp {
       job.lastFailure = result.reason || 'The field section was no longer eligible.';
     }
     job.nextIndex += 1;
-    job.waitUntil = Date.now() + FIELD_ACTION_PAUSE_MS;
+    job.waitUntil = this.gameNow() + FIELD_ACTION_PAUSE_MS;
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
@@ -1008,11 +1035,52 @@ export class FarmEmpireApp {
   }
 
   private matureAll(): void {
-    const now = Date.now();
+    const now = this.gameNow();
     for (const plot of this.state.plots) {
       if (!plot.crop) continue;
+      plot.crop.awaitingWater = false;
       plot.crop.plantedAt = now - farmCropDef(plot.crop.defId).growMs - 1_000;
     }
+  }
+
+  private gameNow(): number {
+    return Date.now() + this.simulationOffsetMs;
+  }
+
+  private advanceTestTime(ms: number): string {
+    if (Number.isFinite(ms) && ms > 0) this.simulationOffsetMs += Math.floor(ms);
+    const now = this.gameNow();
+    advanceFarmClock(this.state, now);
+    this.renderer.render(this.buildScene(), now);
+    this.hud.update(this.state, this.tractorHudRuntime());
+    return this.renderGameToText();
+  }
+
+  private renderGameToText(): string {
+    const farm = farmOf(this.state);
+    const now = this.gameNow();
+    const fields = this.state.plots.map((plot) => ({
+      uid: plot.uid,
+      x: plot.x,
+      y: plot.y,
+      soil: farmFieldCondition(this.state, plot.uid).soil,
+      crop: plot.crop?.defId ?? null,
+      stage: farmCropStage(plot.crop, now),
+    }));
+    return JSON.stringify({
+      coordinateSystem: 'Farm logical grid; x increases southeast, y increases southwest.',
+      mode: this.mode,
+      player: this.mode === 'town'
+        ? { x: this.townActor.x, y: this.townActor.y, walking: this.townActor.walking }
+        : { x: this.playerActor.x, y: this.playerActor.y, walking: this.playerActor.walking },
+      selectedCrop: farm.selectedCropId,
+      cashCents: farm.cashCents,
+      barn: { used: storageUsed(this.state), capacity: farm.storageCapacity },
+      pickup: { x: farm.pickup.x, y: farm.pickup.y, operating: this.operatingPickup, atTown: this.pickupAtTown },
+      tractor: { x: farm.equipment.tractor.x, y: farm.equipment.tractor.y, operating: this.operatingTractor, working: !!this.tractorJob },
+      fields,
+      overlay: { actionMenu: isActionMenuOpen(), panel: isPanelOpen() },
+    });
   }
 
   private createDevTools(): HTMLElement {
@@ -1058,9 +1126,10 @@ export class FarmEmpireApp {
 
   private loop = (): void => {
     if (!this.running) return;
-    const now = Date.now();
-    const dt = this.lastFrame ? Math.min(100, now - this.lastFrame) : 16;
-    this.lastFrame = now;
+    const realNow = Date.now();
+    const now = this.gameNow();
+    const dt = this.lastFrame ? Math.min(100, realNow - this.lastFrame) : 16;
+    this.lastFrame = realNow;
     advanceFarmClock(this.state, now);
 
     if (this.mode === 'farm' && this.tractorTarget) {
@@ -1134,8 +1203,8 @@ export class FarmEmpireApp {
     this.renderer.render(this.buildScene(), now);
     this.hud.update(this.state, this.tractorHudRuntime());
     this.updateDevTools();
-    if (now - this.lastSave >= AUTOSAVE_MS) {
-      this.lastSave = now;
+    if (realNow - this.lastSave >= AUTOSAVE_MS) {
+      this.lastSave = realNow;
       this.save();
     }
     this.raf = requestAnimationFrame(this.loop);
@@ -1165,6 +1234,7 @@ export class FarmEmpireApp {
     scene.actors = this.operatingTractor || this.operatingPickup ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing }];
     scene.farm = {
       lockedTiles: farm.parcels.northOwned ? [] : NEIGHBOR_FIELD_TILES,
+      fieldConditions: farm.fieldConditions,
       parcelLabel: `${formatMoney(FIRST_PARCEL_PRICE_CENTS)} · ${farmParcelSectionCount('north')} field sections`,
       tractor: {
         ...farm.equipment.tractor,
@@ -1187,7 +1257,7 @@ export class FarmEmpireApp {
         steer: this.pickupMotion.steer,
         wheelPhase: this.pickupMotion.wheelPhase,
       },
-      scout: { ...this.scout, facing: this.scoutFacing, scratching: Date.now() < this.scoutScratchUntil },
+      scout: { ...this.scout, facing: this.scoutFacing, scratching: this.gameNow() < this.scoutScratchUntil },
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
       clockMinute: farm.clock.minute,
       interactionHint: this.hover ? { kind: this.hover.kind, label: this.hover.label, ...this.hover.point } : undefined,

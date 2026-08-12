@@ -95,6 +95,11 @@ const MIGRATIONS: Record<number, Migrator> = {
     }
     raw.version = 9;
   },
+  9: (raw) => {
+    // Manual field conditions are reconstructed from existing plots during
+    // defensive normalization. Existing crops retain their growth timestamps.
+    raw.version = 10;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

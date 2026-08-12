@@ -3,7 +3,7 @@ import '../src/data';
 import { BARN_LOFT_EXPANSION } from '../src/data/farmEquipment.data';
 import {
   cheapestFarmSeed, clearWitheredFarmCrop, countyReliefEligible, farmCropStage, farmOf, issueCountyReliefSeed,
-  purchaseBarnLoftExpansion, purchaseNeighborParcel, plantFarmCrop,
+  purchaseBarnLoftExpansion, purchaseNeighborParcel, plantFarmCrop, tillFarmField, waterFarmCrop,
 } from '../src/core/farmBusiness';
 import { farmCropDef } from '../src/core/registry';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
@@ -25,7 +25,9 @@ describe('Barn expansion and recovery', () => {
   it('keeps farm corn and potato presentation stages aligned with harvest readiness', () => {
     for (const cropId of ['crop_corn', 'crop_potato']) {
       const state = makeFarm(); const farm = farmOf(state); const plot = state.plots[0];
-      farm.seeds[cropId] = 1; expect(plantFarmCrop(state, plot.uid, cropId, NOW).ok).toBe(true);
+      farm.seeds[cropId] = 1; expect(tillFarmField(state, plot.uid).ok).toBe(true);
+      expect(plantFarmCrop(state, plot.uid, cropId, NOW).ok).toBe(true);
+      expect(waterFarmCrop(state, plot.uid, NOW).ok).toBe(true);
       expect(farmCropStage(plot.crop, NOW)).toBe('growing');
       plot.crop!.plantedAt = NOW - farmCropDef(cropId).growMs - 1;
       expect(farmCropStage(plot.crop, NOW)).toBe('ready');
@@ -43,6 +45,7 @@ describe('Barn expansion and recovery', () => {
     expect(plot.crop).toBeNull();
     expect(JSON.stringify({ cash: farm.cashCents, seeds: farm.seeds, storage: farm.storage })).toBe(before);
     farm.seeds.crop_wheat = 1;
+    expect(tillFarmField(state, plot.uid).ok).toBe(true);
     expect(plantFarmCrop(state, plot.uid, 'crop_wheat', NOW).ok).toBe(true);
   });
 
@@ -64,7 +67,9 @@ describe('Barn expansion and recovery', () => {
     farm.cashCents = 0; Object.keys(farm.seeds).forEach((id) => { farm.seeds[id] = 0; });
     expect(issueCountyReliefSeed(state, NOW).ok).toBe(true);
     expect(farm.countyReliefClaimed).toBe(true);
+    expect(tillFarmField(state, plot.uid).ok).toBe(true);
     expect(plantFarmCrop(state, plot.uid, 'crop_wheat', NOW).ok).toBe(true);
+    expect(waterFarmCrop(state, plot.uid, NOW).ok).toBe(true);
     plot.crop!.plantedAt = NOW - farmCropDef('crop_wheat').growMs - farmCropDef('crop_wheat').witherMs;
     expect(clearWitheredFarmCrop(state, plot.uid, NOW).ok).toBe(true);
     expect(issueCountyReliefSeed(state, NOW).ok).toBe(false);

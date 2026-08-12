@@ -10,9 +10,9 @@ import { tickBeastMischief, tickBeasts } from './beasts';
 import { tickWeeds } from './weeds';
 import { tickPetGifts } from './pets';
 import { updateEnergy } from './player';
-import { createFarmBusinessState, seedStarterPlots } from './farmBusiness';
+import { createFarmBusinessState, ensureFarmFieldConditions, seedStarterPlots } from './farmBusiness';
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 export function defaultAvatar(): AvatarConfig {
   return {
@@ -142,6 +142,7 @@ export function createFarmGame(name: string, seed: number, now: number): GameSta
     { uid: ++state.uidCounter, defId: 'bld_path_stone', x: 9, y: 10, rot: 0 },
   ];
   state.farm = createFarmBusinessState(now);
+  ensureFarmFieldConditions(state);
   return state;
 }
 

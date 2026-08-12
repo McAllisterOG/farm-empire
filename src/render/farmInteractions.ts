@@ -1,6 +1,6 @@
 import type { GameState } from '../core/types';
 import { farmCropDef } from '../core/registry';
-import { farmCropStage, isFarmCropWithered } from '../core/farmBusiness';
+import { farmCropStage, farmFieldCondition, isFarmCropWithered } from '../core/farmBusiness';
 import { NEIGHBOR_FIELD_TILES } from '../core/farmParcels';
 import { FARM_TOWN_GATE } from '../core/townGateway';
 import { FARM_DECOR_MANIFEST } from './farmDecor';
@@ -64,11 +64,18 @@ export function farmInteractionAtWorldPoint(
   }
   const plot = farmPlotAtWorldPoint(state.plots, worldPoint);
   if (plot) {
-    let label = 'Open Field Section';
+    const condition = farmFieldCondition(state, plot.uid);
+    let label = condition.soil === 'tilled'
+      ? 'Prepared Soil · Ready to plant'
+      : condition.soil === 'stubble'
+        ? 'Harvest Stubble · Rework'
+        : 'Rough Soil · Prepare';
     if (plot.crop) {
       const crop = farmCropDef(plot.crop.defId);
       const status = isFarmCropWithered(plot.crop, runtime.now) ? 'Withered' : farmCropStage(plot.crop, runtime.now);
-      label = `${crop.name} · ${status[0].toUpperCase()}${status.slice(1)}`;
+      label = status === 'needs-water'
+        ? `${crop.name} · Needs water`
+        : `${crop.name} · ${status[0].toUpperCase()}${status.slice(1)}`;
     }
     return {
       kind: 'field', label,

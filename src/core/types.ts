@@ -63,6 +63,8 @@ export interface PlantedCrop {
   lastWateredAt: number;
   /** 树专用：上次采收时间（首次成熟按 plantedAt+growMs 计） */
   lastHarvestAt?: number;
+  /** Farm Empire manual planting waits for one initial watering before growth. */
+  awaitingWater?: boolean;
 }
 
 export type CropStage = 'seedling' | 'growing' | 'mature' | 'ready' | 'withered';
@@ -446,11 +448,18 @@ export interface FarmPickupState {
   cargo: FarmPickupCargo;
 }
 
+export type FarmFieldSoil = 'rough' | 'tilled' | 'stubble';
+
+export interface FarmFieldCondition {
+  soil: FarmFieldSoil;
+}
+
 export interface FarmBusinessState {
   cashCents: number;
   seeds: Record<string, number>;
   storage: Record<string, number>;
   storageCapacity: number;
+  fieldConditions: Record<string, FarmFieldCondition>;
   countyReliefClaimed: boolean;
   pickup: FarmPickupState;
   selectedCropId: string;

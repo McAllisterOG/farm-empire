@@ -3,7 +3,7 @@ import '../src/data';
 import { allFarmCrops, farmCropDef } from '../src/core/registry';
 import {
   buyFarmSeeds, farmCropUnlockInfo, farmOf, harvestFarmCrop, isFarmCropUnlocked,
-  planParcelWork, plantFarmCrop, sellStoredCrop, updateFarmMarketToDay, selectFarmCrop,
+  planParcelWork, plantFarmCrop, sellStoredCrop, updateFarmMarketToDay, selectFarmCrop, tillFarmField, waterFarmCrop,
 } from '../src/core/farmBusiness';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { deserialize, serialize } from '../src/save/save';
@@ -67,7 +67,9 @@ describe('County crop catalog', () => {
       const state = makeUnlockedFarm(cropId); const farm = farmOf(state); const def = farmCropDef(cropId); const plot = state.plots[0];
       const before = farm.cashCents;
       expect(buyFarmSeeds(state, cropId, 1).ok).toBe(true);
+      expect(tillFarmField(state, plot.uid).ok).toBe(true);
       expect(plantFarmCrop(state, plot.uid, cropId, NOW).ok).toBe(true);
+      expect(waterFarmCrop(state, plot.uid, NOW).ok).toBe(true);
       plot.crop!.plantedAt = NOW - def.growMs - 1;
       expect(harvestFarmCrop(state, plot.uid, NOW).ok).toBe(true);
       expect(farm.storage[cropId]).toBe(def.harvestYield);
@@ -78,7 +80,9 @@ describe('County crop catalog', () => {
 
   it('refuses a bulky pumpkin harvest at capacity without mutation', () => {
     const state = makeUnlockedFarm('crop_pumpkin'); const farm = farmOf(state); const def = farmCropDef('crop_pumpkin'); const plot = state.plots[0];
-    farm.seeds.crop_pumpkin = 1; expect(plantFarmCrop(state, plot.uid, 'crop_pumpkin', NOW).ok).toBe(true);
+    farm.seeds.crop_pumpkin = 1; expect(tillFarmField(state, plot.uid).ok).toBe(true);
+    expect(plantFarmCrop(state, plot.uid, 'crop_pumpkin', NOW).ok).toBe(true);
+    expect(waterFarmCrop(state, plot.uid, NOW).ok).toBe(true);
     plot.crop!.plantedAt = NOW - def.growMs - 1;
     farm.storageCapacity = def.harvestYield * def.storageUnitsPerItem - 1;
     const crop = plot.crop; const cash = farm.cashCents;

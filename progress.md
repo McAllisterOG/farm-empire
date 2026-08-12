@@ -1,0 +1,29 @@
+Original prompt: Begin the first milestone from the complete Farm Empire master plan efficiently, without sacrificing quality.
+
+## Active checkpoint
+
+- Manual Farming & Field Lifecycle V1.
+- Preserve current saves, economy, crops, land, pickup, tractor, and town systems.
+- Add real soil preparation, planting, watering, growth, harvest stubble, and reworking through the canonical game surface.
+
+## Validation contract
+
+- Deterministic domain tests and save migration fixtures.
+- Full test suite, strict typecheck, production build, and diff checks.
+- Browser cause-to-outcome loop with screenshots, text-state inspection, and console review.
+- Native Desktop rebuild and launch smoke after browser acceptance.
+
+## Notes
+
+- Current branch began clean at `d5bfc77`.
+- Existing saves may contain planted crops and must remain playable after migration.
+
+## 2026-08-12 - Manual Field Lifecycle foundation
+
+- Added save-v10 field conditions with defensive v9 migration: existing crops remain established, cropped sections normalize to tilled soil, and empty sections normalize to rough soil.
+- Added deterministic manual actions for preparing rough soil/reworking stubble and giving a one-time establishment watering. Waiting before that first water never counts toward growth.
+- Harvest and withered clearing now leave stubble. Manual planting requires prepared soil; operated-tractor planting remains an integrated prepare-and-establish pass so existing tractor jobs still work.
+- Wired field menus, hover copy, visual rough/tilled/stubble treatments, wet soil, and a needs-water droplet marker.
+- Expanded the Farmbook route from six to eight concise steps: prepare, plant, water, harvest, load, town, trade, expand.
+- Added deterministic browser hooks: `window.render_game_to_text()` and `window.advanceTime(ms)`.
+- Automated checkpoint: 191/191 tests and strict typecheck pass. Browser/native validation remains.

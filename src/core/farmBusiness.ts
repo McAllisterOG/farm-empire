@@ -1,5 +1,5 @@
 import type {
-  ActionResult, ActiveFarmMarketEvent, FarmBusinessState, FarmPlot, GameState,
+  ActionResult, ActiveFarmMarketEvent, FarmBusinessState, FarmFieldCondition, FarmPlot, GameState,
 } from './types';
 import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
@@ -104,6 +104,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     seeds,
     storage,
     storageCapacity: STARTING_STORAGE_CAPACITY,
+    fieldConditions: {},
     countyReliefClaimed: false,
     pickup: { id: PICKUP_ID, name: PICKUP_NAME, x: PICKUP_START.x, y: PICKUP_START.y, cargo: emptyPickupCargo() },
     selectedCropId: 'crop_corn',
@@ -181,6 +182,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const townStatus = objectRecord(raw.townContact).status;
   const rawSeeds = objectRecord(raw.seeds);
   const rawStorage = objectRecord(raw.storage);
+  const rawFieldConditions = objectRecord(raw.fieldConditions);
   const rawQuotes = objectRecord(rawMarket.quotes);
   const validCropIds = new Set(allFarmCrops().map((c) => c.id));
   const selectedCropId = validCropIds.has(String(raw.selectedCropId))
@@ -217,6 +219,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     seeds,
     storage,
     storageCapacity: loftOwned ? BARN_LOFT_EXPANSION.toCapacity : STARTING_STORAGE_CAPACITY,
+    fieldConditions: {},
     countyReliefClaimed: raw.countyReliefClaimed === true,
     pickup: normalizePickup(raw.pickup),
     selectedCropId,
@@ -251,6 +254,13 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   };
   if (!isFarmCropUnlocked(state, state.farm.selectedCropId)) state.farm.selectedCropId = 'crop_corn';
   ensureOwnedFarmParcelPlots(state, state.farm.parcels);
+  for (const plot of state.plots) {
+    const rawCondition = objectRecord(rawFieldConditions[String(plot.uid)]);
+    const soil = rawCondition.soil === 'rough' || rawCondition.soil === 'tilled' || rawCondition.soil === 'stubble'
+      ? rawCondition.soil
+      : plot.crop ? 'tilled' : 'rough';
+    state.farm.fieldConditions[String(plot.uid)] = { soil: plot.crop ? 'tilled' : soil };
+  }
   syncCashMirror(state);
   return state.farm;
 }
@@ -262,6 +272,61 @@ export function farmOf(state: GameState): FarmBusinessState {
 
 export function syncCashMirror(state: GameState): void {
   if (state.farm) state.player.coins = Math.floor(state.farm.cashCents / 100);
+}
+
+export function ensureFarmFieldConditions(state: GameState): void {
+  const farm = farmOf(state);
+  const valid = new Set(state.plots.map((plot) => String(plot.uid)));
+  for (const key of Object.keys(farm.fieldConditions)) if (!valid.has(key)) delete farm.fieldConditions[key];
+  for (const plot of state.plots) {
+    const key = String(plot.uid);
+    const current = farm.fieldConditions[key];
+    const soil = current?.soil === 'rough' || current?.soil === 'tilled' || current?.soil === 'stubble'
+      ? current.soil
+      : plot.crop ? 'tilled' : 'rough';
+    farm.fieldConditions[key] = { soil: plot.crop ? 'tilled' : soil };
+  }
+}
+
+export function farmFieldCondition(state: GameState, plotUid: number): FarmFieldCondition {
+  const plot = state.plots.find((candidate) => candidate.uid === plotUid);
+  const condition = farmOf(state).fieldConditions[String(plotUid)];
+  if (plot?.crop) return { soil: 'tilled' };
+  if (condition?.soil === 'tilled' || condition?.soil === 'stubble') return condition;
+  return { soil: 'rough' };
+}
+
+export function tillFarmField(state: GameState, plotUid: number): ActionResult {
+  const plot = state.plots.find((candidate) => candidate.uid === plotUid);
+  if (!plot || !isOwnedFieldTile(state, plot.x, plot.y)) return fail('This field is not owned.');
+  if (plot.crop) return fail('Harvest or clear this crop before preparing the soil.');
+  const condition = farmFieldCondition(state, plotUid);
+  if (condition.soil === 'tilled') return fail('This field section is already prepared.');
+  farmOf(state).fieldConditions[String(plotUid)] = { soil: 'tilled' };
+  recordFarmStat(state, 'farmSectionsTilled');
+  return {
+    ok: true,
+    events: [{
+      type: 'toast',
+      target: condition.soil === 'stubble'
+        ? 'Harvest stubble reworked. Soil ready for planting.'
+        : 'Rough soil prepared for planting.',
+    }],
+  };
+}
+
+export function waterFarmCrop(state: GameState, plotUid: number, now: number): ActionResult {
+  const plot = state.plots.find((candidate) => candidate.uid === plotUid);
+  if (!plot?.crop) return fail('There is no planted crop to water.');
+  const stage = farmCropStage(plot.crop, now);
+  if (stage === 'ready' || stage === 'withered') return fail('This crop no longer needs water.');
+  if (plot.crop.awaitingWater !== true) return fail('This field section has already received its establishment watering.');
+  plot.crop.awaitingWater = false;
+  plot.crop.plantedAt = now;
+  plot.crop.lastWateredAt = now;
+  recordFarmStat(state, 'waterings');
+  recordFarmStat(state, 'farmSectionsWatered');
+  return { ok: true, events: [{ type: 'water', target: plot.crop.defId, amount: 1 }] };
 }
 
 export function formatMoney(cents: number): string {
@@ -386,15 +451,24 @@ export function plantFarmCrop(state: GameState, plotUid: number, cropId: string,
   const unlock = farmCropUnlockInfo(state, cropId);
   if (!unlock.unlocked) return fail(`${farmDef.name} locked: ${unlock.requirement}`);
   if ((farm.seeds[cropId] ?? 0) < 1) return fail(`No ${farmDef.name} seeds available.`);
+  const condition = farmFieldCondition(state, plotUid);
+  if (context === 'manual' && condition.soil !== 'tilled') return fail('Prepare this field section before planting.');
   const speedBps = context === 'operatedTractor' && farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
       ? COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps : 0;
   const effectiveGrowMs = Math.round(farmDef.growMs * (10_000 - speedBps) / 10_000);
   const preworkedMs = Math.max(0, farmDef.growMs - effectiveGrowMs);
   farm.seeds[cropId] -= 1;
-  plot.crop = { defId: cropId, plantedAt: now, wateredBonusMs: preworkedMs, lastWateredAt: 0 };
+  farm.fieldConditions[String(plotUid)] = { soil: 'tilled' };
+  plot.crop = {
+    defId: cropId,
+    plantedAt: now,
+    wateredBonusMs: preworkedMs,
+    lastWateredAt: context === 'operatedTractor' ? now : 0,
+    awaitingWater: context === 'manual',
+  };
   recordFarmStat(state, 'plantings');
   if (context === 'operatedTractor') recordFarmStat(state, 'farmTractorSections');
-  return { ok: true, events: [{ type: 'plant', target: cropId, amount: 1 }] };
+  return { ok: true, events: [{ type: 'plant', target: cropId, amount: 1, data: { established: context === 'operatedTractor' } }] };
 }
 
 export function harvestFarmCrop(state: GameState, plotUid: number, now: number, context: FarmWorkContext = 'manual'): ActionResult {
@@ -414,6 +488,7 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
   }
   farm.storage[def.id] = (farm.storage[def.id] ?? 0) + amount;
   plot.crop = null;
+  farm.fieldConditions[String(plotUid)] = { soil: 'stubble' };
   recordFarmStat(state, 'harvests');
   recordFarmStat(state, 'farmHarvestUnits', amount);
   if (context === 'operatedTractor') recordFarmStat(state, 'farmTractorSections');
@@ -437,10 +512,11 @@ function farmCropReady(plot: FarmPlot, now: number): boolean {
   return farmCropStage(plot.crop, now) === 'ready';
 }
 
-export type FarmCropStage = 'growing' | 'ready' | 'withered';
+export type FarmCropStage = 'needs-water' | 'growing' | 'ready' | 'withered';
 
 export function farmCropStage(crop: FarmPlot['crop'], now: number): FarmCropStage | 'empty' {
   if (!crop) return 'empty';
+  if (crop.awaitingWater === true) return 'needs-water';
   const def = farmCropDef(crop.defId);
   const readyAt = crop.plantedAt + def.growMs - crop.wateredBonusMs;
   if (now < readyAt) return 'growing';
@@ -456,7 +532,8 @@ export function clearWitheredFarmCrop(state: GameState, plotUid: number, now: nu
   if (!plot?.crop) return fail('There is no crop to clear.');
   if (!isFarmCropWithered(plot.crop, now)) return fail('Only withered crops can be cleared.');
   plot.crop = null;
-  return { ok: true, events: [{ type: 'toast', target: 'Withered field section cleared. No crop or refund was recovered.' }] };
+  farmOf(state).fieldConditions[String(plotUid)] = { soil: 'stubble' };
+  return { ok: true, events: [{ type: 'toast', target: 'Withered crop cleared. Rework the remaining stubble before planting.' }] };
 }
 
 export function cheapestFarmSeed(): { cropId: string; priceCents: number; name: string } {
@@ -525,6 +602,7 @@ export function purchaseNeighborParcel(state: GameState): ActionResult {
     if (state.plots.some((plot) => plot.x === tile.x && plot.y === tile.y)) continue;
     state.uidCounter += 1;
     state.plots.push({ uid: state.uidCounter, x: tile.x, y: tile.y, crop: null });
+    farm.fieldConditions[String(state.uidCounter)] = { soil: 'rough' };
   }
   recordFarmStat(state, 'expansions');
   recordFarmStat(state, 'farmCashSpentCents', FIRST_PARCEL_PRICE_CENTS);

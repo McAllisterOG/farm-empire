@@ -6,7 +6,7 @@ import { cropDef } from '../src/core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, advanceFarmClock, buyFarmSeeds, farmOf, harvestFarmCrop,
   marketMovement, placePlayerAtTractorDismount, plantFarmCrop, planParcelWork,
-  purchaseNeighborParcel, sellStoredCrop, serpentineFieldTiles, storageUsed,
+  purchaseNeighborParcel, sellStoredCrop, serpentineFieldTiles, storageUsed, tillFarmField,
   updateFarmMarketToDay,
 } from '../src/core/farmBusiness';
 import { farmParcelSectionCount, farmParcelTiles } from '../src/core/farmParcels';
@@ -62,6 +62,7 @@ describe('farm inputs, planting, harvest, and storage', () => {
     farm.seeds.crop_corn = 0;
     expect(plantFarmCrop(state, state.plots[0].uid, 'crop_corn', NOW).ok).toBe(false);
     farm.seeds.crop_corn = 1;
+    expect(tillFarmField(state, state.plots[0].uid).ok).toBe(true);
     expect(plantFarmCrop(state, state.plots[0].uid, 'crop_corn', NOW).ok).toBe(true);
     expect(plantFarmCrop(state, state.plots[0].uid, 'crop_corn', NOW).ok).toBe(false);
   });
@@ -109,7 +110,7 @@ describe('tractor parcel work planning and transactional steps', () => {
     plantAndMature(state, 'crop_corn', 1);
     const readyUid = state.plots[1].uid;
     farmOf(state).seeds.crop_wheat = 1;
-    expect(plantFarmCrop(state, state.plots[4].uid, 'crop_wheat', NOW).ok).toBe(true);
+    expect(plantFarmCrop(state, state.plots[4].uid, 'crop_wheat', NOW, 'operatedTractor').ok).toBe(true);
     state.plots.reverse();
 
     const plan = planParcelWork(state, 'starter', NOW);
@@ -128,7 +129,7 @@ describe('tractor parcel work planning and transactional steps', () => {
     const farm = farmOf(state);
     farm.seeds.crop_soybean = 3;
     const plan = planParcelWork(state, 'starter', NOW, 'crop_soybean');
-    const results = plan.plantPlotUids.map((uid) => plantFarmCrop(state, uid, 'crop_soybean', NOW));
+    const results = plan.plantPlotUids.map((uid) => plantFarmCrop(state, uid, 'crop_soybean', NOW, 'operatedTractor'));
 
     expect(results.filter((result) => result.ok)).toHaveLength(3);
     expect(results.filter((result) => !result.ok)).toHaveLength(0);

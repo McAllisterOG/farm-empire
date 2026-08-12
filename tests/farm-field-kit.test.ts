@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { COUNTY_ROW_CROP_FIELD_KIT } from '../src/data/farmEquipment.data';
-import { farmOf, harvestFarmCrop, plantFarmCrop, purchaseCountyRowCropFieldKit } from '../src/core/farmBusiness';
+import { farmOf, harvestFarmCrop, plantFarmCrop, purchaseCountyRowCropFieldKit, tillFarmField } from '../src/core/farmBusiness';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { tractorToolbarPose, tractorToolbarPoseFromRenderState } from '../src/core/farmTractorMotion';
 import { deserialize, serialize } from '../src/save/save';
@@ -16,7 +16,7 @@ function farm() { return createFarmGame('Kit Test', 77, NOW); }
 describe('County Row-Crop Field Kit', () => {
   it('starts unowned and stays locked until the County Pantry order is complete', () => {
     const state = farm();
-    expect(SAVE_VERSION).toBe(9);
+    expect(SAVE_VERSION).toBe(10);
     expect(farmOf(state).equipment.countyRowCropFieldKitOwned).toBe(false);
     const before = farmOf(state).cashCents;
     expect(purchaseCountyRowCropFieldKit(state).ok).toBe(false);
@@ -45,6 +45,7 @@ describe('County Row-Crop Field Kit', () => {
   it('applies effects only to operated tractor work, with manual work at base values', () => {
     const state = farm(); const f = farmOf(state); f.equipment.countyRowCropFieldKitOwned = true;
     const plot = state.plots[0]; f.seeds.crop_corn = 2;
+    expect(tillFarmField(state, plot.uid).ok).toBe(true);
     expect(plantFarmCrop(state, plot.uid, 'crop_corn', NOW, 'manual').ok).toBe(true);
     expect(plot.crop!.wateredBonusMs).toBe(0);
     plot.crop = null;
@@ -81,7 +82,7 @@ describe('County Row-Crop Field Kit', () => {
     old.version = 5;
     delete old.farm.equipment.countyRowCropFieldKitOwned;
     const migrated = deserialize(JSON.stringify(old), NOW + 1);
-    expect(migrated.version).toBe(9);
+    expect(migrated.version).toBe(10);
     expect(farmOf(migrated).equipment.countyRowCropFieldKitOwned).toBe(true);
     expect(farmOf(migrated).cashCents).toBe(321_654);
     expect(farmOf(migrated).storage.crop_corn).toBe(7);
