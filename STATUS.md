@@ -4,16 +4,16 @@
 
 - **Date:** 2026-08-12
 - **Branch:** `codex/first-town-contact`
-- **Head:** `679a9aa`
-- **Product state:** Player Experience & Homestead Expansion V1 is complete. The visible farm is now the primary interface: focal objects own their correct context actions, overlap priority prevents the pickup/gateway and tractor/pickup failures, the compact Farmbook replaces redundant footer controls, Farmer Knowledge derives progress from real farm work, and the homestead/town presentation is denser and easier to navigate without changing save v9 or the economy.
-- **Verification:** 185/185 tests passed; strict typecheck, Vite production build, and whitespace checks passed. Browser acceptance covered exact farm-object hover/click routing, crop-field actions, Farmbook guidance, barn/pickup produce and seed transfers, road-following on-foot and pickup County travel, town NPC and pickup interactions, return parking, Save & Return, and a clean console at 1280x720. The unpacked, portable, and NSIS x64 builds were rebuilt under `release/final`. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the current unpacked executable and launched responsive native processes; only the acceptance processes were closed.
-- **Review:** A deep bounded adversarial review found one town-context camera leak and one field-cutting on-foot route. The repair hides the farm-only Farmbook action while in town, routes walking travel along the visible County road, and makes Escape cancellation safe. Transaction authority, save neutrality, corrupt-stat handling, vehicle overlap priority, and return normalization were also reviewed with no remaining high- or medium-severity finding.
+- **Head:** `400a2d5`
+- **Product state:** Manual Farming & Field Lifecycle V1 is complete. Every field section now moves through visible rough soil, prepared soil, planting, a required first watering, growth, harvest stubble, and reworking. The concise world interaction and Farmbook route teach the sequence, while current tractor planting remains an integrated prepare-and-establish shortcut. Save v10 preserves all existing crops and business progress.
+- **Verification:** 192/192 tests passed; strict typecheck, Vite production build, and whitespace checks passed. Browser acceptance completed prepare -> plant -> water -> mature -> exact harvest -> stubble -> rework -> save/reload, inspected the needs-water and stubble presentation plus the eight-step Farmbook, and found zero console warnings/errors. The provided web-game Playwright client also produced a valid screenshot and deterministic text state. Unpacked, portable, and NSIS x64 builds completed under `release/manual-fields-v1`; the exact Desktop shortcut targets that build, four native processes responded during smoke testing, and zero acceptance processes remained.
+- **Review:** A bounded adversarial pass checked old/corrupt save behavior, atomic failure paths, tractor/manual separation, seed and barn accounting, guide evidence, lifecycle cancellation boundaries, test-hook isolation, and contradictory legacy guidance. It repaired fail-open malformed watering data and replaced the obsolete automatic-growth pump/help copy; no high- or medium-severity issue remains.
 
 ## Current presentation
 
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v9 adds missing owned acreage sections defensively while preserving pickup cargo, contact, field-kit, relief, loft, and catalog state.
+- Existing plot IDs and planted crops remain compatible. Save schema v10 adds per-section soil conditions defensively; v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
@@ -35,15 +35,15 @@
 - Farm and town cameras now fit their current scene, clamp panning so the playable mainland cannot be lost, refit on resize, and expose a persistent top-right menu with Resume, Save, Recenter, How to Play, and Save & Return to Farms.
 - The pickup now parks at a visible barn cargo pad that is clear of the neighboring field and town gate. Produce/seed transfer is available only there, with explicit guidance elsewhere; old saves parked exactly under the gate sign normalize safely to the pad without losing cargo.
 - A humble presentation-only farmhouse, expanded town-edge homes/field cues, and one authoritative waypointed County road reduce empty visual space without inventing new services or crossing either workable acreage.
-- The hand pump now states that watering is not yet a gameplay system and crops currently grow automatically.
+- The hand pump now points players to the field menu for the required first watering; deeper irrigation infrastructure remains deferred.
 - Hovering focal objects now identifies what will open, and one authoritative hit-priority map routes pickup, tractor, Scout, farmhouse, pump, barn, doghouse, gateway, acreage, and fields to their correct interaction.
-- The Farmbook consolidates the six-step farm loop, live business snapshot, barn/cargo, land, County road, save, and recenter actions without filling the world with buttons.
+- The Farmbook consolidates the eight-step prepare, plant, water, harvest, load, town, trade, and expand loop plus the live business snapshot and core routes without filling the world with buttons.
 - Farmer Knowledge V1 derives five presentation-only ranks and short evidence-sourced field notes from real planting, harvesting, hauling, selling, expansion, and County milestones; it adds no hidden yield or cash modifier and no save field.
 - The homestead now has a larger farmhouse, pond, reeds, garden rows, flowers, destination pulses, and clearer field outlines; the County Service Center has larger edge homes, tighter framing, named hover cues, and a dedicated correctly scaled pickup bay away from the return sign.
 
 ## Immediate authorized work
 
-No new feature package is authorized. Owner-playtest the refreshed Windows Desktop build's world-first interactions, Farmbook, County hauling, Farmer Knowledge pacing, 6x6 starter acreage, 8x12 expansion, and camera framing before selecting the evidence-based economy study, a deeper knowledge/skills package, or another finite package.
+No new feature package is authorized. Owner-playtest the refreshed Windows Desktop build's manual field rhythm, first-watering clarity, stubble/rework pacing, tractor shortcut, hauling loop, and acreage scale before selecting the evidence-based economy study or another finite package.
 
 ## Known limitations
 
@@ -54,7 +54,7 @@ No new feature package is authorized. Owner-playtest the refreshed Windows Deskt
 - The town story currently contains one deliberate first contact and one finite hauled order; there is no general quest, reputation, deadline, or repeat-contract system.
 - Eight crops, two working acreages, one tractor kit, one storage upgrade, and one pickup provide a bounded progression loop; further land tiers, crop inputs/quality, trailers/implements, workers, and managers remain deferred.
 - The enlarged fields intentionally expose current economy/storage limits: a full 96-section planting can exceed practical starting capital and a mature tract can exceed barn capacity. Partial work is supported, but pricing, yields, storage, and machinery progression still require the planned evidence-based economy study.
-- Watering/irrigation is not implemented. Farmer Knowledge V1 records authentic actions and provides sourced notes, but has no skill choices, tutorial branches, or economic modifiers yet.
+- Manual crops require one establishment watering, but recurring moisture, weather, irrigation equipment, fertilizer, soil health, and quality are not implemented. Farmer Knowledge still has no skill choices or economic modifiers.
 - The humble farmhouse has no upgrade mechanics yet, and the correct starting availability/timing of the tractor remains an open progression decision.
 - Starting cash remains $5,000; no economy values were changed during this repair, pending an evidence-based proportional economy study.
 - Crop withering uses wall-clock time and a 15-minute post-maturity window; this should be evaluated during the owner's first longer play session.

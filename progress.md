@@ -27,3 +27,19 @@ Original prompt: Begin the first milestone from the complete Farm Empire master 
 - Expanded the Farmbook route from six to eight concise steps: prepare, plant, water, harvest, load, town, trade, expand.
 - Added deterministic browser hooks: `window.render_game_to_text()` and `window.advanceTime(ms)`.
 - Automated checkpoint: 191/191 tests and strict typecheck pass. Browser/native validation remains.
+
+## Final acceptance
+
+- Bounded adversarial repair made malformed watering flags fail open to established growth and removed obsolete automatic-growth guidance from the pump and How to Play.
+- Final automated boundary: 192/192 tests, strict typecheck, production build, and `git diff --check` pass.
+- Browser acceptance completed prepare -> plant -> water -> mature -> harvest -> stubble -> rework -> save/reload, verified the eight-step Farmbook and updated help, and found no console warnings/errors.
+- The provided web-game Playwright client captured a valid fresh-farm screenshot and deterministic text state.
+- Windows unpacked, portable, and NSIS x64 artifacts were rebuilt under `release/manual-fields-v1`. The real Desktop shortcut targets that build; native smoke found four responsive packaged processes and zero residual processes after cleanup.
+
+## Final acceptance
+
+- Bounded adversarial repair made malformed watering flags fail open to established growth and removed obsolete automatic-growth guidance from the pump and How to Play.
+- Final automated boundary: 192/192 tests, strict typecheck, production build, and `git diff --check` pass.
+- Browser acceptance completed prepare -> plant -> water -> mature -> harvest -> stubble -> rework -> save/reload, verified the eight-step Farmbook and updated help, and found no console warnings/errors.
+- The provided web-game Playwright client captured a valid fresh-farm screenshot and deterministic text state.
+- Windows unpacked, portable, and NSIS x64 artifacts were rebuilt under `release/manual-fields-v1`. The real Desktop shortcut targets that build; native smoke found four responsive packaged processes and zero residual processes after cleanup.

@@ -181,3 +181,14 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Farmer Knowledge V1 is derived from authoritative business stats and milestones, uses short evidence-sourced notes, and remains presentation-only. It adds no hidden economic modifier, parallel inventory, or save-schema field.
 - Farm and town pickup authority remains physical: transfers happen at the barn pad, County commerce requires the pickup in town, and the dedicated County parking bay stays separate from the return sign.
 - Deeper tutorial branches, skill effects, irrigation, workers, economy rebalance, new acreage, town interiors, and broader social systems remain separate future packages.
+
+## 2026-08-12 - Establish manual fieldwork before deeper mechanization
+
+**Status:** Approved by the owner
+
+- An owned section moves through explicit rough, tilled, planted, established, harvest-ready, and stubble conditions. Manual planting requires prepared soil, and harvested or cleared sections require reworking before another manual crop.
+- Manual crops require one establishment watering before growth time begins. Waiting before that watering does not consume the crop's growth or wither window; the watering action is deterministic and cannot be repeated for a bonus.
+- The current operated tractor remains a deliberate integrated preparation, planting, and establishment pass so existing batch jobs and business transactions stay playable. Separate plows, planters, water equipment, and implement ownership remain future progression.
+- Save schema v10 persists only section soil conditions and the optional per-crop waiting flag. Existing crops migrate as established and retain their original timestamps; missing or malformed data fails open to playable growth rather than trapping a crop.
+- Rough, tilled, wet, needs-water, and stubble presentation must agree with hover labels, action menus, the Farmbook, the hand pump, and How to Play. Recurring moisture, weather, irrigation infrastructure, fertilizer, soil health, crop quality, workers, and economy rebalance remain separate packages.
+- This decision supersedes the earlier first-play guidance that all crops grow automatically; the hand pump itself remains a guidance landmark rather than a water inventory or irrigation system.

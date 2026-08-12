@@ -21,10 +21,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 15. **First-Play Usability & World Framing Repair** - bounded scene-aware cameras, dependable recentering, a persistent hamburger menu and title return, a physical barn cargo pad, context-correct pickup/tractor panels, safe gate returns, accurate watering guidance, and stronger farm/town edge framing.
 16. **Acreage & Field Geometry V2** - a 6x6 starter acreage, an 8x12 neighboring commercial tract, save-v9 legacy expansion, data-defined parcel geometry, seed/storage-aware tractor plans, a routed County road, and home-focused whole-property camera bounds.
 17. **Player Experience & Homestead Expansion V1** - world-first context interactions, compact Farmbook guidance, action-derived Farmer Knowledge, authoritative hover/hit priority, corrected pickup/town routing, denser homestead and County presentation, and refreshed Windows builds without an economy or save-schema change.
+18. **Manual Farming & Field Lifecycle V1** - rough/prepared/stubble soil conditions, manual preparation and reworking, a required first watering, visible lifecycle feedback, an eight-step Farmbook route, save-v10 compatibility, and an integrated tractor prepare-and-establish shortcut.
 
 ## Current authorization
 
-No new feature package is currently authorized. Playtest the rebuilt Windows Desktop game with its world-first interactions, Farmbook, hauling loop, knowledge pacing, and larger fields, then use observed friction, tractor pacing, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
+No new feature package is currently authorized. Playtest the rebuilt Windows Desktop game with the manual prepare/plant/water/harvest/rework rhythm, tractor shortcut, hauling loop, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
 
 ## Later directions
 
@@ -33,7 +34,7 @@ No new feature package is currently authorized. Playtest the rebuilt Windows Des
 - **Farmer Knowledge & Skills:** V1 now derives presentation-only ranks, next steps, and evidence-sourced notes from authentic actions. A later bounded package may add optional first-day tutorial choices or explicit skills only after their effects and save model are approved; do not revive the generic legacy XP/quest systems by default.
 - **Evidence-based economy study:** keep starting cash at $5,000 while authoritative agricultural sources are used to calibrate proportional yields, quantities, storage, seed, machinery, and land relationships. Favor a fun, legible abstraction over false literal realism; do not rebalance isolated values before the study.
 - **Town and county buildout:** add houses, roads, surrounding fields, services, and story in bounded stages. The County Service Center remains a separate scene today; a continuous farm-to-town regional map is a future architecture decision, not an assumed rewrite.
-- **Equipment progression timing:** revisit whether the tractor should be available from the start and improve machinery scale/art only alongside a coherent manual-to-mechanized progression plan.
+- **Equipment progression timing:** manual fieldwork now establishes the baseline loop and the current tractor combines preparation and establishment at scale. Revisit whether it should be available from the start and improve machinery tiers only alongside a coherent manual-to-mechanized progression plan.
 - Equipment and logistics depth after the pickup loop is exercised: distinct implements, trailers, combines, condition, and genuine dealership actions.
 - Broader or repeat contracts only after a deliberate job, logistics, and save design.
 - Property-aware workers and managers after acreage, economy, storage, and machinery loops are proven fun.
