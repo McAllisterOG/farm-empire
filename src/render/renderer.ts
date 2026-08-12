@@ -76,6 +76,7 @@ export interface RenderScene {
     interactionHint?: { kind: string; label: string; x: number; y: number };
     destination?: { kind: 'walk' | 'pickup' | 'tractor'; x: number; y: number };
     manualAction?: { kind: ManualFieldActionKind; x: number; y: number; progress: number };
+    manualSelection?: { x: number; y: number }[];
   };
   /** Optional isolated County Service Center scene; never serialized. */
   town?: TownRenderScene;
@@ -468,6 +469,17 @@ export class Renderer {
     for (const plot of scene.farm!.lockedTiles) drawFarmSection(ctx, camera, { ...plot, uid: -1, crop: null }, now, zoom, true, { soil: 'rough' });
     drawLockedParcelLabel(ctx, camera, scene, zoom);
 
+    for (const plot of scene.farm!.manualSelection ?? []) {
+      farmFootprintPath(ctx, camera, farmPlotFootprint(plot));
+      ctx.fillStyle = 'rgba(245, 223, 132, .13)'; ctx.fill();
+      ctx.save();
+      ctx.setLineDash([Math.max(4, 7 * zoom), Math.max(3, 5 * zoom)]);
+      ctx.strokeStyle = 'rgba(245, 223, 132, .88)';
+      ctx.lineWidth = Math.max(1.5, zoom * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     if (scene.hover) {
       farmFootprintPath(ctx, camera, farmPlotFootprint({ x: scene.hover.tx, y: scene.hover.ty }));
       ctx.fillStyle = 'rgba(255, 239, 132, .18)'; ctx.fill();
@@ -751,7 +763,7 @@ function drawHomesteadLandscape(ctx: CanvasRenderingContext2D, camera: Camera, z
 }
 
 function drawStarterFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {
-  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.55, zoom * 1.55);
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.85, zoom * 1.85);
   ctx.fillStyle = 'rgba(48,35,24,.24)'; ctx.beginPath(); ctx.ellipse(0, 6, 47, 12, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#876142'; ctx.fillRect(-38, -3, 76, 6);
   ctx.fillStyle = '#d1b789'; ctx.fillRect(-34, -43, 68, 42);
@@ -917,7 +929,7 @@ function drawFarmName(ctx: CanvasRenderingContext2D, sx: number, sy: number, nam
 }
 
 function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, loftOwned = false): void {
-  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 2, zoom * 2);
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.75, zoom * 1.75);
   ctx.fillStyle = 'rgba(40,30,20,.22)'; ctx.beginPath(); ctx.ellipse(0, 5, 58, 16, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#a84634'; ctx.fillRect(-42, -53, 84, 55);
   ctx.strokeStyle = '#7b392d'; ctx.lineWidth = 2; for (let bx = -35; bx < 40; bx += 10) { ctx.beginPath(); ctx.moveTo(bx, -50); ctx.lineTo(bx, -2); ctx.stroke(); }

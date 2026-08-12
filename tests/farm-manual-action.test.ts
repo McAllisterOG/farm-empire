@@ -4,7 +4,10 @@ import {
   createManualFieldAction,
   manualFieldActionComplete,
   manualFieldActionProgress,
+  manualFieldSelectionPlotUids,
 } from '../src/core/farmManualAction';
+import { createFarmGame } from '../src/core/state';
+import { farmOf, purchaseNeighborParcel } from '../src/core/farmBusiness';
 
 describe('manual field action timing', () => {
   it('creates a deterministic, plot-bound transient action', () => {
@@ -35,5 +38,38 @@ describe('manual field action timing', () => {
       expect(duration).toBeGreaterThanOrEqual(600);
       expect(duration).toBeLessThanOrEqual(1_000);
     }
+  });
+
+  it('selects a deterministic row and centered three-row block within one acreage', () => {
+    const state = createFarmGame('Row Test', 123, 1_000);
+    const anchor = state.plots.find((plot) => plot.x === 4 && plot.y === 9)!;
+    const row = manualFieldSelectionPlotUids(state, anchor.uid, 'row').map((uid) => state.plots.find((plot) => plot.uid === uid)!).map((plot) => `${plot.x},${plot.y}`);
+    expect(row).toEqual(['2,9', '3,9', '4,9', '5,9', '6,9', '7,9']);
+    const block = manualFieldSelectionPlotUids(state, anchor.uid, 'three-rows').map((uid) => state.plots.find((plot) => plot.uid === uid)!).map((plot) => `${plot.x},${plot.y}`);
+    expect(block).toEqual([
+      '2,8', '3,8', '4,8', '5,8', '6,8', '7,8',
+      '7,9', '6,9', '5,9', '4,9', '3,9', '2,9',
+      '2,10', '3,10', '4,10', '5,10', '6,10', '7,10',
+    ]);
+  });
+
+  it('clamps edge blocks and never crosses into neighboring acreage', () => {
+    const state = createFarmGame('Row Test', 123, 1_000);
+    const edge = state.plots.find((plot) => plot.x === 3 && plot.y === 7)!;
+    expect(manualFieldSelectionPlotUids(state, edge.uid, 'three-rows')).toHaveLength(18);
+    farmOf(state).cashCents = 10_000_000;
+    expect(purchaseNeighborParcel(state).ok).toBe(true);
+    const north = state.plots.find((plot) => plot.x === 12 && plot.y === 14)!;
+    const selected = manualFieldSelectionPlotUids(state, north.uid, 'three-rows').map((uid) => state.plots.find((plot) => plot.uid === uid)!);
+    expect(selected).toHaveLength(24);
+    expect(new Set(selected.map((plot) => plot.y))).toEqual(new Set([12, 13, 14]));
+    expect(selected.every((plot) => plot.x >= 10 && plot.x <= 17)).toBe(true);
+  });
+
+  it('fails safely for missing or off-acreage anchors', () => {
+    const state = createFarmGame('Row Test', 123, 1_000);
+    expect(manualFieldSelectionPlotUids(state, 999_999, 'row')).toEqual([]);
+    state.plots.push({ uid: 999_999, x: 50, y: 50, crop: null });
+    expect(manualFieldSelectionPlotUids(state, 999_999, 'three-rows')).toEqual([]);
   });
 });

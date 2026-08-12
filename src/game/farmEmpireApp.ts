@@ -18,7 +18,8 @@ import { recordFarmStat } from '../core/farmKnowledge';
 import { FarmSoundscape, type FarmAudioSettings } from '../audio/farmSoundscape';
 import {
   MANUAL_FIELD_ACTION_LABELS, createManualFieldAction, manualFieldActionComplete, manualFieldActionProgress,
-  type ManualFieldAction, type ManualFieldActionKind,
+  manualFieldSelectionPlotUids,
+  type ManualFieldAction, type ManualFieldActionKind, type ManualFieldSelectionScope,
 } from '../core/farmManualAction';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
@@ -42,6 +43,14 @@ import { h } from '../ui/dom';
 
 const AUTOSAVE_MS = 15_000;
 const FIELD_ACTION_PAUSE_MS = 260;
+const MANUAL_ACTION_VERBS: Readonly<Record<ManualFieldActionKind, string>> = {
+  prepare: 'Prepare',
+  rework: 'Rework',
+  plant: 'Plant',
+  water: 'Water',
+  harvest: 'Harvest',
+  clear: 'Clear',
+};
 
 interface TractorMoveTarget {
   x: number;
@@ -63,6 +72,17 @@ interface TractorJob {
 
 interface RunningManualFieldAction extends ManualFieldAction {
   apply: () => ActionResult;
+}
+
+interface ManualFieldJob {
+  kind: ManualFieldActionKind;
+  scope: Exclude<ManualFieldSelectionScope, 'section'>;
+  cropId?: string;
+  targetPlotUids: number[];
+  nextIndex: number;
+  completed: number;
+  skipped: number;
+  lastFailure?: string;
 }
 
 type FarmEmpireMode = 'farm' | 'town';
@@ -102,6 +122,7 @@ export class FarmEmpireApp {
   private tractorMotion: TractorMotion = createTractorMotion();
   private tractorJob: TractorJob | null = null;
   private manualFieldAction: RunningManualFieldAction | null = null;
+  private manualFieldJob: ManualFieldJob | null = null;
   private equipmentPanelOpen = false;
   private running = true;
   private raf = 0;
@@ -390,7 +411,8 @@ export class FarmEmpireApp {
         this.cancelTownWalk();
         return;
       }
-      if (this.manualFieldAction) this.cancelManualFieldAction();
+      if (this.manualFieldJob) this.cancelManualFieldJob();
+      else if (this.manualFieldAction) this.cancelManualFieldAction();
       else if (this.scoutWaitingForScratch) this.cancelScoutApproach();
       else if (this.tractorJob) this.cancelTractorJob();
       else if (this.tractorTarget) {
@@ -433,8 +455,9 @@ export class FarmEmpireApp {
       this.onClickTown(sx, sy);
       return;
     }
-    if (this.manualFieldAction) {
-      toast(`${MANUAL_FIELD_ACTION_LABELS[this.manualFieldAction.kind]} in progress. Press Escape to cancel.`, 'bad');
+    if (this.manualFieldJob || this.manualFieldAction) {
+      const kind = this.manualFieldJob?.kind ?? this.manualFieldAction!.kind;
+      toast(`${MANUAL_FIELD_ACTION_LABELS[kind]} in progress. Press Escape to cancel.`, 'bad');
       return;
     }
     if (this.tractorJob) {
@@ -897,51 +920,37 @@ export class FarmEmpireApp {
       const condition = farmFieldCondition(this.state, plotUid);
       if (condition.soil !== 'tilled') {
         const stubble = condition.soil === 'stubble';
-        showActionMenu(sx, sy, stubble ? 'Harvest stubble' : 'Rough field section', [{
-          label: stubble ? 'Rework stubble' : 'Prepare soil',
-          onClick: () => this.startManualFieldAction(stubble ? 'rework' : 'prepare', plotUid, () => tillFarmField(this.state, plotUid)),
-        }]);
+        this.showManualScopeMenu(
+          sx, sy, stubble ? 'Harvest stubble' : 'Rough field section',
+          stubble ? 'rework' : 'prepare', plotUid,
+        );
         return;
       }
       const def = farmCropDef(farm.selectedCropId);
       const count = farm.seeds[def.id] ?? 0;
-      showActionMenu(sx, sy, 'Prepared field section', [
-        {
-          label: `Plant ${def.name} (${count} seed${count === 1 ? '' : 's'})`,
-          icon: `icon:seed_${def.id.replace('crop_', '')}`,
-          disabled: count <= 0,
-          onClick: () => this.startManualFieldAction('plant', plotUid, () => plantFarmCrop(this.state, plotUid, def.id, this.gameNow(), 'manual')),
-        },
-        {
+      this.showManualScopeMenu(
+        sx, sy, `Prepared soil · ${def.name} · ${count} seed${count === 1 ? '' : 's'}`,
+        'plant', plotUid, def.id, [{
           label: count > 0 ? 'More seeds are sold in town' : 'No seeds · see the Farmbook route',
           disabled: count > 0,
           onClick: () => this.openFarmhouseOffice(),
-        },
-      ]);
+        }],
+      );
       return;
     }
     const def = farmCropDef(plot.crop.defId);
     const now = this.gameNow();
     const stage = farmCropStage(plot.crop, now);
     if (isFarmCropWithered(plot.crop, now)) {
-      showActionMenu(sx, sy, `${def.name} · Withered`, [{
-        label: 'Clear withered section (no refund)', icon: 'fx:hungry',
-        onClick: () => this.startManualFieldAction('clear', plotUid, () => clearWitheredFarmCrop(this.state, plotUid, this.gameNow())),
-      }]);
+      this.showManualScopeMenu(sx, sy, `${def.name} · Withered · no refund`, 'clear', plotUid, undefined, undefined, 'fx:hungry');
       return;
     }
     if (stage === 'needs-water') {
-      showActionMenu(sx, sy, `${def.name} · Needs water`, [{
-        label: `Water ${def.name} to start growth`, icon: 'fx:drop',
-        onClick: () => this.startManualFieldAction('water', plotUid, () => waterFarmCrop(this.state, plotUid, this.gameNow())),
-      }]);
+      this.showManualScopeMenu(sx, sy, `${def.name} · Needs water`, 'water', plotUid, undefined, undefined, 'fx:drop');
       return;
     }
     if (stage === 'ready') {
-      showActionMenu(sx, sy, `${def.name} · Ready`, [{
-        label: 'Harvest into barn', icon: 'fx:ready',
-        onClick: () => this.startManualFieldAction('harvest', plotUid, () => harvestFarmCrop(this.state, plotUid, this.gameNow(), 'manual')),
-      }]);
+      this.showManualScopeMenu(sx, sy, `${def.name} · Ready`, 'harvest', plotUid, undefined, undefined, 'fx:ready');
     } else {
       showActionMenu(sx, sy, `${def.name} · ${stage}`, [{
         label: `Growing · ${Math.max(1, Math.ceil((plot.crop.plantedAt + def.growMs - plot.crop.wateredBonusMs - now) / 1000))}s remaining`,
@@ -1062,6 +1071,19 @@ export class FarmEmpireApp {
   }
 
   private tractorHudRuntime(): { operating: boolean; working: boolean; statusText: string; manualWorking?: boolean } {
+    const manualJob = this.manualFieldJob;
+    if (manualJob) {
+      const total = manualJob.targetPlotUids.length;
+      const current = Math.min(total, manualJob.nextIndex + 1);
+      const action = this.manualFieldAction;
+      const progress = action ? Math.round(manualFieldActionProgress(action, this.gameNow()) * 100) : 0;
+      return {
+        operating: false,
+        working: false,
+        manualWorking: true,
+        statusText: `${MANUAL_FIELD_ACTION_LABELS[manualJob.kind]} · ${manualJob.completed}/${total} complete${manualJob.skipped ? ` · ${manualJob.skipped} skipped` : ''} · section ${current}/${total}${action ? ` · ${progress}%` : ''} · Escape cancels`,
+      };
+    }
     const manual = this.manualFieldAction;
     if (manual) {
       const progress = Math.round(manualFieldActionProgress(manual, this.gameNow()) * 100);
@@ -1122,6 +1144,119 @@ export class FarmEmpireApp {
     }
   }
 
+  private showManualScopeMenu(
+    sx: number,
+    sy: number,
+    title: string,
+    kind: ManualFieldActionKind,
+    anchorPlotUid: number,
+    cropId?: string,
+    extraActions: { label: string; disabled?: boolean; icon?: string; onClick: () => void }[] = [],
+    icon?: string,
+  ): void {
+    const verb = kind === 'plant' && cropId ? `Plant ${farmCropDef(cropId).name} on` : MANUAL_ACTION_VERBS[kind];
+    const actionIcon = icon ?? (kind === 'plant' && cropId ? `icon:seed_${cropId.replace('crop_', '')}` : undefined);
+    const scopes: { scope: ManualFieldSelectionScope; label: string }[] = [
+      { scope: 'section', label: 'this section' },
+      { scope: 'row', label: 'this row' },
+      { scope: 'three-rows', label: '3-row block' },
+    ];
+    showActionMenu(sx, sy, title, [
+      ...scopes.map(({ scope, label }) => {
+        const targets = this.manualTargetsFor(kind, anchorPlotUid, scope, cropId);
+        return {
+          label: `${verb} ${label}${scope === 'section' ? '' : ` · ${targets.length} eligible`}`,
+          icon: actionIcon,
+          disabled: targets.length === 0,
+          onClick: () => this.startManualSelection(kind, anchorPlotUid, scope, cropId),
+        };
+      }),
+      ...extraActions,
+    ]);
+  }
+
+  private manualTargetsFor(
+    kind: ManualFieldActionKind,
+    anchorPlotUid: number,
+    scope: ManualFieldSelectionScope,
+    cropId?: string,
+  ): number[] {
+    const now = this.gameNow();
+    const targets = manualFieldSelectionPlotUids(this.state, anchorPlotUid, scope).filter((plotUid) => {
+      const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+      if (!plot) return false;
+      const condition = farmFieldCondition(this.state, plotUid);
+      if (kind === 'prepare') return !plot.crop && condition.soil === 'rough';
+      if (kind === 'rework') return !plot.crop && condition.soil === 'stubble';
+      if (kind === 'plant') return !!cropId && isFarmCropUnlocked(this.state, cropId) && !plot.crop && condition.soil === 'tilled';
+      if (kind === 'water') return farmCropStage(plot.crop, now) === 'needs-water';
+      if (kind === 'harvest') return farmCropStage(plot.crop, now) === 'ready';
+      return !!plot.crop && isFarmCropWithered(plot.crop, now);
+    });
+    if (kind !== 'plant' || !cropId) return targets;
+    return targets.slice(0, Math.max(0, farmOf(this.state).seeds[cropId] ?? 0));
+  }
+
+  private startManualSelection(
+    kind: ManualFieldActionKind,
+    anchorPlotUid: number,
+    scope: ManualFieldSelectionScope,
+    cropId?: string,
+  ): void {
+    if (this.manualFieldAction || this.manualFieldJob || this.operatingTractor || this.operatingPickup) return;
+    const targets = this.manualTargetsFor(kind, anchorPlotUid, scope, cropId);
+    if (targets.length === 0) {
+      toast('No eligible field sections remain in that selection.', 'bad');
+      return;
+    }
+    if (scope === 'section') {
+      this.startManualFieldAction(kind, targets[0], () => this.applyManualFieldAction(kind, targets[0], cropId));
+      return;
+    }
+    this.manualFieldJob = {
+      kind,
+      scope,
+      cropId,
+      targetPlotUids: targets,
+      nextIndex: 0,
+      completed: 0,
+      skipped: 0,
+    };
+    toast(`${scope === 'row' ? 'Row' : 'Three-row block'} selected · ${targets.length} eligible section${targets.length === 1 ? '' : 's'} · Escape stops unfinished work.`, 'good');
+    this.beginManualFieldJobStep();
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
+  private applyManualFieldAction(kind: ManualFieldActionKind, plotUid: number, cropId?: string): ActionResult {
+    if (kind === 'prepare' || kind === 'rework') return tillFarmField(this.state, plotUid);
+    if (kind === 'plant') return plantFarmCrop(this.state, plotUid, String(cropId), this.gameNow(), 'manual');
+    if (kind === 'water') return waterFarmCrop(this.state, plotUid, this.gameNow());
+    if (kind === 'harvest') return harvestFarmCrop(this.state, plotUid, this.gameNow(), 'manual');
+    return clearWitheredFarmCrop(this.state, plotUid, this.gameNow());
+  }
+
+  private beginManualFieldJobStep(): void {
+    const job = this.manualFieldJob;
+    if (!job || this.manualFieldAction || this.walkTarget) return;
+    while (job.nextIndex < job.targetPlotUids.length) {
+      const plotUid = job.targetPlotUids[job.nextIndex];
+      const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+      if (!plot) {
+        job.skipped += 1;
+        job.lastFailure = 'A selected field section was unavailable.';
+        job.nextIndex += 1;
+        continue;
+      }
+      this.walkNear(plot.x, plot.y, () => this.startManualFieldAction(
+        job.kind,
+        plotUid,
+        () => this.applyManualFieldAction(job.kind, plotUid, job.cropId),
+      ));
+      return;
+    }
+    this.finishManualFieldJob();
+  }
+
   private startManualFieldAction(kind: ManualFieldActionKind, plotUid: number, apply: () => ActionResult): void {
     if (this.mode !== 'farm' || this.operatingTractor || this.operatingPickup || this.manualFieldAction) return;
     const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
@@ -1144,18 +1279,65 @@ export class FarmEmpireApp {
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
+  private finishManualFieldJob(): void {
+    const job = this.manualFieldJob;
+    if (!job) return;
+    const label = job.scope === 'row' ? 'Row' : 'Three-row block';
+    const summary = `${label} complete: ${job.completed} completed${job.skipped ? `, ${job.skipped} skipped` : ''}.`;
+    const detail = job.skipped && job.lastFailure ? ` ${job.lastFailure}` : '';
+    this.manualFieldJob = null;
+    this.manualFieldAction = null;
+    this.walkTarget = null;
+    this.playerActor.walking = false;
+    toast(summary + detail, job.completed > 0 ? 'good' : 'bad');
+    this.save();
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
+  private cancelManualFieldJob(): void {
+    const job = this.manualFieldJob;
+    if (!job) return;
+    const untouched = Math.max(0, job.targetPlotUids.length - job.completed - job.skipped);
+    const label = job.scope === 'row' ? 'Row work' : 'Three-row work';
+    this.manualFieldJob = null;
+    this.manualFieldAction = null;
+    this.walkTarget = null;
+    this.playerActor.walking = false;
+    toast(`${label} cancelled: ${job.completed} completed, ${job.skipped} skipped, ${untouched} not attempted.`, 'good');
+    if (job.completed > 0) this.save();
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
   private manualActionBlocksUi(): boolean {
-    const action = this.manualFieldAction;
-    if (!action) return false;
-    toast(`${MANUAL_FIELD_ACTION_LABELS[action.kind]} in progress. Finish it or press Escape to cancel.`, 'bad');
+    const kind = this.manualFieldJob?.kind ?? this.manualFieldAction?.kind;
+    if (!kind) return false;
+    toast(`${MANUAL_FIELD_ACTION_LABELS[kind]} in progress. Finish it or press Escape to cancel.`, 'bad');
     return true;
   }
 
   private updateManualFieldAction(now: number): void {
     const action = this.manualFieldAction;
-    if (!action || !manualFieldActionComplete(action, now)) return;
+    if (!action) {
+      if (this.manualFieldJob && !this.walkTarget) this.beginManualFieldJobStep();
+      return;
+    }
+    if (!manualFieldActionComplete(action, now)) return;
     this.manualFieldAction = null;
-    this.dispatch(action.apply());
+    const result = action.apply();
+    const job = this.manualFieldJob;
+    if (!job) {
+      this.dispatch(result);
+      return;
+    }
+    if (result.ok) job.completed += 1;
+    else {
+      job.skipped += 1;
+      job.lastFailure = result.reason || 'A selected field section could not be completed.';
+      this.farmAudio.playTransaction('error');
+    }
+    job.nextIndex += 1;
+    this.hud.update(this.state, this.tractorHudRuntime());
+    this.beginManualFieldJobStep();
   }
 
   private gameNow(): number {
@@ -1198,6 +1380,14 @@ export class FarmEmpireApp {
         kind: this.manualFieldAction.kind,
         plotUid: this.manualFieldAction.plotUid,
         progress: manualFieldActionProgress(this.manualFieldAction, this.gameNow()),
+      } : null,
+      manualFieldJob: this.manualFieldJob ? {
+        kind: this.manualFieldJob.kind,
+        scope: this.manualFieldJob.scope,
+        completed: this.manualFieldJob.completed,
+        skipped: this.manualFieldJob.skipped,
+        total: this.manualFieldJob.targetPlotUids.length,
+        nextIndex: this.manualFieldJob.nextIndex,
       } : null,
       audio: this.farmAudio.snapshot(),
       fields,
@@ -1325,7 +1515,7 @@ export class FarmEmpireApp {
 
     const activeVehicle = this.operatingTractor ? 'tractor' : this.operatingPickup ? 'pickup' : null;
     const vehicleMoving = this.operatingTractor ? !!this.tractorTarget : this.operatingPickup ? !!this.pickupTarget : false;
-    this.farmAudio.update(realNow, farmOf(this.state).clock.minute, this.mode, activeVehicle, vehicleMoving);
+    this.farmAudio.update(activeVehicle, vehicleMoving);
 
     this.renderer.render(this.buildScene(), now);
     this.hud.update(this.state, this.tractorHudRuntime());
@@ -1394,6 +1584,12 @@ export class FarmEmpireApp {
         y: this.manualFieldAction.y,
         progress: manualFieldActionProgress(this.manualFieldAction, this.gameNow()),
       } : undefined,
+      manualSelection: this.manualFieldJob
+        ? this.manualFieldJob.targetPlotUids.slice(this.manualFieldJob.nextIndex).flatMap((plotUid) => {
+          const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+          return plot ? [{ x: plot.x, y: plot.y }] : [];
+        })
+        : undefined,
       destination: this.tractorTarget
         ? { x: this.tractorTarget.x, y: this.tractorTarget.y, kind: 'tractor' }
         : this.pickupTarget

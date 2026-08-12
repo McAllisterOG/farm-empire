@@ -68,8 +68,6 @@ export class FarmSoundscape {
   private windSource: AudioBufferSourceNode | null = null;
   private engineGain: GainNode | null = null;
   private engineOsc: OscillatorNode | null = null;
-  private nextWildlifeAt = 0;
-  private wildlifeIndex = 0;
   private vehicle: 'tractor' | 'pickup' | null = null;
   private vehicleMoving = false;
 
@@ -125,13 +123,7 @@ export class FarmSoundscape {
     else sfx('click');
   }
 
-  update(
-    now: number,
-    clockMinute: number,
-    mode: 'farm' | 'town',
-    vehicle: 'tractor' | 'pickup' | null,
-    vehicleMoving: boolean,
-  ): void {
+  update(vehicle: 'tractor' | 'pickup' | null, vehicleMoving: boolean): void {
     this.vehicle = vehicle;
     this.vehicleMoving = vehicleMoving;
     if (!this.ac) return;
@@ -142,12 +134,6 @@ export class FarmSoundscape {
     this.engineGain?.gain.setTargetAtTime(engineLevel, ac.currentTime, .08);
     this.engineOsc?.frequency.setTargetAtTime(vehicle === 'pickup' ? (vehicleMoving ? 82 : 59) : (vehicleMoving ? 66 : 47), ac.currentTime, .09);
 
-    if (this.settings.muted || this.settings.ambience <= 0 || now < this.nextWildlifeAt) return;
-    const hour = ((clockMinute / 60) % 24 + 24) % 24;
-    const day = hour >= 5.5 && hour < 20;
-    this.playWildlife(day, mode);
-    const rhythm = day ? 8_500 : 3_600;
-    this.nextWildlifeAt = now + rhythm + (this.wildlifeIndex++ % 4) * 1_250;
   }
 
   destroy(): void {
@@ -204,22 +190,4 @@ export class FarmSoundscape {
     this.engineOsc = osc; this.engineGain = gain;
   }
 
-  private playWildlife(day: boolean, mode: 'farm' | 'town'): void {
-    const ac = this.ac;
-    if (!ac || !this.ambientGain) return;
-    const base = day ? (mode === 'town' ? 1_450 : 1_820) : 3_900;
-    for (let index = 0; index < (day ? 2 : 3); index++) {
-      const start = ac.currentTime + index * (day ? .11 : .055);
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      osc.type = day ? 'sine' : 'square';
-      osc.frequency.setValueAtTime(base + index * (day ? 410 : 180), start);
-      if (day) osc.frequency.exponentialRampToValueAtTime(base * 1.24 + index * 380, start + .09);
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime((day ? .065 : .018) * this.settings.ambience, start + .012);
-      gain.gain.exponentialRampToValueAtTime(.0001, start + (day ? .14 : .075));
-      osc.connect(gain).connect(ac.destination);
-      osc.start(start); osc.stop(start + .18);
-    }
-  }
 }

@@ -46,7 +46,7 @@ export function farmInteractionAtWorldPoint(
   if (near(logical, runtime.scout, .8)) return { kind: 'scout', label: 'Scout', point: { ...runtime.scout } };
 
   const landmarks = farmLandmarks();
-  if (near(logical, landmarks.farmhouse, 1.15)) return { kind: 'farmhouse', label: 'Farmhouse Office', point: { ...landmarks.farmhouse } };
+  if (near(logical, landmarks.farmhouse, 1.3)) return { kind: 'farmhouse', label: 'Farmhouse Office', point: { ...landmarks.farmhouse } };
   // The physical pump sits beside the barn wall, so its tighter exact target
   // wins over the barn's intentionally generous footprint.
   const pump = FARM_DECOR_MANIFEST.find((prop) => prop.type === 'hand-pump');
