@@ -221,3 +221,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Fulfillment requires the physical pickup at the County Service Center, consumes the exact saved crop quantity, records the current day as completed, credits integer cents atomically once, and cannot post another route until a later farm day.
 - Save v12 persists only the active contract snapshot and last completion day. Old/missing state receives no payout or completion; malformed terms fail closed within known crop, template, cargo, day, and payout bounds.
 - Multiple offers, negotiation, deadlines, penalties, reputation, contract chains, special cargo, and a generic quest system remain deferred.
+
+## 2026-08-12 - Make the first County haul unlock physical logistics growth
+
+**Status:** Approved by the owner
+
+- Completing any first paid Freight Board haul unlocks one County Utility Trailer at the Equipment Desk. Its provisional one-time price is 240,000 integer cents ($2,400).
+- Ownership doubles the pickup's authoritative mixed-cargo capacity from 72 to 144 units. Transaction enforcement, save normalization, HUD, cargo panels, Farmbook, help copy, browser text state, and Canvas presentation must derive from the same ownership state.
+- The trailer is visibly and automatically attached to the pickup at the farm, while driving, and in County parking. Manual hitching is deliberately omitted from V1 so the purchase improves the existing hauling loop without adding a second vehicle-state workflow.
+- Save v13 persists only literal trailer ownership. V12 and malformed ownership default closed; malformed Freight Board completion history cannot unlock the purchase or grant equipment.
+- Fuel, damage, upkeep, detachable implements, further trailer tiers, combines, workers, a dealership catalog, and economy-wide rebalancing remain separate packages.

@@ -4,21 +4,21 @@
 
 - **Date:** 2026-08-12
 - **Branch:** `codex/first-town-contact`
-- **Head:** `44c8408`
-- **Product state:** County Freight Board V1 is complete on top of Homestead Growth, Old Tractor Restoration, and Efficient Row Fieldwork. Completing the finite County Pantry introduction now unlocks one deterministic paid crop haul per farm day at Eli's Grain Exchange. Only already-unlocked crops can be offered; acceptance snapshots the crop, quantity, and a 25% premium over that day's posted price; the contract persists without a deadline and consumes exact pickup cargo for one atomic payout. Save v12 preserves active terms and same-day completion while every existing crop, field, market, land, machinery, and farmhouse transaction remains intact.
-- **Verification:** 217/217 tests passed; strict typecheck, Vite production build, desktop-specific build, and whitespace checks passed. Browser acceptance followed the physical pickup road route through offer, accept, ready, exact delivery, same-day closure, save/reload, next-day refresh, and compact 760x640 presentation with deterministic text-state agreement and zero console/page errors. The unpacked x64 build under `release/county-freight-v1` contains relative bundled assets and the new contract code; native CDP visibly confirmed the packaged title, and the literal Desktop shortcut launched four responsive processes from the new build with zero remaining after cleanup.
-- **Review:** A bounded primary audit checked deterministic offer generation, unlock filtering, quote snapshots, stale-card rejection, pickup authority, atomic and duplicate-safe fulfillment, migration/default behavior, corrupt contract bounds, UI context, compact presentation, package assets, shortcut routing, and native cleanup. No high- or medium-severity issue remains.
+- **Head:** `06da492`
+- **Product state:** County Utility Trailer V1 is complete on top of the daily Freight Board. Completing the first paid Freight Board haul unlocks one $2,400 County Equipment Desk purchase. Ownership doubles the old pickup's real mixed-cargo limit from 72 to 144 units, updates every cargo readout and transaction, and adds a visible direction-aware stake-bed trailer at both the farm and County Service Center. Save v13 persists one ownership flag while older saves remain unowned and every existing crop, field, market, land, machinery, farmhouse, and freight transaction remains intact.
+- **Verification:** 221/221 tests passed; strict typecheck, Vite production build, desktop-specific build, and whitespace checks passed. Browser acceptance covered locked prerequisite copy, exact purchase/cash change, immediate capacity propagation, farm and town art, driving the trailer along the County road, save/reload persistence, and zero console warnings/errors. The unpacked x64 build under `release/utility-trailer-v1` contains relative bundled assets; native CDP confirmed the packaged title and file URL, and the literal Desktop shortcut now targets the smoke-tested build.
+- **Review:** A bounded primary audit checked one-time purchase immutability, capacity authority, bulky-cargo enforcement, v12 migration, malformed current ownership, corrupt freight history, rendering at both destinations, UI truth, package assets, shortcut routing, and native cleanup. It tightened malformed completion-day normalization so corrupt saves cannot unlock the purchase. No high- or medium-severity issue remains.
 
 ## Current presentation
 
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v12 adds the persistent County freight snapshot and completion day; v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
+- Existing plot IDs and planted crops remain compatible. Save schema v13 adds County Utility Trailer ownership; v12 freight, v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
 - The operated tractor now accelerates and brakes smoothly, turns with a deterministic heading, rolls its wheels, steers visibly, and keeps an upright direction-aware silhouette; all motion state remains transient.
-- The owned old pickup has the same deterministic acceleration/turning presentation, a direction-aware upright silhouette, a 72-unit mixed seed/produce bed, persistent farm position, and transient operating state.
+- The owned old pickup has the same deterministic acceleration/turning presentation, a direction-aware upright silhouette, a 72-unit mixed seed/produce bed, persistent farm position, and transient operating state. The first completed Freight Board haul unlocks one visible $2,400 utility trailer that doubles real cargo capacity to 144.
 - A signed road gateway now leads to a separate walkable County Service Center with three distinct buildings, three animated townspeople, and real seed, market, land-record, and context-safe equipment services.
 - Town actor motion, gestures, camera mode, and location remain transient. Saving in town preserves normal farm business state and reloads safely at the farm gateway.
 - Farm-side Seed and Market surfaces are cargo-management points: crops and seed bags move reversibly between the barn/farm inventory and the pickup, while ordinary buying and selling are no longer available at the farm.
@@ -45,16 +45,16 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Owner-playtest the refreshed Windows Desktop build's daily Freight Board rhythm alongside the first County delivery, tractor restoration, row/three-row fieldwork, acreage-driven farmhouse growth, storage pressure, and pickup capacity before selecting the evidence-based economy study or another finite package.
+No additional feature package is currently active. Owner-playtest the refreshed Windows Desktop build's daily Freight Board rhythm and trailer milestone alongside the first County delivery, tractor restoration, row/three-row fieldwork, acreage-driven farmhouse growth, storage pressure, and expanded 144-unit hauling before selecting the evidence-based economy study or another finite package.
 
 ## Known limitations
 
 - Equipment modal state can remain stale during standalone driving until reopened.
-- Vehicle movement remains collision-free. Pickup gate travel follows the County road, while arbitrary yard/field clicks remain direct; trailers, implements, combines, ongoing condition, fuel, and a dealership economy remain deferred.
+- Vehicle movement remains collision-free. Pickup gate travel follows the County road, while arbitrary yard/field clicks remain direct; the utility trailer is automatically attached rather than manually hitched. Implements, combines, ongoing condition, fuel, and a dealership economy remain deferred.
 - The town currently has one compact service center and one freight pickup presence, with no interiors, traffic, schedules, or broad social simulation.
 - The town remains a separate Canvas destination rather than one continuous farm-to-town regional map; surrounding houses and fields are presentation cues only.
 - The County Freight Board offers one generated haul at a time and no deadline or penalty. There is no multi-job choice, negotiation, reputation, contract chain, hauling traffic, or general quest system yet.
-- Eight crops, two working acreages, one tractor kit, one storage upgrade, and one pickup provide a bounded progression loop; further land tiers, crop inputs/quality, trailers/implements, workers, and managers remain deferred.
+- Eight crops, two working acreages, one tractor kit, one storage upgrade, one pickup, and one utility trailer provide a bounded progression loop; further land tiers, crop inputs/quality, more trailers/implements, workers, and managers remain deferred.
 - The enlarged fields intentionally expose current economy/storage limits: a full 96-section planting can exceed practical starting capital and a mature tract can exceed barn capacity. Partial work is supported, but pricing, yields, storage, and machinery progression still require the planned evidence-based economy study.
 - Manual crops require one establishment watering, but recurring moisture, weather, irrigation equipment, fertilizer, soil health, and quality are not implemented. Farmer Knowledge still has no skill choices or economic modifiers.
 - Multi-section manual work intentionally automates walking and repeated short actions; it does not add pathfinding, stamina, tool durability, worker assignment, or a character-skill modifier.

@@ -307,3 +307,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/county-freight-v1/win-unpacked/Farm Empire.exe` (225,442,304 bytes) and `resources/app.asar` (1,250,857 bytes), generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets this unpacked build and its Farm Empire icon.
 - **Known limitations:** The Board intentionally offers one route at a time. It has no offer choice, deadline, penalty, negotiation, reputation, contract chain, special cargo, traffic, or hauling scene.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## County Utility Trailer V1 - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `06da492`
+- **Scope:** Convert the first completed daily freight haul into one physical logistics milestone: a fixed County Equipment Desk purchase that materially expands pickup cargo. Preserve starting cash, all crop/market values, acreage, storage, field lifecycle, tractor rules, Freight Board terms, and the existing pickup route; no fuel, damage, manual hitching, additional tier, worker, or economy-wide rebalance.
+- **Before / after:** The Freight Board previously paid cash but did not open a new equipment step, and the pickup remained permanently capped at 72 units. The first haul now explicitly unlocks a $2,400 utility trailer. One atomic purchase raises every real cargo transaction and readout to 144 units, adds the trailer to the direction-aware farm pickup and County parking painter, and persists ownership through save v13.
+- **Verification:** 221/221 tests passed; strict typecheck, Vite production build, desktop-specific build, and diff checks passed. Browser acceptance verified locked and unlocked Equipment Desk states, the exact $5,000-to-$2,600 purchase, 72-to-144 HUD/panel propagation, farm and town visuals, County-road driving, save/reload persistence, and zero console warnings/errors. The temporary QA farm was deleted afterward. Native CDP confirmed the packaged `Farm Empire` title from the relative bundled file URL.
+- **Review:** The primary audited prerequisite and duplicate-call immutability, cash mirror, bulky mixed-cargo enforcement, old/current/corrupt save behavior, UI authority, painter direction, Farmbook/help/text-state truth, package assets, shortcut routing, and native cleanup. The audit changed corrupt out-of-range Freight Board completion days to normalize to zero so malformed saves cannot unlock the trailer. No high- or medium-severity finding remains.
+- **Artifacts:** `release/utility-trailer-v1/win-unpacked/Farm Empire.exe` (225,442,304 bytes) and `resources/app.asar` (1,263,388 bytes), generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets this smoke-tested unpacked executable and its deployed icon.
+- **Known limitations:** The trailer is automatically attached and shares the pickup's direct movement pose. There is no hitching, jackknifing, independent collision, fuel, condition, maintenance, implement storage, additional trailer tier, or worker assignment.
+- **Push:** Not yet pushed; external GitHub authorization is still required.
