@@ -35,4 +35,13 @@ describe('scene camera policies', () => {
     expect(center.cx).toBeCloseTo(midpoint.cx);
     expect(center.cy).toBeCloseTo(midpoint.cy);
   });
+
+  it('computes a distinct compact refit for both active scenes', () => {
+    for (const policy of [farmCameraPolicy(), townCameraPolicy()]) {
+      const desktop = cameraFitZoom(policy, 2048, 1152);
+      const compact = cameraFitZoom(policy, 760, 640);
+      expect(compact).toBeLessThan(desktop);
+      expect(compact).toBeGreaterThanOrEqual(policy.minZoom);
+    }
+  });
 });

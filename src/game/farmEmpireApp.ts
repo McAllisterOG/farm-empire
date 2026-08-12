@@ -94,7 +94,12 @@ export class FarmEmpireApp {
   private lastSave: number;
   private devTools: HTMLElement | null = null;
   private inputCleanup: (() => void) | null = null;
-  private readonly onResize = (): void => { this.renderer.resize(); this.mode === 'town' ? this.renderer.clampTownCamera() : this.renderer.clampFarmCamera(); };
+  private readonly onResize = (): void => {
+    this.renderer.resize();
+    // A live resize changes the active scene's fit, so discard stale viewport
+    // framing instead of merely clamping a desktop zoom into a compact view.
+    if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm();
+  };
 
   constructor(canvas: HTMLCanvasElement, state: GameState, slot: number, onBackToTitle: () => void) {
     if (!state.farm) throw new Error('Cannot start Farm Empire without farm state.');
