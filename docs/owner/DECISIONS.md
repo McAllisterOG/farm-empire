@@ -231,3 +231,14 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The trailer is visibly and automatically attached to the pickup at the farm, while driving, and in County parking. Manual hitching is deliberately omitted from V1 so the purchase improves the existing hauling loop without adding a second vehicle-state workflow.
 - Save v13 persists only literal trailer ownership. V12 and malformed ownership default closed; malformed Freight Board completion history cannot unlock the purchase or grant equipment.
 - Fuel, damage, upkeep, detachable implements, further trailer tiers, combines, workers, a dealership catalog, and economy-wide rebalancing remain separate packages.
+
+## 2026-08-12 - Make the first farmhand an acreage-scale progression tool
+
+**Status:** Approved by the owner
+
+- Completing the County introduction and owning the neighboring acreage unlocks one named County farmhand, Mara Bell, at Farm Services. Her provisional one-time hire price is 180,000 integer cents ($1,800).
+- The first eligible assignment started each saved farm day charges one 12,000-cent ($120) shift; later same-day assignments are covered. Empty plans and insufficient funds cannot mutate cash or paid-day state.
+- Mara handles one whole owned acreage at a time: prepare, rework, plant the selected crop, water, harvest, or clear. Planning is deterministic and resource-aware, while completion reuses the existing authoritative manual field transactions instead of creating a parallel farming engine.
+- The assigned acreage is reserved from owner/tractor field clicks while the job runs. The owner may work the other acreage, handle logistics, or visit town; completed sections persist, the current unfinished action does not commit on cancellation, and the paid shift remains paid.
+- Save v14 persists only literal hire ownership and the last paid farm day. Actor position, facing, movement, action, target, and active job remain runtime-only; old/missing/corrupt workforce data fails closed and reloads idle at the farmhand home anchor.
+- Multiple workers, managers, schedules, housing, needs, skill trees, autonomous crop strategy, payroll simulation, passive-income bonuses, and economy-wide rebalancing remain separate future packages.

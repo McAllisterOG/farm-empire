@@ -4,16 +4,16 @@
 
 - **Date:** 2026-08-12
 - **Branch:** `codex/first-town-contact`
-- **Head:** `06da492`
-- **Product state:** County Utility Trailer V1 is complete on top of the daily Freight Board. Completing the first paid Freight Board haul unlocks one $2,400 County Equipment Desk purchase. Ownership doubles the old pickup's real mixed-cargo limit from 72 to 144 units, updates every cargo readout and transaction, and adds a visible direction-aware stake-bed trailer at both the farm and County Service Center. Save v13 persists one ownership flag while older saves remain unowned and every existing crop, field, market, land, machinery, farmhouse, and freight transaction remains intact.
-- **Verification:** 221/221 tests passed; strict typecheck, Vite production build, desktop-specific build, and whitespace checks passed. Browser acceptance covered locked prerequisite copy, exact purchase/cash change, immediate capacity propagation, farm and town art, driving the trailer along the County road, save/reload persistence, and zero console warnings/errors. The unpacked x64 build under `release/utility-trailer-v1` contains relative bundled assets; native CDP confirmed the packaged title and file URL, and the literal Desktop shortcut now targets the smoke-tested build.
-- **Review:** A bounded primary audit checked one-time purchase immutability, capacity authority, bulky-cargo enforcement, v12 migration, malformed current ownership, corrupt freight history, rendering at both destinations, UI truth, package assets, shortcut routing, and native cleanup. It tightened malformed completion-day normalization so corrupt saves cannot unlock the purchase. No high- or medium-severity issue remains.
+- **Head:** `43f7daa`
+- **Product state:** First Farmhand V1 is complete. After completing the County introduction and owning the neighboring acreage, the Farm Services Workforce Desk hires Mara Bell once for $1,800. One $120 payment covers every assignment started that farm day; she visibly walks a deterministic whole-acreage route for prepare, rework, plant, water, harvest, or clearing while every completed section uses the same real seed, barn, crop-stage, soil, and stats transactions as owner fieldwork. Save v14 persists only hire and paid-day state; active movement/jobs remain transient and safe to resume as a new assignment after reload.
+- **Verification:** 230/230 tests passed; strict typecheck, Vite production build, desktop-specific build, and whitespace checks passed. Browser acceptance covered locked/unlocked discovery, exact hire and wage deductions, a complete 36-section shift, a free second same-day assignment, real seed consumption, save/reload, safe partial Escape cancellation, visible worker/selection/progress, and zero console warnings/errors. `release/farmhand-v1` contains relative bundled assets and the new workforce code; native CDP confirmed the packaged title/file URL and zero residual processes, and the literal Desktop shortcut now targets the smoke-tested build.
+- **Review:** A bounded primary audit covered prerequisite/duplicate/insufficient-funds immutability, deterministic order, seed and normal/bulky barn limits, same-day/new-day wages, old/current/corrupt save behavior, transaction reuse, acreage reservation, cancellation, town-time work, UI truth, package assets, shortcut routing, and native cleanup. It hardened corrupt hire prerequisites and removed a worker name/action-label overlap. No high- or medium-severity issue remains.
 
 ## Current presentation
 
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v13 adds County Utility Trailer ownership; v12 freight, v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
+- Existing plot IDs and planted crops remain compatible. Save schema v14 adds minimal workforce hire/paid-day state; v13 trailer, v12 freight, v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
@@ -39,13 +39,14 @@
 - The hand pump now points players to the field menu for the required first watering; deeper irrigation infrastructure remains deferred.
 - Hovering focal objects now identifies what will open, and one authoritative hit-priority map routes pickup, tractor, Scout, farmhouse, pump, barn, doghouse, gateway, acreage, and fields to their correct interaction.
 - The Farmbook consolidates the nine-step prepare, plant, water, harvest, load, town, trade, restore, and expand loop plus the live business snapshot and core routes without filling the world with buttons.
+- After County trust and neighboring-acreage ownership, Farm Services hires Mara Bell. Workforce in the Farmbook or talking with Mara assigns one whole acreage at a time; her first assignment each farm day costs $120, later same-day assignments are covered, and the owner can continue working elsewhere or visit town.
 - Farmer Knowledge V1 derives five presentation-only ranks and short evidence-sourced field notes from real planting, harvesting, hauling, selling, expansion, and County milestones; it adds no hidden yield or cash modifier and no save field.
 - The homestead now has a larger farmhouse, pond, reeds, garden rows, flowers, destination pulses, and clearer field outlines; the County Service Center has larger edge homes, tighter framing, named hover cues, and a dedicated correctly scaled pickup bay away from the return sign.
 - A zero-asset procedural soundscape adds filtered rural wind, tractor and pickup idle/motion tone, field-action feedback, transaction cues, and Scout feedback. The repetitive pitched wildlife loop was removed after owner playtesting. Global mute plus separate ambience/effects levels persist locally across farm slots without changing gameplay saves.
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Owner-playtest the refreshed Windows Desktop build's daily Freight Board rhythm and trailer milestone alongside the first County delivery, tractor restoration, row/three-row fieldwork, acreage-driven farmhouse growth, storage pressure, and expanded 144-unit hauling before selecting the evidence-based economy study or another finite package.
+No additional feature package is currently active. Owner-playtest Mara's hiring cost, daily wage, pace, whole-acreage controls, and usefulness alongside the daily Freight Board/trailer, first County delivery, tractor restoration, row fieldwork, farmhouse growth, storage pressure, and 144-unit hauling before selecting the evidence-based economy study or another finite package.
 
 ## Known limitations
 
@@ -54,7 +55,8 @@ No additional feature package is currently active. Owner-playtest the refreshed 
 - The town currently has one compact service center and one freight pickup presence, with no interiors, traffic, schedules, or broad social simulation.
 - The town remains a separate Canvas destination rather than one continuous farm-to-town regional map; surrounding houses and fields are presentation cues only.
 - The County Freight Board offers one generated haul at a time and no deadline or penalty. There is no multi-job choice, negotiation, reputation, contract chain, hauling traffic, or general quest system yet.
-- Eight crops, two working acreages, one tractor kit, one storage upgrade, one pickup, and one utility trailer provide a bounded progression loop; further land tiers, crop inputs/quality, more trailers/implements, workers, and managers remain deferred.
+- Eight crops, two working acreages, one farmhand, one tractor kit, one storage upgrade, one pickup, and one utility trailer provide a bounded progression loop; further land tiers, crop inputs/quality, more trailers/implements, multiple workers, and managers remain deferred.
+- Mara is one generalist with one concurrent acreage assignment and one daily shift price. She has no schedule, skill tree, housing, needs, payroll simulation, autonomous crop choice, multiple-worker coordination, or manager/passive-income layer.
 - The enlarged fields intentionally expose current economy/storage limits: a full 96-section planting can exceed practical starting capital and a mature tract can exceed barn capacity. Partial work is supported, but pricing, yields, storage, and machinery progression still require the planned evidence-based economy study.
 - Manual crops require one establishment watering, but recurring moisture, weather, irrigation equipment, fertilizer, soil health, and quality are not implemented. Farmer Knowledge still has no skill choices or economic modifiers.
 - Multi-section manual work intentionally automates walking and repeated short actions; it does not add pathfinding, stamina, tool durability, worker assignment, or a character-skill modifier.
