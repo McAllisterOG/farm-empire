@@ -2,6 +2,7 @@ import type { ActionResult, GameState } from './types';
 import { fail } from './types';
 import { farmCropDefOrNull } from './registry';
 import { farmOf, storageUsed, syncCashMirror } from './farmBusiness';
+import { pickupAtCargoPad } from '../render/farmLayout';
 
 import { PICKUP_CARGO_CAPACITY } from './farmPickupData';
 
@@ -42,6 +43,14 @@ export function pickupHasCargo(state: GameState): boolean {
   return pickupCargoUsed(state) > 0;
 }
 
+export function pickupIsAtCargoPad(state: GameState): boolean {
+  return pickupAtCargoPad(farmOf(state).pickup);
+}
+
+function requireCargoPad(state: GameState): ActionResult | null {
+  return pickupIsAtCargoPad(state) ? null : fail('Park the pickup at the barn cargo pad to transfer cargo.');
+}
+
 function requireFarmPickup(state: GameState, context: 'farm' | 'town', pickupPresent = true): ActionResult | null {
   if (!pickupPresent) return fail('Bring the old pickup to use cargo services.');
   if (context !== 'farm' && context !== 'town') return fail('The pickup is unavailable here.');
@@ -49,6 +58,7 @@ function requireFarmPickup(state: GameState, context: 'farm' | 'town', pickupPre
 }
 
 export function loadBarnCropToPickup(state: GameState, cropId: string, count: number): ActionResult {
+  const pad = requireCargoPad(state); if (pad) return pad;
   if (!validCount(count)) return fail('Choose a positive whole quantity.');
   const farm = farmOf(state);
   const def = farmCropDefOrNull(cropId);
@@ -63,6 +73,7 @@ export function loadBarnCropToPickup(state: GameState, cropId: string, count: nu
 }
 
 export function unloadPickupCropToBarn(state: GameState, cropId: string, count: number): ActionResult {
+  const pad = requireCargoPad(state); if (pad) return pad;
   if (!validCount(count)) return fail('Choose a positive whole quantity.');
   const farm = farmOf(state);
   const def = farmCropDefOrNull(cropId);
@@ -79,6 +90,7 @@ export function unloadPickupCropToBarn(state: GameState, cropId: string, count: 
 export const unloadCropFromPickup = unloadPickupCropToBarn;
 
 export function loadFarmSeedsToPickup(state: GameState, cropId: string, count: number): ActionResult {
+  const pad = requireCargoPad(state); if (pad) return pad;
   if (!validCount(count)) return fail('Choose a positive whole quantity.');
   const farm = farmOf(state);
   const def = farmCropDefOrNull(cropId);
@@ -92,6 +104,7 @@ export function loadFarmSeedsToPickup(state: GameState, cropId: string, count: n
 }
 
 export function unloadPickupSeedsToFarm(state: GameState, cropId: string, count: number): ActionResult {
+  const pad = requireCargoPad(state); if (pad) return pad;
   if (!validCount(count)) return fail('Choose a positive whole quantity.');
   const farm = farmOf(state);
   const def = farmCropDefOrNull(cropId);

@@ -10,6 +10,16 @@ import { deserialize, serialize } from '../src/save/save';
 const NOW = Date.UTC(2026, 0, 1);
 
 describe('old pickup cargo loop', () => {
+  it('rejects barn transfers away from the physical cargo pad without mutation', () => {
+    const state = createFarmGame('Pickup', 2, NOW); const farm = farmOf(state);
+    farm.storage.crop_wheat = 4; farm.pickup.x += 4;
+    const before = JSON.stringify({ storage: farm.storage, pickup: farm.pickup });
+    const result = loadBarnCropToPickup(state, 'crop_wheat', 1);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toContain('cargo pad');
+    expect(JSON.stringify({ storage: farm.storage, pickup: farm.pickup })).toBe(before);
+  });
+
   it('accounts for mixed cargo and bulky produce atomically', () => {
     const state = createFarmGame('Pickup', 3, NOW); const farm = farmOf(state);
     farm.parcels.northOwned = true; farm.equipment.barnLoftExpansionOwned = true; farm.storageCapacity = 200; farm.storage.crop_pumpkin = 10;
@@ -71,8 +81,8 @@ describe('old pickup cargo loop', () => {
     const loaded = deserialize(JSON.stringify(state), NOW + 1);
     const pickup = farmOf(loaded).pickup;
     expect(pickup.id).toBe('old-pickup');
-    expect(pickup.x).toBe(11.5);
-    expect(pickup.y).toBe(11.5);
+    expect(pickup.x).toBe(10.8);
+    expect(pickup.y).toBe(6.7);
     expect(pickupCargoUsed(loaded)).toBeLessThanOrEqual(72);
   });
 });

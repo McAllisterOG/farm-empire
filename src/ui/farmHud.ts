@@ -12,6 +12,7 @@ export interface FarmHudCallbacks {
   onEquipment: () => void;
   onReturnFarm: () => void;
   onSave: () => void;
+  onMenu: () => void;
 }
 
 export type FarmHudMode = 'farm' | 'town';
@@ -70,6 +71,7 @@ export class FarmHud {
       this.storageButton,
       this.equipmentButton,
       this.locationStat,
+      h('button', { class: 'btn farm-menu-button', 'aria-label': 'Open game menu', 'data-testid': 'game-menu-button', onclick: cb.onMenu }, '☰'),
     );
 
     const cropStrip = h('div', { class: 'farm-crop-strip', 'aria-label': 'Crop selection' });

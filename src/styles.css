@@ -492,6 +492,8 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .farm-stat-button { font: inherit; text-align: left; cursor: pointer; }
 .farm-stat-button:hover { background: #fff4cf; }
 .farm-stat-button:hover { transform: translateY(-1px); border-color: #b79b55; }
+.farm-menu-button { margin-left: auto; min-width: 42px; font-size: 20px; line-height: 1; }
+.pickup-panel-illustration { width: 150px; padding: 20px; border-radius: 10px; background: #c75a3d; color: #fff1c9; font-weight: 900; text-align: center; }
 .farm-hud-bottom {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 10px; width: min(1100px, 96vw);

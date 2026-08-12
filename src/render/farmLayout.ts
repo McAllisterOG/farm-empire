@@ -15,16 +15,24 @@ export interface FarmBounds { minX: number; minY: number; maxX: number; maxY: nu
 export interface FarmLandmarks {
   doghouse: FarmPoint;
   scoutHome: FarmPoint;
+  cargoPad: FarmPoint;
 }
 
 /** Farm-only landmarks are presentation anchors, never saved world state. */
 export function farmLandmarks(): FarmLandmarks {
   const doghouse = { x: 10.3, y: 11.15 };
   const scoutHome = { x: 9.8, y: 11.6 };
+  const cargoPad = { x: 10.8, y: 6.7 };
   return {
     doghouse,
     scoutHome,
+    cargoPad,
   };
+}
+
+export function pickupAtCargoPad(pickup: FarmPoint, tolerance = 1.35): boolean {
+  const pad = farmLandmarks().cargoPad;
+  return Math.hypot(pickup.x - pad.x, pickup.y - pad.y) <= tolerance;
 }
 
 export function farmWorldPoint(point: FarmPoint): FarmPoint {

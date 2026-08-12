@@ -8,6 +8,7 @@ import { TOWN_BOUNDS, TOWN_EXIT, TOWN_WALK_POLYGON } from './townLayout';
 import {
   drawTownBuilding, drawTownDecor, drawTownExitSign, drawTownLampGlow, drawTownNpc, drawTownPlayer,
 } from './townSprites';
+import { drawOldPickup } from './pickupPainter';
 
 export interface TownRenderScene {
   actor: { avatar: AvatarConfig; x: number; y: number; walking: boolean; facing: FarmFacing; name: string };
@@ -59,11 +60,13 @@ function drawTownName(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
   ctx.fillStyle = 'rgba(39,34,28,.58)'; ctx.fillRect(x - width / 2 - 4, y - 105 * zoom, width + 8, 15 * zoom); ctx.fillStyle = '#fff'; ctx.fillText(name, x, y - 94 * zoom); ctx.restore();
 }
 
-function drawFreightPickup(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
-  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
-  ctx.fillStyle = 'rgba(40,30,20,.25)'; ctx.beginPath(); ctx.ellipse(0, 7, 25, 7, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#2d3438'; ctx.beginPath(); ctx.arc(-16, 4, 5, 0, Math.PI * 2); ctx.arc(16, 4, 5, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#c75a3d'; ctx.fillRect(-22, -6, 44, 11); ctx.fillStyle = '#8d3d31'; ctx.fillRect(3, -19, 17, 14); ctx.fillStyle = '#b8d7dd'; ctx.fillRect(6, -17, 12, 8); ctx.restore();
+function drawTownEdgeCluster(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
+  for (const house of [{ x: 3.6, y: 3.2 }, { x: 21.4, y: 15.2 }]) {
+    const p = project(camera, house, true); ctx.save(); ctx.translate(p.x, p.y); ctx.scale(zoom, zoom);
+    ctx.fillStyle = 'rgba(45,34,24,.2)'; ctx.beginPath(); ctx.ellipse(0, 3, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#caa66e'; ctx.fillRect(-17, -25, 34, 25); ctx.fillStyle = '#78533b'; ctx.beginPath(); ctx.moveTo(-22, -24); ctx.lineTo(0, -42); ctx.lineTo(22, -24); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#97b7b2'; ctx.fillRect(-11, -17, 7, 7); ctx.fillRect(5, -17, 7, 7); ctx.restore();
+  }
+  const field = project(camera, { x: 21.8, y: 4.2 }, true); ctx.save(); ctx.translate(field.x, field.y); ctx.scale(zoom, zoom); ctx.strokeStyle = '#7c9e52'; ctx.lineWidth = 3; for (let i = -18; i <= 18; i += 9) { ctx.beginPath(); ctx.moveTo(i, -10); ctx.lineTo(i + 8, 12); ctx.stroke(); } ctx.restore();
 }
 
 export function renderTown(
@@ -74,6 +77,7 @@ export function renderTown(
 ): void {
   const zoom = camera.zoom;
   drawTownGround(ctx, camera);
+  drawTownEdgeCluster(ctx, camera, zoom);
   const items: TownDrawItem[] = [];
   const treeAnchors = [
     { x: 3, y: 8 }, { x: 4, y: 13 }, { x: 8, y: 17 }, { x: 13, y: 17 },
@@ -95,7 +99,7 @@ export function renderTown(
   }
   if (scene.pickup) {
     const pickupScreen = project(camera, scene.pickup, true);
-    items.push({ depth: scene.pickup.x + scene.pickup.y + .3, draw: () => drawFreightPickup(ctx, pickupScreen.x, pickupScreen.y, zoom) });
+    items.push({ depth: scene.pickup.x + scene.pickup.y + .3, draw: () => drawOldPickup(ctx, pickupScreen.x, pickupScreen.y, zoom, false, false, now) });
   }
   const exitScreen = project(camera, TOWN_EXIT, true);
   items.push({ depth: TOWN_EXIT.x + TOWN_EXIT.y + .2, draw: () => drawTownExitSign(ctx, exitScreen.x, exitScreen.y, zoom) });

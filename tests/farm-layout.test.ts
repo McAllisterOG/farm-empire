@@ -3,12 +3,18 @@ import { createFarmGame } from '../src/core/state';
 import { NEIGHBOR_FIELD_TILES } from '../src/core/farmBusiness';
 import { deserialize } from '../src/save/save';
 import {
-  FARM_PLOT_SPAN, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint,
+  FARM_PLOT_SPAN, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint, farmLandmarks, pickupAtCargoPad,
 } from '../src/render/farmLayout';
 import { farmGroundVariant, farmTerrainBounds, intersectsFarmTerrain } from '../src/render/farmTerrain';
 import { NOW } from './helpers';
 
 describe('Farm Empire presentation layout', () => {
+  it('keeps the pickup cargo pad deterministic with a strict boundary', () => {
+    const pad = farmLandmarks().cargoPad;
+    expect(pickupAtCargoPad(pad)).toBe(true);
+    expect(pickupAtCargoPad({ x: pad.x + 1.35, y: pad.y })).toBe(true);
+    expect(pickupAtCargoPad({ x: pad.x + 1.36, y: pad.y })).toBe(false);
+  });
   it('round trips logical and fractional actor coordinates through its single projection', () => {
     for (const point of [{ x: 5, y: 7 }, { x: 8.5, y: 10.25 }, { x: 12.75, y: 6.125 }]) {
       expect(farmLogicalPoint(farmWorldPoint(point))).toEqual(point);

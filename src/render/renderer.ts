@@ -15,8 +15,7 @@ import { FARM_TOWN_GATE } from '../core/townGateway';
 import { Camera } from './camera';
 import { diamondPath, isoX, isoY, TILE_H, TILE_W } from './iso';
 import { charKey, drawSprite } from './sprites';
-import { farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint } from './farmLayout';
-import { farmLandmarks } from './farmLayout';
+import { farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint, farmLandmarks } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
 import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
@@ -24,6 +23,8 @@ import { farmNightAlpha as farmClockNightAlpha, nightAlphaAtHour as clockNightAl
 import { renderTown, type TownRenderScene } from './townRenderer';
 import { TOWN_CAMERA } from './townLayout';
 import { tractorToolbarPoseFromRenderState } from '../core/farmTractorMotion';
+import { clampCameraCenter, clampCameraZoom, cameraFitZoom, farmCameraPolicy, townCameraPolicy } from './cameraPolicy';
+import { drawOldPickup } from './pickupPainter';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -424,14 +425,17 @@ export class Renderer {
   }
 
   centerOnFarm(): void {
-    const point = farmWorldPoint({ x: 7.8, y: 7.4 });
-    this.camera.centerOnTile(point.x, point.y);
+    const point = farmWorldPoint({ x: 17, y: 16 });
+    this.camera.centerOnTile(point.x, point.y); this.camera.zoom = cameraFitZoom(farmCameraPolicy(), this.camera.viewW, this.camera.viewH); this.clampFarmCamera();
   }
 
   centerOnTown(): void {
     this.camera.centerOnTile(TOWN_CAMERA.x, TOWN_CAMERA.y);
-    this.camera.zoom = TOWN_CAMERA.zoom;
+    this.camera.zoom = cameraFitZoom(townCameraPolicy(), this.camera.viewW, this.camera.viewH); this.clampTownCamera();
   }
+
+  clampFarmCamera(): void { const policy = farmCameraPolicy(); this.camera.zoom = clampCameraZoom(this.camera.zoom, policy); const p = clampCameraCenter(this.camera.cx, this.camera.cy, this.camera.zoom, this.camera.viewW, this.camera.viewH, policy); this.camera.cx = p.cx; this.camera.cy = p.cy; }
+  clampTownCamera(): void { const policy = townCameraPolicy(); this.camera.zoom = clampCameraZoom(this.camera.zoom, policy); const p = clampCameraCenter(this.camera.cx, this.camera.cy, this.camera.zoom, this.camera.viewW, this.camera.viewH, policy); this.camera.cx = p.cx; this.camera.cy = p.cy; }
 
   /** Farm-only presentation branch.  Legacy island rendering above stays isolated. */
   private renderFarm(scene: RenderScene, now: number): void {
@@ -566,6 +570,18 @@ function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: numbe
   ctx.strokeStyle = '#b9a071'; ctx.lineWidth = 13 * zoom; ctx.lineCap = 'round'; ctx.beginPath();
   lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.stroke();
   ctx.strokeStyle = 'rgba(100, 75, 46, .35)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
+  const pad = farmWorldPoint(farmLandmarks().cargoPad);
+  const px = camera.sx(isoX(pad.x, pad.y)); const py = camera.sy(isoY(pad.x, pad.y));
+  ctx.fillStyle = 'rgba(164,137,91,.78)'; ctx.beginPath(); ctx.ellipse(px, py, 58 * zoom, 21 * zoom, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(91,68,42,.45)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
+  drawStarterFarmhouse(ctx, camera.sx(isoX(15, 12)), camera.sy(isoY(15, 12) + TILE_H / 2), zoom);
+}
+
+function drawStarterFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.3, zoom * 1.3);
+  ctx.fillStyle = 'rgba(48,35,24,.22)'; ctx.beginPath(); ctx.ellipse(0, 5, 38, 10, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#c2a276'; ctx.fillRect(-30, -38, 60, 40); ctx.fillStyle = '#6e5140'; ctx.beginPath(); ctx.moveTo(-36, -37); ctx.lineTo(0, -63); ctx.lineTo(36, -37); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#8a6951'; ctx.fillRect(-36, -37, 72, 5); ctx.fillStyle = '#554033'; ctx.fillRect(-8, -22, 16, 24); ctx.fillStyle = '#9fb5b0'; ctx.fillRect(-25, -27, 12, 11); ctx.fillRect(13, -27, 12, 11); ctx.strokeStyle = 'rgba(78,53,38,.5)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-20, -28); ctx.lineTo(-20, -15); ctx.moveTo(-27, -21); ctx.lineTo(-13, -21); ctx.moveTo(19, -28); ctx.lineTo(19, -15); ctx.stroke(); ctx.restore();
 }
 
 function drawFarmTownGateway(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
@@ -719,22 +735,6 @@ function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
   ctx.strokeStyle = '#e5c788'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -32); ctx.lineTo(0, 2); ctx.stroke();
   ctx.fillStyle = '#b8d7dd'; ctx.fillRect(-34, -37, 12, 12); ctx.fillRect(22, -37, 12, 12);
   ctx.fillStyle = '#b8d7dd'; ctx.fillRect(-5, -68, 10, 9); ctx.fillStyle = '#5a3825'; ctx.fillRect(-45, 2, 90, 5); ctx.restore();
-}
-
-function drawOldPickup(ctx: CanvasRenderingContext2D, x: number, y: number, scale: number, operating: boolean, moving: boolean, now: number, headingX = 1, headingY = 0, steer = 0, wheelPhase = 0): void {
-  ctx.save(); ctx.translate(x, y); ctx.scale(scale * 1.35, scale * 1.35);
-  const pose = farmUprightPose({ x: headingX, y: headingY });
-  ctx.rotate(pose.slope);
-  if (pose.mirrored) ctx.scale(-1, 1);
-  ctx.fillStyle = 'rgba(40,30,20,.24)'; ctx.beginPath(); ctx.ellipse(0, 8, 32, 9, 0, 0, Math.PI * 2); ctx.fill();
-  const roll = moving ? wheelPhase : 0;
-  ctx.fillStyle = '#2d3438'; ctx.beginPath(); ctx.arc(-20, 5, 7, 0, Math.PI * 2); ctx.arc(20, 5, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#c75a3d'; ctx.fillRect(-27, -8, 54, 14); ctx.fillStyle = '#8d3d31'; ctx.fillRect(4, -25, 22, 18);
-  ctx.fillStyle = '#b8d7dd'; ctx.fillRect(8, -22, 16, 10); ctx.fillStyle = '#e7b56b'; ctx.fillRect(-25, -5, 6, 5);
-  ctx.strokeStyle = '#d6a24e'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-17, 5); ctx.lineTo(-17 + roll, 5); ctx.moveTo(17, 5); ctx.lineTo(17 - roll, 5); ctx.stroke();
-  if (operating) { ctx.fillStyle = '#f2d8a5'; ctx.fillRect(-2, -35, 5, 9); }
-  ctx.fillStyle = 'rgba(218,218,180,.4)'; ctx.beginPath(); ctx.arc(-30 - steer * 4, -19 - Math.abs(headingY) * 3 - Math.sin(now / 300) * 2, 3, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
 }
 
 function drawOldTractor(
