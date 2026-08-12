@@ -282,3 +282,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** The primary completed one bounded audit of restoration prerequisites, insufficient-funds and duplicate-call immutability, manual/powered separation, field-kit ordering, pre-v11 grandfathering, malformed-current failure behavior, player guidance, Canvas repair-state readability, native packaging, and shortcut cleanup. No high- or medium-severity issue remains.
 - **Known limitations:** Restoration is one finite milestone rather than a condition simulation. Ongoing wear, repair parts, fuel, implements, later tractor/combine tiers, workers, managers, and a broad machinery economy remain deferred.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Homestead Growth V1 - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `66c031f`
+- **Scope:** Make the existing neighboring-acreage purchase visibly improve the homestead. Derive one expanded farmhouse tier from saved parcel ownership and update art, hit truth, office identity, and purchase copy together. No new price, save field, bonus, room, interior, or economy change.
+- **Before / after:** The larger starter farmhouse stayed visually unchanged after a major $6,500 land purchase. It now transforms from a modest single-story home into a wider two-story house with a second gable, four windows, and a full porch. The hover/click target widens with the art; the title becomes Expanded Farmhouse Office; Land Records and the business snapshot acknowledge the property reward.
+- **Verification:** 208/208 tests passed; strict typecheck, Vite production build, desktop-specific build, and diff checks passed. Browser acceptance captured the starter/expanded comparison, purchased exactly 96 additional sections from $6,500 to $0, verified the expanded interaction and office, reloaded 132 sections from the existing save flag, and found zero console/page errors. `release/homestead-growth-v1` contains relative bundled assets; packaged CDP rendered title and farm, and the literal OneDrive Desktop shortcut launched four responsive processes with zero residue after cleanup.
+- **Review:** The primary audited derived-state authority, no-schema behavior, transaction preservation, visual/hit agreement, nearby overlap priority, UI truth, package paths, and native cleanup. No high- or medium-severity issue remains.
+- **Known limitations:** The tier is a visible land-ownership reward, not a separate renovation system. There are no interiors, rooms, household mechanics, additional home tiers, or functional bonuses.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

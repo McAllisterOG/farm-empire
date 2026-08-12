@@ -26,15 +26,16 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 20. **Farm Soundscape & Tactile Feedback V1** - a restrained procedural farm ambience, clock-aware wildlife, vehicle idle/motion audio, action and transaction cues, and persistent mute/ambience/effects controls without bundled audio assets or save-schema changes.
 21. **Efficient Row Fieldwork & Homestead Scale** - section, row, and three-row manual work with deterministic acreage-bounded traversal, visible selection/progress, resource-aware planting, safe partial cancellation, quieter wind-only ambience, and a corrected farmhouse/barn hierarchy.
 22. **Old Tractor Restoration V1** - a fresh-farm repair project unlocked by the first County delivery, one atomic $1,950 Equipment Desk restoration, manual-first playability, visible repair-state art and guidance, powered-work enforcement, and save-v11 grandfathering.
+23. **Homestead Growth V1** - a save-neutral starter-to-expanded farmhouse transformation derived from neighboring-acreage ownership, with matched interaction bounds, office identity, land messaging, and no new economy value or persistence field.
 
 ## Current authorization
 
-No additional feature package is currently active. Playtest the rebuilt Windows Desktop game with section/row/three-row fieldwork, the first County delivery and tractor restoration, hauling, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
+No additional feature package is currently active. Playtest the rebuilt Windows Desktop game with section/row/three-row fieldwork, the first County delivery and tractor restoration, acreage-driven farmhouse growth, hauling, knowledge pacing, and larger fields, then use observed friction, working-capital pressure, storage limits, and sense of progression to select one deliberately designed package.
 
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
-- **Farmhouse and property progression:** retain the new humble starter farmhouse as presentation-only for now; later visual tiers may reflect property growth after an upgrade/economy model is approved.
+- **Farmhouse and property progression:** the home now grows from a humble starter house to one expanded visual tier when the neighboring acreage is owned. Separate renovations, more tiers, rooms, and functional bonuses still require an approved upgrade/economy model.
 - **Farmer Knowledge & Skills:** V1 now derives presentation-only ranks, next steps, and evidence-sourced notes from authentic actions. A later bounded package may add optional first-day tutorial choices or explicit skills only after their effects and save model are approved; do not revive the generic legacy XP/quest systems by default.
 - **Evidence-based economy study:** keep starting cash at $5,000 while authoritative agricultural sources are used to calibrate proportional yields, quantities, storage, seed, machinery, and land relationships. Favor a fun, legible abstraction over false literal realism; do not rebalance isolated values before the study.
 - **Town and county buildout:** add houses, roads, surrounding fields, services, and story in bounded stages. The County Service Center remains a separate scene today; a continuous farm-to-town regional map is a future architecture decision, not an assumed rewrite.

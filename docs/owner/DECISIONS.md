@@ -202,3 +202,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Powered parcel planning and operated planting/harvest fail closed until restoration. The County Row-Crop Field Kit remains a separate 125,000-cent upgrade and cannot be installed before the base tractor is operational.
 - Save v11 persists the existing tractor status, treats missing or malformed current status as maintenance, and performs no automatic reward, crop, land, or economy changes. Starting cash remains $5,000.
 - Fuel, breakdown RNG, recurring condition, a dealership catalog, implements, combines, trailers, later machinery tiers, and an economy-wide rebalance remain separate packages.
+
+## 2026-08-12 - Let owned acreage visibly grow the farmhouse
+
+**Status:** Approved by the owner
+
+- The humble starter farmhouse remains the fresh-farm presentation. Owning the existing neighboring acreage deterministically derives one expanded two-story home tier from the authoritative parcel flag.
+- The larger painter, interaction radius and label, farmhouse-office title, operation snapshot, land-record copy, and purchase feedback must change together so the visible reward and usable target agree.
+- Homestead Growth V1 adds no separate purchase, cash effect, save-schema field, migration, production bonus, capacity, room system, or hidden Farmer Knowledge modifier.
+- Further farmhouse tiers, renovations, interiors, household systems, and functional property bonuses remain deferred until a deliberate upgrade and economy model is approved.

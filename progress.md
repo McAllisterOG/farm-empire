@@ -73,6 +73,14 @@ Original prompt: Begin the first milestone from the complete Farm Empire master 
 - Browser acceptance verified the locked fresh state, exact restoration charge, immediate operation, save/reload, and zero console/page errors.
 - Desktop packaging completed under `release/tractor-restoration-v1`; bundled assets are relative, native CDP rendered title and farm, and the literal OneDrive Desktop shortcut launched four responsive packaged processes with zero residue after cleanup.
 
+## 2026-08-12 - Homestead growth checkpoint
+
+- The saved neighboring-acreage flag now derives one expanded farmhouse tier, so the existing $6,500 property milestone has an immediate visible reward without adding another price or save field.
+- The expanded house is a wider two-story silhouette with a second gable, four windows, and a full porch. Its larger interaction radius, Expanded Farmhouse Office title, business snapshot, Land Records copy, and purchase feedback match the art.
+- Final automated boundary: 208/208 tests, strict typecheck, production build, desktop-specific build, and diff checks pass.
+- Browser acceptance captured the starter/expanded comparison, exact purchase to 132 sections, expanded office/hit behavior, reload, and zero console/page errors.
+- Desktop packaging completed under `release/homestead-growth-v1`; bundled assets are relative, native CDP rendered title and farm, and the literal OneDrive Desktop shortcut launched four responsive processes with zero residue after cleanup.
+
 ## Final acceptance
 
 - Bounded adversarial repair made malformed watering flags fail open to established growth and removed obsolete automatic-growth guidance from the pump and How to Play.
