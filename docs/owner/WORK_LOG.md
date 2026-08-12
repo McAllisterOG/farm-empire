@@ -258,3 +258,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/farm-soundscape-v1/win-unpacked/Farm Empire.exe` (225,442,304 bytes) and its corrected bundled `resources/app.asar` (1,186,886 bytes), generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the unpacked executable and deployed icon.
 - **Known limitations:** This is a restrained zero-asset procedural V1 rather than a recorded soundtrack. It does not add voice, music composition, spatial occlusion, weather audio, or gameplay-affecting sound mechanics.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Efficient Row Fieldwork & Homestead Scale - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `a0ee2d9`
+- **Scope:** Remove repetitive field clicking and correct the visible home/barn hierarchy while responding to the owner's sound complaint. Preserve save v10, economy, crop rules, acreage, hauling, tractor jobs, town services, and audio preferences; no workers, stamina, pathfinding, machinery tier, or rebalance.
+- **Before / after:** Manual work previously required reopening a menu for every field section; it now offers one section, one full row, or a three-row block for prepare, rework, plant, water, harvest, and clearing. A visible acreage-bounded selection and live HUD progress replace hidden repetition; deterministic serpentine travel prevents side-to-side resets; Escape keeps only already committed sections; planting stops at real seed supply. The farmhouse was visually subordinate to the barn; it is now enlarged while the barn is restrained, with a matching farmhouse hit radius. Repeating high-pitched day/night wildlife notes were removed, retaining quiet wind and intentional action, transaction, Scout, and vehicle cues.
+- **Verification:** 201/201 tests passed; strict typecheck, Vite production build, and diff checks passed. Browser acceptance on a fresh farm verified exact 6/18 eligible counts, complete row preparation, one-section partial cancellation, exactly two seed-limited corn plantings, visible selection/progress, and zero console/page errors. `desktop:build` produced relative bundled assets under `release/field-efficiency-v1`; archive inspection, packaged CDP screenshot, and literal OneDrive Desktop shortcut launch all passed with four responsive processes and zero residue after cleanup.
+- **Review:** The primary completed one bounded audit covering deterministic order, parcel edges, cross-acreage isolation, resource exhaustion, transaction/cancellation boundaries, input blocking, visual hit agreement, sound fallback, package paths, and native cleanup. No high- or medium-severity issue remains.
+- **Known limitations:** Multi-section work uses the current direct walking model and short repeated actions. It does not add obstacle pathfinding, hired labor, stamina/tools, irrigation, or a new equipment/economy tier. Environmental audio is intentionally sparse pending a later recorded ambience/music direction.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

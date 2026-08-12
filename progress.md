@@ -54,6 +54,16 @@ Original prompt: Begin the first milestone from the complete Farm Empire master 
 - Windows unpacked x64 packaging completed under `release/farm-soundscape-v1`; the real Desktop shortcut targets that build, four packaged processes responded in native smoke, and none remained afterward.
 - Release repair: the first soundscape artifact had been packaged after a normal web build, leaving absolute `/assets/...` references that produced a white Electron window. Rebuilt via `npm.cmd run desktop:build`, confirmed `./assets/...` inside `app.asar`, captured the rendered title and farm from the packaged process, and revalidated the literal Desktop shortcut with four responsive processes and zero residue.
 
+## 2026-08-12 - Efficient row fieldwork and homestead scale checkpoint
+
+- Added section, row, and three-row scope choices to every compatible manual field action. Selections are deterministic, stay inside the clicked acreage, traverse serpentine, show their remaining footprints, and report live aggregate progress.
+- Multi-section work commits one existing transaction at a time. Escape cancels the current uncommitted action, preserves completed sections, stops walking, and saves partial progress. Planting plans only as many eligible sections as the selected crop's real seed supply.
+- Removed recurring synthesized bird/cricket notes after owner playtesting; filtered wind plus action, transaction, Scout, and vehicle feedback remain under the existing persistent mix controls.
+- Enlarged the humble farmhouse, slightly restrained the barn, and matched the farmhouse interaction radius to the new visual hierarchy.
+- Final automated boundary: 201/201 tests, strict typecheck, production build, and diff checks pass.
+- Browser acceptance verified exact 6-section row and 18-section block options, complete row preparation, safe partial cancellation at one committed section, exactly two seed-limited corn plantings, selection/HUD feedback, and zero console/page errors.
+- Desktop packaging completed under `release/field-efficiency-v1` through `desktop:build`; `app.asar` uses `./assets`, native CDP capture showed the rendered title screen, and the literal Desktop shortcut launched four responsive packaged processes with zero residue after cleanup.
+
 ## Final acceptance
 
 - Bounded adversarial repair made malformed watering flags fail open to established growth and removed obsolete automatic-growth guidance from the pump and How to Play.
