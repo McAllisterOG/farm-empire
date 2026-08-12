@@ -181,3 +181,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/win-unpacked/Farm Empire.exe` (225,441,792 bytes), `release/Farm Empire Portable 1.0.0 x64.exe` (89,809,797 bytes), and `release/Farm Empire Setup 1.0.0 x64.exe` (90,018,109 bytes), all generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets the unpacked executable and exact external icon.
 - **Known limitations:** Direct collision-free vehicle travel; one pickup with no trailers, fuel, condition, dealership, or hauling jobs beyond the finite Pantry order. Desktop artifacts remain local unsigned x64 builds with separate desktop/browser saves.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## First-Play Usability & World Framing Repair - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commits:** `0566635`, `0f71fd8`, `00171cb`, `df8948b`, `f3a687c`
+- **Scope:** Repair the owner's first desktop playtest blockers: excessive blank-space framing, losable cameras, missing in-game menu/title return, overlapping pickup/gateway interactions, unclear cargo authority, cross-wired vehicle actions, misleading pump affordance, weak world-edge presentation, and compact-screen recovery controls. No field-geometry, economy, save-version, irrigation, XP, or service-count expansion.
+- **Result:** Added scene-aware camera fitting/clamping and recentering, a lifecycle-safe hamburger menu and slot return, a dedicated safe barn cargo pad with fail-closed transfers, context-correct pickup/tractor panels, safe legacy gate-position normalization with cargo preservation, an unobstructed road, explicit automatic-growth guidance, and render-only farmhouse/town-edge context.
+- **Verification:** 170/170 tests passed; strict typecheck, Vite production build, and diff checks passed. Browser acceptance covered 2048x1152, 1280x720, and 760x640 farm/town layouts, pan stress and recovery, menu/title return/re-entry, exact transfers, away-from-pad rejection, pickup drive/gate/return, responsive footer/menu behavior, pump feedback, and zero console warnings/errors.
+- **Review:** Independent Luna Medium review found two active-scene camera/resize MEDIUMs; both were repaired. Primary acceptance then closed pickup-save, lifecycle, architecture-boundary, pad/parcel, road-routing, and legacy gate-conflict issues before final validation.
+- **Owner direction preserved:** Future acreage should be substantially larger; the farmhouse may grow with the property; an optional authentic farming-knowledge progression is desired; town/county context should expand; tractor timing is unresolved; and a proportional evidence-based economy study should retain the $5,000 start until approved as its own package.
+- **Known limitations:** Current field geometry, economy, watering, farmer levels, farmhouse upgrades, equipment timing, and broader town simulation are intentionally unchanged pending coordinated design.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

@@ -146,3 +146,15 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - On-foot town visits remain valid for dialogue, records, and inspection, but seed purchase, crop sale, and delivery actions fail closed without the pickup.
 - Save schema v8 persists pickup cargo and safe farm coordinates. Town vehicle presence, velocity, heading, and operating state remain transient; town saves reload safely at the farm gateway with cargo intact.
 - Trailers, hitching, fuel, damage, routed roads, combines, workers, managers, repeat contracts, and economy rebalance remain separate future packages.
+
+## 2026-08-12 - Make first-play navigation and hauling physically legible
+
+**Status:** Approved by the owner
+
+- Farm and town cameras fit and clamp to their active scene, refit on resize, and expose explicit recentering so the playable map cannot be lost in blank space.
+- A persistent hamburger menu provides Save, How to Play, and Save & Return to Farms without requiring the player to quit the desktop application; input listeners must be cleaned up before returning to the slot screen.
+- Farm cargo transfers require the pickup at a visible barn cargo pad. The pad, gateway, parcels, and interaction landmarks must not overlap; legacy saves parked exactly at the conflicting gate position normalize to the pad with cargo preserved.
+- Vehicle panels are context-specific: tractor interaction cannot expose pickup actions, and the pickup owns its Operate and Manage Cargo surface.
+- The hand pump remains decorative until irrigation is deliberately designed; player guidance must say that crops currently grow automatically.
+- The humble farmhouse, road, town-edge houses, and distant field cues are presentation-only. The town keeps exactly three functional services and remains a separate scene.
+- Starting cash remains $5,000. Larger acreage, farmhouse upgrades, farmer knowledge levels, economy research, and starter-equipment timing are recorded future packages rather than being silently folded into this repair.

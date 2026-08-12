@@ -18,15 +18,21 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 12. **County Crop Catalog & Market Choice** - four additional procedural crops, existing-milestone unlocks, authoritative lock enforcement, differentiated time/margin/storage roles, expanded Seed Shop and market support, and save-safe zero-seed defaults.
 13. **Windows Desktop Release** - a secure local Electron shell, current security-fixed release toolchain, branded native window and Desktop shortcut, persistent app-profile saves, fullscreen/single-instance behavior, portable and installer artifacts, and real Windows launch/save/reload acceptance.
 14. **Old Pickup & County Haul Loop** - an owned-from-start drivable pickup, persistent 72-unit mixed cargo, reversible barn/seed transfers, pickup-gated town commerce and County delivery, save v8, direction-aware motion, and a rebuilt Desktop release.
+15. **First-Play Usability & World Framing Repair** - bounded scene-aware cameras, dependable recentering, a persistent hamburger menu and title return, a physical barn cargo pad, context-correct pickup/tractor panels, safe gate returns, accurate watering guidance, and stronger farm/town edge framing.
 
 ## Current authorization
 
-No implementation package is currently authorized. The owner should play the accepted pickup/hauling Desktop build before another feature package is selected.
+No new feature package is currently authorized. Refresh the Windows Desktop build with the accepted first-play repair, then use the owner's next playtest to select one deliberately designed progression package.
 
 ## Later directions
 
-- First-day farm story and farm-specific progression after its event/save model is designed.
+- **Acreage & Field Geometry V2:** research and design genuinely workable acreage before implementation. The owner's current target is a starter field roughly four present 3x3 presentation blocks, with a second field about 2.5-3 times larger and farther across the property near the road. Plot-section size, property layout, save migration, tractor timing, crop yield, storage, and economy must be designed together.
+- **Farmhouse and property progression:** retain the new humble starter farmhouse as presentation-only for now; later visual tiers may reflect property growth after an upgrade/economy model is approved.
+- **Farmer Knowledge & Skills:** design an optional first-day tutorial and farm-specific character progression around authentic actions and short, evidence-sourced farming facts. Do not revive the generic legacy XP/quest systems by default.
+- **Evidence-based economy study:** keep starting cash at $5,000 while authoritative agricultural sources are used to calibrate proportional yields, quantities, storage, seed, machinery, and land relationships. Favor a fun, legible abstraction over false literal realism; do not rebalance isolated values before the study.
+- **Town and county buildout:** add houses, roads, surrounding fields, services, and story in bounded stages. The County Service Center remains a separate scene today; a continuous farm-to-town regional map is a future architecture decision, not an assumed rewrite.
+- **Equipment progression timing:** revisit whether the tractor should be available from the start and improve machinery scale/art only alongside a coherent manual-to-mechanized progression plan.
 - Equipment and logistics depth after the pickup loop is exercised: distinct implements, trailers, combines, condition, and genuine dealership actions.
 - Broader or repeat contracts only after a deliberate job, logistics, and save design.
-- Additional acreage and storage tiers, crop inputs/quality, then property-aware workers and managers after the expanded crop, manual, and machinery loops are proven fun.
+- Property-aware workers and managers after acreage, economy, storage, and machinery loops are proven fun.
 - Further environment art and ambient farm life after the current benchmark presentation is reviewed in play.

@@ -2,12 +2,12 @@
 
 ## Current known-good checkpoint
 
-- **Date:** 2026-08-11
+- **Date:** 2026-08-12
 - **Branch:** `codex/first-town-contact`
-- **Head:** `0ae284c`
-- **Product state:** The eight-crop farm/town loop now has a physical logistics spine: an owned drivable old pickup, persistent 72-unit mixed cargo, reversible farm transfers, pickup-required County commerce, and the existing one-time corn order fulfilled from hauled cargo. The accepted build is installed behind the real Windows Desktop shortcut.
-- **Verification:** 161/161 tests passed; strict typecheck, Vite production build, whitespace checks, full npm audit with zero findings, and all three Windows x64 package targets passed. Browser acceptance covered fresh planting/harvest, reversible produce transfers, on-foot service lockouts, pickup entry/hidden driver, direction-aware driving and Escape cancellation, physical gate travel, visible town freight parking, exact seed purchase/sale/County-delivery money and cargo changes, farm return/unload, town and mounted save/reload, tractor mutual exclusion, temporary-save cleanup, and zero console warnings/errors. Native acceptance launched one responsive Farm Empire window from the exact OneDrive Desktop shortcut, then closed normally with zero residual processes; target, working directory, and external icon were read back exactly.
-- **Review:** One Luna Medium writer completed the finite haul-loop package. Independent Red Team found missing crop unloading, a barn-derived false-ready state, and a legacy barn fulfillment route; the bounded repair closed all three and separated farm transfers from town commerce. Re-review confirmed those repairs and exposed one real heading-pose gap, which was fixed through the existing upright vehicle projection. A stale avatar finding was disproved against the committed source and browser evidence.
+- **Head:** `f3a687c`
+- **Product state:** The physical farm/town hauling loop now has a first-play usability repair: fitted and bounded cameras, dependable recovery controls, title return without quitting, a dedicated barn cargo pad, context-correct vehicle panels, safe pickup/gateway separation, explicit watering guidance, and fuller farm/town edge framing. Save v8 and all business transactions remain compatible.
+- **Verification:** 170/170 tests passed; strict typecheck, Vite production build, and whitespace checks passed. Browser acceptance covered fresh $5,000 creation, farm/town framing at 2048x1152, 1280x720, and 760x640, aggressive pan clamping and recentering, hamburger menu/title return/re-entry, pickup and tractor panel separation, exact barn/pickup transfers, cargo-pad authority and away-from-pad rejection, pickup gate travel and safe return, pump guidance, responsive town footer, and zero console warnings/errors.
+- **Review:** One bounded Luna Medium writer completed the repair. Independent Luna Medium review found stale cross-scene camera restoration and active-scene resize framing; both were repaired. Primary acceptance then caught and repaired a core/render dependency, on-foot town-save pickup teleport, input-listener duplication, cargo-pad/locked-field overlap, the road crossing the locked parcel, and legacy gate-position conflicts while preserving cargo.
 
 ## Current presentation
 
@@ -32,18 +32,27 @@
 - Carrots are a low-capital quick turn; tomatoes trade barn throughput for margin; cabbage is value-dense; pumpkins are the slowest, highest-gross, and consume three barn units per harvested item.
 - The public-demo pass improves HUD/modal hierarchy, controls, feedback, transitions, and compact layouts without changing game transactions.
 - Farm Empire now runs from `Farm Empire.lnk` on the real Windows Desktop without a terminal, browser tab, development server, or internet. The packaged shell loads only bundled files, keeps Node unavailable to game content, and stores saves under the stable `%APPDATA%\Farm Empire` profile.
+- Farm and town cameras now fit their current scene, clamp panning so the playable mainland cannot be lost, refit on resize, and expose a persistent top-right menu with Resume, Save, Recenter, How to Play, and Save & Return to Farms.
+- The pickup now parks at a visible barn cargo pad that is clear of the neighboring field and town gate. Produce/seed transfer is available only there, with explicit guidance elsewhere; old saves parked exactly under the gate sign normalize safely to the pad without losing cargo.
+- A humble presentation-only farmhouse, expanded town-edge homes/field cues, and a routed two-layer farm road reduce empty visual space without inventing new services, changing saves, or crossing the locked parcel.
+- The hand pump now states that watering is not yet a gameplay system and crops currently grow automatically.
 
 ## Immediate authorized work
 
-No further implementation package is authorized. The next step is owner playtesting from the Windows Desktop shortcut; use that evidence to choose between trailers/implements, additional acreage/storage, or the first worker/manager progression package.
+No new feature package is authorized. Refresh the Windows Desktop artifacts with this accepted source, then owner-playtest the menu, camera, cargo pad, hauling route, and first farm/town loop before selecting Acreage & Field Geometry V2, Farmer Knowledge & Skills, or another finite package.
 
 ## Known limitations
 
 - Equipment modal state can remain stale during standalone driving until reopened.
 - Vehicle movement remains direct and collision-free; routed roads, trailers, implements, combines, condition, fuel, and a dealership economy remain deferred.
 - The town currently has one compact service center and one freight pickup presence, with no interiors, traffic, schedules, or broad social simulation.
+- The town remains a separate Canvas destination rather than one continuous farm-to-town regional map; surrounding houses and fields are presentation cues only.
 - The town story currently contains one deliberate first contact and one finite hauled order; there is no general quest, reputation, deadline, or repeat-contract system.
 - Eight crops, one neighboring parcel, one tractor kit, one storage upgrade, and one pickup provide a bounded progression loop; additional acreage, crop inputs/quality, trailers/implements, workers, and managers remain deferred.
+- Current field geometry is still much smaller than the owner's desired future acreage. Expanding it safely requires a coordinated property, save, tractor-time, yield, storage, and economy design.
+- Watering/irrigation and farmer knowledge levels are not implemented. The pump is decorative and guidance now says so accurately.
+- The humble farmhouse has no upgrade mechanics yet, and the correct starting availability/timing of the tractor remains an open progression decision.
+- Starting cash remains $5,000; no economy values were changed during this repair, pending an evidence-based proportional economy study.
 - Crop withering uses wall-clock time and a 15-minute post-maturity window; this should be evaluated during the owner's first longer play session.
 - The branch has not been pushed; external GitHub authorization is still required.
 - Windows artifacts are local x64 builds and unsigned, so SmartScreen may warn. The executable retains Electron file metadata because this account cannot run the normal resource-edit helper; the supported Desktop shortcut and game window use the verified Farm Empire ICO explicitly.
