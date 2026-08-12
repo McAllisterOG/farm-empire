@@ -15,7 +15,7 @@ import { FARM_TOWN_GATE } from '../core/townGateway';
 import { Camera } from './camera';
 import { diamondPath, isoX, isoY, TILE_H, TILE_W } from './iso';
 import { charKey, drawSprite } from './sprites';
-import { farmDriveLane, farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint, farmLandmarks } from './farmLayout';
+import { farmDriveLane, farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint, farmLandmarks, type FarmhousePresentationTier } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
 import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
@@ -71,6 +71,7 @@ export interface RenderScene {
     };
     pickup: { name: string; x: number; y: number; operating: boolean; moving: boolean; headingX?: number; headingY?: number; steer?: number; wheelPhase?: number };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
+    farmhouseTier: FarmhousePresentationTier;
     barnLoftOwned: boolean;
     clockMinute: number;
     interactionHint?: { kind: string; label: string; x: number; y: number };
@@ -502,7 +503,7 @@ export class Renderer {
     const townGatePoint = farmWorldPoint(FARM_TOWN_GATE);
     items.push({ depth: townGatePoint.x + townGatePoint.y + .18, draw: () => drawFarmTownGateway(ctx, camera.sx(isoX(townGatePoint.x, townGatePoint.y)), camera.sy(isoY(townGatePoint.x, townGatePoint.y) + TILE_H / 2), zoom) });
     const farmhousePoint = farmWorldPoint(farmLandmarks().farmhouse);
-    items.push({ depth: farmhousePoint.x + farmhousePoint.y + .19, draw: () => drawStarterFarmhouse(ctx, camera.sx(isoX(farmhousePoint.x, farmhousePoint.y)), camera.sy(isoY(farmhousePoint.x, farmhousePoint.y) + TILE_H / 2), zoom, now) });
+    items.push({ depth: farmhousePoint.x + farmhousePoint.y + .19, draw: () => drawFarmhouse(ctx, camera.sx(isoX(farmhousePoint.x, farmhousePoint.y)), camera.sy(isoY(farmhousePoint.x, farmhousePoint.y) + TILE_H / 2), zoom, now, scene.farm!.farmhouseTier) });
     for (const plot of scene.plots) if (plot.crop) {
       const point = farmWorldPoint(plot);
       const stage = farmCropStage(plot.crop, now);
@@ -762,7 +763,11 @@ function drawHomesteadLandscape(ctx: CanvasRenderingContext2D, camera: Camera, z
   }
 }
 
-function drawStarterFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {
+function drawFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, tier: FarmhousePresentationTier): void {
+  if (tier === 'expanded') {
+    drawExpandedFarmhouse(ctx, x, y, zoom, now);
+    return;
+  }
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.85, zoom * 1.85);
   ctx.fillStyle = 'rgba(48,35,24,.24)'; ctx.beginPath(); ctx.ellipse(0, 6, 47, 12, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#876142'; ctx.fillRect(-38, -3, 76, 6);
@@ -778,6 +783,33 @@ function drawStarterFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: numbe
   ctx.strokeStyle = 'rgba(78,53,38,.55)'; ctx.lineWidth = 2; for (const wx of [-21.5, 21.5]) { ctx.beginPath(); ctx.moveTo(wx, -32); ctx.lineTo(wx, -17); ctx.moveTo(wx - 7, -24.5); ctx.lineTo(wx + 7, -24.5); ctx.stroke(); }
   ctx.fillStyle = '#eee2bf'; ctx.fillRect(-40, -5, 80, 4); for (const post of [-32, 32]) ctx.fillRect(post - 2, -20, 4, 19);
   ctx.fillStyle = '#8b674b'; ctx.fillRect(-42, -2, 84, 5); ctx.restore();
+}
+
+function drawExpandedFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.92, zoom * 1.92);
+  ctx.fillStyle = 'rgba(48,35,24,.25)'; ctx.beginPath(); ctx.ellipse(0, 7, 61, 14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#76523a'; ctx.fillRect(-52, -3, 104, 7);
+  ctx.fillStyle = '#d7c49d'; ctx.fillRect(-48, -58, 96, 57);
+  ctx.fillStyle = '#bca57f'; for (let line = -52; line < -3; line += 7) ctx.fillRect(-48, line, 96, 1);
+  ctx.fillStyle = '#674636'; ctx.beginPath(); ctx.moveTo(-59, -57); ctx.lineTo(0, -96); ctx.lineTo(59, -57); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#866047'; ctx.fillRect(-60, -58, 120, 7);
+  // A second front gable and wider porch make the acreage milestone visible
+  // at normal camera scale without pretending to add another usable room.
+  ctx.fillStyle = '#72503b'; ctx.beginPath(); ctx.moveTo(-47, -56); ctx.lineTo(-25, -77); ctx.lineTo(-3, -56); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#d7c49d'; ctx.beginPath(); ctx.moveTo(-41, -56); ctx.lineTo(-25, -71); ctx.lineTo(-9, -56); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#6f4d38'; ctx.fillRect(26, -91, 10, 28); ctx.fillStyle = '#927158'; ctx.fillRect(24, -95, 14, 5);
+  const smoke = Math.sin(now / 1000) * 2;
+  ctx.fillStyle = 'rgba(235,231,215,.48)'; ctx.beginPath(); ctx.arc(33 + smoke, -103, 4, 0, Math.PI * 2); ctx.arc(37 - smoke, -111, 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5a4032'; ctx.fillRect(-8, -31, 17, 30); ctx.fillStyle = '#c79e4d'; ctx.beginPath(); ctx.arc(5, -15, 1.5, 0, Math.PI * 2); ctx.fill();
+  const windows = [-37, -20, 19, 36];
+  ctx.fillStyle = '#a6c9c4'; for (const windowX of windows) ctx.fillRect(windowX - 6, -44, 12, 15);
+  ctx.strokeStyle = 'rgba(78,53,38,.55)'; ctx.lineWidth = 1.7;
+  for (const windowX of windows) { ctx.beginPath(); ctx.moveTo(windowX, -45); ctx.lineTo(windowX, -28); ctx.moveTo(windowX - 7, -36.5); ctx.lineTo(windowX + 7, -36.5); ctx.stroke(); }
+  ctx.fillStyle = '#efe4c5'; ctx.fillRect(-55, -7, 110, 5); for (const post of [-45, -15, 15, 45]) ctx.fillRect(post - 2, -26, 4, 24);
+  ctx.strokeStyle = '#9d7652'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-51, -18); ctx.lineTo(-12, -18); ctx.moveTo(12, -18); ctx.lineTo(51, -18); ctx.stroke();
+  ctx.fillStyle = '#8b674b'; ctx.fillRect(-58, -3, 116, 6);
+  ctx.fillStyle = '#d3b06c'; ctx.fillRect(12, -5, 22, 3);
+  ctx.restore();
 }
 
 function drawFarmDestination(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number, destination: NonNullable<NonNullable<RenderScene['farm']>['destination']>): void {

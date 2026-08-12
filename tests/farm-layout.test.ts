@@ -6,12 +6,19 @@ import { FARM_TOWN_GATE } from '../src/core/townGateway';
 import { farmParcelSectionCount } from '../src/core/farmParcels';
 import { deserialize } from '../src/save/save';
 import {
-  FARM_PLOT_SPAN, farmDriveLane, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint, farmLandmarks,
+  FARM_PLOT_SPAN, farmDriveLane, farmhouseInteractionRadius, farmhousePresentationTier, farmLogicalPoint, farmMainlandBounds, farmPlotAtWorldPoint, farmPlotFootprint, farmScreenHeadingAngle, farmUprightPose, farmWorldPoint, farmLandmarks,
 } from '../src/render/farmLayout';
 import { farmGroundVariant, farmTerrainBounds, intersectsFarmTerrain } from '../src/render/farmTerrain';
 import { NOW } from './helpers';
 
 describe('Farm Empire presentation layout', () => {
+  it('derives the visual farmhouse tier and matching hit radius from parcel ownership', () => {
+    expect(farmhousePresentationTier(false)).toBe('starter');
+    expect(farmhousePresentationTier(true)).toBe('expanded');
+    expect(farmhouseInteractionRadius('starter')).toBe(1.3);
+    expect(farmhouseInteractionRadius('expanded')).toBeGreaterThan(farmhouseInteractionRadius('starter'));
+  });
+
   it('keeps the pickup cargo pad deterministic with a strict boundary', () => {
     const pad = farmLandmarks().cargoPad;
     expect(pickupAtCargoPad(pad)).toBe(true);

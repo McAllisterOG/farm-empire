@@ -12,7 +12,7 @@ import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pi
 import { pickupPositionForSave } from '../core/farmPickupData';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY } from '../render/iso';
-import { farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
+import { farmhousePresentationTier, farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
 import { recordFarmStat } from '../core/farmKnowledge';
 import { FarmSoundscape, type FarmAudioSettings } from '../audio/farmSoundscape';
@@ -301,7 +301,7 @@ export class FarmEmpireApp {
         toast(`Sold ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} for ${formatMoney(Number(event.data ?? 0))}.`, 'good');
       } else if (event.type === 'expand') {
         this.farmAudio.playTransaction('expand');
-        toast(`Neighboring acreage purchased. ${event.amount ?? farmParcelSectionCount('north')} field sections are now usable.`, 'good');
+        toast(`Neighboring acreage purchased. ${event.amount ?? farmParcelSectionCount('north')} field sections are usable, and the farmhouse has expanded.`, 'good');
       } else if (event.type === 'toast' && event.target) {
         toast(event.target, 'good');
       }
@@ -1581,6 +1581,7 @@ export class FarmEmpireApp {
         wheelPhase: this.pickupMotion.wheelPhase,
       },
       scout: { ...this.scout, facing: this.scoutFacing, scratching: this.gameNow() < this.scoutScratchUntil },
+      farmhouseTier: farmhousePresentationTier(farm.parcels.northOwned),
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
       clockMinute: farm.clock.minute,
       interactionHint: this.hover ? { kind: this.hover.kind, label: this.hover.label, ...this.hover.point } : undefined,

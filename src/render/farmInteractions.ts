@@ -5,7 +5,7 @@ import { NEIGHBOR_FIELD_TILES } from '../core/farmParcels';
 import { FARM_TOWN_GATE } from '../core/townGateway';
 import { FARM_DECOR_MANIFEST } from './farmDecor';
 import {
-  farmLandmarks, farmLogicalPoint, farmPlotAtWorldPoint, type FarmPoint,
+  farmhouseInteractionRadius, farmhousePresentationTier, farmLandmarks, farmLogicalPoint, farmPlotAtWorldPoint, type FarmPoint,
 } from './farmLayout';
 
 export type FarmInteractionKind =
@@ -46,7 +46,10 @@ export function farmInteractionAtWorldPoint(
   if (near(logical, runtime.scout, .8)) return { kind: 'scout', label: 'Scout', point: { ...runtime.scout } };
 
   const landmarks = farmLandmarks();
-  if (near(logical, landmarks.farmhouse, 1.3)) return { kind: 'farmhouse', label: 'Farmhouse Office', point: { ...landmarks.farmhouse } };
+  const farmhouseTier = farmhousePresentationTier(farm.parcels.northOwned);
+  if (near(logical, landmarks.farmhouse, farmhouseInteractionRadius(farmhouseTier))) {
+    return { kind: 'farmhouse', label: farmhouseTier === 'expanded' ? 'Expanded Farmhouse Office' : 'Farmhouse Office', point: { ...landmarks.farmhouse } };
+  }
   // The physical pump sits beside the barn wall, so its tighter exact target
   // wins over the barn's intentionally generous footprint.
   const pump = FARM_DECOR_MANIFEST.find((prop) => prop.type === 'hand-pump');

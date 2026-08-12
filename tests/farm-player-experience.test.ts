@@ -101,6 +101,16 @@ describe('authoritative farm object interactions', () => {
     expect(farmInteractionAtWorldPoint(state, farmWorldPoint(landmarks.doghouse), { ...rt, scout: { x: 2, y: 2 } })?.kind).toBe('doghouse');
   });
 
+  it('expands farmhouse interaction and naming with the neighboring acreage', () => {
+    const state = makeFarm();
+    const rt = runtime(state);
+    const farmhouse = farmLandmarks().farmhouse;
+    const widenedEdge = farmWorldPoint({ x: farmhouse.x, y: farmhouse.y - 1.45 });
+    expect(farmInteractionAtWorldPoint(state, widenedEdge, rt)?.kind).not.toBe('farmhouse');
+    farmOf(state).parcels.northOwned = true;
+    expect(farmInteractionAtWorldPoint(state, widenedEdge, rt)).toMatchObject({ kind: 'farmhouse', label: 'Expanded Farmhouse Office' });
+  });
+
   it('distinguishes locked acreage, open soil, and a ready named crop', () => {
     const state = makeFarm();
     const rt = runtime(state);

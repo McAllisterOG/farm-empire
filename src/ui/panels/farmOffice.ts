@@ -23,7 +23,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
     ? Math.round(knowledge.pointsIntoLevel / knowledge.pointsForLevel * 100)
     : 100;
   const ownedSections = state.plots.length;
-  openPanel({ title: 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
+  openPanel({ title: farm.parcels.northOwned ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
       h('div', { class: 'farmbook-level-mark' }, String(knowledge.level.level)),
       h('div', { class: 'farmbook-level-copy' },
@@ -56,6 +56,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('div', {}, h('span', {}, 'Pickup'), h('strong', {}, `${pickupCargoUsed(state)} / 72`)),
         h('div', {}, h('span', {}, 'Land'), h('strong', {}, farm.parcels.northOwned ? '2 acreages' : '1 acreage')),
         h('div', {}, h('span', {}, 'Tractor'), h('strong', {}, farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Restoration needed')),
+        h('div', {}, h('span', {}, 'Home'), h('strong', {}, farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),
       ),
     ),
     h('div', { class: 'farmbook-actions' },
