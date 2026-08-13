@@ -8,10 +8,11 @@ import {
 import { loadBarnCropToPickup } from '../src/core/farmPickup';
 import { farmCropDef } from '../src/core/registry';
 import { FARM_TOWN_GATE } from '../src/core/townGateway';
+import { NEIGHBOR_FIELD_TILES } from '../src/core/farmParcels';
 import { TOWN_PICKUP_PARKING, townPickupHit } from '../src/render/townLayout';
 import { FARM_DECOR_MANIFEST } from '../src/render/farmDecor';
 import { farmInteractionAtWorldPoint, type FarmInteractionRuntime } from '../src/render/farmInteractions';
-import { farmLandmarks, farmWorldPoint } from '../src/render/farmLayout';
+import { farmLandmarks, farmPlotAtWorldPoint, farmWorldPoint, pointInFarmBounds } from '../src/render/farmLayout';
 import { farmCameraPolicy, townCameraPolicy } from '../src/render/cameraPolicy';
 import { NOW } from './helpers';
 
@@ -120,6 +121,20 @@ describe('authoritative farm object interactions', () => {
     expect(farmInteractionAtWorldPoint(state, widenedEdge, rt)?.kind).not.toBe('farmhouse');
     farmOf(state).parcels.northOwned = true;
     expect(farmInteractionAtWorldPoint(state, widenedEdge, rt)).toMatchObject({ kind: 'farmhouse', label: 'Expanded Farmhouse Office' });
+  });
+
+  it('reveals a distinct roadside stand target only after the improvement is owned', () => {
+    const state = makeFarm();
+    const rt = runtime(state);
+    const stand = farmLandmarks().roadsideStand;
+    const world = farmWorldPoint(stand);
+    expect(pointInFarmBounds(world)).toBe(true);
+    expect(farmPlotAtWorldPoint(NEIGHBOR_FIELD_TILES, world)).toBeUndefined();
+    expect(farmInteractionAtWorldPoint(state, world, rt)).toBeNull();
+    farmOf(state).townContact.status = 'completed';
+    farmOf(state).roadsideStand.owned = true;
+    expect(farmInteractionAtWorldPoint(state, world, rt)).toMatchObject({ kind: 'roadside-stand', label: 'McAllister Farm Stand' });
+    expect(farmInteractionAtWorldPoint(state, world, { ...rt, pickup: stand })?.kind).toBe('pickup');
   });
 
   it('distinguishes locked acreage, open soil, and a ready named crop', () => {

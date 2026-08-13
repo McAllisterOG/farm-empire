@@ -76,6 +76,7 @@ export interface RenderScene {
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
     farmhouseTier: FarmhousePresentationTier;
     barnLoftOwned: boolean;
+    roadsideStand: { owned: boolean; completedToday: boolean };
     clockMinute: number;
     weather: FarmWeatherKind;
     interactionHint?: { kind: string; label: string; x: number; y: number };
@@ -515,6 +516,10 @@ export class Renderer {
     }
     const townGatePoint = farmWorldPoint(FARM_TOWN_GATE);
     items.push({ depth: townGatePoint.x + townGatePoint.y + .18, draw: () => drawFarmTownGateway(ctx, camera.sx(isoX(townGatePoint.x, townGatePoint.y)), camera.sy(isoY(townGatePoint.x, townGatePoint.y) + TILE_H / 2), zoom) });
+    if (scene.farm!.roadsideStand.owned) {
+      const standPoint = farmWorldPoint(farmLandmarks().roadsideStand);
+      items.push({ depth: standPoint.x + standPoint.y + .19, draw: () => drawFarmRoadsideStand(ctx, camera.sx(isoX(standPoint.x, standPoint.y)), camera.sy(isoY(standPoint.x, standPoint.y) + TILE_H / 2), zoom, scene.farm!.roadsideStand.completedToday, now) });
+    }
     const farmhousePoint = farmWorldPoint(farmLandmarks().farmhouse);
     items.push({ depth: farmhousePoint.x + farmhousePoint.y + .19, draw: () => drawFarmhouse(ctx, camera.sx(isoX(farmhousePoint.x, farmhousePoint.y)), camera.sy(isoY(farmhousePoint.x, farmhousePoint.y) + TILE_H / 2), zoom, now, scene.farm!.farmhouseTier) });
     for (const plot of scene.plots) if (plot.crop) {
@@ -864,6 +869,42 @@ function drawFarmTownGateway(ctx: CanvasRenderingContext2D, x: number, y: number
   ctx.fillStyle = '#355f3e'; ctx.font = '900 11px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('TOWN 2 MI', 0, -53);
   ctx.beginPath(); ctx.moveTo(23, -38); ctx.lineTo(37, -30); ctx.lineTo(23, -22); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#564436'; ctx.lineWidth = 2; for (let line = -23; line <= 23; line += 9) { ctx.beginPath(); ctx.moveTo(line, -2); ctx.lineTo(line + 6, 6); ctx.stroke(); }
+  ctx.restore();
+}
+
+function drawFarmRoadsideStand(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  zoom: number,
+  completedToday: boolean,
+  now: number,
+): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.32, zoom * 1.32);
+  ctx.fillStyle = 'rgba(44,32,22,.24)'; ctx.beginPath(); ctx.ellipse(0, 5, 48, 12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#805431'; ctx.fillRect(-39, -8, 78, 10); ctx.fillStyle = '#aa7540'; ctx.fillRect(-35, -18, 70, 12);
+  for (const px of [-34, 30]) { ctx.fillStyle = '#6f492e'; ctx.fillRect(px, -18, 5, 22); }
+  ctx.fillStyle = '#6d4a31'; ctx.fillRect(-38, -65, 5, 49); ctx.fillRect(33, -65, 5, 49);
+  ctx.fillStyle = '#3f7042'; ctx.beginPath(); ctx.moveTo(-48, -62); ctx.lineTo(-37, -88); ctx.lineTo(37, -88); ctx.lineTo(48, -62); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#f0dc9d'; ctx.fillRect(-43, -76, 86, 13);
+  ctx.fillStyle = '#315d3a'; ctx.font = '900 9px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('MCALLISTER FARM STAND', 0, -67);
+  const awning = ['#f3dfaa', '#b95b3f', '#f3dfaa', '#b95b3f', '#f3dfaa'];
+  awning.forEach((color, index) => { ctx.fillStyle = color; ctx.fillRect(-45 + index * 18, -63, 18, 13); });
+  ctx.fillStyle = '#956339';
+  for (const bx of [-25, 0, 25]) { ctx.fillRect(bx - 11, -29, 22, 13); ctx.strokeStyle = '#6b4328'; ctx.strokeRect(bx - 11, -29, 22, 13); }
+  if (!completedToday) {
+    const produce = ['#e6c34d', '#d95f49', '#6e9d49'];
+    for (let basket = 0; basket < 3; basket++) for (let item = 0; item < 5; item++) {
+      const bob = Math.sin(now / 900 + basket * 2 + item) * .35;
+      ctx.fillStyle = produce[basket]; ctx.beginPath(); ctx.arc(-31 + basket * 25 + (item % 3) * 6, -31 - Math.floor(item / 3) * 5 + bob, 3.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  ctx.fillStyle = '#d7c28e'; ctx.fillRect(19, -48, 17, 17); ctx.strokeStyle = '#704b2e'; ctx.lineWidth = 1.5; ctx.strokeRect(19, -48, 17, 17);
+  ctx.fillStyle = '#704b2e'; ctx.fillRect(23, -44, 9, 2);
+  if (completedToday) {
+    ctx.save(); ctx.rotate(-.06); ctx.fillStyle = '#f0dc9d'; ctx.fillRect(-29, -43, 47, 16); ctx.strokeStyle = '#704b2e'; ctx.strokeRect(-29, -43, 47, 16);
+    ctx.fillStyle = '#8b4936'; ctx.font = '900 8px Segoe UI, sans-serif'; ctx.fillText('SOLD TODAY', -5, -32); ctx.restore();
+  }
   ctx.restore();
 }
 

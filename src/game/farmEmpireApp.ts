@@ -26,6 +26,7 @@ import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } f
 import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
 import { hireFirstFarmhand, startFarmhandShift, type FarmhandWorkKind } from '../core/farmWorkforce';
 import { applyCurrentFarmRain, currentFarmWeather, farmWeatherForDay } from '../core/farmWeather';
+import { fulfillRoadsideStandOrder, purchaseRoadsideStand, roadsideStandOrder, roadsideStandView } from '../core/farmRoadsideStand';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import type { TownNpcDef, TownServiceId } from '../data/town.data';
 import { FIRST_FARMHAND } from '../data/farmWorkforce.data';
@@ -43,6 +44,7 @@ import {
 } from '../ui/panels/farmPanels';
 import { openFarmOffice } from '../ui/panels/farmOffice';
 import { openFarmWorkforce } from '../ui/panels/farmWorkforce';
+import { openFarmRoadsideStand } from '../ui/panels/farmRoadsideStand';
 import { saveToSlot } from '../save/save';
 import { h } from '../ui/dom';
 
@@ -526,6 +528,11 @@ export class FarmEmpireApp {
       this.walkNear(interaction.point.x, interaction.point.y, () => this.openFarmhouseOffice());
       return;
     }
+    if (interaction?.kind === 'roadside-stand') {
+      if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to stock the farm stand.', 'bad'); return; }
+      this.walkNear(interaction.point.x, interaction.point.y, () => this.openRoadsideStand('farm'));
+      return;
+    }
     if (interaction?.kind === 'pump') {
       showActionMenu(sx, sy, 'Hand Pump', [
         { label: 'Water new seedlings from their field menu', disabled: true, onClick: () => {} },
@@ -633,6 +640,7 @@ export class FarmEmpireApp {
         }),
       },
       { label: 'Workforce Desk', onClick: () => this.openWorkforcePanel('town') },
+      { label: 'Farm Improvements', onClick: () => this.openRoadsideStand('town') },
       { label: 'County Work Order', onClick: () => this.openCountyWorkOrder() },
     ]);
   }
@@ -855,6 +863,7 @@ export class FarmEmpireApp {
       onCargo: () => openFarmMarket(this.state, this.panelActions(), 'farm'),
       onTownRoad: () => { closePanel(); this.renderer.focusOnFarmPoint(FARM_TOWN_GATE); },
       onWorkforce: () => this.openWorkforcePanel('farm'),
+      onRoadsideStand: () => this.openRoadsideStand('farm'),
     });
   }
 
@@ -875,6 +884,15 @@ export class FarmEmpireApp {
       cancelWork: context === 'farm' ? () => this.cancelFarmhandJob() : undefined,
       dispatch: this.dispatch,
       onClose: () => {},
+    });
+  }
+
+  private openRoadsideStand(context: 'farm' | 'town' = this.mode): void {
+    openFarmRoadsideStand(this.state, {
+      context,
+      purchase: context === 'town' ? () => purchaseRoadsideStand(this.state) : undefined,
+      fulfill: context === 'farm' ? (orderId) => fulfillRoadsideStandOrder(this.state, orderId) : undefined,
+      dispatch: this.dispatch,
     });
   }
 
@@ -1588,6 +1606,7 @@ export class FarmEmpireApp {
           pickupProgress: progress,
         };
       })(),
+      roadsideStand: roadsideStandView(this.state),
       manualFieldAction: this.manualFieldAction ? {
         kind: this.manualFieldAction.kind,
         plotUid: this.manualFieldAction.plotUid,
@@ -1648,6 +1667,13 @@ export class FarmEmpireApp {
       ensureOwnedFarmParcelPlots(this.state, farm.parcels);
       farm.cashCents = Math.max(farm.cashCents, 500_000);
       syncCashMirror(this.state);
+      this.hud.update(this.state, this.tractorHudRuntime());
+    });
+    addButton('dev-fill-roadside-order', 'Fill stand order', () => {
+      const order = roadsideStandOrder(this.state);
+      if (!order) return;
+      const farm = farmOf(this.state);
+      farm.storage[order.cropId] = Math.max(farm.storage[order.cropId] ?? 0, order.requiredUnits);
       this.hud.update(this.state, this.tractorHudRuntime());
     });
     addButton('dev-open-first-plot', 'Open first plot', () => {
@@ -1833,6 +1859,10 @@ export class FarmEmpireApp {
       scout: { ...this.scout, facing: this.scoutFacing, scratching: this.gameNow() < this.scoutScratchUntil },
       farmhouseTier: farmhousePresentationTier(farm.parcels.northOwned),
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
+      roadsideStand: {
+        owned: farm.roadsideStand.owned,
+        completedToday: farm.roadsideStand.lastCompletedDay >= farm.clock.day,
+      },
       clockMinute: farm.clock.minute,
       weather: currentFarmWeather(this.state).kind,
       interactionHint: this.hover ? { kind: this.hover.kind, label: this.hover.label, ...this.hover.point } : undefined,

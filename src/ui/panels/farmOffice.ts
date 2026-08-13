@@ -4,6 +4,7 @@ import { farmOf, formatMoney, storageUsed } from '../../core/farmBusiness';
 import { pickupCargoCapacity, pickupCargoUsed } from '../../core/farmPickup';
 import { countyFreightBoardState } from '../../core/farmCountyFreight';
 import { farmWeatherForecast } from '../../core/farmWeather';
+import { roadsideStandView } from '../../core/farmRoadsideStand';
 import { h } from '../dom';
 import { openPanel } from '../modal';
 
@@ -14,6 +15,7 @@ export interface FarmOfficeActions {
   onCargo: () => void;
   onTownRoad: () => void;
   onWorkforce: () => void;
+  onRoadsideStand: () => void;
 }
 
 export function openFarmOffice(state: GameState, actions: FarmOfficeActions): void {
@@ -28,6 +30,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
   const ownedSections = state.plots.length;
   const freight = countyFreightBoardState(state);
   const forecast = farmWeatherForecast(state, 3);
+  const stand = roadsideStandView(state);
   const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offer ? 'Offer posted' : 'Route complete today';
   openPanel({ title: farm.parcels.northOwned ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
@@ -74,6 +77,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('div', {}, h('span', {}, 'Home'), h('strong', {}, farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),
         h('div', {}, h('span', {}, 'Freight'), h('strong', {}, freightStatus)),
         h('div', {}, h('span', {}, 'Workforce'), h('strong', {}, farm.workforce.farmhandHired ? 'Mara Bell · hired' : farm.parcels.northOwned && farm.townContact.status === 'completed' ? 'Hiring unlocked' : 'Not hired')),
+        h('div', {}, h('span', {}, 'Farm Stand'), h('strong', {}, stand.owned ? stand.completedToday ? 'Sold out today' : 'Local order posted' : stand.unlocked ? 'Permit unlocked' : 'Not built')),
       ),
     ),
     h('div', { class: 'farmbook-actions' },
@@ -81,6 +85,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
       h('button', { class: 'btn', onclick: actions.onLand }, 'Land Records'),
       h('button', { class: 'btn', onclick: actions.onTownRoad }, 'County Road'),
       h('button', { class: 'btn', 'data-testid': 'farmbook-workforce', onclick: actions.onWorkforce }, 'Workforce'),
+      h('button', { class: 'btn', 'data-testid': 'farmbook-roadside-stand', onclick: actions.onRoadsideStand }, 'Farm Stand'),
       h('button', { class: 'btn', onclick: actions.onSave }, 'Save Farm'),
       h('button', { class: 'btn', onclick: actions.onRecenter }, 'Recenter'),
     ),

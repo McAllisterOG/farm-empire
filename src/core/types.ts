@@ -453,6 +453,11 @@ export interface FarmWorkforceState {
   lastShiftPaidDay: number;
 }
 
+export interface FarmRoadsideStandState {
+  owned: boolean;
+  lastCompletedDay: number;
+}
+
 export interface FarmPickupCargo {
   crops: Record<string, number>;
   seeds: Record<string, number>;
@@ -484,6 +489,7 @@ export interface FarmBusinessState {
   townContact: FarmTownContactState;
   countyFreight: FarmCountyFreightState;
   workforce: FarmWorkforceState;
+  roadsideStand: FarmRoadsideStandState;
   clock: FarmClockState;
   market: {
     quotes: Record<string, FarmMarketQuote>;

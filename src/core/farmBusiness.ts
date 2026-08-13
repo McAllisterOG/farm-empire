@@ -112,6 +112,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     townContact: { status: 'unmet' },
     countyFreight: { active: null, lastCompletedDay: 0 },
     workforce: { farmhandHired: false, lastShiftPaidDay: 0 },
+    roadsideStand: { owned: false, lastCompletedDay: 0 },
     clock: { day: 1, minute: 8 * 60, lastRealAt: now },
     market: { quotes, activeEvents: [], lastUpdatedDay: 1 },
     parcels: { starterOwned: true, northOwned: false },
@@ -187,6 +188,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const townStatus = objectRecord(raw.townContact).status;
   const rawCountyFreight = objectRecord(raw.countyFreight);
   const rawWorkforce = objectRecord(raw.workforce);
+  const rawRoadsideStand = objectRecord(raw.roadsideStand);
   const rawSeeds = objectRecord(raw.seeds);
   const rawStorage = objectRecord(raw.storage);
   const rawFieldConditions = objectRecord(raw.fieldConditions);
@@ -223,6 +225,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const loftOwned = rawLoftOwned === true && northOwned;
   const clockDay = clampInt(rawClock.day, 1, 1);
   const farmhandHired = rawWorkforce.farmhandHired === true && townStatus === 'completed' && northOwned;
+  const roadsideStandOwned = rawRoadsideStand.owned === true && townStatus === 'completed';
   const rawActiveFreight = objectRecord(rawCountyFreight.active);
   const freightCropId = String(rawActiveFreight.cropId ?? '');
   const freightIssuedDay = clampInt(rawActiveFreight.issuedDay, 0);
@@ -270,6 +273,14 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
         && Number(rawWorkforce.lastShiftPaidDay) >= 1
         && Number(rawWorkforce.lastShiftPaidDay) <= clockDay
         ? Number(rawWorkforce.lastShiftPaidDay)
+        : 0,
+    },
+    roadsideStand: {
+      owned: roadsideStandOwned,
+      lastCompletedDay: roadsideStandOwned && Number.isInteger(rawRoadsideStand.lastCompletedDay)
+        && Number(rawRoadsideStand.lastCompletedDay) >= 1
+        && Number(rawRoadsideStand.lastCompletedDay) <= clockDay
+        ? Number(rawRoadsideStand.lastCompletedDay)
         : 0,
     },
     clock: {

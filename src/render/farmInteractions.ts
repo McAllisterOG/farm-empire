@@ -10,7 +10,7 @@ import {
 
 export type FarmInteractionKind =
   | 'pickup' | 'tractor' | 'farmhand' | 'scout' | 'farmhouse' | 'barn' | 'pump'
-  | 'doghouse' | 'town-gate' | 'locked-acreage' | 'field';
+  | 'doghouse' | 'roadside-stand' | 'town-gate' | 'locked-acreage' | 'field';
 
 export interface FarmInteractionTarget {
   kind: FarmInteractionKind;
@@ -61,6 +61,9 @@ export function farmInteractionAtWorldPoint(
     return { kind: 'barn', label: 'Barn & Cargo', point: { x: barn.x + .5, y: barn.y + .5 } };
   }
   if (near(logical, landmarks.doghouse, .95)) return { kind: 'doghouse', label: "Scout's Doghouse", point: { ...landmarks.doghouse } };
+  if (farm.roadsideStand.owned && near(logical, landmarks.roadsideStand, 1.05)) {
+    return { kind: 'roadside-stand', label: 'McAllister Farm Stand', point: { ...landmarks.roadsideStand } };
+  }
   if (near(logical, FARM_TOWN_GATE, .95)) return { kind: 'town-gate', label: 'County Road', point: { ...FARM_TOWN_GATE } };
 
   if (!farm.parcels.northOwned) {

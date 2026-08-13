@@ -130,6 +130,13 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (farm) delete farm.workforce;
     raw.version = 14;
   },
+  14: (raw) => {
+    // The roadside stand is a new v15 investment. Migration must never grant
+    // ownership or a completed local order from an unknown stray field.
+    const farm = raw.farm && typeof raw.farm === 'object' ? raw.farm as Record<string, unknown> : null;
+    if (farm) delete farm.roadsideStand;
+    raw.version = 15;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {
