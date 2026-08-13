@@ -141,7 +141,7 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', { 'data-testid': 'market-cash' }, `Cash: ${formatMoney(farm.cashCents)}`),
     h('strong', { 'data-testid': 'market-capacity' }, `Barn: ${used} / ${farm.storageCapacity} · Pickup: ${pickupUsed} / ${pickupCargoCapacity(state)}`),
-    h('span', {}, context === 'town' ? (actions.pickupPresent ? 'Town services use pickup cargo only.' : 'On foot: bring the pickup to buy, sell, or deliver.') : `${storageRemaining(state)} barn capacity remaining. Load or unload cargo here; ordinary sales happen in town.`),
+    h('span', {}, context === 'town' ? (actions.pickupPresent ? 'Sell pickup produce or deliver a County order.' : 'On foot: bring the pickup to sell or deliver.') : `${storageRemaining(state)} barn capacity remaining. Move produce between Barn and Pickup here; sales happen at the Grain Exchange.`),
     ...(context === 'farm' && !actions.cargoAtPad ? [h('strong', { class: 'panel-note', 'data-testid': 'cargo-pad-guidance' }, 'Park the pickup at the barn cargo pad to load or unload.')] : []),
   ));
 
@@ -234,6 +234,11 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     const quote = farm.market.quotes[def.id];
     const movement = marketMovement(quote.currentCents, quote.previousCents);
     const stored = context === 'town' ? pickupCropUnits(state, def.id) : farm.storage[def.id] ?? 0;
+    const pickupStored = pickupCropUnits(state, def.id);
+    const canSell = actions.pickupPresent && stored > 0;
+    const sellUnavailable = actions.pickupPresent ? 'No pickup cargo to sell.' : 'Bring the pickup to town.';
+    const canLoad = actions.cargoAtPad && stored > 0;
+    const canUnload = actions.cargoAtPad && pickupStored > 0;
     const input = h('input', {
       class: 'market-qty', type: 'number', min: '1', max: String(Math.max(1, stored)), value: String(Math.max(1, Math.min(5, stored))),
       'aria-label': `${def.name} ${context === 'town' ? 'sale' : 'cargo transfer'} quantity`, 'data-testid': `sell-amount-${def.id}`,
@@ -252,13 +257,13 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
       h('div', { class: 'market-sell-controls' },
         input,
         ...(context === 'town' ? [
-          h('button', { class: 'btn btn-sm', ...(!actions.pickupPresent ? { disabled: 'true' } : {}), title: actions.pickupPresent ? 'Sell pickup cargo.' : 'Bring the pickup to town.', 'data-testid': `sell-one-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, 1), actions, rerender) }, 'Sell 1'),
-          h('button', { class: 'btn btn-primary btn-sm', ...(!actions.pickupPresent ? { disabled: 'true' } : {}), title: actions.pickupPresent ? 'Sell pickup cargo.' : 'Bring the pickup to town.', 'data-testid': `sell-chosen-${def.id}`, onclick: sellChosen }, 'Sell amount'),
-          h('button', { class: 'btn btn-sm', ...(!actions.pickupPresent ? { disabled: 'true' } : {}), title: actions.pickupPresent ? 'Sell pickup cargo.' : 'Bring the pickup to town.', 'data-testid': `sell-all-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, stored), actions, rerender) }, 'Sell all'),
+          h('button', { class: 'btn btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell 1 from pickup cargo.' : sellUnavailable, 'data-testid': `sell-one-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, 1), actions, rerender) }, 'Sell 1'),
+          h('button', { class: 'btn btn-primary btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell the entered pickup quantity.' : sellUnavailable, 'data-testid': `sell-chosen-${def.id}`, onclick: sellChosen }, 'Sell amount'),
+          h('button', { class: 'btn btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell all pickup cargo for this crop.' : sellUnavailable, 'data-testid': `sell-all-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, stored), actions, rerender) }, 'Sell all'),
         ] : [
-          ...(actions.loadCrop ? [h('button', { class: 'btn btn-primary btn-sm', ...(!actions.cargoAtPad ? { disabled: 'true', title: 'Park at the barn cargo pad.' } : {}), onclick: () => runAndRender(actions.loadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Load crop')] : []),
-          ...(actions.unloadCrop ? [h('button', { class: 'btn btn-sm', ...(!actions.cargoAtPad ? { disabled: 'true', title: 'Park at the barn cargo pad.' } : {}), onclick: () => runAndRender(actions.unloadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Unload crop')] : []),
-          h('span', { class: 'panel-note' }, `Pickup: ${pickupCropUnits(state, def.id)}`),
+          ...(actions.loadCrop ? [h('button', { class: 'btn btn-primary btn-sm', ...(!canLoad ? { disabled: 'true' } : {}), title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : stored <= 0 ? 'No barn crop to load.' : 'Move the entered quantity from Barn to Pickup.', onclick: () => runAndRender(actions.loadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Barn → Pickup')] : []),
+          ...(actions.unloadCrop ? [h('button', { class: 'btn btn-sm', ...(!canUnload ? { disabled: 'true' } : {}), title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : pickupStored <= 0 ? 'No pickup crop to unload.' : 'Move the entered quantity from Pickup to Barn.', onclick: () => runAndRender(actions.unloadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Pickup → Barn')] : []),
+          h('span', { class: 'panel-note' }, `Pickup: ${pickupStored}`),
         ]),
       ),
     ));

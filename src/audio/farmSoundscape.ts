@@ -135,9 +135,13 @@ export class FarmSoundscape {
     this.applyMix();
     const ac = this.ac;
     const effects = this.settings.muted ? 0 : this.settings.effects;
-    const engineLevel = !vehicle ? 0 : (vehicleMoving ? .052 : .018) * effects;
+    const engineLevel = !vehicle ? 0 : (
+      vehicle === 'pickup'
+        ? (vehicleMoving ? .022 : .006)
+        : (vehicleMoving ? .03 : .009)
+    ) * effects;
     this.engineGain?.gain.setTargetAtTime(engineLevel, ac.currentTime, .08);
-    this.engineOsc?.frequency.setTargetAtTime(vehicle === 'pickup' ? (vehicleMoving ? 82 : 59) : (vehicleMoving ? 66 : 47), ac.currentTime, .09);
+    this.engineOsc?.frequency.setTargetAtTime(vehicle === 'pickup' ? (vehicleMoving ? 72 : 52) : (vehicleMoving ? 60 : 43), ac.currentTime, .09);
 
   }
 
@@ -193,8 +197,8 @@ export class FarmSoundscape {
   }
 
   private createEngine(ac: AudioContext): void {
-    const osc = ac.createOscillator(); osc.type = 'sawtooth'; osc.frequency.value = 48;
-    const filter = ac.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 260;
+    const osc = ac.createOscillator(); osc.type = 'triangle'; osc.frequency.value = 48;
+    const filter = ac.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 220;
     const gain = ac.createGain(); gain.gain.value = 0;
     osc.connect(filter).connect(gain).connect(ac.destination); osc.start();
     this.engineOsc = osc; this.engineGain = gain;

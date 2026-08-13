@@ -1,5 +1,5 @@
 import type { ActionResult, GameState } from '../core/types';
-import { farmCropDef } from '../core/registry';
+import { allFarmCrops, farmCropDef } from '../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyGrainSilo, purchaseCountyRowCropFieldKit, purchaseCountyUtilityTrailer, purchaseNeighborParcel, selectFarmCrop,
@@ -18,7 +18,7 @@ import { recordFarmStat } from '../core/farmKnowledge';
 import { FarmSoundscape, type FarmAudioSettings } from '../audio/farmSoundscape';
 import {
   MANUAL_FIELD_ACTION_LABELS, createManualFieldAction, manualFieldActionComplete, manualFieldActionProgress,
-  manualFieldSelectionPlotUids,
+  manualFieldRectanglePlotUids, manualFieldSelectionPlotUids,
   type ManualFieldAction, type ManualFieldActionKind, type ManualFieldSelectionScope,
 } from '../core/farmManualAction';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
@@ -84,7 +84,7 @@ interface RunningManualFieldAction extends ManualFieldAction {
 
 interface ManualFieldJob {
   kind: ManualFieldActionKind;
-  scope: Exclude<ManualFieldSelectionScope, 'section'>;
+  scope: Exclude<ManualFieldSelectionScope, 'section'> | 'selection';
   cropId?: string;
   targetPlotUids: number[];
   nextIndex: number;
@@ -142,6 +142,7 @@ export class FarmEmpireApp {
   private tractorJob: TractorJob | null = null;
   private manualFieldAction: RunningManualFieldAction | null = null;
   private manualFieldJob: ManualFieldJob | null = null;
+  private fieldDragSelection: number[] = [];
   private farmhandActor: SceneActor;
   private farmhandFacing: FarmFacing = 'south';
   private farmhandTarget: { x: number; y: number; plotUid?: number } | null = null;
@@ -380,6 +381,12 @@ export class FarmEmpireApp {
     });
   }
 
+  private farmPlotAtScreen(sx: number, sy: number): GameState['plots'][number] | undefined {
+    const world = this.renderer.camera.tilePointAt(sx, sy);
+    if (!pointInFarmBounds(world)) return undefined;
+    return farmPlotAtWorldPoint(this.state.plots, world);
+  }
+
   private townInteractionHintAtScreen(sx: number, sy: number): { label: string; x: number; y: number } | null {
     const pickupAnchor = this.townScreenAnchor(TOWN_PICKUP_PARKING);
     const point = this.renderer.camera.tilePointAt(sx, sy);
@@ -416,18 +423,48 @@ export class FarmEmpireApp {
     let downY = 0;
     let dragging = false;
     let panning = false;
+    let selectionAnchorUid: number | null = null;
+    let fieldSelecting = false;
     const onPointerDown = (event: PointerEvent): void => {
       this.farmAudio.ensureStarted();
       downX = event.clientX;
       downY = event.clientY;
       dragging = true;
       panning = false;
+      fieldSelecting = false;
+      selectionAnchorUid = null;
+      if (
+        event.button === 0
+        && this.mode === 'farm'
+        && !this.operatingTractor
+        && !this.operatingPickup
+        && !this.manualFieldAction
+        && !this.manualFieldJob
+        && !isActionMenuOpen()
+        && !isPanelOpen()
+      ) {
+        const interaction = this.farmInteractionAtScreen(event.clientX, event.clientY);
+        if (interaction?.kind === 'field' && interaction.plotUid !== undefined) {
+          const parcelId = ownedFarmParcelAt(this.state, interaction.point.x, interaction.point.y);
+          if (!parcelId || this.farmhandJob?.parcelId !== parcelId) {
+            selectionAnchorUid = interaction.plotUid;
+            this.fieldDragSelection = [interaction.plotUid];
+          }
+        }
+      }
     };
     const onPointerMove = (event: PointerEvent): void => {
       if (dragging) {
         const dx = event.clientX - downX;
         const dy = event.clientY - downY;
-        if (panning || Math.hypot(dx, dy) > 6) {
+        if (selectionAnchorUid !== null && (fieldSelecting || Math.hypot(dx, dy) > 6)) {
+          fieldSelecting = true;
+          const end = this.farmPlotAtScreen(event.clientX, event.clientY);
+          if (end) {
+            const selected = manualFieldRectanglePlotUids(this.state, selectionAnchorUid, end.uid);
+            if (selected.length > 0) this.fieldDragSelection = selected;
+          }
+        } else if (panning || (selectionAnchorUid === null && Math.hypot(dx, dy) > 6)) {
           panning = true;
           this.renderer.camera.pan(event.movementX, event.movementY);
           if (this.mode === 'town') this.renderer.clampTownCamera(); else this.renderer.clampFarmCamera();
@@ -438,6 +475,16 @@ export class FarmEmpireApp {
     };
     const onPointerUp = (event: PointerEvent): void => {
       dragging = false;
+      if (selectionAnchorUid !== null) {
+        const wasSelecting = fieldSelecting;
+        selectionAnchorUid = null;
+        fieldSelecting = false;
+        if (wasSelecting) {
+          this.showManualDragMenu(event.clientX, event.clientY, this.fieldDragSelection);
+          return;
+        }
+        this.fieldDragSelection = [];
+      }
       if (panning) {
         panning = false;
         return;
@@ -445,7 +492,10 @@ export class FarmEmpireApp {
       this.onClick(event.clientX, event.clientY);
     };
     const onPointerLeave = (): void => {
+      if (dragging && selectionAnchorUid !== null) this.fieldDragSelection = [];
       dragging = false;
+      selectionAnchorUid = null;
+      fieldSelecting = false;
       this.hover = null;
       this.townHover = null;
     };
@@ -455,11 +505,45 @@ export class FarmEmpireApp {
       if (this.mode === 'town') this.renderer.clampTownCamera(); else this.renderer.clampFarmCamera();
     };
     const onKeyDown = (event: KeyboardEvent): void => {
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const isTyping = !!target && (target.matches('input, textarea, select') || target.isContentEditable);
+      if (isTyping) return;
+      if (this.mode === 'farm' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+        const cropIndex = /^[1-8]$/.test(event.key) ? Number(event.key) - 1 : -1;
+        if (cropIndex >= 0) {
+          event.preventDefault();
+          const crop = allFarmCrops()[cropIndex];
+          if (crop) {
+            hideActionMenu();
+            this.fieldDragSelection = [];
+            this.dispatch(selectFarmCrop(this.state, crop.id));
+          }
+          return;
+        }
+        const key = event.key.toLowerCase();
+        const panStep = 52;
+        const pan = key === 'arrowleft' || key === 'a' ? { x: panStep, y: 0 }
+          : key === 'arrowright' || key === 'd' ? { x: -panStep, y: 0 }
+            : key === 'arrowup' || key === 'w' ? { x: 0, y: panStep }
+              : key === 'arrowdown' || key === 's' ? { x: 0, y: -panStep }
+                : null;
+        if (pan && !isActionMenuOpen() && !isPanelOpen()) {
+          event.preventDefault();
+          this.renderer.camera.pan(pan.x, pan.y);
+          this.renderer.clampFarmCamera();
+          return;
+        }
+      }
       if (event.key !== 'Escape') return;
       if (this.mode === 'town') {
         if (isActionMenuOpen()) hideActionMenu();
         else if (isPanelOpen()) closePanel();
         this.cancelTownWalk();
+        return;
+      }
+      if (this.fieldDragSelection.length > 0) {
+        this.fieldDragSelection = [];
+        if (isActionMenuOpen()) hideActionMenu();
         return;
       }
       if (this.manualFieldJob) this.cancelManualFieldJob();
@@ -501,6 +585,7 @@ export class FarmEmpireApp {
   private onClick(sx: number, sy: number): void {
     if (isActionMenuOpen()) {
       hideActionMenu();
+      this.fieldDragSelection = [];
       return;
     }
     if (this.mode === 'town') {
@@ -855,7 +940,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks tractor restoration and a daily choice of three paid Freight Board routes at Eli\'s Grain Exchange. Finish your first freight haul to unlock the 144-unit County Utility Trailer at Farm Services.'), h('p', {}, 'After the County introduction and neighboring acreage purchase, hire Mara at the Farm Services Workforce Desk. Her daily shift can complete whole-acreage assignments while you handle the rest of the business. Save and Recenter are always available.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Harvest enters the barn. Park the pickup at the marked barn cargo pad and use Barn → Pickup before driving to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Drag open ground or use WASD/arrow keys to pan after zooming; the mouse wheel zooms. Completing the Pantry delivery unlocks tractor restoration and three daily Freight Board bids. Later, Mara can complete whole-acreage assignments while you run the business.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1326,8 +1411,20 @@ export class FarmEmpireApp {
     scope: ManualFieldSelectionScope,
     cropId?: string,
   ): number[] {
+    return this.manualTargetsFromPlotUids(
+      kind,
+      manualFieldSelectionPlotUids(this.state, anchorPlotUid, scope),
+      cropId,
+    );
+  }
+
+  private manualEligibleTargetsFromPlotUids(
+    kind: ManualFieldActionKind,
+    plotUids: readonly number[],
+    cropId?: string,
+  ): number[] {
     const now = this.gameNow();
-    const targets = manualFieldSelectionPlotUids(this.state, anchorPlotUid, scope).filter((plotUid) => {
+    return plotUids.filter((plotUid) => {
       const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
       if (!plot) return false;
       const condition = farmFieldCondition(this.state, plotUid);
@@ -1338,8 +1435,48 @@ export class FarmEmpireApp {
       if (kind === 'harvest') return farmCropStage(plot.crop, now) === 'ready';
       return !!plot.crop && isFarmCropWithered(plot.crop, now);
     });
+  }
+
+  private manualTargetsFromPlotUids(
+    kind: ManualFieldActionKind,
+    plotUids: readonly number[],
+    cropId?: string,
+  ): number[] {
+    const targets = this.manualEligibleTargetsFromPlotUids(kind, plotUids, cropId);
     if (kind !== 'plant' || !cropId) return targets;
     return targets.slice(0, Math.max(0, farmOf(this.state).seeds[cropId] ?? 0));
+  }
+
+  private showManualDragMenu(sx: number, sy: number, selectedPlotUids: readonly number[]): void {
+    if (selectedPlotUids.length === 0) return;
+    const cropId = farmOf(this.state).selectedCropId;
+    const crop = farmCropDef(cropId);
+    const actions: { label: string; disabled?: boolean; icon?: string; onClick: () => void }[] = [];
+    const specs: { kind: ManualFieldActionKind; label: string; icon?: string }[] = [
+      { kind: 'prepare', label: 'Prepare soil' },
+      { kind: 'rework', label: 'Rework stubble' },
+      { kind: 'plant', label: `Plant ${crop.name}`, icon: `icon:seed_${cropId.replace('crop_', '')}` },
+      { kind: 'water', label: 'Water seedlings' },
+      { kind: 'harvest', label: 'Harvest crops' },
+      { kind: 'clear', label: 'Clear withered crops' },
+    ];
+    for (const spec of specs) {
+      const eligible = this.manualEligibleTargetsFromPlotUids(spec.kind, selectedPlotUids, cropId);
+      if (eligible.length === 0) continue;
+      const targets = this.manualTargetsFromPlotUids(spec.kind, selectedPlotUids, cropId);
+      const seedLimited = spec.kind === 'plant' && targets.length < eligible.length;
+      actions.push({
+        label: `${spec.label} · ${targets.length}${seedLimited ? ` of ${eligible.length} · ${farmOf(this.state).seeds[cropId] ?? 0} seeds` : ' eligible'}`,
+        icon: spec.icon,
+        disabled: targets.length === 0,
+        onClick: () => {
+          this.fieldDragSelection = [];
+          this.startManualTargetList(spec.kind, targets, 'selection', spec.kind === 'plant' ? cropId : undefined);
+        },
+      });
+    }
+    if (actions.length === 0) actions.push({ label: 'No eligible work in this selection', disabled: true, onClick: () => {} });
+    showActionMenu(sx, sy, `${selectedPlotUids.length} field section${selectedPlotUids.length === 1 ? '' : 's'} selected`, actions);
   }
 
   private startManualSelection(
@@ -1354,7 +1491,17 @@ export class FarmEmpireApp {
       toast('No eligible field sections remain in that selection.', 'bad');
       return;
     }
-    if (scope === 'section') {
+    this.startManualTargetList(kind, targets, scope, cropId);
+  }
+
+  private startManualTargetList(
+    kind: ManualFieldActionKind,
+    targets: readonly number[],
+    scope: ManualFieldSelectionScope | 'selection',
+    cropId?: string,
+  ): void {
+    if (targets.length === 0) return;
+    if (targets.length === 1 || scope === 'section') {
       this.startManualFieldAction(kind, targets[0], () => this.applyManualFieldAction(kind, targets[0], cropId));
       return;
     }
@@ -1362,12 +1509,13 @@ export class FarmEmpireApp {
       kind,
       scope,
       cropId,
-      targetPlotUids: targets,
+      targetPlotUids: [...targets],
       nextIndex: 0,
       completed: 0,
       skipped: 0,
     };
-    toast(`${scope === 'row' ? 'Row' : 'Three-row block'} selected · ${targets.length} eligible section${targets.length === 1 ? '' : 's'} · Escape stops unfinished work.`, 'good');
+    const label = scope === 'row' ? 'Row' : scope === 'three-rows' ? 'Three-row block' : 'Custom area';
+    toast(`${label} selected · ${targets.length} eligible section${targets.length === 1 ? '' : 's'} · Escape stops unfinished work.`, 'good');
     this.beginManualFieldJobStep();
     this.hud.update(this.state, this.tractorHudRuntime());
   }
@@ -1535,7 +1683,7 @@ export class FarmEmpireApp {
   private finishManualFieldJob(): void {
     const job = this.manualFieldJob;
     if (!job) return;
-    const label = job.scope === 'row' ? 'Row' : 'Three-row block';
+    const label = job.scope === 'row' ? 'Row' : job.scope === 'three-rows' ? 'Three-row block' : 'Custom area';
     const summary = `${label} complete: ${job.completed} completed${job.skipped ? `, ${job.skipped} skipped` : ''}.`;
     const detail = job.skipped && job.lastFailure ? ` ${job.lastFailure}` : '';
     this.manualFieldJob = null;
@@ -1551,7 +1699,7 @@ export class FarmEmpireApp {
     const job = this.manualFieldJob;
     if (!job) return;
     const untouched = Math.max(0, job.targetPlotUids.length - job.completed - job.skipped);
-    const label = job.scope === 'row' ? 'Row work' : 'Three-row work';
+    const label = job.scope === 'row' ? 'Row work' : job.scope === 'three-rows' ? 'Three-row work' : 'Custom-area work';
     this.manualFieldJob = null;
     this.manualFieldAction = null;
     this.walkTarget = null;
@@ -1626,6 +1774,8 @@ export class FarmEmpireApp {
         ? { x: this.townActor.x, y: this.townActor.y, walking: this.townActor.walking }
         : { x: this.playerActor.x, y: this.playerActor.y, walking: this.playerActor.walking },
       selectedCrop: farm.selectedCropId,
+      selectedSeedCount: farm.seeds[farm.selectedCropId] ?? 0,
+      fieldSelection: [...this.fieldDragSelection],
       cashCents: farm.cashCents,
       barn: { used: storageUsed(this.state), capacity: farm.storageCapacity },
       pickup: { x: farm.pickup.x, y: farm.pickup.y, operating: this.operatingPickup, atTown: this.pickupAtTown, cargoUsed: pickupCargoUsed(this.state), cargoCapacity: pickupCargoCapacity(this.state), trailerOwned: farm.equipment.countyUtilityTrailerOwned },
@@ -1924,8 +2074,10 @@ export class FarmEmpireApp {
         y: this.manualFieldAction.y,
         progress: manualFieldActionProgress(this.manualFieldAction, this.gameNow()),
       } : undefined,
-      manualSelection: this.manualFieldJob
-        ? this.manualFieldJob.targetPlotUids.slice(this.manualFieldJob.nextIndex).flatMap((plotUid) => {
+      manualSelection: this.fieldDragSelection.length > 0 || this.manualFieldJob
+        ? (this.fieldDragSelection.length > 0
+          ? this.fieldDragSelection
+          : this.manualFieldJob!.targetPlotUids.slice(this.manualFieldJob!.nextIndex)).flatMap((plotUid) => {
           const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
           return plot ? [{ x: plot.x, y: plot.y }] : [];
         })

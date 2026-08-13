@@ -4,6 +4,7 @@ import {
   createManualFieldAction,
   manualFieldActionComplete,
   manualFieldActionProgress,
+  manualFieldRectanglePlotUids,
   manualFieldSelectionPlotUids,
 } from '../src/core/farmManualAction';
 import { createFarmGame } from '../src/core/state';
@@ -71,5 +72,32 @@ describe('manual field action timing', () => {
     expect(manualFieldSelectionPlotUids(state, 999_999, 'row')).toEqual([]);
     state.plots.push({ uid: 999_999, x: 50, y: 50, crop: null });
     expect(manualFieldSelectionPlotUids(state, 999_999, 'three-rows')).toEqual([]);
+  });
+
+  it('selects an arbitrary drag rectangle in a deterministic serpentine route', () => {
+    const state = createFarmGame('Drag Test', 123, 1_000);
+    const anchor = state.plots.find((plot) => plot.x === 3 && plot.y === 8)!;
+    const end = state.plots.find((plot) => plot.x === 6 && plot.y === 10)!;
+    const coordinates = manualFieldRectanglePlotUids(state, anchor.uid, end.uid)
+      .map((uid) => state.plots.find((plot) => plot.uid === uid)!)
+      .map((plot) => `${plot.x},${plot.y}`);
+    expect(coordinates).toEqual([
+      '3,8', '4,8', '5,8', '6,8',
+      '6,9', '5,9', '4,9', '3,9',
+      '3,10', '4,10', '5,10', '6,10',
+    ]);
+    expect(manualFieldRectanglePlotUids(state, end.uid, anchor.uid)).toEqual(
+      manualFieldRectanglePlotUids(state, anchor.uid, end.uid),
+    );
+  });
+
+  it('keeps drag selection inside one acreage and fails safely for bad endpoints', () => {
+    const state = createFarmGame('Drag Test', 123, 1_000);
+    farmOf(state).cashCents = 10_000_000;
+    expect(purchaseNeighborParcel(state).ok).toBe(true);
+    const starter = state.plots.find((plot) => plot.x === 7 && plot.y === 12)!;
+    const north = state.plots.find((plot) => plot.x === 10 && plot.y === 12)!;
+    expect(manualFieldRectanglePlotUids(state, starter.uid, north.uid)).toEqual([]);
+    expect(manualFieldRectanglePlotUids(state, starter.uid, 999_999)).toEqual([]);
   });
 });

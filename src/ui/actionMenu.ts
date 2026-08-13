@@ -24,6 +24,7 @@ export function showActionMenu(sx: number, sy: number, title: string, actions: M
   for (const a of actions) {
     const btn = h('button', {
       class: `action-btn ${a.disabled ? 'disabled' : ''}`,
+      ...(a.disabled ? { disabled: 'true' } : {}),
       onclick: () => {
         if (a.disabled) return;
         hideActionMenu();

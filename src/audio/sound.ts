@@ -72,7 +72,7 @@ function tone(
 }
 
 /** 白噪声（水花/命中用） */
-function noise(dur: number, vol = 0.1, delay = 0, lowpass = 2200): void {
+function noise(dur: number, vol = 0.1, delay = 0, lowpass = 2200, attack = 0): void {
   const ac = ctx();
   if (!ac) return;
   const t0 = ac.currentTime + delay;
@@ -86,7 +86,10 @@ function noise(dur: number, vol = 0.1, delay = 0, lowpass = 2200): void {
   filter.type = 'lowpass';
   filter.frequency.value = lowpass;
   const gain = ac.createGain();
-  gain.gain.setValueAtTime(vol, t0);
+  if (attack > 0) {
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(vol, t0 + Math.min(attack, dur * .45));
+  } else gain.gain.setValueAtTime(vol, t0);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
   src.connect(filter).connect(gain).connect(sfxOutput(ac));
   src.start(t0);
@@ -97,7 +100,7 @@ export function sfx(name: SfxName): void {
   switch (name) {
     case 'click': tone(660, 0.06, 'triangle', 0.08); break;
     case 'plant': tone(320, 0.1, 'sine', 0.14, 0, -60); noise(0.08, 0.04, 0, 900); break;
-    case 'water': noise(0.25, 0.09, 0, 1600); tone(520, 0.12, 'sine', 0.05, 0.02, 140); break;
+    case 'water': noise(0.46, 0.04, 0, 720, 0.08); noise(0.24, 0.018, 0.14, 1350, 0.05); break;
     case 'harvest': tone(523, 0.09, 'triangle', 0.14); tone(659, 0.1, 'triangle', 0.14, 0.07); break;
     case 'coin': tone(880, 0.07, 'square', 0.07); tone(1318, 0.12, 'square', 0.07, 0.06); break;
     case 'levelup':

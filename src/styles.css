@@ -528,7 +528,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .town-location-stat { min-width: 180px; }
 .farm-hud-root.town-mode .farm-help { background: rgba(66, 84, 64, .94); }
 .farm-hud-root.town-mode .farm-stat:disabled { cursor: default; opacity: 1; }
-.farm-selected { min-width: 110px; display: flex; flex-direction: column; }
+.farm-selected { min-width: 170px; display: flex; flex-direction: column; }
 .farm-selected span { font-size: 10px; color: #8c7a55; text-transform: uppercase; font-weight: 800; }
 .farm-selected strong { color: #2f6038; }
 .farm-crop-strip { display: flex; gap: 4px; }
@@ -572,6 +572,10 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 8px 10px; margin: 8px 0; border-radius: 10px;
   background: rgba(72, 104, 55, .1); border: 1px solid rgba(72, 104, 55, .2);
+}
+.farm-crop-button::before {
+  content: attr(data-key); position: absolute; left: 2px; bottom: 1px; min-width: 12px;
+  border-radius: 5px; background: rgba(69, 91, 55, .84); color: #fff; font-size: 8px; line-height: 12px;
 }
 .farm-cargo-context .market-list .market-price,
 .farm-cargo-context .market-list .farm-card-sub { display: none; }
@@ -685,7 +689,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .farm-stat { min-width: 94px; padding: 6px 8px; }
   .farm-stat > strong { font-size: 12px; }
   .farm-hud-bottom { bottom: 8px; padding: 7px; gap: 6px; }
-  .farm-selected { min-width: 82px; }
+  .farm-selected { min-width: 128px; }
   .farm-actions { gap: 4px; }
   .farm-actions .btn { padding: 6px 9px; font-size: 12px; }
   .farm-help { top: 76px; max-width: calc(100vw - 20px); }

@@ -90,10 +90,11 @@ export class FarmHud {
     );
 
     const cropStrip = h('div', { class: 'farm-crop-strip', 'aria-label': 'Crop selection' });
-    for (const def of allFarmCrops()) {
+    for (const [index, def] of allFarmCrops().entries()) {
       const button = h('button', {
         class: 'farm-crop-button',
         'data-crop-id': def.id,
+        'data-key': String(index + 1),
         'data-testid': `select-${def.id}`,
         onclick: () => cb.onSelectCrop(def.id),
       }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-md'), h('span', {}, def.name)) as HTMLButtonElement;
@@ -149,7 +150,9 @@ export class FarmHud {
     this.weatherStat.classList.toggle('cloudy', weather.kind === 'cloudy');
     this.weatherStat.title = weather.fieldNote;
     this.storageEl.textContent = `${storageUsed(state)} / ${farm.storageCapacity} · P ${pickupCargoUsed(state)} / ${pickupCargoCapacity(state)}`;
-    this.selectedEl.textContent = farmCropDef(farm.selectedCropId).name;
+    const selectedIndex = allFarmCrops().findIndex((def) => def.id === farm.selectedCropId);
+    const selectedSeeds = farm.seeds[farm.selectedCropId] ?? 0;
+    this.selectedEl.textContent = `${selectedIndex + 1} · ${farmCropDef(farm.selectedCropId).name} · ${selectedSeeds} seed${selectedSeeds === 1 ? '' : 's'}`;
     const knowledge = farmerKnowledgeSummary(state);
     const guide = farmGuideSteps(state);
     const nextGuide = nextFarmGuideStep(state);

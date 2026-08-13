@@ -89,3 +89,35 @@ export function manualFieldSelectionPlotUids(
   }
   return result;
 }
+
+/**
+ * Deterministic rectangular drag selection within one owned acreage. The
+ * returned route is serpentine so the existing manual job runner can walk it
+ * without jumping back to the same edge after every row.
+ */
+export function manualFieldRectanglePlotUids(
+  state: GameState,
+  anchorPlotUid: number,
+  endPlotUid: number,
+): number[] {
+  const anchor = state.plots.find((plot) => plot.uid === anchorPlotUid);
+  const end = state.plots.find((plot) => plot.uid === endPlotUid);
+  if (!anchor || !end) return [];
+  const parcelId = farmParcelAtTile(anchor.x, anchor.y);
+  if (!parcelId || farmParcelAtTile(end.x, end.y) !== parcelId) return [];
+  const minX = Math.min(anchor.x, end.x);
+  const maxX = Math.max(anchor.x, end.x);
+  const minY = Math.min(anchor.y, end.y);
+  const maxY = Math.max(anchor.y, end.y);
+  const plotsByCoordinate = new Map(state.plots.map((plot) => [`${plot.x}:${plot.y}`, plot]));
+  const result: number[] = [];
+  for (let y = minY; y <= maxY; y++) {
+    const xs = Array.from({ length: maxX - minX + 1 }, (_, index) => minX + index);
+    if ((y - minY) % 2 === 1) xs.reverse();
+    for (const x of xs) {
+      const plot = plotsByCoordinate.get(`${x}:${y}`);
+      if (plot && farmParcelAtTile(plot.x, plot.y) === parcelId) result.push(plot.uid);
+    }
+  }
+  return result;
+}
