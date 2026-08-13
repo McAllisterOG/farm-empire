@@ -397,3 +397,16 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/grain-silo-v1/verified-win-unpacked/Farm Empire.exe` (225,442,304 bytes) and `resources/app.asar` (1,412,756 bytes), generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets this smoke-tested build.
 - **Known limitations:** The silo is one combined-capacity tier. It does not separate grain from produce, animate loading, add augers or trucks, charge storage costs, automate sales, or solve the pending evidence-based crop/economy calibration.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## County Freight Choice V1 - complete
+
+- **Date:** 2026-08-13
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `e674cb7`
+- **Scope:** Turn the proven farm's existing single daily Freight Board route into a meaningful, deterministic three-bid choice while preserving one accepted contract, physical pickup delivery, all market/economy values, save v16, and existing hauling progression. No deadlines, penalties, negotiation, reputation, simultaneous jobs, special cargo, or broad rebalance.
+- **Before / after:** Eli previously posted one take-it-or-leave-it crop route each farm day. The Grain Exchange now presents three unique unlocked-crop bids with exact quantities, buyers, current pickup progress, and locked 25%-premium payouts. Accepting any one immediately retires the alternatives and preserves that exact route across day changes and reloads.
+- **Verification:** 255/255 tests passed; strict typecheck, Vite production build, and diff checks passed. Native UI acceptance verified exactly three distinct route cards, current pickup/payout copy, an enabled middle-bid selection, immediate removal of the other bids, the exact Carrot contract becoming active, town save, title reload, and persistence of the complete active snapshot. No save migration was required.
+- **Review:** The architecture-strategist boundary retained deterministic selection and stale-request rejection in core, fixed bid-count policy in data, compact cards in the town UI, and the existing active-contract snapshot as sole save authority. The primary audited deterministic uniqueness, locked-crop exclusion, premium math, explicit selection, day rollover, corrupt state, compatibility callers, save persistence, and native interaction. No high- or medium-severity issue remains.
+- **Artifacts:** `release/freight-choice-v1/verified-win-unpacked/Farm Empire.exe` and its relative-asset `resources/app.asar`, generated and ignored. The Desktop shortcut targets this smoke-tested build.
+- **Known limitations:** The Board still supports one active route at a time. It has no deadline, penalty, negotiation, reputation, contract chain, special cargo, traffic, or hauling scene.
+- **Push:** Not yet pushed; external GitHub authorization is still required.

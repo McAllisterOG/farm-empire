@@ -280,3 +280,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The purchase visibly constructs a detailed metal silo beside the existing barn. It is a storage expansion, not a separate interactive inventory, grain-type restriction, or hidden production bonus.
 - Save v16 persists only literal silo ownership. V15 migration never grants it, stored capacity is never trusted, and ownership without the neighboring acreage plus loft fails closed.
 - Crop prices, yields, starting cash, land prices, hauling capacities, wages, spoilage, storage fees, multiple silos, bulk elevators, automated unloading, managers, and passive income remain separate future packages.
+
+## 2026-08-13 - Let proven farms choose among three County freight bids
+
+**Status:** Approved by the owner
+
+- Once the Freight Board is unlocked, Eli's Grain Exchange posts exactly three deterministic daily bids selected from distinct crops the farm has actually unlocked. This supersedes the earlier single-offer presentation while preserving one accepted County contract at a time.
+- Every bid snapshots its crop, quantity, buyer, issued day, and fixed 25% premium over that day's posted quote. Selecting one route retires the other two immediately; accepted terms remain locked without a deadline when the market or farm day changes.
+- An acceptance request must match one of the current visible bids. Stale, fabricated, duplicate, locked-crop, or post-rollover requests fail closed without mutating cash, cargo, completion history, or the active contract.
+- Existing active-contract save data already contains all authoritative terms, so this package does not add a save field or bump save v16. Missing or malformed contract data continues to normalize closed.
+- Additional simultaneous contracts, negotiation, penalties, reputation, contract chains, special cargo, traffic, and a generic quest system remain deferred.
