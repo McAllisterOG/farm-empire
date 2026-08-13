@@ -1851,6 +1851,7 @@ export class FarmEmpireApp {
     const farm = farmOf(this.state);
     if (this.mode === 'town') {
       scene.town = {
+        seed: this.state.seed,
         actor: {
           avatar: this.state.player.avatar,
           x: this.townActor.x,
@@ -1859,6 +1860,7 @@ export class FarmEmpireApp {
           facing: this.townFacing,
           name: this.state.player.name,
         },
+        clockDay: farm.clock.day,
         clockMinute: farm.clock.minute,
         weather: currentFarmWeather(this.state).kind,
         gesturingNpcId: this.townGesture?.npcId ?? null,
@@ -1910,6 +1912,7 @@ export class FarmEmpireApp {
         owned: farm.roadsideStand.owned,
         completedToday: farm.roadsideStand.lastCompletedDay >= farm.clock.day,
       },
+      clockDay: farm.clock.day,
       clockMinute: farm.clock.minute,
       weather: currentFarmWeather(this.state).kind,
       interactionHint: this.hover ? { kind: this.hover.kind, label: this.hover.label, ...this.hover.point } : undefined,

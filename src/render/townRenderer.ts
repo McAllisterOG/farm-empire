@@ -6,14 +6,17 @@ import { diamondPath, isoX, isoY, TILE_H } from './iso';
 import { farmNightAlpha } from './lighting';
 import { TOWN_BOUNDS, TOWN_EXIT, TOWN_WALK_POLYGON } from './townLayout';
 import {
-  drawTownBuilding, drawTownDecor, drawTownExitSign, drawTownLampGlow, drawTownNpc, drawTownPlayer,
+  drawCountyLifeActor, drawTownBuilding, drawTownDecor, drawTownExitSign, drawTownLampGlow, drawTownNpc, drawTownPlayer,
 } from './townSprites';
+import { townCountyLifeActors } from './countyLife';
 import { drawOldPickup } from './pickupPainter';
 import type { FarmWeatherKind } from '../core/farmWeather';
 import { drawWeatherCast, drawWeatherPrecipitation } from './farmWeatherEffects';
 
 export interface TownRenderScene {
+  seed: number;
   actor: { avatar: AvatarConfig; x: number; y: number; walking: boolean; facing: FarmFacing; name: string };
+  clockDay: number;
   clockMinute: number;
   weather: FarmWeatherKind;
   gesturingNpcId: TownNpcDef['id'] | null;
@@ -101,6 +104,10 @@ export function renderTown(
   for (const npc of TOWN_NPCS) {
     const screen = project(camera, npc, true); const gesturing = scene.gesturingNpcId === npc.id && now < scene.gestureUntil;
     items.push({ depth: npc.x + npc.y + .4, draw: () => drawTownNpc(ctx, screen.x, screen.y, zoom, npc, now, gesturing) });
+  }
+  for (const resident of townCountyLifeActors(scene.seed, scene.clockDay, scene.clockMinute, now)) {
+    const screen = project(camera, resident, true);
+    items.push({ depth: resident.x + resident.y + .38, draw: () => drawCountyLifeActor(ctx, screen.x, screen.y, zoom, resident, now) });
   }
   if (scene.pickup) {
     const pickupScreen = project(camera, scene.pickup, true);

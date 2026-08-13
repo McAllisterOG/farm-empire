@@ -21,6 +21,8 @@ import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
 import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
 import { farmNightAlpha as farmClockNightAlpha, nightAlphaAtHour as clockNightAlpha } from './lighting';
 import { renderTown, type TownRenderScene } from './townRenderer';
+import { roadsideCustomerActors } from './countyLife';
+import { drawCountyLifeActor } from './townSprites';
 import { TOWN_CAMERA } from './townLayout';
 import { tractorToolbarPoseFromRenderState } from '../core/farmTractorMotion';
 import { MANUAL_FIELD_ACTION_LABELS, type ManualFieldActionKind } from '../core/farmManualAction';
@@ -77,6 +79,7 @@ export interface RenderScene {
     farmhouseTier: FarmhousePresentationTier;
     barnLoftOwned: boolean;
     roadsideStand: { owned: boolean; completedToday: boolean };
+    clockDay: number;
     clockMinute: number;
     weather: FarmWeatherKind;
     interactionHint?: { kind: string; label: string; x: number; y: number };
@@ -519,6 +522,23 @@ export class Renderer {
     if (scene.farm!.roadsideStand.owned) {
       const standPoint = farmWorldPoint(farmLandmarks().roadsideStand);
       items.push({ depth: standPoint.x + standPoint.y + .19, draw: () => drawFarmRoadsideStand(ctx, camera.sx(isoX(standPoint.x, standPoint.y)), camera.sy(isoY(standPoint.x, standPoint.y) + TILE_H / 2), zoom, scene.farm!.roadsideStand.completedToday, now) });
+    }
+    for (const customer of roadsideCustomerActors(
+      scene.seed,
+      scene.farm!.clockDay,
+      scene.farm!.clockMinute,
+      now,
+      scene.farm!.roadsideStand.owned && !scene.farm!.roadsideStand.completedToday,
+    )) {
+      const point = farmWorldPoint(customer);
+      items.push({ depth: point.x + point.y + .37, draw: () => drawCountyLifeActor(
+        ctx,
+        camera.sx(isoX(point.x, point.y)),
+        camera.sy(isoY(point.x, point.y) + TILE_H / 2),
+        zoom * 1.08,
+        customer,
+        now,
+      ) });
     }
     const farmhousePoint = farmWorldPoint(farmLandmarks().farmhouse);
     items.push({ depth: farmhousePoint.x + farmhousePoint.y + .19, draw: () => drawFarmhouse(ctx, camera.sx(isoX(farmhousePoint.x, farmhousePoint.y)), camera.sy(isoY(farmhousePoint.x, farmhousePoint.y) + TILE_H / 2), zoom, now, scene.farm!.farmhouseTier) });

@@ -1,5 +1,6 @@
 import type { AvatarConfig } from '../core/types';
 import type { TownBuildingDef, TownDecorDef, TownNpcDef } from '../data/town.data';
+import type { CountyLifeActor } from './countyLife';
 import type { FarmFacing } from './farmSprites';
 
 function ellipse(ctx: CanvasRenderingContext2D, x: number, y: number, rx: number, ry: number, color: string): void {
@@ -136,6 +137,55 @@ export function drawTownPlayer(
   if (facing !== 'north') { const eyeX = facing === 'east' ? 3 : facing === 'west' ? -3 : 0; rect(ctx, eyeX - 2, -39, 2, 2, '#fff'); }
   if (facing === 'south') rect(ctx, 2, -39, 2, 2, '#fff');
   if (facing === 'north') rect(ctx, -8, -43, 16, 10, hair);
+  ctx.restore();
+}
+
+/** Unlabelled ambient residents: visually distinct from the three service NPCs. */
+export function drawCountyLifeActor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  zoom: number,
+  actor: CountyLifeActor,
+  now: number,
+): void {
+  const frame = actor.walking ? Math.floor(now / 115) % 4 : 0;
+  const bob = actor.walking ? (frame === 1 ? -1.5 : frame === 3 ? 1 : 0) : Math.sin(now / 760 + actor.id.length) * .55;
+  const swing = actor.walking ? (frame % 2 ? 3.5 : -3.5) : 0;
+  const palette = actor.kind === 'stand-customer'
+    ? { skin: '#9b6549', hair: '#3b2923', shirt: '#a84f3e', coat: '#365f70', legs: '#65432e', hat: '#d6b56a' }
+    : actor.kind === 'town-shopper'
+      ? { skin: '#d8a175', hair: '#6f4330', shirt: '#d9b86b', coat: '#4e774e', legs: '#514337', hat: '#9b6940' }
+      : { skin: '#8b5943', hair: '#292322', shirt: '#d3b58b', coat: '#8b5744', legs: '#3e4850', hat: '#577184' };
+  const direction = actor.facing === 'west' ? -1 : 1;
+  ctx.save(); ctx.translate(x, y + bob * zoom); ctx.scale(zoom * 1.48, zoom * 1.48);
+  ellipse(ctx, 0, 2, 15, 4.5, 'rgba(38,30,24,.2)');
+  ctx.strokeStyle = palette.legs; ctx.lineWidth = 4.5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-4, -17); ctx.lineTo(-5 - swing, 0); ctx.moveTo(4, -17); ctx.lineTo(5 + swing, 0); ctx.stroke();
+  rect(ctx, -9, -34, 18, 19, palette.coat); rect(ctx, -5, -33, 10, 12, palette.shirt);
+  ctx.strokeStyle = palette.coat; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(-7, -30); ctx.lineTo(-12 - swing * .5, -17); ctx.moveTo(7, -30); ctx.lineTo(12 + swing * .5, -17); ctx.stroke();
+  ellipse(ctx, 0, -43, 9, 9, palette.skin);
+  ctx.fillStyle = palette.hair; ctx.beginPath(); ctx.arc(0, -47, 9, Math.PI, 0); ctx.fill();
+  if (actor.kind === 'stand-customer') {
+    rect(ctx, -11, -53, 22, 4, palette.hat); rect(ctx, -6, -58, 12, 6, palette.hat);
+  } else if (actor.kind === 'town-neighbor') {
+    rect(ctx, -9, -52, 18, 4, palette.hat); rect(ctx, -6, -57, 12, 6, palette.hat);
+  }
+  if (actor.facing !== 'north') {
+    rect(ctx, direction * 2 - 1, -44, 2, 2, '#fff');
+    if (actor.facing === 'south') rect(ctx, -3, -44, 2, 2, '#fff');
+  } else rect(ctx, -7, -48, 14, 8, palette.hair);
+  if (actor.kind === 'stand-customer' || actor.kind === 'town-shopper') {
+    const basketX = direction * 14;
+    ctx.strokeStyle = '#6b472d'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(basketX, -15, 6, Math.PI, 0); ctx.stroke();
+    rect(ctx, basketX - 7, -15, 14, 10, '#9b6b3c');
+    rect(ctx, basketX - 5, -17, 4, 3, '#d7b744'); rect(ctx, basketX, -18, 4, 4, '#76964a');
+  } else {
+    ctx.strokeStyle = '#6c4b31'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(direction * 12, -16); ctx.lineTo(direction * 15, -2); ctx.stroke();
+  }
   ctx.restore();
 }
 
