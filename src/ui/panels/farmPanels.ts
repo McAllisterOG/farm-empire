@@ -3,7 +3,7 @@ import { allFarmCrops, farmCropDef } from '../../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, cheapestFarmSeed, farmCropUnlockInfo, farmOf, formatMoney, marketMovement, storageRemaining, storageUsed,
 } from '../../core/farmBusiness';
-import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_GRAIN_SILO, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../../data/farmEquipment.data';
 import { farmParcelDef, farmParcelSectionCount } from '../../core/farmParcels';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
@@ -370,6 +370,7 @@ export interface FarmEquipmentTownActions {
   onRestoreTractor?: () => ActionResult;
   onPurchaseKit?: () => ActionResult;
   onPurchaseTrailer?: () => ActionResult;
+  onPurchaseSilo?: () => ActionResult;
   dispatch?: Dispatch;
   onClose: () => void;
 }
@@ -392,6 +393,8 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
   const kitUnlocked = countyComplete && restored;
   const trailerOwned = farmOf(state).equipment.countyUtilityTrailerOwned;
   const trailerUnlocked = farmOf(state).countyFreight.lastCompletedDay > 0;
+  const siloOwned = farmOf(state).equipment.countyGrainSiloOwned;
+  const siloUnlocked = farmOf(state).equipment.barnLoftExpansionOwned;
   openPanel({
     title: onFarm ? 'Farm Equipment' : 'Farm Services Equipment Desk',
     onClose: actions.onClose,
@@ -444,6 +447,21 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
             if (result.ok) openFarmEquipment(state, actions);
           },
         }, `Purchase for ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)}`)] : []),
+      ),
+      h('div', { class: 'equipment-kit', 'data-testid': 'county-grain-silo' },
+        h('div', { class: 'farm-card-title' }, COUNTY_GRAIN_SILO.name),
+        h('p', {}, `One-time storage build · ${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · expands combined farm storage from ${COUNTY_GRAIN_SILO.fromCapacity} to ${COUNTY_GRAIN_SILO.toCapacity} units`),
+        h('div', { class: 'equipment-mode', 'data-testid': 'county-grain-silo-status' }, siloOwned
+          ? `Owned · ${farmOf(state).storageCapacity} farm storage units`
+          : siloUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · own the neighboring acreage and install the barn loft'),
+        ...(!onFarm && !siloOwned && siloUnlocked && actions.context === 'town' ? [h('button', {
+          class: 'btn btn-primary', 'data-testid': 'buy-county-grain-silo', onclick: () => {
+            const result = actions.onPurchaseSilo?.();
+            if (!result) return;
+            actions.dispatch?.(result);
+            if (result.ok) openFarmEquipment(state, actions);
+          },
+        }, `Build for ${formatMoney(COUNTY_GRAIN_SILO.priceCents)}`)] : []),
       ),
       h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, !onFarm
         ? restored ? 'Equipment record on file - tractor operation is available back at the farm' : 'Inherited tractor on file - restoration is handled at this desk'

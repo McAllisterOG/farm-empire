@@ -27,3 +27,11 @@ export const COUNTY_UTILITY_TRAILER = {
   fromCapacity: 72,
   toCapacity: 144,
 } as const;
+
+export const COUNTY_GRAIN_SILO = {
+  id: 'county-grain-silo',
+  name: 'County Grain Silo',
+  priceCents: 480_000,
+  fromCapacity: 200,
+  toCapacity: 800,
+} as const;

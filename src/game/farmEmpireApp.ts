@@ -2,7 +2,7 @@ import type { ActionResult, GameState } from '../core/types';
 import { farmCropDef } from '../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
-  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyRowCropFieldKit, purchaseCountyUtilityTrailer, purchaseNeighborParcel, selectFarmCrop,
+  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyGrainSilo, purchaseCountyRowCropFieldKit, purchaseCountyUtilityTrailer, purchaseNeighborParcel, selectFarmCrop,
   issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
   syncCashMirror, ownedFarmParcelAt, planParcelWork, farmFieldCondition, tillFarmField, waterFarmCrop,
   placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind,
@@ -664,6 +664,7 @@ export class FarmEmpireApp {
           onRestoreTractor: () => restoreOldTractor(this.state),
           onPurchaseKit: () => purchaseCountyRowCropFieldKit(this.state),
           onPurchaseTrailer: () => purchaseCountyUtilityTrailer(this.state),
+          onPurchaseSilo: () => purchaseCountyGrainSilo(this.state),
           dispatch: this.dispatch,
           onClose: () => {},
         }),
@@ -1908,6 +1909,7 @@ export class FarmEmpireApp {
       scout: { ...this.scout, facing: this.scoutFacing, scratching: this.gameNow() < this.scoutScratchUntil },
       farmhouseTier: farmhousePresentationTier(farm.parcels.northOwned),
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
+      grainSiloOwned: farm.equipment.countyGrainSiloOwned,
       roadsideStand: {
         owned: farm.roadsideStand.owned,
         completedToday: farm.roadsideStand.lastCompletedDay >= farm.clock.day,

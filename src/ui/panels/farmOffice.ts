@@ -70,6 +70,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
       h('div', { class: 'farmbook-snapshot' },
         h('div', {}, h('span', {}, 'Cash'), h('strong', {}, formatMoney(farm.cashCents))),
         h('div', {}, h('span', {}, 'Barn'), h('strong', {}, `${storageUsed(state)} / ${farm.storageCapacity}`)),
+        h('div', {}, h('span', {}, 'Silo'), h('strong', {}, farm.equipment.countyGrainSiloOwned ? 'County grain silo' : farm.equipment.barnLoftExpansionOwned ? 'Build unlocked' : 'Not built')),
         h('div', {}, h('span', {}, 'Pickup'), h('strong', {}, `${pickupCargoUsed(state)} / ${pickupCargoCapacity(state)}`)),
         h('div', {}, h('span', {}, 'Trailer'), h('strong', {}, farm.equipment.countyUtilityTrailerOwned ? 'County utility trailer' : 'Not owned')),
         h('div', {}, h('span', {}, 'Land'), h('strong', {}, farm.parcels.northOwned ? '2 acreages' : '1 acreage')),

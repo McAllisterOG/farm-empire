@@ -78,6 +78,7 @@ export interface RenderScene {
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
     farmhouseTier: FarmhousePresentationTier;
     barnLoftOwned: boolean;
+    grainSiloOwned: boolean;
     roadsideStand: { owned: boolean; completedToday: boolean };
     clockDay: number;
     clockMinute: number;
@@ -554,7 +555,7 @@ export class Renderer {
       if (def.category === 'path') continue;
       const point = farmWorldPoint({ x: pl.x + (def.w - 1) / 2, y: pl.y + (def.h - 1) / 2 });
       items.push({ depth: point.x + point.y + 0.2, draw: () => pl.defId === 'bld_storage'
-        ? drawFarmBarn(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, scene.farm!.barnLoftOwned)
+        ? drawFarmBarn(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, scene.farm!.barnLoftOwned, scene.farm!.grainSiloOwned)
         : drawSprite(ctx, `bld:${pl.defId}`, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom * 1.16) });
     }
     const doghousePoint = farmWorldPoint(farmLandmarks().doghouse);
@@ -1053,8 +1054,23 @@ function drawFarmName(ctx: CanvasRenderingContext2D, sx: number, sy: number, nam
   ctx.fillStyle = 'rgba(40,34,28,.55)'; ctx.fillRect(sx - width / 2 - 4, sy - 118 * zoom, width + 8, 14 * zoom); ctx.fillStyle = '#fff'; ctx.fillText(name, sx, sy - 107 * zoom); ctx.restore();
 }
 
-function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, loftOwned = false): void {
+function drawFarmBarn(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, loftOwned = false, grainSiloOwned = false): void {
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.75, zoom * 1.75);
+  if (grainSiloOwned) {
+    ctx.save();
+    ctx.translate(62, -2);
+    ctx.fillStyle = 'rgba(40,30,20,.2)'; ctx.beginPath(); ctx.ellipse(0, 8, 24, 8, 0, 0, Math.PI * 2); ctx.fill();
+    const metal = ctx.createLinearGradient(-19, 0, 19, 0);
+    metal.addColorStop(0, '#77888a'); metal.addColorStop(.28, '#bdc7c3'); metal.addColorStop(.55, '#eef0df'); metal.addColorStop(.82, '#9caeaa'); metal.addColorStop(1, '#667778');
+    ctx.fillStyle = metal; ctx.fillRect(-19, -58, 38, 63);
+    ctx.beginPath(); ctx.ellipse(0, -58, 19, 7, 0, Math.PI, Math.PI * 2); ctx.lineTo(19, -48); ctx.lineTo(-19, -48); ctx.closePath(); ctx.fillStyle = '#c8d1cc'; ctx.fill();
+    ctx.strokeStyle = 'rgba(79,94,94,.65)'; ctx.lineWidth = 1;
+    for (let ringY = -46; ringY < 4; ringY += 11) { ctx.beginPath(); ctx.moveTo(-19, ringY); ctx.quadraticCurveTo(0, ringY + 4, 19, ringY); ctx.stroke(); }
+    ctx.strokeStyle = '#5b6766'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(12, -51); ctx.lineTo(12, 2); ctx.stroke();
+    for (let rungY = -43; rungY < 0; rungY += 8) { ctx.beginPath(); ctx.moveTo(8, rungY); ctx.lineTo(16, rungY); ctx.stroke(); }
+    ctx.fillStyle = '#ae4d37'; ctx.fillRect(-5, -70, 10, 8); ctx.fillStyle = '#e5c788'; ctx.fillRect(-7, -63, 14, 3);
+    ctx.restore();
+  }
   ctx.fillStyle = 'rgba(40,30,20,.22)'; ctx.beginPath(); ctx.ellipse(0, 5, 58, 16, 0, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#a84634'; ctx.fillRect(-42, -53, 84, 55);
   ctx.strokeStyle = '#7b392d'; ctx.lineWidth = 2; for (let bx = -35; bx < 40; bx += 10) { ctx.beginPath(); ctx.moveTo(bx, -50); ctx.lineTo(bx, -2); ctx.stroke(); }

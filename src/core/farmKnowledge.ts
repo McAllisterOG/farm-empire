@@ -1,7 +1,7 @@
 import { FARMER_KNOWLEDGE_LEVELS, type FarmerKnowledgeLevelDef } from '../data/farmKnowledge.data';
 import type { GameState } from './types';
 
-export type FarmGuideStepId = 'prepare' | 'plant' | 'water' | 'harvest' | 'load' | 'town' | 'trade' | 'restore' | 'expand';
+export type FarmGuideStepId = 'prepare' | 'plant' | 'water' | 'harvest' | 'load' | 'town' | 'trade' | 'restore' | 'expand' | 'storage';
 
 export interface FarmGuideStep {
   id: FarmGuideStepId;
@@ -57,6 +57,7 @@ export function farmGuideSteps(state: GameState): readonly FarmGuideStep[] {
     { id: 'trade', label: 'Complete a sale or delivery', hint: 'Eli handles crops at the Grain Exchange.', done: traded },
     { id: 'restore', label: 'Restore the old tractor', hint: 'After the Pantry delivery, use the County Equipment Desk.', done: farm.equipment.tractor.status === 'operational' },
     { id: 'expand', label: 'Buy neighboring acreage', hint: 'Click the locked field or use the farmhouse records.', done: farm.parcels.northOwned },
+    { id: 'storage', label: 'Build commercial storage', hint: 'Install the barn loft, then commission a grain silo at the County Equipment Desk.', done: farm.equipment.countyGrainSiloOwned },
   ];
 }
 
@@ -82,6 +83,7 @@ export function farmKnowledgePoints(state: GameState): number {
   if (farm.parcels.northOwned) points += 25;
   if (farm.equipment.countyRowCropFieldKitOwned) points += 15;
   if (farm.equipment.barnLoftExpansionOwned) points += 15;
+  if (farm.equipment.countyGrainSiloOwned) points += 20;
   if (farm.workforce.farmhandHired) points += 15;
   return points;
 }

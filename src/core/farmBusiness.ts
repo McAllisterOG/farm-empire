@@ -4,7 +4,7 @@ import type {
 import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
-import { BARN_LOFT_EXPANSION, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION, COUNTY_GRAIN_SILO, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
 import { COUNTY_FREIGHT_TEMPLATES } from '../data/countyFreight.data';
 import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, PICKUP_TRAILER_CARGO_CAPACITY, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
 import {
@@ -120,6 +120,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
       countyRowCropFieldKitOwned: false,
       barnLoftExpansionOwned: false,
       countyUtilityTrailerOwned: false,
+      countyGrainSiloOwned: false,
       tractor: {
         id: 'old-tractor',
         name: 'Old Red Tractor',
@@ -185,6 +186,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const rawKitOwned = rawEquipment.countyRowCropFieldKitOwned;
   const rawLoftOwned = rawEquipment.barnLoftExpansionOwned;
   const trailerOwned = rawEquipment.countyUtilityTrailerOwned === true;
+  const siloOwned = rawEquipment.countyGrainSiloOwned === true;
   const townStatus = objectRecord(raw.townContact).status;
   const rawCountyFreight = objectRecord(raw.countyFreight);
   const rawWorkforce = objectRecord(raw.workforce);
@@ -223,6 +225,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
 
   const northOwned = rawParcels.northOwned === true;
   const loftOwned = rawLoftOwned === true && northOwned;
+  const grainSiloOwned = siloOwned && loftOwned;
   const clockDay = clampInt(rawClock.day, 1, 1);
   const farmhandHired = rawWorkforce.farmhandHired === true && townStatus === 'completed' && northOwned;
   const roadsideStandOwned = rawRoadsideStand.owned === true && townStatus === 'completed';
@@ -251,7 +254,9 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     cashCents: clampInt(raw.cashCents, STARTING_CASH_CENTS),
     seeds,
     storage,
-    storageCapacity: loftOwned ? BARN_LOFT_EXPANSION.toCapacity : STARTING_STORAGE_CAPACITY,
+    storageCapacity: grainSiloOwned
+      ? COUNTY_GRAIN_SILO.toCapacity
+      : loftOwned ? BARN_LOFT_EXPANSION.toCapacity : STARTING_STORAGE_CAPACITY,
     fieldConditions: {},
     countyReliefClaimed: raw.countyReliefClaimed === true,
     pickup: normalizePickup(raw.pickup, trailerOwned ? PICKUP_TRAILER_CARGO_CAPACITY : PICKUP_BASE_CARGO_CAPACITY),
@@ -301,6 +306,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
       countyRowCropFieldKitOwned: rawKitOwned === true,
       barnLoftExpansionOwned: loftOwned,
       countyUtilityTrailerOwned: trailerOwned,
+      countyGrainSiloOwned: grainSiloOwned,
       tractor: {
         id: String(rawTractor.id || defaults.equipment.tractor.id),
         name: String(rawTractor.name || defaults.equipment.tractor.name),
@@ -660,6 +666,21 @@ export function purchaseBarnLoftExpansion(state: GameState): ActionResult {
   recordFarmStat(state, 'farmCashSpentCents', BARN_LOFT_EXPANSION.priceCents);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: 'Barn Loft Expansion purchased. Storage capacity is now 200.' }] };
+}
+
+export function purchaseCountyGrainSilo(state: GameState): ActionResult {
+  const farm = farmOf(state);
+  if (!farm.parcels.northOwned || !farm.equipment.barnLoftExpansionOwned) {
+    return fail('Install the Barn Loft Expansion before building the County Grain Silo.');
+  }
+  if (farm.equipment.countyGrainSiloOwned) return fail('The County Grain Silo is already owned.');
+  if (farm.cashCents < COUNTY_GRAIN_SILO.priceCents) return fail('Not enough cash for the County Grain Silo.');
+  farm.cashCents -= COUNTY_GRAIN_SILO.priceCents;
+  farm.equipment.countyGrainSiloOwned = true;
+  farm.storageCapacity = COUNTY_GRAIN_SILO.toCapacity;
+  recordFarmStat(state, 'farmCashSpentCents', COUNTY_GRAIN_SILO.priceCents);
+  syncCashMirror(state);
+  return { ok: true, events: [{ type: 'toast', target: `County Grain Silo purchased. Farm storage is now ${COUNTY_GRAIN_SILO.toCapacity}.` }] };
 }
 
 export function sellStoredCrop(state: GameState, cropId: string, count: number): ActionResult {

@@ -137,6 +137,14 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (farm) delete farm.roadsideStand;
     raw.version = 15;
   },
+  15: (raw) => {
+    // The County Grain Silo is a new v16 investment. Never grant ownership
+    // from a stray pre-v16 key or trust a stored capacity value.
+    const farm = raw.farm && typeof raw.farm === 'object' ? raw.farm as Record<string, unknown> : null;
+    const equipment = farm?.equipment && typeof farm.equipment === 'object' ? farm.equipment as Record<string, unknown> : null;
+    if (equipment) delete equipment.countyGrainSiloOwned;
+    raw.version = 16;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {
