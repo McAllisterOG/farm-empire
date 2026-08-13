@@ -242,3 +242,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The assigned acreage is reserved from owner/tractor field clicks while the job runs. The owner may work the other acreage, handle logistics, or visit town; completed sections persist, the current unfinished action does not commit on cancellation, and the paid shift remains paid.
 - Save v14 persists only literal hire ownership and the last paid farm day. Actor position, facing, movement, action, target, and active job remain runtime-only; old/missing/corrupt workforce data fails closed and reloads idle at the farmhand home anchor.
 - Multiple workers, managers, schedules, housing, needs, skill trees, autonomous crop strategy, payroll simulation, passive-income bonuses, and economy-wide rebalancing remain separate future packages.
+
+## 2026-08-12 - Make County weather deterministic and useful
+
+**Status:** Approved by the owner
+
+- Each farm day has one clear, cloudy, or steady-rain condition derived from the existing saved farm seed and day. The current condition and three-day forecast therefore replay exactly after reload without a weather save field or save-version bump.
+- Rain reuses the authoritative one-time establishment-watering transaction for manual crops still waiting for first water. Repeated weather updates are idempotent; already-established crops, harvest timing, prices, yields, storage, and equipment rules remain unchanged.
+- Farm and County town receive the same condition. Cloud/rain casts and precipitation remain transient Canvas presentation, and the procedural soundscape adapts its existing wind filter instead of adding downloaded audio assets.
+- Seasons, temperature, storms, drought, crop damage, recurring moisture, irrigation, soil health, crop quality, and weather-based yield or price modifiers remain separate future packages.
