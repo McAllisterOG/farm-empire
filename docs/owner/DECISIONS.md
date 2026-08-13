@@ -290,3 +290,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - An acceptance request must match one of the current visible bids. Stale, fabricated, duplicate, locked-crop, or post-rollover requests fail closed without mutating cash, cargo, completion history, or the active contract.
 - Existing active-contract save data already contains all authoritative terms, so this package does not add a save field or bump save v16. Missing or malformed contract data continues to normalize closed.
 - Additional simultaneous contracts, negotiation, penalties, reputation, contract chains, special cargo, traffic, and a generic quest system remain deferred.
+
+## 2026-08-13 - Make drag selection the flexible manual-fieldwork control
+
+**Status:** Approved by the owner
+
+- On-foot players may drag from one owned field section to another to select any rectangular area within one acreage. The visible selection uses a deterministic serpentine route and then offers only work that is eligible somewhere inside that area.
+- Custom-area prepare, rework, plant, water, harvest, and clear actions reuse the existing short manual-action runner and authoritative field transactions. Planting snapshots the active crop and limits the planned route to the actual seed count, leaving the remaining selected soil unchanged without fake skips.
+- Crop buttons expose both seed count and keyboard slots 1–8. Ground dragging remains camera pan, and WASD/arrow keys add an explicit bounded camera alternative; drag selection does not change saved camera or field state until a normal action completes.
+- Barn/pickup transfer controls name their direction and disable impossible zero-source actions. Grain Exchange sale controls similarly disable zero-cargo sales instead of returning a quantity error.
+- Harvest still enters authoritative barn storage. A carried basket, selectable harvest destination, wagon inventory, and field-edge logistics would change inventory authority and remain a separate designed package.
