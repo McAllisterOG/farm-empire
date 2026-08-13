@@ -31,10 +31,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 25. **County Utility Trailer V1** - a first-freight-gated $2,400 Equipment Desk purchase, authoritative 72-to-144 mixed-cargo expansion, visible farm/town towing presentation, and defensive save-v13 ownership.
 26. **First Farmhand V1** - a County-trust-and-acreage-gated $1,800 hire, one $120 daily shift, deterministic whole-acreage assignments using real seeds/barn capacity/field conditions, a visible working Mara Bell, and defensive save-v14 workforce state.
 27. **Farm Weather V1** - deterministic clear/cloudy/rain days derived from saved seed/day, a three-day Farmbook forecast, shared farm/town weather presentation, a restrained rain ambience, and idempotent rain establishment through the existing watering transaction without a save-version change.
+28. **Roadside Produce Stand V1** - a County-trust-gated $650 visible farm improvement, one deterministic 6–12-unit barn-sourced local request per farm day, a deliberately lower 90% convenience rate, exact one-time fulfillment, and defensive save-v15 ownership/completion state.
 
 ## Current authorization
 
-No additional feature package is currently active. Playtest the rebuilt Windows Desktop game across clear/cloudy/rain days, including rainy establishment watering and the three-day forecast, with Mara's whole-acreage shifts, section/row/three-row fieldwork, the first County delivery and tractor restoration, the daily Freight Board and utility-trailer payoff, acreage-driven farmhouse growth, hauling, knowledge pacing, and larger fields. Use observed friction, weather usefulness, wage/capital pressure, storage limits, and sense of progression to select one deliberately designed package.
+No additional feature package is currently active. Playtest the rebuilt Windows Desktop game across the local stand, Grain Exchange, and Freight Board choices as well as clear/cloudy/rain days, Mara's shifts, row fieldwork, tractor restoration, utility trailer, farmhouse growth, hauling, knowledge pacing, and larger fields. Use observed convenience value, weather usefulness, wage/capital pressure, storage limits, and sense of progression to select one deliberately designed package.
 
 ## Later directions
 

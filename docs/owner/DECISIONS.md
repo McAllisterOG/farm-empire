@@ -251,3 +251,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Rain reuses the authoritative one-time establishment-watering transaction for manual crops still waiting for first water. Repeated weather updates are idempotent; already-established crops, harvest timing, prices, yields, storage, and equipment rules remain unchanged.
 - Farm and County town receive the same condition. Cloud/rain casts and precipitation remain transient Canvas presentation, and the procedural soundscape adapts its existing wind filter instead of adding downloaded audio assets.
 - Seasons, temperature, storms, drought, crop damage, recurring moisture, irrigation, soil health, crop quality, and weather-based yield or price modifiers remain separate future packages.
+
+## 2026-08-12 - Add a lower-value local market at the farm gate
+
+**Status:** Approved by the owner
+
+- Completing the first County Pantry delivery unlocks one $650 Roadside Produce Stand improvement at Farm Services. Ownership creates one visible, directly interactive stand beside the County road.
+- The stand derives one 6–12-unit request from the saved world seed, farm day, and currently unlocked crop catalog. The request pays 90% of that day's posted County quote so direct barn fulfillment is convenient but never pays as well as ordinary County sale or the 25%-premium Freight Board.
+- Fulfillment consumes exact barn units, records the current day before paying integer cents, and cannot pay or post again until a later saved farm day. It does not use pickup cargo or replace the hauling route.
+- Save v15 persists only literal stand ownership and the last completed farm day. V14 migration does not grant ownership; missing, malformed, prerequisite-invalid, or future-dated state fails closed.
+- Multiple local offers, customer NPCs, unattended passive income, pricing choice, upgrades, reputation, managers, and economy-wide rebalancing remain separate future packages.

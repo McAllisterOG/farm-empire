@@ -346,3 +346,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/weather-v1-player/win-unpacked/Farm Empire.exe` (225,442,304 bytes) and `resources/app.asar` (1,333,812 bytes), generated and ignored. Electron Builder's framework staging rename was blocked by a reproducible local Windows `EPERM`; the accepted `farmhand-v1` shell was therefore copied and its app archive was rebuilt from the current relative-asset desktop bundle before native CDP and shortcut smoke tests. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets this verified build.
 - **Known limitations:** This first weather layer has no seasons, temperature, severe storms, damage, drought, recurring moisture, irrigation infrastructure, crop-quality effect, market modifier, or recorded rain asset. Rain is intentionally limited to replacing the existing one-time establishment watering.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Roadside Produce Stand V1 - complete
+
+- **Date:** 2026-08-12
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `f7c2081`
+- **Scope:** Add one visible, purchased farm-gate market after County trust and one small daily local order without replacing pickup commerce, Freight Board hauling, or the planned economy study. No passive income, customers, managers, reputation, multiple offers, or broad rebalance.
+- **Before / after:** Proven farms previously had no direct local outlet or physical farm improvement between crop production and County hauling. Farm Services now builds the McAllister Farm Stand for $650. One deterministic 6–12-unit unlocked-crop request per farm day can be filled from real barn stock at 90% of the current County quote; it pays once, visibly sells out, and refreshes the next day while higher-value logistics remain intact.
+- **Verification:** 244/244 tests passed; strict typecheck, Vite production build, desktop-relative build, and diff checks passed. Browser acceptance covered exact purchase, world interaction, shortage/readiness, barn consumption, payout, duplicate prevention, next-day refresh, save/reload, normal/compact layouts, clear/rain art, and zero console warnings/errors. Four packaged processes launched responsive and closed with zero residue; the OneDrive Desktop shortcut targets `release/roadside-stand-v1/win-unpacked/Farm Empire.exe`.
+- **Review:** The architecture-strategist boundary kept deterministic and atomic rules in core, values in data, Canvas/DOM presentation isolated, and save v15 minimal. The primary audited prerequisite/cash failures, crop eligibility, deterministic replay, stale and duplicate guards, payout ordering, corrupt saves, landmark safety/hit priority, package integrity, and shortcut cleanup. A covered stand sign was repaired before release; no high- or medium-severity finding remains.
+- **Known limitations:** The stand has one request and one visual tier. There are no customer actors, pricing decisions, upgrades, passive earnings, spoilage, reputation, multiple local orders, or worker/manager integration.
+- **Push:** Not yet pushed; external GitHub authorization is still required.
