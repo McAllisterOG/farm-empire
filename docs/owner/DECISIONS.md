@@ -261,3 +261,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Fulfillment consumes exact barn units, records the current day before paying integer cents, and cannot pay or post again until a later saved farm day. It does not use pickup cargo or replace the hauling route.
 - Save v15 persists only literal stand ownership and the last completed farm day. V14 migration does not grant ownership; missing, malformed, prerequisite-invalid, or future-dated state fails closed.
 - Multiple local offers, customer NPCs, unattended passive income, pricing choice, upgrades, reputation, managers, and economy-wide rebalancing remain separate future packages.
+
+## 2026-08-13 - Add ambient County life without creating a second simulation
+
+**Status:** Approved by the owner
+
+- County Life reconstructs one roadside visitor and two plaza residents from the existing saved seed, farm day, clock minute, and explicit frame time. Their identity, position, facing, motion, and schedule are presentation-only and never serialized.
+- The roadside visitor appears only while an owned stand has an open order during its 8:00 AM-8:00 PM business window. Two unlabelled ambient residents use separate public-plaza lanes from 7:00 AM-10:00 PM.
+- Ambient actors are not service NPCs and do not enter town hit priority, dialogue, orders, prices, cash, inventory, progression, or Farmer Knowledge. The three named service townspeople remain the exact functional roster.
+- Save v15, economy values, customer-order authority, and transactions remain unchanged. The earlier deferral of customer NPCs still applies to persistent customers, relationship systems, passive earnings, demand simulation, and repeatable social gameplay; this package adds only bounded visible passersby.
