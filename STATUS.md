@@ -2,12 +2,12 @@
 
 ## Current known-good checkpoint
 
-- **Date:** 2026-08-12
+- **Date:** 2026-08-13
 - **Branch:** `codex/first-town-contact`
-- **Head:** `f7c2081`
-- **Product state:** Roadside Produce Stand V1 is complete. After the first County Pantry delivery, Farm Services can build the visible McAllister Farm Stand for $650. It posts one deterministic 6–12-unit local request per saved farm day, consumes exact barn inventory, pays 90% of that day's posted County quote, and closes until the next day. The lower local rate makes this a convenient barn-side choice without replacing Grain Exchange sales, pickup logistics, or the 25%-premium Freight Board. Save v15 persists only ownership and the last completed day.
-- **Verification:** 244/244 tests passed; strict typecheck, Vite and desktop-relative production builds, and whitespace checks passed. Browser acceptance completed Farm Services purchase, world hit/walk, insufficient and ready order states, exact barn consumption and payout, same-day closure, next-day refresh, save/reload, normal and compact layouts, stocked/sold-out art in clear and rainy weather, and zero console warnings/errors. `release/roadside-stand-v1` contains the final relative-asset bundle; four native processes launched responsive and closed with zero residue. The literal Desktop shortcut targets that verified executable.
-- **Review:** The architecture-strategist boundary kept offer generation and atomic business rules in `src/core`, fixed values in `src/data`, presentation in Canvas/DOM UI, and orchestration in the app. A bounded primary audit covered prerequisite and cash failures, deterministic replay, unlocked crops, stale IDs, shortage and duplicate immutability, quote ordering, save migration/corruption, field/gate/vehicle hit priority, compact presentation, package contents, shortcut routing, and native cleanup. It repaired the stand-sign painter order before release; no high- or medium-severity issue remains.
+- **Head:** `3ad966b`
+- **Product state:** The Roadside Produce Stand checkpoint remains intact, and a full progression reliability pass has repaired the two highest-impact interaction dead ends found in real play. Clicking any visible part of a townsperson or the parked County pickup now opens the intended interaction instead of issuing a ground-walk command. The farm pickup panel now offers one-click routing to a visibly labeled barn cargo pad, opens enabled produce/seed controls on arrival, and uses clear player-facing cargo and farmhand copy. No economy, progression, save-schema, or transaction rule changed.
+- **Verification:** 245/245 tests passed; strict typecheck, Vite and desktop-relative production builds, and whitespace checks passed. Browser acceptance covered grouped row fieldwork, tractor and pickup panels, exact stand fulfillment, farmhand hiring/assignment, Freight Board acceptance, on-foot and pickup County travel, full-body NPC/pickup selection, automatic cargo-pad routing, exact load/unload, town save, safe farm reload with cargo preserved, and zero console warnings/errors. `release/interaction-reliability-v1/verified-win-unpacked` contains the relative-asset bundle; direct and literal Desktop-shortcut smoke tests each launched four responsive native processes and left zero residue. The Desktop shortcut targets that verified executable.
+- **Review:** The architecture-strategist boundary kept new visual hit geometry in the town presentation/layout seam and retained business rules in their existing deterministic core. A bounded primary audit covered screen/ground hit priority, zoom behavior, pickup/tractor exclusion, exact arrival, cargo authority, load/unload state, town/farm save safety, package layout, shortcut routing, and native cleanup. No high- or medium-severity issue remains.
 
 ## Current presentation
 
@@ -34,11 +34,11 @@
 - The public-demo pass improves HUD/modal hierarchy, controls, feedback, transitions, and compact layouts without changing game transactions.
 - Farm Empire now runs from `Farm Empire.lnk` on the real Windows Desktop without a terminal, browser tab, development server, or internet. The packaged shell loads only bundled files, keeps Node unavailable to game content, and stores saves under the stable `%APPDATA%\Farm Empire` profile.
 - Farm and town cameras now fit their current scene, clamp panning so the playable mainland cannot be lost, refit on resize, and expose a persistent top-right menu with Resume, Save, Recenter, How to Play, and Save & Return to Farms.
-- The pickup now parks at a visible barn cargo pad that is clear of the neighboring field and town gate. Produce/seed transfer is available only there, with explicit guidance elsewhere; old saves parked exactly under the gate sign normalize safely to the pad without losing cargo.
+- The pickup now parks at a visibly labeled barn cargo pad that is clear of the neighboring field and town gate. Its panel can route there in one click and opens the authoritative produce/seed controls on arrival; old saves parked exactly under the gate sign normalize safely to the pad without losing cargo.
 - A humble starter farmhouse grows into a wider two-story home when the neighboring acreage is owned; expanded town-edge homes/field cues and one authoritative waypointed County road reduce empty visual space without inventing new services or crossing either workable acreage.
 - The hand pump now points players to the field menu for the required first watering; deeper irrigation infrastructure remains deferred.
 - The County now has deterministic clear, cloudy, and rainy farm days. A three-day Farmbook forecast supports planning; steady rain automatically supplies only the existing one-time establishment watering, while farm and town share wet lighting, visible rain, and a rain-shaped procedural ambience.
-- Hovering focal objects now identifies what will open, and one authoritative hit-priority map routes pickup, tractor, Scout, farmhouse, pump, barn, doghouse, gateway, acreage, and fields to their correct interaction.
+- Hovering focal objects now identifies what will open, and authoritative hit priority routes pickup, tractor, Scout, farmhouse, pump, barn, doghouse, gateway, acreage, fields, full townsperson silhouettes, and the parked County pickup to their correct interaction.
 - The Farmbook consolidates the nine-step prepare, plant, water, harvest, load, town, trade, restore, and expand loop plus the live business snapshot and core routes without filling the world with buttons.
 - After County trust and neighboring-acreage ownership, Farm Services hires Mara Bell. Workforce in the Farmbook or talking with Mara assigns one whole acreage at a time; her first assignment each farm day costs $120, later same-day assignments are covered, and the owner can continue working elsewhere or visit town.
 - After County trust, Farm Services can build a $650 roadside produce stand. It fills one small barn-sourced local request per farm day at 90% of the posted County quote; the Grain Exchange and Freight Board remain the better-paying logistics routes.
@@ -48,7 +48,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Owner-playtest whether the new local-order convenience is worth its $650 capital cost without undercutting pickup hauling, alongside clear/cloudy/rain readability, Mara's daily shift, the Freight Board/trailer, tractor restoration, row fieldwork, farmhouse growth, and storage pressure before selecting the evidence-based economy study or another finite package.
+No additional feature package is currently active. Owner-playtest the repaired cargo and County interactions along with whether the local-order convenience is worth its $650 capital cost without undercutting pickup hauling. Continue evaluating clear/cloudy/rain readability, Mara's daily shift, the Freight Board/trailer, tractor restoration, row fieldwork, farmhouse growth, and storage pressure before selecting the evidence-based economy study or another finite package.
 
 ## Known limitations
 
