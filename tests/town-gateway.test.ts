@@ -11,8 +11,8 @@ import {
 } from '../src/render/farmLayout';
 import {
   TOWN_BOUNDS, TOWN_EXIT, TOWN_INTERACTION_PRIORITY, TOWN_SPAWN, TOWN_WALK_POLYGON,
-  cancelTownMovement, pointInTownBounds, pointInTownWalkSurface, townBuildingsOverlap,
-  townInteractionAt, townSegmentCrossesBuilding,
+  cancelTownMovement, pointInTownBounds, pointInTownNpcScreenHitbox, pointInTownPickupScreenHitbox,
+  pointInTownWalkSurface, townBuildingsOverlap, townInteractionAt, townSegmentCrossesBuilding,
 } from '../src/render/townLayout';
 import { farmNightAlpha } from '../src/render/lighting';
 import { Renderer } from '../src/render/renderer';
@@ -79,6 +79,18 @@ describe('Town Gateway layout and real services', () => {
     expect(townInteractionAt(TOWN_EXIT)).toEqual({ kind: 'exit' });
     expect(townInteractionAt({ x: 11, y: 12 })).toMatchObject({ kind: 'ground' });
     expect(townInteractionAt({ x: 2.1, y: 17.8 })).toEqual({ kind: 'none' });
+  });
+
+  it('makes the complete visible townsperson and parked-pickup silhouettes clickable', () => {
+    const feet = { x: 400, y: 300 };
+    expect(pointInTownNpcScreenHitbox({ x: 400, y: 230 }, feet, 1)).toBe(true);
+    expect(pointInTownNpcScreenHitbox({ x: 430, y: 292 }, feet, 1)).toBe(true);
+    expect(pointInTownNpcScreenHitbox({ x: 435, y: 230 }, feet, 1)).toBe(false);
+    expect(pointInTownNpcScreenHitbox({ x: 400, y: 190 }, feet, 1)).toBe(false);
+
+    expect(pointInTownPickupScreenHitbox({ x: 450, y: 270 }, feet, 1)).toBe(true);
+    expect(pointInTownPickupScreenHitbox({ x: 471, y: 270 }, feet, 1)).toBe(false);
+    expect(pointInTownPickupScreenHitbox({ x: 400, y: 247 }, feet, 1)).toBe(false);
   });
 
   it('ties town day and night to the same saved farm-clock curve', () => {

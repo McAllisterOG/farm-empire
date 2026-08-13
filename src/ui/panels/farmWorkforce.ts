@@ -98,7 +98,7 @@ function renderFarmWorkforce(body: HTMLElement, state: GameState, actions: FarmW
   }
 
   const selected = farmCropDef(farm.selectedCropId);
-  body.append(h('p', { class: 'panel-note' }, `Selected crop: ${selected.name}. A paid shift covers any additional assignments started on Day ${farm.clock.day}. Active jobs are runtime-only; completed field transactions save normally.`));
+  body.append(h('p', { class: 'panel-note' }, `Selected crop: ${selected.name}. A paid shift covers any additional assignments started on Day ${farm.clock.day}. Leaving during a job stops Mara safely after the last completed section.`));
   for (const parcelId of ['starter', 'north'] as const) {
     if (parcelId === 'north' && !farm.parcels.northOwned) continue;
     const parcel = farmParcelDef(parcelId);

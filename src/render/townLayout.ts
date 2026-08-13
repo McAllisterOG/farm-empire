@@ -34,6 +34,36 @@ export interface TownMovementCancellation {
   walking: false;
 }
 
+export interface TownScreenPoint { x: number; y: number }
+
+/**
+ * Town characters are much taller than their logical ground anchors. Keep the
+ * whole visible sprite clickable so selecting a face or torso cannot turn into
+ * an unrelated ground-walk command.
+ */
+export function pointInTownNpcScreenHitbox(
+  point: TownScreenPoint,
+  feet: TownScreenPoint,
+  zoom: number,
+): boolean {
+  const scale = Math.max(.5, zoom);
+  return Math.abs(point.x - feet.x) <= 34 * scale
+    && point.y >= feet.y - 108 * scale
+    && point.y <= feet.y + 12 * scale;
+}
+
+/** The parked pickup receives the same visible-silhouette treatment in town. */
+export function pointInTownPickupScreenHitbox(
+  point: TownScreenPoint,
+  anchor: TownScreenPoint,
+  zoom: number,
+): boolean {
+  const scale = Math.max(.5, zoom);
+  return Math.abs(point.x - anchor.x) <= 70 * scale
+    && point.y >= anchor.y - 52 * scale
+    && point.y <= anchor.y + 20 * scale;
+}
+
 export function pointInTownBounds(point: TownPoint): boolean {
   return point.x >= TOWN_BOUNDS.minX && point.x <= TOWN_BOUNDS.maxX
     && point.y >= TOWN_BOUNDS.minY && point.y <= TOWN_BOUNDS.maxY;
