@@ -270,3 +270,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The roadside visitor appears only while an owned stand has an open order during its 8:00 AM-8:00 PM business window. Two unlabelled ambient residents use separate public-plaza lanes from 7:00 AM-10:00 PM.
 - Ambient actors are not service NPCs and do not enter town hit priority, dialogue, orders, prices, cash, inventory, progression, or Farmer Knowledge. The three named service townspeople remain the exact functional roster.
 - Save v15, economy values, customer-order authority, and transactions remain unchanged. The earlier deferral of customer NPCs still applies to persistent customers, relationship systems, passive earnings, demand simulation, and repeatable social gameplay; this package adds only bounded visible passersby.
+
+## 2026-08-13 - Let commercial storage unlock large-field operation
+
+**Status:** Approved by the owner
+
+- Owning the neighboring acreage and the existing Barn Loft Expansion unlocks one County Grain Silo at the Farm Services Equipment Desk. Its provisional one-time price is 480,000 integer cents ($4,800).
+- Ownership raises authoritative combined farm storage from 200 to 800 units. Harvest capacity checks, cargo transfers, HUD, market panels, Farmbook records, player guidance, and the Canvas homestead must all derive from the same ownership state.
+- The purchase visibly constructs a detailed metal silo beside the existing barn. It is a storage expansion, not a separate interactive inventory, grain-type restriction, or hidden production bonus.
+- Save v16 persists only literal silo ownership. V15 migration never grants it, stored capacity is never trusted, and ownership without the neighboring acreage plus loft fails closed.
+- Crop prices, yields, starting cash, land prices, hauling capacities, wages, spoilage, storage fees, multiple silos, bulk elevators, automated unloading, managers, and passive income remain separate future packages.
