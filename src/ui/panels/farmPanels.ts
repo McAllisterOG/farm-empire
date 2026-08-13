@@ -203,18 +203,23 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
           onclick: () => runAndRender(actions.fulfillCountyFreight(), actions, rerender),
         }, `Deliver ${contract.requiredUnits}`),
       ));
-    } else if (board.offer) {
-      const offer = board.offer;
-      const template = countyFreightTemplate(offer.cropId);
-      const crop = farmCropDef(offer.cropId);
-      body.append(h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-freight-offer' },
-        h('div', { class: 'farm-card-main' },
-          h('div', { class: 'farm-card-title' }, `County Freight Board · ${template.title}`),
-          h('div', { class: 'farm-card-sub' }, `${template.buyer} requests ${offer.requiredUnits} ${crop.name}.`),
-          h('div', { class: 'farm-card-stock' }, `${formatMoney(offer.payoutCents)} locked payout · ${(COUNTY_FREIGHT_PREMIUM_BPS / 100).toFixed(0)}% above today's posted rate · persists until delivered`),
-        ),
-        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': 'accept-county-freight', onclick: () => runAndRender(actions.acceptCountyFreight(offer.id), actions, rerender) }, 'Accept Haul'),
+    } else if (board.offers.length > 0) {
+      body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-freight-choice-summary' },
+        h('strong', {}, `County Freight Board · ${board.offers.length} routes posted`),
+        h('span', {}, 'Choose one route. Posted bids refresh with the next farm day; accepted terms remain locked until delivery.'),
       ));
+      for (const offer of board.offers) {
+        const template = countyFreightTemplate(offer.cropId);
+        const crop = farmCropDef(offer.cropId);
+        body.append(h('div', { class: 'farm-card county-work-order', 'data-testid': `county-freight-offer-${offer.cropId}` },
+          h('div', { class: 'farm-card-main' },
+            h('div', { class: 'farm-card-title' }, template.title),
+            h('div', { class: 'farm-card-sub' }, `${template.buyer} requests ${offer.requiredUnits} ${crop.name}.`),
+            h('div', { class: 'farm-card-stock' }, `Pickup: ${pickupCropUnits(state, offer.cropId)} · ${formatMoney(offer.payoutCents)} locked payout · ${(COUNTY_FREIGHT_PREMIUM_BPS / 100).toFixed(0)}% above today's posted rate`),
+          ),
+          h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `accept-county-freight-${offer.cropId}`, onclick: () => runAndRender(actions.acceptCountyFreight(offer.id), actions, rerender) }, 'Accept Route'),
+        ));
+      }
     } else {
       body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-freight-completed-today' },
         h('strong', {}, 'County Freight Board · route complete'),
@@ -295,8 +300,8 @@ function renderCountyWorkOrder(body: HTMLElement, state: GameState, actions: Far
     const freight = countyFreightBoardState(state);
     const freightLine = freight.active
       ? `Active freight: ${countyFreightTemplate(freight.active.cropId).title} · ${countyFreightProgress(state, { pickupPresent: actions.pickupPresent, source: 'pickup' }).loadedUnits} / ${freight.active.requiredUnits} loaded.`
-      : freight.offer
-        ? `Today's Freight Board offer is posted at Eli's Grain Exchange.`
+      : freight.offers.length > 0
+        ? `${freight.offers.length} Freight Board routes are posted at Eli's Grain Exchange.`
         : 'Today\'s freight route is complete; a new offer posts next farm day.';
     body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-completed' },
       h('strong', {}, 'First delivery recorded'),

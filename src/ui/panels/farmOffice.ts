@@ -31,7 +31,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
   const freight = countyFreightBoardState(state);
   const forecast = farmWeatherForecast(state, 3);
   const stand = roadsideStandView(state);
-  const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offer ? 'Offer posted' : 'Route complete today';
+  const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offers.length > 0 ? `${freight.offers.length} routes posted` : 'Route complete today';
   openPanel({ title: farm.parcels.northOwned ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
       h('div', { class: 'farmbook-level-mark' }, String(knowledge.level.level)),

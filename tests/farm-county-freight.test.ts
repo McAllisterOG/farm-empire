@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import '../src/data';
-import { COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES } from '../src/data/countyFreight.data';
+import { COUNTY_FREIGHT_BID_COUNT, COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES } from '../src/data/countyFreight.data';
 import {
-  acceptCountyFreightOffer, countyFreightBoardState, countyFreightOffer,
+  acceptCountyFreightOffer, countyFreightBoardState, countyFreightOffer, countyFreightOffers,
   countyFreightProgress, fulfillCountyFreightContract,
 } from '../src/core/farmCountyFreight';
 import { advanceFarmDays, farmOf } from '../src/core/farmBusiness';
@@ -20,29 +20,36 @@ function progressedFarm(seed = 1_204) {
 describe('County Freight Board', () => {
   it('stays locked until the first County Pantry delivery', () => {
     const state = createFarmGame('Freight Test', 1_204, NOW);
-    expect(countyFreightBoardState(state)).toEqual({ unlocked: false, offer: null, active: null, completedToday: false });
+    expect(countyFreightBoardState(state)).toEqual({ unlocked: false, offers: [], active: null, completedToday: false });
     expect(acceptCountyFreightOffer(state).ok).toBe(false);
     expect(farmOf(state).countyFreight).toEqual({ active: null, lastCompletedDay: 0 });
   });
 
-  it('generates a deterministic unlocked-crop offer with a locked 25 percent premium', () => {
+  it('generates three deterministic unique unlocked-crop bids with locked 25 percent premiums', () => {
     const a = progressedFarm();
     const b = progressedFarm();
-    const offer = countyFreightOffer(a);
-    expect(offer).toEqual(countyFreightOffer(b));
-    expect(offer).not.toBeNull();
-    const template = COUNTY_FREIGHT_TEMPLATES.find((candidate) => candidate.cropId === offer!.cropId)!;
-    expect(template).toBeDefined();
-    const quote = farmOf(a).market.quotes[offer!.cropId].currentCents;
-    expect(offer!.requiredUnits).toBe(template.requiredUnits);
-    expect(offer!.payoutCents).toBe(Math.round(offer!.requiredUnits * quote * (10_000 + COUNTY_FREIGHT_PREMIUM_BPS) / 10_000));
+    const offers = countyFreightOffers(a);
+    expect(offers).toEqual(countyFreightOffers(b));
+    expect(offers).toHaveLength(COUNTY_FREIGHT_BID_COUNT);
+    expect(new Set(offers.map((offer) => offer.cropId)).size).toBe(COUNTY_FREIGHT_BID_COUNT);
+    expect(offers.every((offer) => !['crop_cabbage', 'crop_pumpkin'].includes(offer.cropId))).toBe(true);
+    for (const offer of offers) {
+      const template = COUNTY_FREIGHT_TEMPLATES.find((candidate) => candidate.cropId === offer.cropId)!;
+      expect(template).toBeDefined();
+      const quote = farmOf(a).market.quotes[offer.cropId].currentCents;
+      expect(offer.requiredUnits).toBe(template.requiredUnits);
+      expect(offer.payoutCents).toBe(Math.round(offer.requiredUnits * quote * (10_000 + COUNTY_FREIGHT_PREMIUM_BPS) / 10_000));
+    }
+    expect(countyFreightOffer(a)).toEqual(offers[0]);
   });
 
   it('snapshots accepted terms even when the market or day changes', () => {
     const state = progressedFarm();
-    const offer = countyFreightOffer(state)!;
-    expect(acceptCountyFreightOffer(state).ok).toBe(true);
+    const offer = countyFreightOffers(state)[1];
+    expect(acceptCountyFreightOffer(state, offer.id).ok).toBe(true);
     const accepted = structuredClone(farmOf(state).countyFreight.active);
+    expect(accepted).toEqual(offer);
+    expect(countyFreightOffers(state)).toEqual([]);
     farmOf(state).market.quotes[offer.cropId].currentCents *= 2;
     advanceFarmDays(state, 3);
     expect(farmOf(state).countyFreight.active).toEqual(accepted);
@@ -51,7 +58,7 @@ describe('County Freight Board', () => {
 
   it('rejects a stale visible offer if the farm day rolls before acceptance', () => {
     const state = progressedFarm();
-    const stale = countyFreightOffer(state)!;
+    const stale = countyFreightOffers(state)[1];
     advanceFarmDays(state);
     const before = JSON.stringify(farmOf(state).countyFreight);
     const result = acceptCountyFreightOffer(state, stale.id);
@@ -99,7 +106,7 @@ describe('County Freight Board', () => {
     expect(fulfillCountyFreightContract(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
     expect(farmOf(state).cashCents).toBe(cash + active.payoutCents);
     advanceFarmDays(state);
-    expect(countyFreightBoardState(state).offer).not.toBeNull();
+    expect(countyFreightBoardState(state).offers).toHaveLength(COUNTY_FREIGHT_BID_COUNT);
   });
 
   it('round trips active terms and cannot duplicate a completed same-day contract', () => {
@@ -133,6 +140,6 @@ describe('County Freight Board', () => {
     const normalized = deserialize(JSON.stringify(corrupt), NOW + 2);
     expect(farmOf(normalized).countyFreight.active).toBeNull();
     expect(farmOf(normalized).countyFreight.lastCompletedDay).toBe(0);
-    expect(countyFreightOffer(normalized)).not.toBeNull();
+    expect(countyFreightOffers(normalized)).toHaveLength(COUNTY_FREIGHT_BID_COUNT);
   });
 });

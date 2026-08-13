@@ -855,7 +855,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks tractor restoration and one paid Freight Board haul per farm day at Eli\'s Grain Exchange. Finish your first freight haul to unlock the 144-unit County Utility Trailer at Farm Services.'), h('p', {}, 'After the County introduction and neighboring acreage purchase, hire Mara at the Farm Services Workforce Desk. Her daily shift can complete whole-acreage assignments while you handle the rest of the business. Save and Recenter are always available.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Prepare rough soil, plant a crop, then water the new seedlings to start growth. Harvest ready crops into the barn and rework the stubble before planting again. Use row or three-row actions to repeat compatible work.'), h('p', {}, 'Park the pickup at the barn cargo pad, load produce, drive to town, then buy seeds, sell crops, or deliver County corn. Completing the first Pantry delivery unlocks tractor restoration and a daily choice of three paid Freight Board routes at Eli\'s Grain Exchange. Finish your first freight haul to unlock the 144-unit County Utility Trailer at Farm Services.'), h('p', {}, 'After the County introduction and neighboring acreage purchase, hire Mara at the Farm Services Workforce Desk. Her daily shift can complete whole-acreage assignments while you handle the rest of the business. Save and Recenter are always available.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1648,7 +1648,7 @@ export class FarmEmpireApp {
         const progress = countyFreightProgress(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' });
         return {
           unlocked: board.unlocked,
-          offer: board.offer,
+          offers: board.offers,
           active: board.active,
           completedToday: board.completedToday,
           pickupProgress: progress,

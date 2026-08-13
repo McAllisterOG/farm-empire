@@ -10,6 +10,7 @@ export interface CountyFreightTemplate {
 }
 
 export const COUNTY_FREIGHT_PREMIUM_BPS = 2_500;
+export const COUNTY_FREIGHT_BID_COUNT = 3;
 
 export const COUNTY_FREIGHT_TEMPLATES: readonly CountyFreightTemplate[] = Object.freeze([
   { cropId: 'crop_corn', title: 'School Lunch Corn', buyer: 'County school kitchens', requiredUnits: 16 },

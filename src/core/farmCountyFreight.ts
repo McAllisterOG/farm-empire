@@ -1,4 +1,4 @@
-import { COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES, type CountyFreightTemplate } from '../data/countyFreight.data';
+import { COUNTY_FREIGHT_BID_COUNT, COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES, type CountyFreightTemplate } from '../data/countyFreight.data';
 import type { ActionResult, FarmCountyFreightContract, GameState } from './types';
 import { fail } from './types';
 import { farmOf, isFarmCropUnlocked, syncCashMirror } from './farmBusiness';
@@ -14,7 +14,7 @@ export interface CountyFreightContext {
 
 export interface CountyFreightBoardState {
   unlocked: boolean;
-  offer: FarmCountyFreightContract | null;
+  offers: FarmCountyFreightContract[];
   active: FarmCountyFreightContract | null;
   completedToday: boolean;
 }
@@ -25,24 +25,35 @@ function eligibleTemplates(state: GameState): CountyFreightTemplate[] {
     .sort((a, b) => a.cropId.localeCompare(b.cropId));
 }
 
-/** A stable offer for one world seed + saved farm day. It does not mutate state. */
-export function countyFreightOffer(state: GameState): FarmCountyFreightContract | null {
+/** Stable competing bids for one world seed + saved farm day. They do not mutate state. */
+export function countyFreightOffers(state: GameState): FarmCountyFreightContract[] {
   const farm = farmOf(state);
-  if (farm.townContact.status !== 'completed' || farm.countyFreight.active) return null;
-  if (farm.countyFreight.lastCompletedDay >= farm.clock.day) return null;
+  if (farm.townContact.status !== 'completed' || farm.countyFreight.active) return [];
+  if (farm.countyFreight.lastCompletedDay >= farm.clock.day) return [];
   const candidates = eligibleTemplates(state);
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) return [];
   const rng = mulberry32(hashSeed(`${state.seed}:county-freight:${farm.clock.day}`));
-  const template = candidates[Math.floor(rng() * candidates.length) % candidates.length];
-  const quote = farm.market.quotes[template.cropId]?.currentCents ?? farmCropDef(template.cropId).basePriceCents;
-  const payoutCents = Math.max(1, Math.round(template.requiredUnits * quote * (10_000 + COUNTY_FREIGHT_PREMIUM_BPS) / 10_000));
-  return {
-    id: `county-freight-${farm.clock.day}-${template.cropId}`,
-    issuedDay: farm.clock.day,
-    cropId: template.cropId,
-    requiredUnits: template.requiredUnits,
-    payoutCents,
-  };
+  const shuffled = candidates.slice();
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(rng() * (index + 1));
+    [shuffled[index], shuffled[swap]] = [shuffled[swap], shuffled[index]];
+  }
+  return shuffled.slice(0, COUNTY_FREIGHT_BID_COUNT).map((template) => {
+    const quote = farm.market.quotes[template.cropId]?.currentCents ?? farmCropDef(template.cropId).basePriceCents;
+    const payoutCents = Math.max(1, Math.round(template.requiredUnits * quote * (10_000 + COUNTY_FREIGHT_PREMIUM_BPS) / 10_000));
+    return {
+      id: `county-freight-${farm.clock.day}-${template.cropId}`,
+      issuedDay: farm.clock.day,
+      cropId: template.cropId,
+      requiredUnits: template.requiredUnits,
+      payoutCents,
+    };
+  });
+}
+
+/** Compatibility helper for callers that want the first posted bid. */
+export function countyFreightOffer(state: GameState): FarmCountyFreightContract | null {
+  return countyFreightOffers(state)[0] ?? null;
 }
 
 export function countyFreightBoardState(state: GameState): CountyFreightBoardState {
@@ -50,7 +61,7 @@ export function countyFreightBoardState(state: GameState): CountyFreightBoardSta
   const unlocked = farm.townContact.status === 'completed';
   return {
     unlocked,
-    offer: unlocked ? countyFreightOffer(state) : null,
+    offers: unlocked ? countyFreightOffers(state) : [],
     active: unlocked ? farm.countyFreight.active : null,
     completedToday: unlocked && !farm.countyFreight.active && farm.countyFreight.lastCompletedDay >= farm.clock.day,
   };
@@ -60,9 +71,10 @@ export function acceptCountyFreightOffer(state: GameState, expectedOfferId?: str
   const farm = farmOf(state);
   if (farm.townContact.status !== 'completed') return fail('Complete the first County Pantry delivery before taking freight work.');
   if (farm.countyFreight.active) return fail('Finish the active County freight contract first.');
-  const offer = countyFreightOffer(state);
-  if (!offer) return fail('No new County freight offer is available today.');
-  if (expectedOfferId && offer.id !== expectedOfferId) return fail('That Freight Board offer has expired. Review today\'s new route before accepting.');
+  const offers = countyFreightOffers(state);
+  if (offers.length === 0) return fail('No new County freight offer is available today.');
+  const offer = expectedOfferId ? offers.find((candidate) => candidate.id === expectedOfferId) : offers[0];
+  if (!offer) return fail('That Freight Board offer has expired. Review today\'s new routes before accepting.');
   farm.countyFreight.active = { ...offer };
   const crop = farmCropDef(offer.cropId);
   return { ok: true, events: [{ type: 'toast', target: `${crop.name} freight contract accepted. Load ${offer.requiredUnits} units into the pickup.` }] };
