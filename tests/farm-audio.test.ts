@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_FARM_AUDIO_SETTINGS, FARM_AUDIO_SETTINGS_KEY, normalizeFarmAudioSettings,
-  readFarmAudioSettings, writeFarmAudioSettings,
+  FarmSoundscape, readFarmAudioSettings, writeFarmAudioSettings,
 } from '../src/audio/farmSoundscape';
 
 describe('farm audio preferences', () => {
@@ -28,5 +28,12 @@ describe('farm audio preferences', () => {
     expect(readFarmAudioSettings(null)).toEqual(DEFAULT_FARM_AUDIO_SETTINGS);
     expect(readFarmAudioSettings({ getItem: () => '{nope', setItem: () => {} })).toEqual(DEFAULT_FARM_AUDIO_SETTINGS);
     expect(() => writeFarmAudioSettings({ getItem: () => null, setItem: () => { throw new Error('blocked'); } }, DEFAULT_FARM_AUDIO_SETTINGS)).not.toThrow();
+  });
+
+  it('tracks weather as transient mix state without changing persisted preferences', () => {
+    const soundscape = new FarmSoundscape(null);
+    soundscape.update(null, false, 'rain');
+    expect(soundscape.snapshot()).toMatchObject({ weather: 'rain', started: false });
+    expect(readFarmAudioSettings(null)).toEqual(DEFAULT_FARM_AUDIO_SETTINGS);
   });
 });

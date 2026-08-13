@@ -26,6 +26,8 @@ import { tractorToolbarPoseFromRenderState } from '../core/farmTractorMotion';
 import { MANUAL_FIELD_ACTION_LABELS, type ManualFieldActionKind } from '../core/farmManualAction';
 import { clampCameraCenter, clampCameraZoom, cameraFitCenter, cameraFitZoom, farmCameraPolicy, townCameraPolicy } from './cameraPolicy';
 import { drawOldPickup } from './pickupPainter';
+import type { FarmWeatherKind } from '../core/farmWeather';
+import { drawWeatherCast, drawWeatherPrecipitation } from './farmWeatherEffects';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -75,6 +77,7 @@ export interface RenderScene {
     farmhouseTier: FarmhousePresentationTier;
     barnLoftOwned: boolean;
     clockMinute: number;
+    weather: FarmWeatherKind;
     interactionHint?: { kind: string; label: string; x: number; y: number };
     destination?: { kind: 'walk' | 'pickup' | 'tractor'; x: number; y: number };
     manualAction?: { kind: ManualFieldActionKind; x: number; y: number; progress: number };
@@ -465,6 +468,7 @@ export class Renderer {
     for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
       drawSprite(ctx, `tile:farmground:${farmGroundVariant(scene.seed, x, y)}`, camera.sx(isoX(x, y)), camera.sy(isoY(x, y)), zoom);
     }
+    drawWeatherCast(ctx, camera, scene.farm!.weather, now);
     drawFarmyard(ctx, camera, zoom, now);
     for (const plot of scene.plots) drawFarmSection(
       ctx, camera, plot, now, zoom, false,
@@ -584,6 +588,7 @@ export class Renderer {
       ctx.fillStyle = `rgba(24, 34, 76, ${na})`; ctx.fillRect(0, 0, camera.viewW, camera.viewH);
       drawFarmNightGlow(ctx, camera, zoom, na, now, doghousePoint, scene.placements);
     }
+    drawWeatherPrecipitation(ctx, camera, scene.farm!.weather, now);
     if (scene.farm!.scout.scratching) drawScoutHeart(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y)) - 42 * zoom, zoom, now);
     if (scene.farm!.interactionHint) drawFarmInteractionHint(ctx, camera, zoom, scene.farm!.interactionHint);
   }

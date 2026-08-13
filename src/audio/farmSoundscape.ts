@@ -1,4 +1,5 @@
 import type { ManualFieldActionKind } from '../core/farmManualAction';
+import type { FarmWeatherKind } from '../core/farmWeather';
 import { setSound, setSoundVolume, sfx, sharedAudioContext } from './sound';
 
 export const FARM_AUDIO_SETTINGS_KEY = 'farm-empire:audio:v1';
@@ -59,17 +60,20 @@ export interface FarmSoundscapeSnapshot extends FarmAudioSettings {
   started: boolean;
   vehicle: 'tractor' | 'pickup' | null;
   vehicleMoving: boolean;
+  weather: FarmWeatherKind;
 }
 
 export class FarmSoundscape {
   private settings: FarmAudioSettings;
   private ac: AudioContext | null = null;
   private ambientGain: GainNode | null = null;
+  private ambientFilter: BiquadFilterNode | null = null;
   private windSource: AudioBufferSourceNode | null = null;
   private engineGain: GainNode | null = null;
   private engineOsc: OscillatorNode | null = null;
   private vehicle: 'tractor' | 'pickup' | null = null;
   private vehicleMoving = false;
+  private weather: FarmWeatherKind = 'clear';
 
   constructor(private readonly storage: FarmAudioStorage | null) {
     this.settings = readFarmAudioSettings(storage);
@@ -77,7 +81,7 @@ export class FarmSoundscape {
   }
 
   snapshot(): FarmSoundscapeSnapshot {
-    return { ...this.settings, started: !!this.ac, vehicle: this.vehicle, vehicleMoving: this.vehicleMoving };
+    return { ...this.settings, started: !!this.ac, vehicle: this.vehicle, vehicleMoving: this.vehicleMoving, weather: this.weather };
   }
 
   updateSettings(next: Partial<FarmAudioSettings>): FarmAudioSettings {
@@ -123,9 +127,10 @@ export class FarmSoundscape {
     else sfx('click');
   }
 
-  update(vehicle: 'tractor' | 'pickup' | null, vehicleMoving: boolean): void {
+  update(vehicle: 'tractor' | 'pickup' | null, vehicleMoving: boolean, weather: FarmWeatherKind = 'clear'): void {
     this.vehicle = vehicle;
     this.vehicleMoving = vehicleMoving;
+    this.weather = weather;
     if (!this.ac) return;
     this.applyMix();
     const ac = this.ac;
@@ -142,8 +147,10 @@ export class FarmSoundscape {
     this.windSource = null;
     this.engineOsc = null;
     this.ambientGain?.disconnect();
+    this.ambientFilter?.disconnect();
     this.engineGain?.disconnect();
     this.ambientGain = null;
+    this.ambientFilter = null;
     this.engineGain = null;
     this.ac = null;
   }
@@ -155,8 +162,10 @@ export class FarmSoundscape {
 
   private applyMix(): void {
     if (!this.ac || !this.ambientGain) return;
-    const level = this.settings.muted ? 0 : .032 * this.settings.ambience;
+    const weatherScale = this.weather === 'rain' ? 1.55 : this.weather === 'cloudy' ? .86 : 1;
+    const level = this.settings.muted ? 0 : .032 * this.settings.ambience * weatherScale;
     this.ambientGain.gain.setTargetAtTime(level, this.ac.currentTime, .12);
+    this.ambientFilter?.frequency.setTargetAtTime(this.weather === 'rain' ? 2_100 : this.weather === 'cloudy' ? 690 : 850, this.ac.currentTime, .3);
   }
 
   private createWind(ac: AudioContext): void {
@@ -179,6 +188,7 @@ export class FarmSoundscape {
     source.connect(filter).connect(gain).connect(ac.destination);
     source.start();
     this.windSource = source;
+    this.ambientFilter = filter;
     this.ambientGain = gain;
   }
 

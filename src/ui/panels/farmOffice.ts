@@ -3,6 +3,7 @@ import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../..
 import { farmOf, formatMoney, storageUsed } from '../../core/farmBusiness';
 import { pickupCargoCapacity, pickupCargoUsed } from '../../core/farmPickup';
 import { countyFreightBoardState } from '../../core/farmCountyFreight';
+import { farmWeatherForecast } from '../../core/farmWeather';
 import { h } from '../dom';
 import { openPanel } from '../modal';
 
@@ -26,6 +27,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
     : 100;
   const ownedSections = state.plots.length;
   const freight = countyFreightBoardState(state);
+  const forecast = farmWeatherForecast(state, 3);
   const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offer ? 'Offer posted' : 'Route complete today';
   openPanel({ title: farm.parcels.northOwned ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
@@ -43,6 +45,14 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
       h('strong', {}, 'FIELD NOTE'),
       h('span', {}, knowledge.level.fieldNote),
       h('small', {}, knowledge.level.sourceLabel),
+    ),
+    h('section', { class: 'farmbook-section' },
+      h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'County Forecast'), h('span', {}, '3 days')),
+      h('div', { class: 'farmbook-weather-row', 'data-testid': 'farm-weather-forecast' }, ...forecast.map((weather, index) => h('div', { class: `farmbook-weather-card ${weather.kind}` },
+        h('span', {}, index === 0 ? 'Today' : `Day ${weather.day}`),
+        h('strong', {}, weather.shortForecast),
+        h('small', {}, index === 0 ? weather.fieldNote : weather.kind === 'rain' ? 'Rain can establish new planting.' : 'Plan on manual establishment water.'),
+      ))),
     ),
     h('section', { class: 'farmbook-section' },
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Farm Guide'), h('span', {}, `${completed}/${guide.length}`)),

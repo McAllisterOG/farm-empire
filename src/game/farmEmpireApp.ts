@@ -25,6 +25,7 @@ import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type Tra
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
 import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
 import { hireFirstFarmhand, startFarmhandShift, type FarmhandWorkKind } from '../core/farmWorkforce';
+import { applyCurrentFarmRain, currentFarmWeather, farmWeatherForDay } from '../core/farmWeather';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import type { TownNpcDef, TownServiceId } from '../data/town.data';
 import { FIRST_FARMHAND } from '../data/farmWorkforce.data';
@@ -149,6 +150,7 @@ export class FarmEmpireApp {
   private lastFrame = 0;
   private lastSave: number;
   private simulationOffsetMs = 0;
+  private lastRainNoticeDay = 0;
   private devTools: HTMLElement | null = null;
   private inputCleanup: (() => void) | null = null;
   private readonly onResize = (): void => {
@@ -1600,6 +1602,7 @@ export class FarmEmpireApp {
         nextIndex: this.manualFieldJob.nextIndex,
       } : null,
       audio: this.farmAudio.snapshot(),
+      weather: currentFarmWeather(this.state),
       fields,
       overlay: { actionMenu: isActionMenuOpen(), panel: isPanelOpen() },
     });
@@ -1617,6 +1620,14 @@ export class FarmEmpireApp {
     };
     addButton('dev-mature-all', 'Mature crops', () => this.matureAll());
     addButton('dev-advance-day', 'Advance day', () => advanceFarmDays(this.state, 1));
+    addButton('dev-rain-day', 'Advance to rain', () => {
+      const farm = farmOf(this.state);
+      for (let offset = 0; offset < 14; offset++) {
+        if (farmWeatherForDay(this.state.seed, farm.clock.day).kind === 'rain') break;
+        advanceFarmDays(this.state, 1);
+      }
+      this.hud.update(this.state, this.tractorHudRuntime());
+    });
     addButton('dev-fund-land', 'Fund land test', () => {
       farmOf(this.state).cashCents = 1_000_000;
       syncCashMirror(this.state);
@@ -1671,6 +1682,12 @@ export class FarmEmpireApp {
     const dt = this.lastFrame ? Math.min(100, realNow - this.lastFrame) : 16;
     this.lastFrame = realNow;
     advanceFarmClock(this.state, now);
+    const rainResult = applyCurrentFarmRain(this.state, now);
+    const weather = currentFarmWeather(this.state);
+    if (rainResult.wateredPlotUids.length > 0 && this.lastRainNoticeDay !== weather.day) {
+      this.lastRainNoticeDay = weather.day;
+      toast(`Steady rain established ${rainResult.wateredPlotUids.length} field section${rainResult.wateredPlotUids.length === 1 ? '' : 's'}.`, 'good');
+    }
     this.updateFarmhand(now, dt);
     if (this.mode === 'farm') this.updateManualFieldAction(now);
 
@@ -1744,7 +1761,7 @@ export class FarmEmpireApp {
 
     const activeVehicle = this.operatingTractor ? 'tractor' : this.operatingPickup ? 'pickup' : null;
     const vehicleMoving = this.operatingTractor ? !!this.tractorTarget : this.operatingPickup ? !!this.pickupTarget : false;
-    this.farmAudio.update(activeVehicle, vehicleMoving);
+    this.farmAudio.update(activeVehicle, vehicleMoving, weather.kind);
 
     this.renderer.render(this.buildScene(), now);
     this.hud.update(this.state, this.tractorHudRuntime());
@@ -1770,6 +1787,7 @@ export class FarmEmpireApp {
           name: this.state.player.name,
         },
         clockMinute: farm.clock.minute,
+        weather: currentFarmWeather(this.state).kind,
         gesturingNpcId: this.townGesture?.npcId ?? null,
         gestureUntil: this.townGesture?.until ?? 0,
         pickup: this.pickupAtTown ? { ...TOWN_PICKUP_PARKING, trailerOwned: farm.equipment.countyUtilityTrailerOwned } : undefined,
@@ -1816,6 +1834,7 @@ export class FarmEmpireApp {
       farmhouseTier: farmhousePresentationTier(farm.parcels.northOwned),
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
       clockMinute: farm.clock.minute,
+      weather: currentFarmWeather(this.state).kind,
       interactionHint: this.hover ? { kind: this.hover.kind, label: this.hover.label, ...this.hover.point } : undefined,
       manualAction: this.manualFieldAction ? {
         kind: this.manualFieldAction.kind,

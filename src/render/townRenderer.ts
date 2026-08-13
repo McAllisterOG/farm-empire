@@ -9,10 +9,13 @@ import {
   drawTownBuilding, drawTownDecor, drawTownExitSign, drawTownLampGlow, drawTownNpc, drawTownPlayer,
 } from './townSprites';
 import { drawOldPickup } from './pickupPainter';
+import type { FarmWeatherKind } from '../core/farmWeather';
+import { drawWeatherCast, drawWeatherPrecipitation } from './farmWeatherEffects';
 
 export interface TownRenderScene {
   actor: { avatar: AvatarConfig; x: number; y: number; walking: boolean; facing: FarmFacing; name: string };
   clockMinute: number;
+  weather: FarmWeatherKind;
   gesturingNpcId: TownNpcDef['id'] | null;
   gestureUntil: number;
   pickup?: { x: number; y: number; trailerOwned: boolean };
@@ -78,6 +81,7 @@ export function renderTown(
 ): void {
   const zoom = camera.zoom;
   drawTownGround(ctx, camera);
+  drawWeatherCast(ctx, camera, scene.weather, now);
   drawTownEdgeCluster(ctx, camera, zoom);
   const items: TownDrawItem[] = [];
   const treeAnchors = [
@@ -121,6 +125,7 @@ export function renderTown(
       const screen = project(camera, building.door, true); drawTownLampGlow(ctx, screen.x, screen.y, zoom, night * .7);
     }
   }
+  drawWeatherPrecipitation(ctx, camera, scene.weather, now);
   if (scene.interactionHint) drawTownInteractionHint(ctx, camera, zoom, scene.interactionHint);
 }
 

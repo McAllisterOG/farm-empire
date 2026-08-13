@@ -3,6 +3,7 @@ import { allFarmCrops, farmCropDef } from '../core/registry';
 import { farmCropUnlockInfo, farmOf, formatMoney, storageUsed } from '../core/farmBusiness';
 import { pickupCargoCapacity, pickupCargoUsed } from '../core/farmPickup';
 import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../core/farmKnowledge';
+import { currentFarmWeather } from '../core/farmWeather';
 import { h, spriteImg } from './dom';
 
 export interface FarmHudCallbacks {
@@ -37,6 +38,8 @@ export class FarmHud {
   private root: HTMLElement;
   private cashEl: HTMLElement;
   private clockEl: HTMLElement;
+  private weatherEl: HTMLElement;
+  private weatherStat: HTMLElement;
   private storageEl: HTMLElement;
   private selectedEl: HTMLElement;
   private tractorEl: HTMLElement;
@@ -55,6 +58,8 @@ export class FarmHud {
   constructor(cb: FarmHudCallbacks) {
     this.cashEl = h('strong', { 'data-testid': 'cash' }, '$0.00');
     this.clockEl = h('strong', { 'data-testid': 'farm-clock' }, 'Day 1 · 8:00 AM');
+    this.weatherEl = h('strong', { 'data-testid': 'farm-weather' }, 'Clear');
+    this.weatherStat = h('div', { class: 'farm-stat farm-weather-stat' }, h('span', {}, 'Weather'), this.weatherEl);
     this.storageEl = h('strong', { 'data-testid': 'storage-summary' }, '0 / 0');
     this.selectedEl = h('strong', { 'data-testid': 'selected-crop' }, 'Corn');
     this.tractorEl = h('strong', { 'data-testid': 'tractor-status' }, 'Operational');
@@ -77,6 +82,7 @@ export class FarmHud {
       )),
       h('div', { class: 'farm-stat' }, h('span', {}, 'Cash'), this.cashEl),
       h('div', { class: 'farm-stat' }, h('span', {}, 'Time'), this.clockEl),
+      this.weatherStat,
       this.storageButton,
       this.equipmentButton,
       this.locationStat,
@@ -137,6 +143,11 @@ export class FarmHud {
     const farm = farmOf(state);
     this.cashEl.textContent = formatMoney(farm.cashCents);
     this.clockEl.textContent = `Day ${farm.clock.day} · ${clockText(farm.clock.minute)}`;
+    const weather = currentFarmWeather(state);
+    this.weatherEl.textContent = weather.shortForecast;
+    this.weatherStat.classList.toggle('rain', weather.kind === 'rain');
+    this.weatherStat.classList.toggle('cloudy', weather.kind === 'cloudy');
+    this.weatherStat.title = weather.fieldNote;
     this.storageEl.textContent = `${storageUsed(state)} / ${farm.storageCapacity} · P ${pickupCargoUsed(state)} / ${pickupCargoCapacity(state)}`;
     this.selectedEl.textContent = farmCropDef(farm.selectedCropId).name;
     const knowledge = farmerKnowledgeSummary(state);

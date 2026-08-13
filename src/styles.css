@@ -499,6 +499,10 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .farm-stat { display: flex; flex-direction: column; justify-content: center; min-width: 120px; }
 .farm-stat > span { color: #8c7a55; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; }
 .farm-stat > strong { color: #3d4a32; font-size: 14px; white-space: nowrap; }
+.farm-weather-stat { min-width: 96px; }
+.farm-weather-stat.cloudy { background: rgba(241, 242, 229, .97); border-color: #b8bea4; }
+.farm-weather-stat.rain { background: rgba(226, 239, 239, .97); border-color: #88aeb2; }
+.farm-weather-stat.rain > strong { color: #32606a; }
 .farm-stat-button { font: inherit; text-align: left; cursor: pointer; }
 .farm-stat-button:hover { background: #fff4cf; }
 .farm-stat-button:hover { transform: translateY(-1px); border-color: #b79b55; }
@@ -644,6 +648,14 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .farmbook-snapshot > div { display: flex; flex-direction: column; padding: 8px 9px; border-radius: 9px; background: #f5efdf; }
 .farmbook-snapshot span { color: #8c7a55; font-size: 9px; font-weight: 900; text-transform: uppercase; }
 .farmbook-snapshot strong { color: #43513c; font-size: 12px; white-space: nowrap; }
+.farmbook-weather-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.farmbook-weather-card { display: flex; flex-direction: column; gap: 2px; min-height: 78px; padding: 8px 9px; border: 1px solid #dfd3ae; border-radius: 9px; background: #f6efd9; }
+.farmbook-weather-card > span { color: #8c7a55; font-size: 9px; font-weight: 900; text-transform: uppercase; }
+.farmbook-weather-card > strong { color: #40583e; font-size: 13px; }
+.farmbook-weather-card > small { color: #7a755f; font-size: 9px; line-height: 1.25; }
+.farmbook-weather-card.cloudy { background: #eef0e4; border-color: #c4c9ae; }
+.farmbook-weather-card.rain { background: #e2eeee; border-color: #9dbfc2; }
+.farmbook-weather-card.rain > strong { color: #32606a; }
 .farmbook-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 .fe-dev-tools { position: fixed; right: 0; top: 0; display: flex; opacity: 0.001; z-index: 100; }
 .fe-dev-tools > * { width: 74px; height: 24px; overflow: hidden; }
@@ -686,6 +698,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .market-sell-controls { width: 100%; justify-content: flex-start; padding-left: 56px; }
   .farmbook-guide-list { grid-template-columns: 1fr; }
   .farmbook-snapshot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .farmbook-weather-row { grid-template-columns: 1fr; }
   .farmbook-field-note { grid-template-columns: 1fr; }
   .farmbook-field-note strong { grid-row: auto; }
 }
