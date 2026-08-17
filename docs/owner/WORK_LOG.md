@@ -456,3 +456,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Verification:** 275/275 tests passed; focused economics and land tests, strict typecheck, Vite production build, and diff check passed. Coverage pins $4,250, silo derivation, 150/200 non-silo normalization, freight requirements/capacities, crop tradeoffs, operated silo fit, and helper input immutability.
 - **Review:** Independent Red Team found no Critical/High issue and one bounded Medium no-mutation test gap; the gap was repaired, and re-review found no High or Medium issue.
 - **Known limitation:** Prescribed browser validation remains blocked by the recorded Windows ACL-helper failure; no fallback, package, shortcut, or push was used.
+
+## Commercial Freight Route V2 - complete
+
+- **Date:** 2026-08-17
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `feat: add commercial bulk freight routes` (local)
+- **Result:** Trailer-owned farms receive one deterministic, labeled commercial bulk route plus two standard daily Freight Board routes; base pickup farms retain three standard routes. Bulk uses approved 96/104/112/120 weight-1 or 32/36/40 pumpkin bands, exceeds 72 weighted cargo but fits 144, and locks a 40% premium; standards remain at 25%. Save v18 preserves valid legacy standards and fails closed for invalid bulk or completed-day state.
+- **Verification:** 282/282 tests passed; strict typecheck, Vite production build, and `git diff --check` passed. Red Team High/MEDIUM save-integrity findings (same-day double payout, legacy unlocks, attainable payout ceilings) were repaired and re-review accepted with no High/Medium findings.
+- **Known limitation:** Prescribed browser validation remains blocked by the recorded Windows ACL-helper failure; no fallback, package, shortcut, or push was used.

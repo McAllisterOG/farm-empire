@@ -10,7 +10,17 @@ export interface CountyFreightTemplate {
 }
 
 export const COUNTY_FREIGHT_PREMIUM_BPS = 2_500;
+export const COUNTY_FREIGHT_BULK_PREMIUM_BPS = 4_000;
 export const COUNTY_FREIGHT_BID_COUNT = 3;
+
+export type CountyFreightKind = 'standard' | 'bulk';
+
+/** Commercial loads intentionally exceed the base pickup but fit its trailer. */
+export function countyFreightBulkAllowedUnits(storageUnitsPerItem: number): readonly number[] {
+  if (storageUnitsPerItem === 1) return [96, 104, 112, 120];
+  if (storageUnitsPerItem === 3) return [32, 36, 40];
+  return [];
+}
 
 export const COUNTY_FREIGHT_TEMPLATES: readonly CountyFreightTemplate[] = Object.freeze([
   { cropId: 'crop_corn', title: 'School Lunch Corn', buyer: 'County school kitchens', requiredUnits: 16 },

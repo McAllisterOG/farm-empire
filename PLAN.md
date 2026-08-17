@@ -37,10 +37,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 31. **Manual Harvest Basket Logistics V1** - persisted 24-unit owner basket, selectable barn/pickup destination, all-or-nothing weighted unloads, automatic large-selection unload/resume, safe cancel/reload, direct-to-barn tractor/farmhand isolation, and save-v17 migration.
 32. **First Farm Morning V1** - a runtime-only fresh-farm welcome and deterministic corn-delivery guide, compact pickup-progress chip, single safe field pulse, and Farmbook Today/Later framing without save, economy, or transaction changes.
 33. **Economy & Commercial-Scale Calibration V1** - a $4,250 neighboring parcel, 1,200-unit commercial silo, pure crop-capital planning, and concise planning copy without changing crop values, logistics, or save v17.
+34. **Commercial Freight Route V2** - three daily routes remain one-active-only; a trailer-owned farm gets one 40%-premium commercial bulk load (96/104/112/120 weight-1 items or 32/36/40 pumpkins) plus two 25%-premium standard routes, all deterministic and save-v18 safe.
 
 ## Current authorization
 
-No additional feature package is currently active. Economy & Commercial-Scale Calibration V1 is complete: internal exact-flow evidence removed the early acreage cash gate and sized combined storage for full operated grain acreage while retaining crop and logistics tradeoffs. Player-surface browser validation remains blocked by the recorded Windows ACL-helper failure. Use future first-session, basket-logistics, market, workforce, weather, and progression playtests to select a deliberately designed next package.
+No additional feature package is currently active. Commercial Freight Route V2 is complete: trailer ownership now surfaces one deterministic commercial bulk bid alongside two standard bids while preserving exact pickup-only delivery and one contract at a time. Save v18 preserves valid legacy standard contracts and closes malformed, locked, trailerless, or same-day-completed contracts. Player-surface browser validation remains blocked by the recorded Windows ACL-helper failure. Use future market and logistics playtests to select a deliberately designed next package.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.

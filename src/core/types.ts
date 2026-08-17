@@ -437,6 +437,7 @@ export interface FarmTownContactState {
 
 export interface FarmCountyFreightContract {
   id: string;
+  kind: 'standard' | 'bulk';
   issuedDay: number;
   cropId: string;
   requiredUnits: number;

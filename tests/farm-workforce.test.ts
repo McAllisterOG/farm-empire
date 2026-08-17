@@ -30,7 +30,7 @@ describe('First Farmhand workforce', () => {
   it('requires both County trust and neighboring acreage, then hires once at the exact price', () => {
     const state = createFarmGame('Workforce Test', 1_414, NOW);
     const farm = farmOf(state);
-    expect(SAVE_VERSION).toBe(17);
+    expect(SAVE_VERSION).toBe(18);
     expect(farmhandUnlocked(state)).toBe(false);
     expect(hireFirstFarmhand(state).ok).toBe(false);
     farm.townContact.status = 'completed';

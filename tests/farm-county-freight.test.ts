@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import '../src/data';
-import { COUNTY_FREIGHT_BID_COUNT, COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES } from '../src/data/countyFreight.data';
+import { COUNTY_FREIGHT_BID_COUNT, COUNTY_FREIGHT_BULK_PREMIUM_BPS, COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES, countyFreightBulkAllowedUnits } from '../src/data/countyFreight.data';
 import {
   acceptCountyFreightOffer, countyFreightBoardState, countyFreightOffer, countyFreightOffers,
   countyFreightProgress, fulfillCountyFreightContract,
 } from '../src/core/farmCountyFreight';
 import { advanceFarmDays, farmOf } from '../src/core/farmBusiness';
+import { farmCropDef } from '../src/core/registry';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { deserialize, serialize } from '../src/save/save';
 import { NOW } from './helpers';
@@ -141,5 +142,111 @@ describe('County Freight Board', () => {
     expect(farmOf(normalized).countyFreight.active).toBeNull();
     expect(farmOf(normalized).countyFreight.lastCompletedDay).toBe(0);
     expect(countyFreightOffers(normalized)).toHaveLength(COUNTY_FREIGHT_BID_COUNT);
+  });
+  it('keeps base-pickup bids standard, deterministic, and within 72 weighted cargo', () => {
+    const state = progressedFarm(9_001);
+    const offers = countyFreightOffers(state);
+    expect(offers).toHaveLength(3);
+    expect(offers.every((offer) => offer.kind === 'standard')).toBe(true);
+    expect(offers.every((offer) => offer.id === `county-freight-v2-${offer.issuedDay}-standard-${offer.cropId}`)).toBe(true);
+    expect(offers.every((offer) => offer.requiredUnits === COUNTY_FREIGHT_TEMPLATES.find((template) => template.cropId === offer.cropId)!.requiredUnits)).toBe(true);
+    expect(offers.every((offer) => offer.requiredUnits * farmCropDef(offer.cropId).storageUnitsPerItem <= 72)).toBe(true);
+  });
+
+  it('posts one stable trailer bulk load plus two distinct standard routes', () => {
+    const state = progressedFarm(9_002); farmOf(state).equipment.countyUtilityTrailerOwned = true;
+    const offers = countyFreightOffers(state); const bulk = offers.find((offer) => offer.kind === 'bulk')!;
+    expect(offers).toHaveLength(3); expect(offers.filter((offer) => offer.kind === 'bulk')).toHaveLength(1);
+    expect(offers.filter((offer) => offer.kind === 'standard')).toHaveLength(2);
+    expect(new Set(offers.map((offer) => offer.cropId)).size).toBe(3);
+    const crop = COUNTY_FREIGHT_TEMPLATES.find((template) => template.cropId === bulk.cropId)!;
+    const quote = farmOf(state).market.quotes[bulk.cropId].currentCents;
+    const weight = farmCropDef(crop.cropId).storageUnitsPerItem;
+    expect(countyFreightBulkAllowedUnits(weight)).toContain(bulk.requiredUnits);
+    expect(bulk.requiredUnits * weight).toBeGreaterThan(72); expect(bulk.requiredUnits * weight).toBeLessThanOrEqual(144);
+    expect(bulk.payoutCents).toBe(Math.round(bulk.requiredUnits * quote * (10_000 + COUNTY_FREIGHT_BULK_PREMIUM_BPS) / 10_000));
+    expect(countyFreightOffers(deserialize(serialize(state, NOW + 1), NOW + 2))).toEqual(offers);
+  });
+
+  it('fulfills a bulk load atomically, retains extra cargo, and pays once', () => {
+    const state = progressedFarm(9_003); farmOf(state).equipment.countyUtilityTrailerOwned = true;
+    const bulk = countyFreightOffers(state).find((offer) => offer.kind === 'bulk')!;
+    expect(acceptCountyFreightOffer(state, bulk.id).ok).toBe(true);
+    const before = JSON.stringify({ freight: farmOf(state).countyFreight, cargo: farmOf(state).pickup.cargo, cash: farmOf(state).cashCents });
+    farmOf(state).pickup.cargo.crops[bulk.cropId] = bulk.requiredUnits - 1;
+    expect(fulfillCountyFreightContract(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
+    expect(farmOf(state).countyFreight.active).not.toBeNull();
+    farmOf(state).pickup.cargo.crops[bulk.cropId] = bulk.requiredUnits + 2;
+    const cash = farmOf(state).cashCents;
+    expect(fulfillCountyFreightContract(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(true);
+    expect(farmOf(state).pickup.cargo.crops[bulk.cropId]).toBe(2);
+    expect(farmOf(state).cashCents).toBe(cash + bulk.payoutCents);
+    expect(fulfillCountyFreightContract(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
+    expect(before).toContain(bulk.id);
+  });
+
+  it('normalizes literal v17 standard terms and fail-closes malformed v18 bulk contracts', () => {
+    const legacy = progressedFarm() as unknown as Record<string, any>;
+    legacy.version = 17;
+    legacy.farm.countyFreight.active = { id: 'county-freight-1-crop_corn', issuedDay: 1, cropId: 'crop_corn', requiredUnits: 16, payoutCents: 6_200 };
+    const migrated = deserialize(JSON.stringify(legacy), NOW + 1);
+    expect(farmOf(migrated).countyFreight.active).toMatchObject({ kind: 'standard', id: 'county-freight-1-crop_corn', requiredUnits: 16, payoutCents: 6_200 });
+    farmOf(migrated).pickup.cargo.crops.crop_corn = 16;
+    expect(fulfillCountyFreightContract(migrated, { pickupPresent: true, source: 'pickup' }).ok).toBe(true);
+
+    const bulkState = progressedFarm(9_004); farmOf(bulkState).equipment.countyUtilityTrailerOwned = true;
+    const valid = countyFreightOffers(bulkState).find((offer) => offer.kind === 'bulk')!;
+    expect(acceptCountyFreightOffer(bulkState, valid.id).ok).toBe(true);
+    expect(farmOf(deserialize(serialize(bulkState, NOW + 2), NOW + 3)).countyFreight.active).toEqual(valid);
+    for (const change of [
+      { kind: 'standard' }, { id: 'county-freight-v2-1-bulk-crop_fake' }, { requiredUnits: 1 }, { payoutCents: 999_999_999 },
+    ]) {
+      const malformed = structuredClone(bulkState) as unknown as Record<string, any>;
+      Object.assign(malformed.farm.countyFreight.active, change);
+      expect(farmOf(deserialize(JSON.stringify(malformed), NOW + 4)).countyFreight.active).toBeNull();
+    }
+    const trailerless = structuredClone(bulkState) as unknown as Record<string, any>;
+    trailerless.farm.equipment.countyUtilityTrailerOwned = false;
+    expect(farmOf(deserialize(JSON.stringify(trailerless), NOW + 5)).countyFreight.active).toBeNull();
+  });
+  it('closes an active contract already completed today and blocks in-memory double payout without mutation', () => {
+    const state = progressedFarm(); const offer = countyFreightOffers(state)[0];
+    expect(acceptCountyFreightOffer(state, offer.id).ok).toBe(true);
+    farmOf(state).pickup.cargo.crops[offer.cropId] = offer.requiredUnits;
+    farmOf(state).countyFreight.lastCompletedDay = farmOf(state).clock.day;
+    const before = JSON.stringify({ freight: farmOf(state).countyFreight, cargo: farmOf(state).pickup.cargo, cash: farmOf(state).cashCents, stats: state.stats });
+    expect(fulfillCountyFreightContract(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(false);
+    expect(JSON.stringify({ freight: farmOf(state).countyFreight, cargo: farmOf(state).pickup.cargo, cash: farmOf(state).cashCents, stats: state.stats })).toBe(before);
+    const saved = structuredClone(state) as unknown as Record<string, any>;
+    const normalized = deserialize(JSON.stringify(saved), NOW + 6);
+    expect(farmOf(normalized).countyFreight.active).toBeNull();
+  });
+
+  it('requires real crop unlocks for legacy standard contracts', () => {
+    for (const [cropId, requiredUnits] of [['crop_cabbage', 16], ['crop_pumpkin', 8]] as const) {
+      const forged = progressedFarm() as unknown as Record<string, any>;
+      forged.version = 17;
+      forged.farm.countyFreight.active = { id: `county-freight-1-${cropId}`, issuedDay: 1, cropId, requiredUnits, payoutCents: 1 };
+      expect(farmOf(deserialize(JSON.stringify(forged), NOW + 7)).countyFreight.active).toBeNull();
+    }
+  });
+
+  it('accepts only attainable inclusive payout maxima for standard and bulk snapshots', () => {
+    const maxPayout = (requiredUnits: number, cropId: string, premiumBps: number) => Math.round(requiredUnits * Math.round(farmCropDef(cropId).basePriceCents * 1.55) * (10_000 + premiumBps) / 10_000);
+    const standardState = progressedFarm(9_010); const standard = countyFreightOffers(standardState)[0];
+    expect(acceptCountyFreightOffer(standardState, standard.id).ok).toBe(true);
+    const bulkState = progressedFarm(9_011); farmOf(bulkState).equipment.countyUtilityTrailerOwned = true;
+    const bulk = countyFreightOffers(bulkState).find((offer) => offer.kind === 'bulk')!;
+    expect(acceptCountyFreightOffer(bulkState, bulk.id).ok).toBe(true);
+    for (const [state, contract, premiumBps] of [[standardState, standard, COUNTY_FREIGHT_PREMIUM_BPS], [bulkState, bulk, COUNTY_FREIGHT_BULK_PREMIUM_BPS]] as const) {
+      const maximum = maxPayout(contract.requiredUnits, contract.cropId, premiumBps);
+      for (const payoutCents of [maximum, maximum + 1, 0]) {
+        const raw = structuredClone(state) as unknown as Record<string, any>;
+        raw.farm.countyFreight.active.payoutCents = payoutCents;
+        const normalized = farmOf(deserialize(JSON.stringify(raw), NOW + 8)).countyFreight.active;
+        expect(normalized === null).toBe(payoutCents !== maximum);
+        if (normalized) expect(normalized.payoutCents).toBe(maximum);
+      }
+    }
   });
 });

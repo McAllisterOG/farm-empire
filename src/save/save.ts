@@ -152,6 +152,11 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (farm) delete farm.handBasket;
     raw.version = 17;
   },
+  17: (raw) => {
+    // Commercial Freight V2 changes offer generation only. Existing accepted
+    // standard contracts are normalized defensively; migration grants nothing.
+    raw.version = 18;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

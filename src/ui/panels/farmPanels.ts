@@ -8,7 +8,7 @@ import { farmParcelDef, farmParcelSectionCount } from '../../core/farmParcels';
 import { farmCropEconomics } from '../../core/farmCropEconomics';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
-import { countyFreightTemplate, COUNTY_FREIGHT_PREMIUM_BPS } from '../../data/countyFreight.data';
+import { countyFreightTemplate, COUNTY_FREIGHT_BULK_PREMIUM_BPS, COUNTY_FREIGHT_PREMIUM_BPS } from '../../data/countyFreight.data';
 import { countyFreightBoardState, countyFreightProgress } from '../../core/farmCountyFreight';
 import { pickupCargoCapacity, pickupCargoUsed, pickupCropUnits, pickupSeedUnits } from '../../core/farmPickup';
 import { h, spriteImg, clearChildren } from '../dom';
@@ -191,12 +191,13 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
       const contract = board.active;
       const template = countyFreightTemplate(contract.cropId);
       const crop = farmCropDef(contract.cropId);
+      const weightedCargo = contract.requiredUnits * crop.storageUnitsPerItem;
       const progress = countyFreightProgress(state, { pickupPresent: actions.pickupPresent, source: 'pickup' });
       body.append(h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-freight-active' },
         h('div', { class: 'farm-card-main' },
-          h('div', { class: 'farm-card-title' }, `County Freight Board · ${template.title}`),
-          h('div', { class: 'farm-card-sub' }, `${template.buyer} · ${progress.loadedUnits} / ${contract.requiredUnits} ${crop.name} in pickup cargo`),
-          h('div', { class: 'farm-card-stock' }, `Accepted Day ${contract.issuedDay} · locked payout ${formatMoney(contract.payoutCents)} · no deadline`),
+          h('div', { class: 'farm-card-title' }, `${contract.kind === 'bulk' ? 'Commercial Bulk Route · ' : 'County Freight Board · '}${template.title}`),
+          h('div', { class: 'farm-card-sub' }, `${template.buyer} · ${progress.loadedUnits} / ${contract.requiredUnits} ${crop.name} in pickup cargo · ${weightedCargo} weighted cargo`),
+          h('div', { class: 'farm-card-stock' }, `Accepted Day ${contract.issuedDay} · locked payout ${formatMoney(contract.payoutCents)} · ${contract.kind === 'bulk' ? 'TRAILER REQUIRED · 40% above today’s posted rate' : '25% above today’s posted rate'} · no deadline`),
         ),
         h('button', {
           class: 'btn btn-primary btn-sm', 'data-testid': 'deliver-county-freight',
@@ -206,17 +207,19 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
       ));
     } else if (board.offers.length > 0) {
       body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-freight-choice-summary' },
-        h('strong', {}, `County Freight Board · ${board.offers.length} routes posted`),
+        h('strong', {}, board.offers.some((offer) => offer.kind === 'bulk') ? 'County Freight Board · 3 routes posted · one commercial bulk load' : `County Freight Board · ${board.offers.length} routes posted`),
         h('span', {}, 'Choose one route. Posted bids refresh with the next farm day; accepted terms remain locked until delivery.'),
       ));
       for (const offer of board.offers) {
         const template = countyFreightTemplate(offer.cropId);
         const crop = farmCropDef(offer.cropId);
+        const weightedCargo = offer.requiredUnits * crop.storageUnitsPerItem;
+        const premiumBps = offer.kind === 'bulk' ? COUNTY_FREIGHT_BULK_PREMIUM_BPS : COUNTY_FREIGHT_PREMIUM_BPS;
         body.append(h('div', { class: 'farm-card county-work-order', 'data-testid': `county-freight-offer-${offer.cropId}` },
           h('div', { class: 'farm-card-main' },
-            h('div', { class: 'farm-card-title' }, template.title),
-            h('div', { class: 'farm-card-sub' }, `${template.buyer} requests ${offer.requiredUnits} ${crop.name}.`),
-            h('div', { class: 'farm-card-stock' }, `Pickup: ${pickupCropUnits(state, offer.cropId)} · ${formatMoney(offer.payoutCents)} locked payout · ${(COUNTY_FREIGHT_PREMIUM_BPS / 100).toFixed(0)}% above today's posted rate`),
+            h('div', { class: 'farm-card-title' }, `${offer.kind === 'bulk' ? 'Commercial Bulk Route · ' : ''}${template.title}`),
+            h('div', { class: 'farm-card-sub' }, `${template.buyer} requests ${offer.requiredUnits} ${crop.name} · ${weightedCargo} weighted cargo.`),
+            h('div', { class: 'farm-card-stock' }, `${offer.kind === 'bulk' ? 'TRAILER REQUIRED · ' : ''}Pickup: ${pickupCropUnits(state, offer.cropId)} · ${formatMoney(offer.payoutCents)} locked payout · ${(premiumBps / 100).toFixed(0)}% above today’s posted rate`),
           ),
           h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `accept-county-freight-${offer.cropId}`, onclick: () => runAndRender(actions.acceptCountyFreight(offer.id), actions, rerender) }, 'Accept Route'),
         ));
@@ -446,7 +449,7 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
       ),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-utility-trailer' },
         h('div', { class: 'farm-card-title' }, COUNTY_UTILITY_TRAILER.name),
-        h('p', {}, `One-time larger mixed-cargo convenience · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · doubles pickup cargo from ${COUNTY_UTILITY_TRAILER.fromCapacity} to ${COUNTY_UTILITY_TRAILER.toCapacity} units. Freight Board routes already fit the base pickup.`),
+        h('p', {}, `One-time larger mixed-cargo convenience · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · doubles pickup cargo from ${COUNTY_UTILITY_TRAILER.fromCapacity} to ${COUNTY_UTILITY_TRAILER.toCapacity} units. Unlocks one trailer-required Commercial Bulk Route among daily bids.`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-utility-trailer-status' }, trailerOwned
           ? `Owned · attached · ${pickupCargoCapacity(state)} cargo units`
           : trailerUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · complete one Freight Board haul'),

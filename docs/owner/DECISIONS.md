@@ -328,3 +328,11 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Raise the County Grain Silo authoritative combined capacity from 800 to **1,200**. Existing valid silo ownership derives that capacity during v17 normalization; farms without a valid silo continue to derive 150 or 200 from their existing milestones.
 - A pure DOM-free crop economics helper exposes seed capital, base gross/net, storage, and optional operated field-kit yield for 36- and 96-section planning. UI guidance stays concise and distinguishes capacity truth from Freight Board requirements.
 - Rationale is internal, reproducible game evidence rather than a claim of literal agricultural pricing: two starter corn seeds cover the 12-unit first delivery, its payout still funds tractor restoration from $5,000, and a 96-section operated harvest occupies 864 corn, 960 soy, or 864 cabbage units but exceeds 1,200 for tomatoes and pumpkins. Future real-world calibration remains a separately authorized primary-source study.
+
+## 2026-08-17 - Add trailer-gated commercial bulk freight routes
+
+**Status:** Approved by the owner
+
+- The Freight Board always posts exactly three deterministic, distinct unlocked-crop routes and permits only one active contract. Without a trailer, all routes remain standard, retain their existing quantities, fit 72 weighted pickup cargo, and pay a locked 25% premium.
+- Trailer ownership changes one daily route into a visibly labeled commercial bulk load while retaining two standard routes. Weight-1 bulk crops use 96/104/112/120 items; pumpkins use 32/36/40. Bulk cargo must exceed 72 and fit the 144-unit trailer, and pays a locked 40% premium.
+- Save v18 persists route kind. Valid legacy V17 standard snapshots retain their original terms; V2 validation fails closed for malformed, locked, trailerless, over-cap, same-day-completed, or unattainable-payout contracts. Delivery remains exact pickup-only and atomic.

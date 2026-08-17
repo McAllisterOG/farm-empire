@@ -5,7 +5,7 @@ import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farm
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
 import { BARN_LOFT_EXPANSION, COUNTY_GRAIN_SILO, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
-import { COUNTY_FREIGHT_TEMPLATES } from '../data/countyFreight.data';
+import { COUNTY_FREIGHT_BULK_PREMIUM_BPS, COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES, countyFreightBulkAllowedUnits } from '../data/countyFreight.data';
 import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, PICKUP_TRAILER_CARGO_CAPACITY, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
 import { HAND_BASKET_CAPACITY, emptyHandBasket } from './farmHarvestBasketData';
 import {
@@ -21,6 +21,12 @@ export const STARTING_CASH_CENTS = 500_000;
 export const STARTING_STORAGE_CAPACITY = 150;
 export const FIRST_PARCEL_PRICE_CENTS = 425_000;
 export const GAME_MINUTES_PER_REAL_SECOND = 8;
+export const FARM_MARKET_MAX_MULTIPLIER = 1.55;
+
+function maxFreightPayoutCents(requiredUnits: number, basePriceCents: number, premiumBps: number): number {
+  const maxQuote = Math.round(basePriceCents * FARM_MARKET_MAX_MULTIPLIER);
+  return Math.max(1, Math.round(requiredUnits * maxQuote * (10_000 + premiumBps) / 10_000));
+}
 
 export type ParcelWorkKind = 'plant' | 'harvest';
 export type FarmWorkContext = 'manual' | 'operatedTractor';
@@ -257,21 +263,38 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const freightRequiredUnits = clampInt(rawActiveFreight.requiredUnits, 0);
   const freightPayoutCents = clampInt(rawActiveFreight.payoutCents, 0);
   const freightId = String(rawActiveFreight.id ?? '');
+  const freightKind = rawActiveFreight.kind === 'standard' || rawActiveFreight.kind === 'bulk' ? rawActiveFreight.kind : null;
   const freightTemplate = COUNTY_FREIGHT_TEMPLATES.find((candidate) => candidate.cropId === freightCropId);
   const freightDef = farmCropDefOrNull(freightCropId);
-  const validActiveFreight = townStatus === 'completed'
-    && !!freightTemplate && !!freightDef
-    && freightId === `county-freight-${freightIssuedDay}-${freightCropId}`
-    && freightIssuedDay >= 1 && freightIssuedDay <= clockDay
-    && freightRequiredUnits === freightTemplate.requiredUnits
-    && freightRequiredUnits * freightDef.storageUnitsPerItem <= PICKUP_CARGO_CAPACITY
-    && freightPayoutCents >= 1 && freightPayoutCents <= freightRequiredUnits * freightDef.basePriceCents * 2;
   const rawLastCompletedDay = rawCountyFreight.lastCompletedDay;
   const lastCompletedDay = Number.isInteger(rawLastCompletedDay)
     && Number(rawLastCompletedDay) >= 1
     && Number(rawLastCompletedDay) <= clockDay
     ? Number(rawLastCompletedDay)
     : 0;
+  const validFreightDay = freightIssuedDay >= 1 && freightIssuedDay <= clockDay;
+  const validLegacyFreightPayout = !!freightDef && freightPayoutCents >= 1
+    && freightPayoutCents <= maxFreightPayoutCents(freightRequiredUnits, freightDef.basePriceCents, COUNTY_FREIGHT_PREMIUM_BPS);
+  const validV2FreightPayout = !!freightDef && freightPayoutCents >= 1
+    && freightPayoutCents <= maxFreightPayoutCents(freightRequiredUnits, freightDef.basePriceCents, freightKind === 'bulk' ? COUNTY_FREIGHT_BULK_PREMIUM_BPS : COUNTY_FREIGHT_PREMIUM_BPS);
+  const legacyFreight = freightKind === null
+    && freightId === `county-freight-${freightIssuedDay}-${freightCropId}`
+    && freightRequiredUnits === freightTemplate?.requiredUnits
+    && !!freightDef && freightRequiredUnits * freightDef.storageUnitsPerItem <= PICKUP_CARGO_CAPACITY;
+  const v2StandardFreight = freightKind === 'standard'
+    && freightId === `county-freight-v2-${freightIssuedDay}-standard-${freightCropId}`
+    && freightRequiredUnits === freightTemplate?.requiredUnits
+    && !!freightDef && freightRequiredUnits * freightDef.storageUnitsPerItem <= PICKUP_CARGO_CAPACITY;
+  const v2BulkFreight = freightKind === 'bulk'
+    && freightId === `county-freight-v2-${freightIssuedDay}-bulk-${freightCropId}`
+    && trailerOwned && !!freightDef
+    && countyFreightBulkAllowedUnits(freightDef.storageUnitsPerItem).includes(freightRequiredUnits)
+    && freightRequiredUnits * freightDef.storageUnitsPerItem > PICKUP_CARGO_CAPACITY
+    && freightRequiredUnits * freightDef.storageUnitsPerItem <= PICKUP_TRAILER_CARGO_CAPACITY;
+  const validActiveFreight = townStatus === 'completed' && !!freightTemplate && !!freightDef && validFreightDay
+    && lastCompletedDay < clockDay && isFarmCropUnlocked(state, freightCropId)
+    && ((legacyFreight && validLegacyFreightPayout) || (validV2FreightPayout && (v2StandardFreight || v2BulkFreight)));
+  const normalizedFreightKind = legacyFreight ? 'standard' : freightKind;
   state.farm = {
     cashCents: clampInt(raw.cashCents, STARTING_CASH_CENTS),
     seeds,
@@ -288,6 +311,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     countyFreight: {
       active: validActiveFreight ? {
         id: freightId,
+        kind: normalizedFreightKind!,
         issuedDay: freightIssuedDay,
         cropId: freightCropId,
         requiredUnits: freightRequiredUnits,
@@ -777,7 +801,7 @@ export function updateFarmMarketToDay(state: GameState, targetDay: number): void
       const eventAnchor = def.basePriceCents * (10_000 + eventBps) / 10_000;
       const next = Math.round(momentum * 0.68 + eventAnchor * 0.32);
       const min = Math.round(def.basePriceCents * 0.65);
-      const max = Math.round(def.basePriceCents * 1.55);
+      const max = Math.round(def.basePriceCents * FARM_MARKET_MAX_MULTIPLIER);
       quote.currentCents = Math.max(min, Math.min(max, next));
     }
     farm.market.lastUpdatedDay = day;
