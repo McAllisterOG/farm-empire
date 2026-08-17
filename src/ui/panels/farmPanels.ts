@@ -5,6 +5,7 @@ import {
 } from '../../core/farmBusiness';
 import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_GRAIN_SILO, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../../data/farmEquipment.data';
 import { farmParcelDef, farmParcelSectionCount } from '../../core/farmParcels';
+import { farmCropEconomics } from '../../core/farmCropEconomics';
 import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
 import { countyFreightTemplate, COUNTY_FREIGHT_PREMIUM_BPS } from '../../data/countyFreight.data';
@@ -353,17 +354,17 @@ function renderLand(body: HTMLElement, state: GameState, actions: FarmPanelActio
   body.append(h('div', { class: `land-card ${owned ? 'owned' : 'locked'}`, 'data-testid': 'neighbor-parcel-card' },
     h('div', { class: 'land-card-badge' }, owned ? 'OWNED' : 'LOCKED'),
     h('div', { class: 'farm-card-title' }, parcel.name),
-    h('div', { class: 'land-price', 'data-testid': 'parcel-price' }, formatMoney(FIRST_PARCEL_PRICE_CENTS)),
+    h('div', { class: 'land-price', 'data-testid': 'parcel-price' }, `${formatMoney(FIRST_PARCEL_PRICE_CENTS)} plus working seed capital`),
     h('p', {}, `Adds ${sectionCount} usable field sections across an ${parcel.columns}×${parcel.rows} commercial acreage. Ownership is permanent, visibly expands the farmhouse, and repeat purchases are blocked.`),
     owned
       ? h('div', { class: 'owned-mark', 'data-testid': 'parcel-owned' }, 'Purchased · field sections unlocked · farmhouse expanded')
       : h('button', { class: 'btn btn-primary', 'data-testid': 'buy-parcel-button', onclick: () => runAndRender(actions.buyLand(), actions, rerender) }, 'Purchase Parcel'),
   ));
   const selected = farmCropDef(farm.selectedCropId);
-  const acreageSeedCapital = selected.seedPriceCents * sectionCount;
+  const acreagePlan = farmCropEconomics(selected, { sectionCount });
   body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'land-working-capital' },
     h('strong', {}, `Cash after parcel: ${formatMoney(farm.cashCents - (owned ? 0 : FIRST_PARCEL_PRICE_CENTS))}`),
-    h('span', {}, `A full ${sectionCount}-section planting needs ${formatMoney(acreageSeedCapital)} in ${selected.name} seed capital at current prices. You can work any portion of the acreage; this is planning guidance, not a purchase block.`),
+    h('span', {}, `A full ${sectionCount}-section planting needs ${formatMoney(acreagePlan.seedCostCents)} in ${selected.name} seed capital. You can work any portion of the acreage; this is planning guidance, not a purchase block.`),
   ));
 }
 
@@ -445,7 +446,7 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
       ),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-utility-trailer' },
         h('div', { class: 'farm-card-title' }, COUNTY_UTILITY_TRAILER.name),
-        h('p', {}, `One-time upgrade · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · doubles pickup cargo from ${COUNTY_UTILITY_TRAILER.fromCapacity} to ${COUNTY_UTILITY_TRAILER.toCapacity} units`),
+        h('p', {}, `One-time larger mixed-cargo convenience · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · doubles pickup cargo from ${COUNTY_UTILITY_TRAILER.fromCapacity} to ${COUNTY_UTILITY_TRAILER.toCapacity} units. Freight Board routes already fit the base pickup.`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-utility-trailer-status' }, trailerOwned
           ? `Owned · attached · ${pickupCargoCapacity(state)} cargo units`
           : trailerUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · complete one Freight Board haul'),
@@ -460,7 +461,7 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
       ),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-grain-silo' },
         h('div', { class: 'farm-card-title' }, COUNTY_GRAIN_SILO.name),
-        h('p', {}, `One-time storage build · ${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · expands combined farm storage from ${COUNTY_GRAIN_SILO.fromCapacity} to ${COUNTY_GRAIN_SILO.toCapacity} units`),
+        h('p', {}, `One-time storage build · ${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · ${COUNTY_GRAIN_SILO.toCapacity} combined storage. A full 96-section operated corn, soy, or cabbage harvest fits; tomatoes and pumpkins require load-out.`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-grain-silo-status' }, siloOwned
           ? `Owned · ${farmOf(state).storageCapacity} farm storage units`
           : siloUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · own the neighboring acreage and install the barn loft'),

@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { createFarmGame } from '../src/core/state';
+import { offerCountyWorkOrder, acceptCountyWorkOrder, fulfillCountyWorkOrder } from '../src/core/farmTownContact';
+import { loadBarnCropToPickup } from '../src/core/farmPickup';
+import { COUNTY_PANTRY_CORN_ORDER } from '../src/data/townWorkOrders.data';
 import { allFarmCrops, farmCropDef, farmMarketEventDef } from '../src/core/registry';
 import { cropDef } from '../src/core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, advanceFarmClock, buyFarmSeeds, farmOf, harvestFarmCrop,
-  marketMovement, placePlayerAtTractorDismount, plantFarmCrop, planParcelWork,
+  marketMovement, placePlayerAtTractorDismount, plantFarmCrop, planParcelWork, restoreOldTractor,
   purchaseNeighborParcel, sellStoredCrop, serpentineFieldTiles, storageUsed, tillFarmField,
   updateFarmMarketToDay,
 } from '../src/core/farmBusiness';
@@ -222,6 +225,7 @@ describe('land and save compatibility', () => {
   it('validates the parcel price, unlocks the full neighboring acreage once, and prevents repeat purchase', () => {
     const state = makeFarm();
     const farm = farmOf(state);
+    expect(FIRST_PARCEL_PRICE_CENTS).toBe(425_000);
     farm.cashCents = FIRST_PARCEL_PRICE_CENTS - 1;
     expect(purchaseNeighborParcel(state).ok).toBe(false);
     farm.cashCents = FIRST_PARCEL_PRICE_CENTS;
@@ -231,6 +235,22 @@ describe('land and save compatibility', () => {
     expect(state.plots.length).toBe(beforePlots + farmParcelSectionCount('north'));
     expect(purchaseNeighborParcel(state).ok).toBe(false);
     expect(state.plots.length).toBe(beforePlots + farmParcelSectionCount('north'));
+  });
+
+  it('keeps the two starting corn seeds, $5,000, first delivery, and tractor restoration path viable', () => {
+    const state = createFarmGame('Fresh Path', 5_001, NOW);
+    const farm = farmOf(state);
+    const startingHarvest = farmCropDef('crop_corn').harvestYield * farm.seeds.crop_corn;
+    expect(farm.cashCents).toBe(500_000);
+    expect(startingHarvest).toBeGreaterThanOrEqual(COUNTY_PANTRY_CORN_ORDER.requiredUnits);
+
+    farm.storage.crop_corn = startingHarvest;
+    expect(offerCountyWorkOrder(state).ok).toBe(true);
+    expect(acceptCountyWorkOrder(state).ok).toBe(true);
+    expect(loadBarnCropToPickup(state, 'crop_corn', COUNTY_PANTRY_CORN_ORDER.requiredUnits).ok).toBe(true);
+    expect(fulfillCountyWorkOrder(state, { pickupPresent: true, source: 'pickup' }).ok).toBe(true);
+    expect(restoreOldTractor(state).ok).toBe(true);
+    expect(farm.cashCents).toBe(500_000 + COUNTY_PANTRY_CORN_ORDER.payoutCents - 195_000);
   });
 
   it('serializes and reloads Farm Empire cash, crops, storage, market, events, time, tractor, and land', () => {

@@ -444,3 +444,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Added a fresh-only runtime welcome, a derived corn logistics guide, Farmbook Today/Later framing, truthful pickup-progress chip, and a single gated field pulse. No save, economy, transaction, or unlock authority changed.
 - **Verification:** 268/268 tests, 3 focused guide tests, strict typecheck, Vite production build, and diff check passed. Re-review found no High/Medium issue.
 - **Known limitation:** Prescribed browser validation remains blocked by the recorded Windows ACL-helper failure; no fallback was used.
+
+## Economy & Commercial-Scale Calibration V1 - complete
+
+- **Date:** 2026-08-17
+- **Branch:** `codex/first-town-contact`
+- **Commit:** local `feat: calibrate farm scale economics` (see Git history for hash)
+- **Scope:** Remove the proved early acreage grind and make commercial silo storage truthful without changing starting cash, crop values, timers, other equipment prices, freight requirements, market, basket, progression, or save v17.
+- **Result:** The neighboring parcel is $4,250 plus working seed capital. Valid County Grain Silo ownership now derives 1,200 combined storage. A pure crop-capital planner powers compact Farmbook 36/96 plans and selected-crop Land Records guidance; silo and trailer copy now state capacity and freight convenience honestly. Full 96-section operated corn, soy, and cabbage fit; tomatoes and pumpkins require load-out.
+- **Evidence:** Exact in-game seed/yield/base-price/storage calculations prove the two starting corn seeds can cover the 12-unit first delivery and its payout still funds tractor restoration from $5,000. This is a legible game abstraction, not a real-world farm-cost claim; a future primary-source calibration study remains separate.
+- **Verification:** 275/275 tests passed; focused economics and land tests, strict typecheck, Vite production build, and diff check passed. Coverage pins $4,250, silo derivation, 150/200 non-silo normalization, freight requirements/capacities, crop tradeoffs, operated silo fit, and helper input immutability.
+- **Review:** Independent Red Team found no Critical/High issue and one bounded Medium no-mutation test gap; the gap was repaired, and re-review found no High or Medium issue.
+- **Known limitation:** Prescribed browser validation remains blocked by the recorded Windows ACL-helper failure; no fallback, package, shortcut, or push was used.

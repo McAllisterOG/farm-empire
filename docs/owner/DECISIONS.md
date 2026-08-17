@@ -319,3 +319,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - A DOM-free presenter derives corn-only first-delivery progress and next action from authoritative fields, basket, barn, pickup, stats, and County contact state. It sends loaded-but-unmet farms to Mae before Eli and never alters transactions.
 - The compact pickup chip and one field pulse are presentation-only, suppress around town and competing work, and Farmbook separates today’s delivery from later progression.
 - Save v17, crop values, yield, grow time, storage, equipment, NPC services, and unlocks remain unchanged. Browser acceptance remains deferred solely by the recorded Windows ACL-helper failure.
+
+## 2026-08-17 - Calibrate commercial acreage against exact in-game capital and storage math
+
+**Status:** Approved by the owner
+
+- Keep starting cash at $5,000 and every crop price, yield, timer, equipment price, freight requirement, market rule, basket rule, and progression gate unchanged; lower only the first neighboring parcel from $6,500 to **$4,250**.
+- Raise the County Grain Silo authoritative combined capacity from 800 to **1,200**. Existing valid silo ownership derives that capacity during v17 normalization; farms without a valid silo continue to derive 150 or 200 from their existing milestones.
+- A pure DOM-free crop economics helper exposes seed capital, base gross/net, storage, and optional operated field-kit yield for 36- and 96-section planning. UI guidance stays concise and distinguishes capacity truth from Freight Board requirements.
+- Rationale is internal, reproducible game evidence rather than a claim of literal agricultural pricing: two starter corn seeds cover the 12-unit first delivery, its payout still funds tractor restoration from $5,000, and a 96-section operated harvest occupies 864 corn, 960 soy, or 864 cabbage units but exceeds 1,200 for tomatoes and pumpkins. Future real-world calibration remains a separately authorized primary-source study.

@@ -666,6 +666,10 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .farmbook-snapshot > div { display: flex; flex-direction: column; padding: 8px 9px; border-radius: 9px; background: #f5efdf; }
 .farmbook-snapshot span { color: #8c7a55; font-size: 9px; font-weight: 900; text-transform: uppercase; }
 .farmbook-snapshot strong { color: #43513c; font-size: 12px; white-space: nowrap; }
+.farmbook-capital-rows { display: grid; gap: 6px; }
+.farmbook-capital-rows > div { display: grid; gap: 2px; padding: 8px 9px; border-radius: 9px; background: #f5efdf; }
+.farmbook-capital-rows strong { color: #43513c; font-size: 12px; }
+.farmbook-capital-rows span { color: #75664c; font-size: 11px; line-height: 1.35; }
 .farmbook-weather-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .farmbook-weather-card { display: flex; flex-direction: column; gap: 2px; min-height: 78px; padding: 8px 9px; border: 1px solid #dfd3ae; border-radius: 9px; background: #f6efd9; }
 .farmbook-weather-card > span { color: #8c7a55; font-size: 9px; font-weight: 900; text-transform: uppercase; }

@@ -16,6 +16,9 @@ function unlockSilo(state: ReturnType<typeof farm>): void {
 }
 
 describe('County Grain Silo', () => {
+  it('uses the commercial 1,200-unit capacity', () => {
+    expect(COUNTY_GRAIN_SILO.toCapacity).toBe(1_200);
+  });
   it('starts closed and requires the acreage plus barn loft', () => {
     const state = farm(); const business = farmOf(state);
     expect(SAVE_VERSION).toBe(17);
@@ -71,7 +74,7 @@ describe('County Grain Silo', () => {
     expect(farmOf(closed).storageCapacity).toBe(COUNTY_GRAIN_SILO.fromCapacity);
   });
 
-  it('round-trips ownership but closes an impossible silo without its prerequisites', () => {
+  it('round-trips ownership at 1,200 but keeps non-silo normalization at 150 or 200', () => {
     const owned = farm(); unlockSilo(owned);
     farmOf(owned).equipment.countyGrainSiloOwned = true;
     farmOf(owned).storageCapacity = COUNTY_GRAIN_SILO.toCapacity;
@@ -85,5 +88,11 @@ describe('County Grain Silo', () => {
     const safe = deserialize(serialize(impossible, NOW + 5), NOW + 6);
     expect(farmOf(safe).equipment.countyGrainSiloOwned).toBe(false);
     expect(farmOf(safe).storageCapacity).toBe(150);
+
+    const loftOnly = farm();
+    farmOf(loftOnly).parcels.northOwned = true;
+    farmOf(loftOnly).equipment.barnLoftExpansionOwned = true;
+    farmOf(loftOnly).storageCapacity = COUNTY_GRAIN_SILO.toCapacity;
+    expect(farmOf(deserialize(serialize(loftOnly, NOW + 7), NOW + 8)).storageCapacity).toBe(200);
   });
 });

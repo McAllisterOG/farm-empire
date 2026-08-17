@@ -1,6 +1,9 @@
 import type { GameState } from '../../core/types';
 import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../../core/farmKnowledge';
 import { farmOf, formatMoney, storageUsed } from '../../core/farmBusiness';
+import { farmCropEconomics } from '../../core/farmCropEconomics';
+import { farmCropDef } from '../../core/registry';
+import { farmParcelSectionCount } from '../../core/farmParcels';
 import { pickupCargoCapacity, pickupCargoUsed } from '../../core/farmPickup';
 import { countyFreightBoardState } from '../../core/farmCountyFreight';
 import { farmWeatherForecast } from '../../core/farmWeather';
@@ -33,6 +36,9 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
   const forecast = farmWeatherForecast(state, 3);
   const stand = roadsideStandView(state);
   const morning = firstFarmMorningGuide(state, Date.now());
+  const selectedCrop = farmCropDef(farm.selectedCropId);
+  const starterPlan = farmCropEconomics(selectedCrop, { sectionCount: farmParcelSectionCount('starter') });
+  const northPlan = farmCropEconomics(selectedCrop, { sectionCount: farmParcelSectionCount('north') });
   const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offers.length > 0 ? `${freight.offers.length} routes posted` : 'Route complete today';
   openPanel({ title: farm.parcels.northOwned ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
@@ -70,6 +76,13 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('span', { class: 'farmbook-check' }, step.done ? '✓' : '·'),
         h('span', {}, step.label),
       ))),
+    ),
+    h('section', { class: 'farmbook-section farmbook-capital-plan', 'data-testid': 'farmbook-capital-plan' },
+      h('div', { class: 'farmbook-section-title' }, h('strong', {}, `Capital Plan · ${selectedCrop.name}`), h('span', {}, 'base market')),
+      h('div', { class: 'farmbook-capital-rows' },
+        h('div', {}, h('strong', {}, '36 starter'), h('span', {}, `Seed ${formatMoney(starterPlan.seedCostCents)} · Gross ${formatMoney(starterPlan.grossBaseValueCents)} · Net ${formatMoney(starterPlan.netBaseValueCents)} · ${starterPlan.totalStorageUnits} storage`)),
+        h('div', {}, h('strong', {}, '96 north'), h('span', {}, `Seed ${formatMoney(northPlan.seedCostCents)} · Gross ${formatMoney(northPlan.grossBaseValueCents)} · Net ${formatMoney(northPlan.netBaseValueCents)} · ${northPlan.totalStorageUnits} storage`)),
+      ),
     ),
     h('section', { class: 'farmbook-section' },
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Operation'), h('span', {}, `${ownedSections} sections`)),

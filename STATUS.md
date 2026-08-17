@@ -4,9 +4,10 @@
 
 - **Date:** 2026-08-17
 - **Branch:** `codex/first-town-contact`
-- **Head:** `feat: add first farm morning guide` (local; see Git history for hash)
-- **Product state:** First Farm Morning V1 adds a runtime-only welcome only for untouched unmet farms, plus a DOM-free corn-delivery presenter. It truthfully routes prepare → plant → water → manual basket → barn/pickup → Mae → Eli, exposes `Pickup loaded · x/12 corn`, and never changes save, economy, or transaction authority. Farmbook separates Today’s delivery from Later on; one amber field pulse is suppressed during all competing work overlays.
-- **Verification:** 268/268 tests passed, including 3 focused first-morning tests; strict typecheck, Vite production build, and `git diff --check` passed. Independent re-review found no High or Medium issue.
+- **Head:** local checkpoint `feat: calibrate farm scale economics` (see Git history for hash)
+- **Product state:** Economy & Commercial-Scale Calibration V1 lowers the neighboring parcel to **$4,250** while retaining $5,000 starting cash, raises valid County Grain Silo ownership to **1,200 combined storage**, and adds a pure crop-capital planner plus concise Farmbook, Land Records, silo, and trailer guidance. Exact internal seed/yield/base-price/storage math shows the first delivery and tractor path remain viable, while full 96-section operated corn, soy, and cabbage fit the silo; tomatoes and pumpkins still require load-out. Crop values, timers, equipment prices, freight requirements, market, basket, and all other progression remain unchanged.
+- **Save:** Save v17 remains unchanged. Normalization derives 1,200 only from valid silo ownership; non-silo farms remain at 150 or 200 storage.
+- **Verification:** 275/275 tests passed, including focused economics, ownership-normalization, freight, and no-mutation coverage; strict typecheck, Vite production build, and `git diff --check` passed. Independent Red Team found one bounded no-mutation test gap; it was repaired and re-review found no High or Medium issue.
 - **Browser:** Player-surface validation remains blocked: the prescribed in-app browser runtime exits with the recorded Windows ACL-helper failure. No standalone fallback was used.
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
@@ -27,7 +28,7 @@
 - Farm crops remain ready for a generous 15-minute real-time window, then visibly wither and can be cleared without refund so field sections are never permanently blocked.
 - A true zero-asset farm may receive exactly one lifetime wheat seed from Mae; the claim is persisted and cannot be recycled through intentional crop loss.
 - Manual harvest carries a visible 24-unit saved basket until atomically unloaded to its chosen barn or present pickup destination; basket contents count as assets for County relief and survive reload.
-- Owning the neighboring parcel unlocks a one-time $1,800 Barn Loft Expansion that raises storage from 150 to 200 and visibly adds a lean-to to the barn.
+- The neighboring commercial parcel costs $4,250 plus working seed capital; ownership unlocks the one-time $1,800 Barn Loft Expansion from 150 to 200 storage and visibly adds a lean-to to the barn.
 - The crop catalog now contains corn, wheat, soybeans, potatoes, carrots, tomatoes, cabbage, and pumpkins. New crops start with zero seeds and unlock from the existing County-order, neighboring-parcel, and Barn Loft milestones without new saved license state.
 - Carrots are a low-capital quick turn; tomatoes trade barn throughput for margin; cabbage is value-dense; pumpkins are the slowest, highest-gross, and consume three barn units per harvested item.
 - The public-demo pass improves HUD/modal hierarchy, controls, feedback, transitions, and compact layouts without changing game transactions.

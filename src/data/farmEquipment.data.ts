@@ -33,5 +33,5 @@ export const COUNTY_GRAIN_SILO = {
   name: 'County Grain Silo',
   priceCents: 480_000,
   fromCapacity: 200,
-  toCapacity: 800,
+  toCapacity: 1_200,
 } as const;

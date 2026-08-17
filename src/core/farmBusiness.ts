@@ -19,7 +19,7 @@ export type { FarmParcelId } from './farmParcels';
 
 export const STARTING_CASH_CENTS = 500_000;
 export const STARTING_STORAGE_CAPACITY = 150;
-export const FIRST_PARCEL_PRICE_CENTS = 650_000;
+export const FIRST_PARCEL_PRICE_CENTS = 425_000;
 export const GAME_MINUTES_PER_REAL_SECOND = 8;
 
 export type ParcelWorkKind = 'plant' | 'harvest';
