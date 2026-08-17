@@ -157,6 +157,13 @@ const MIGRATIONS: Record<number, Migrator> = {
     // standard contracts are normalized defensively; migration grants nothing.
     raw.version = 18;
   },
+  18: (raw) => {
+    // Manager V1 is new. Never grant ownership, a plan, or a reviewed day.
+    const farm = raw.farm && typeof raw.farm === 'object' ? raw.farm as Record<string, unknown> : null;
+    const workforce = farm?.workforce && typeof farm.workforce === 'object' ? farm.workforce as Record<string, unknown> : null;
+    if (workforce) delete workforce.manager;
+    raw.version = 19;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

@@ -452,6 +452,15 @@ export interface FarmCountyFreightState {
 export interface FarmWorkforceState {
   farmhandHired: boolean;
   lastShiftPaidDay: number;
+  manager: FarmManagerState;
+}
+
+export interface FarmManagerState {
+  hired: boolean;
+  enabled: boolean;
+  parcelId: 'starter' | 'north';
+  cropId: string;
+  lastReviewedDay: number;
 }
 
 export interface FarmRoadsideStandState {

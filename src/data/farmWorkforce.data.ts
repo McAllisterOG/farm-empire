@@ -16,3 +16,9 @@ export const FIRST_FARMHAND = {
     accessory: null,
   } satisfies AvatarConfig,
 } as const;
+
+export const FIRST_FARM_MANAGER = {
+  id: 'first-farm-manager',
+  name: 'Farm Manager Contract',
+  hirePriceCents: 240_000,
+} as const;

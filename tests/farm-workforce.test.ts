@@ -30,7 +30,7 @@ describe('First Farmhand workforce', () => {
   it('requires both County trust and neighboring acreage, then hires once at the exact price', () => {
     const state = createFarmGame('Workforce Test', 1_414, NOW);
     const farm = farmOf(state);
-    expect(SAVE_VERSION).toBe(18);
+    expect(SAVE_VERSION).toBe(19);
     expect(farmhandUnlocked(state)).toBe(false);
     expect(hireFirstFarmhand(state).ok).toBe(false);
     farm.townContact.status = 'completed';
@@ -140,18 +140,18 @@ describe('First Farmhand workforce', () => {
     old.farm.workforce = { farmhandHired: true, lastShiftPaidDay: 1 };
     const migrated = deserialize(JSON.stringify(old), NOW + 3);
     expect(migrated.version).toBe(SAVE_VERSION);
-    expect(farmOf(migrated).workforce).toEqual({ farmhandHired: false, lastShiftPaidDay: 0 });
+    expect(farmOf(migrated).workforce).toEqual({ farmhandHired: false, lastShiftPaidDay: 0, manager: { hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 } });
 
     const malformed = unlockedFarm() as unknown as Record<string, any>;
     malformed.farm.townContact.status = 'unmet';
     malformed.farm.workforce = { farmhandHired: true, lastShiftPaidDay: 999 };
     const safe = deserialize(JSON.stringify(malformed), NOW + 4);
-    expect(farmOf(safe).workforce).toEqual({ farmhandHired: false, lastShiftPaidDay: 0 });
+    expect(farmOf(safe).workforce).toEqual({ farmhandHired: false, lastShiftPaidDay: 0, manager: { hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 } });
 
     const hired = hiredFarm();
     farmOf(hired).workforce.lastShiftPaidDay = 1;
     const reloaded = deserialize(serialize(hired, NOW + 5), NOW + 6);
-    expect(farmOf(reloaded).workforce).toEqual({ farmhandHired: true, lastShiftPaidDay: 1 });
+    expect(farmOf(reloaded).workforce).toEqual({ farmhandHired: true, lastShiftPaidDay: 1, manager: { hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 } });
     expect(farmFieldCondition(reloaded, reloaded.plots[0].uid).soil).toBe('rough');
   });
 });

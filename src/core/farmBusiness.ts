@@ -119,7 +119,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     selectedCropId: 'crop_corn',
     townContact: { status: 'unmet' },
     countyFreight: { active: null, lastCompletedDay: 0 },
-    workforce: { farmhandHired: false, lastShiftPaidDay: 0 },
+    workforce: { farmhandHired: false, lastShiftPaidDay: 0, manager: { hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 } },
     roadsideStand: { owned: false, lastCompletedDay: 0 },
     clock: { day: 1, minute: 8 * 60, lastRealAt: now },
     market: { quotes, activeEvents: [], lastUpdatedDay: 1 },
@@ -256,6 +256,11 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const grainSiloOwned = siloOwned && loftOwned;
   const clockDay = clampInt(rawClock.day, 1, 1);
   const farmhandHired = rawWorkforce.farmhandHired === true && townStatus === 'completed' && northOwned;
+  const rawManager = objectRecord(rawWorkforce.manager);
+  const managerHired = rawManager.hired === true && farmhandHired;
+  const managerParcelId = rawManager.parcelId === 'north' && northOwned ? 'north' : 'starter';
+  const managerCropId = validCropIds.has(String(rawManager.cropId)) && isFarmCropUnlocked(state, String(rawManager.cropId))
+    ? String(rawManager.cropId) : 'crop_corn';
   const roadsideStandOwned = rawRoadsideStand.owned === true && townStatus === 'completed';
   const rawActiveFreight = objectRecord(rawCountyFreight.active);
   const freightCropId = String(rawActiveFreight.cropId ?? '');
@@ -326,6 +331,15 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
         && Number(rawWorkforce.lastShiftPaidDay) <= clockDay
         ? Number(rawWorkforce.lastShiftPaidDay)
         : 0,
+      manager: {
+        hired: managerHired,
+        enabled: managerHired && rawManager.enabled === true,
+        parcelId: managerParcelId,
+        cropId: managerCropId,
+        lastReviewedDay: managerHired && Number.isInteger(rawManager.lastReviewedDay)
+          && Number(rawManager.lastReviewedDay) >= 0 && Number(rawManager.lastReviewedDay) <= clockDay
+          ? Number(rawManager.lastReviewedDay) : 0,
+      },
     },
     roadsideStand: {
       owned: roadsideStandOwned,

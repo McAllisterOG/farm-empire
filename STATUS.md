@@ -4,11 +4,12 @@
 
 - **Date:** 2026-08-17
 - **Branch:** `codex/first-town-contact`
-- **Head:** Commercial Freight Route V2 (committed checkpoint; see Git history for hash)
-- **Product state:** Eli posts exactly three deterministic daily routes with one active contract maximum. Without the County Utility Trailer, all three are standard routes with their existing quantities, at most 72 weighted cargo, and a locked 25% premium. With the trailer, the board visibly leads with one trailer-required commercial bulk route plus two distinct standard routes. Bulk loads are 96/104/112/120 weight-1 items or 32/36/40 pumpkins, exceed 72 and fit the 144-unit trailer capacity, and lock a 40% premium.
-- **Save:** Save v18 adds route kind. Valid v17 legacy standard snapshots normalize to `standard` and retain their accepted terms. V2 validation fails closed for malformed IDs/kinds/quantities/payouts, locked crops, trailerless bulk, and active contracts already completed that day; fulfillment also rejects same-day replay before mutation.
-- **Verification:** 282/282 tests passed, including freight offer, physical-delivery, migration, malformed-save, completion, legacy-unlock, and payout-boundary coverage; strict typecheck, Vite production build, and `git diff --check` passed. Red Team High and Medium save-integrity findings were repaired; re-review accepted with no High/Medium findings.
-- **Browser:** Player-surface validation remains blocked by the recorded Windows ACL-helper failure. No fallback was used.
+- **Head:** First Farm Manager V1 (local checkpoint; see Git history for hash)
+- **Product state:** Farm Services offers a $2,400 one-time manager contract only after County trust, north acreage, and Mara hire. It stores an enabled/pause acreage-and-crop standing plan; the owner must explicitly review and dispatch Mara for the current farm day. The preview selects one real Mara job by harvest, water, stubble/rough soil, then seed-limited planting priority. Withered crops remain owner-only.
+- **Save:** Save v19 adds `farm.workforce.manager` and migrates v18 closed with no ownership, plan, or review grant. Normalization requires every prerequisite, safely defaults invalid parcel/crop, disables invalid ownership, and keeps all actor/job/motion state runtime-only.
+- **Verification:** 287/287 tests passed, including focused manager contract, migration, normalization, priority/resource, and saved north/crop-plan coverage; strict typecheck, Vite production build, and `git diff --check` passed. Independent re-review accepted with no High/Medium findings; the UI repair adds explicit **Update plan** so dropdown selections persist without toggling pause.
+- **Browser:** Player-surface validation remains blocked by the recorded Windows ACL-helper failure; DOM click-flow coverage is not available. No fallback was used.
+
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.

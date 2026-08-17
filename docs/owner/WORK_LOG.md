@@ -465,3 +465,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Trailer-owned farms receive one deterministic, labeled commercial bulk route plus two standard daily Freight Board routes; base pickup farms retain three standard routes. Bulk uses approved 96/104/112/120 weight-1 or 32/36/40 pumpkin bands, exceeds 72 weighted cargo but fits 144, and locks a 40% premium; standards remain at 25%. Save v18 preserves valid legacy standards and fails closed for invalid bulk or completed-day state.
 - **Verification:** 282/282 tests passed; strict typecheck, Vite production build, and `git diff --check` passed. Red Team High/MEDIUM save-integrity findings (same-day double payout, legacy unlocks, attainable payout ceilings) were repaired and re-review accepted with no High/Medium findings.
 - **Known limitation:** Prescribed browser validation remains blocked by the recorded Windows ACL-helper failure; no fallback, package, shortcut, or push was used.
+
+## First Farm Manager V1 - complete
+
+- **Date:** 2026-08-17
+- **Branch:** `codex/first-town-contact`
+- **Commit:** local checkpoint `feat: add farm manager morning dispatch` (see Git history for hash)
+- **Result:** Added Farm Services’ one-time $2,400 manager contract after County trust, north acreage, and Mara hire. A v19 saved standing plan previews exactly one real Mara task and requires an explicit current-day dispatch; Mara’s existing $120 wage is still the only shift charge. The manager has no offline work, cargo/supply handling, sales, clearing, or hidden spend.
+- **Verification:** 287/287 tests passed, including five focused manager tests; strict typecheck, Vite production build, and diff check passed. Independent re-review accepted with no High/Medium findings. The repair added an explicit **Update plan** control and north/crop saved-plan regression coverage.
+- **Known limitations:** Browser/player-surface and DOM click-flow verification remain blocked by the recorded Windows ACL-helper failure; no fallback was used.

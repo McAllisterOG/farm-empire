@@ -336,3 +336,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The Freight Board always posts exactly three deterministic, distinct unlocked-crop routes and permits only one active contract. Without a trailer, all routes remain standard, retain their existing quantities, fit 72 weighted pickup cargo, and pay a locked 25% premium.
 - Trailer ownership changes one daily route into a visibly labeled commercial bulk load while retaining two standard routes. Weight-1 bulk crops use 96/104/112/120 items; pumpkins use 32/36/40. Bulk cargo must exceed 72 and fit the 144-unit trailer, and pays a locked 40% premium.
 - Save v18 persists route kind. Valid legacy V17 standard snapshots retain their original terms; V2 validation fails closed for malformed, locked, trailerless, over-cap, same-day-completed, or unattainable-payout contracts. Delivery remains exact pickup-only and atomic.
+
+## 2026-08-17 - Add an explicit Farm Manager morning review, not automation
+
+**Status:** Approved by the owner
+
+- Farm Services may sell one **$2,400** manager contract only after County contact completion, neighboring acreage ownership, and Mara Bell’s hire. It has no recurring fee, yield, speed, or market bonus.
+- The saved v19 manager record is only a standing `enabled` acreage/crop preference and `lastReviewedDay`; v18 migration grants nothing, invalid ownership closes the plan, and all actor/job/progress state remains runtime-only.
+- A pure deterministic review chooses one existing Mara plan for the configured owned acreage: fully fitting ready harvest, needs-water, stubble then rough soil preparation, seed-limited planting, then idle. Withered crops stay owner-only.
+- Dispatch is explicit from Workforce on the live current day. It reuses Mara’s existing real-job and $120 daily-shift path, marks review only after success, never works offline, buys supplies, moves cargo, sells, clears, or creates hidden spend. **Update plan** persists dropdown choices separately from Pause/Enable.

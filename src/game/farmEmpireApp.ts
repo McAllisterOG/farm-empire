@@ -29,7 +29,7 @@ import {
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
 import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
-import { hireFirstFarmhand, startFarmhandShift, type FarmhandWorkKind } from '../core/farmWorkforce';
+import { hireFarmManager, hireFirstFarmhand, planFarmManagerDispatch, startFarmhandShift, updateFarmManagerPlan, type FarmhandWorkKind } from '../core/farmWorkforce';
 import { applyCurrentFarmRain, currentFarmWeather, farmWeatherForDay } from '../core/farmWeather';
 import { fulfillRoadsideStandOrder, purchaseRoadsideStand, roadsideStandOrder, roadsideStandView } from '../core/farmRoadsideStand';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
@@ -1042,6 +1042,9 @@ export class FarmEmpireApp {
         total: job.targetPlotUids.length,
       } : null,
       hire: context === 'town' ? () => hireFirstFarmhand(this.state) : undefined,
+      hireManager: context === 'town' ? () => hireFarmManager(this.state) : undefined,
+      updateManager: context === 'farm' ? (input) => { const result = updateFarmManagerPlan(this.state, input); if (result.ok) this.save(); return result; } : undefined,
+      dispatchManager: context === 'farm' ? () => this.dispatchFarmManager() : undefined,
       startWork: context === 'farm' ? (parcelId, kind) => this.startFarmhandJob(parcelId, kind) : undefined,
       cancelWork: context === 'farm' ? () => this.cancelFarmhandJob() : undefined,
       dispatch: this.dispatch,
@@ -1587,9 +1590,9 @@ export class FarmEmpireApp {
     return clearWitheredFarmCrop(this.state, plotUid, this.gameNow());
   }
 
-  private startFarmhandJob(parcelId: FarmParcelId, kind: FarmhandWorkKind): ActionResult {
+  private startFarmhandJob(parcelId: FarmParcelId, kind: FarmhandWorkKind, cropId = farmOf(this.state).selectedCropId): ActionResult {
     if (this.farmhandJob) return { ok: false, reason: `${FIRST_FARMHAND.name} already has an acreage assignment.` };
-    const start = startFarmhandShift(this.state, parcelId, kind, this.gameNow(), farmOf(this.state).selectedCropId);
+    const start = startFarmhandShift(this.state, parcelId, kind, this.gameNow(), cropId);
     if (!start.result.ok || !start.plan) return start.result;
     this.farmhandJob = {
       kind,
@@ -1605,6 +1608,21 @@ export class FarmEmpireApp {
     this.beginFarmhandJobStep();
     this.hud.update(this.state, this.tractorHudRuntime());
     return start.result;
+  }
+
+  /** Manager dispatch is explicit; opening, loading, and day change never call it. */
+  private dispatchFarmManager(): ActionResult {
+    const farm = farmOf(this.state);
+    if (this.farmhandJob) return { ok: false, reason: `${FIRST_FARMHAND.name} already has an acreage assignment.` };
+    if (!farm.workforce.manager.hired || !farm.workforce.manager.enabled) return { ok: false, reason: 'Enable the manager acreage plan first.' };
+    if (farm.workforce.manager.lastReviewedDay === farm.clock.day) return { ok: false, reason: `Manager dispatch was already reviewed on Day ${farm.clock.day}.` };
+    const preview = planFarmManagerDispatch(this.state, this.gameNow());
+    if (!preview.targetPlotUids.length) return { ok: false, reason: preview.reason ?? 'No eligible manager assignment is ready.' };
+    const result = this.startFarmhandJob(preview.parcelId, preview.kind, preview.cropId ?? farm.workforce.manager.cropId);
+    if (!result.ok) return result;
+    farm.workforce.manager.lastReviewedDay = farm.clock.day;
+    this.save();
+    return result;
   }
 
   private beginFarmhandJobStep(): void {

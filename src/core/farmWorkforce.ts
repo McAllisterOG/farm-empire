@@ -1,4 +1,4 @@
-import { FIRST_FARMHAND } from '../data/farmWorkforce.data';
+import { FIRST_FARMHAND, FIRST_FARM_MANAGER } from '../data/farmWorkforce.data';
 import {
   farmCropStage, farmFieldCondition, farmOf, isFarmCropUnlocked, isFarmCropWithered,
   serpentineFieldTiles, storageRemaining, syncCashMirror,
@@ -25,6 +25,11 @@ export interface StartFarmhandShiftResult {
   wageChargedCents: number;
 }
 
+export interface FarmManagerDispatchPlan extends FarmhandWorkPlan {
+  eligibleCount: number;
+  reason: string | null;
+}
+
 export function farmhandUnlocked(state: GameState): boolean {
   const farm = farmOf(state);
   return farm.townContact.status === 'completed' && farm.parcels.northOwned;
@@ -41,6 +46,48 @@ export function hireFirstFarmhand(state: GameState): ActionResult {
   recordFarmStat(state, 'farmCashSpentCents', FIRST_FARMHAND.hirePriceCents);
   syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: `${FIRST_FARMHAND.name} hired. Assign acreage work from the Farmbook or talk with her at the farm.` }] };
+}
+
+export function farmManagerUnlocked(state: GameState): boolean {
+  return farmhandUnlocked(state) && farmOf(state).workforce.farmhandHired;
+}
+
+/** One-time contract purchase. Mara remains the only shift-wage authority. */
+export function hireFarmManager(state: GameState): ActionResult {
+  const farm = farmOf(state);
+  if (!farmManagerUnlocked(state)) return fail('Complete the County introduction, own the neighboring acreage, and hire Mara before adding a manager.');
+  if (farm.workforce.manager.hired) return fail('The Farm Manager contract is already active.');
+  if (farm.cashCents < FIRST_FARM_MANAGER.hirePriceCents) return fail('Not enough cash for the Farm Manager contract.');
+  farm.cashCents -= FIRST_FARM_MANAGER.hirePriceCents;
+  farm.workforce.manager = { hired: true, enabled: true, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 };
+  recordFarmStat(state, 'farmCashSpentCents', FIRST_FARM_MANAGER.hirePriceCents);
+  syncCashMirror(state);
+  return { ok: true, events: [{ type: 'toast', target: 'Farm Manager contract added. Set a standing acreage plan from Workforce.' }] };
+}
+
+export function updateFarmManagerPlan(state: GameState, input: { enabled: boolean; parcelId: FarmParcelId; cropId: string }): ActionResult {
+  const farm = farmOf(state);
+  if (!farm.workforce.manager.hired || !farmManagerUnlocked(state)) return fail('Hire the Farm Manager contract after Mara joins the farm team.');
+  if (input.parcelId === 'north' && !farm.parcels.northOwned) return fail('The neighboring acreage is not available for this plan.');
+  if (!isFarmCropUnlocked(state, input.cropId)) return fail('Choose an unlocked crop for the manager planting preference.');
+  farm.workforce.manager.enabled = input.enabled;
+  farm.workforce.manager.parcelId = input.parcelId;
+  farm.workforce.manager.cropId = input.cropId;
+  return { ok: true, events: [{ type: 'toast', target: input.enabled ? 'Manager acreage plan updated.' : 'Manager acreage plan paused.' }] };
+}
+
+/** Pure review: selects one existing Mara work plan without changing resources. */
+export function planFarmManagerDispatch(state: GameState, now: number): FarmManagerDispatchPlan {
+  const farm = farmOf(state); const manager = farm.workforce.manager;
+  const empty = (reason: string): FarmManagerDispatchPlan => ({ parcelId: manager.parcelId, kind: 'prepare', targetPlotUids: [], eligibleCount: 0, reason });
+  if (!manager.hired || !farmManagerUnlocked(state)) return empty('Manager contract is not available.');
+  if (!manager.enabled) return empty('Manager plan is paused.');
+  if (manager.parcelId === 'north' && !farm.parcels.northOwned) return empty('Configured acreage is unavailable.');
+  for (const kind of ['harvest', 'water', 'rework', 'prepare', 'plant'] as const) {
+    const plan = planFarmhandWork(state, manager.parcelId, kind, now, manager.cropId);
+    if (plan.targetPlotUids.length) return { ...plan, eligibleCount: plan.targetPlotUids.length, reason: null };
+  }
+  return empty('No eligible work is ready; withered crops require owner clearing.');
 }
 
 /**

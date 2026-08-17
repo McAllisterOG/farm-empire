@@ -97,6 +97,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('div', {}, h('span', {}, 'Home'), h('strong', {}, farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),
         h('div', {}, h('span', {}, 'Freight'), h('strong', {}, freightStatus)),
         h('div', {}, h('span', {}, 'Workforce'), h('strong', {}, farm.workforce.farmhandHired ? 'Mara Bell · hired' : farm.parcels.northOwned && farm.townContact.status === 'completed' ? 'Hiring unlocked' : 'Not hired')),
+        ...(farm.workforce.manager.hired ? [h('div', {}, h('span', {}, 'Manager'), h('strong', {}, farm.workforce.manager.enabled ? `Plan active · Day ${farm.workforce.manager.lastReviewedDay || 'not reviewed'}` : 'Plan paused'))] : []),
         h('div', {}, h('span', {}, 'Farm Stand'), h('strong', {}, stand.owned ? stand.completedToday ? 'Sold out today' : 'Local order posted' : stand.unlocked ? 'Permit unlocked' : 'Not built')),
       ),
     ),
