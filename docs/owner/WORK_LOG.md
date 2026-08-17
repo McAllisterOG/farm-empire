@@ -435,3 +435,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** Independent Red Team identified mounted basket motion and Escape auto-restart as medium issues; both received one bounded repair and regression coverage. Browser interaction verification was not run because the browser runtime hit a Windows ACL-helper failure, so visual/player-facing acceptance remains outstanding.
 - **Known limitations:** Basket capacity is one fixed 24-unit owner inventory. There is no wagon, field cache, worker basket use, automatic hauling, partial unload, crop spoilage, further capacity tier, or economy rebalance.
 - **Push:** Not pushed.
+
+## First Farm Morning V1 - complete
+
+- **Date:** 2026-08-17
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `feat: add first farm morning guide` (local)
+- **Result:** Added a fresh-only runtime welcome, a derived corn logistics guide, Farmbook Today/Later framing, truthful pickup-progress chip, and a single gated field pulse. No save, economy, transaction, or unlock authority changed.
+- **Verification:** 268/268 tests, 3 focused guide tests, strict typecheck, Vite production build, and diff check passed. Re-review found no High/Medium issue.
+- **Known limitation:** Prescribed browser validation remains blocked by the recorded Windows ACL-helper failure; no fallback was used.

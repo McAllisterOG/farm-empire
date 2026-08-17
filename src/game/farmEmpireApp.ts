@@ -19,6 +19,7 @@ import { isoX, isoY, TILE_H } from '../render/iso';
 import { farmhousePresentationTier, farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
 import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
 import { recordFarmStat } from '../core/farmKnowledge';
+import { firstFarmMorningGuide, shouldPresentStarterGuideTarget } from '../core/firstFarmMorning';
 import { FarmSoundscape, type FarmAudioSettings } from '../audio/farmSoundscape';
 import {
   MANUAL_FIELD_ACTION_LABELS, createManualFieldAction, manualFieldActionComplete, manualFieldActionProgress,
@@ -666,7 +667,7 @@ export class FarmEmpireApp {
     }
     if (interaction?.kind === 'pump') {
       showActionMenu(sx, sy, 'Hand Pump', [
-        { label: 'Water new seedlings from their field menu', disabled: true, onClick: () => {} },
+        { label: 'Water new seedlings from their field menu · no water to carry', disabled: true, onClick: () => {} },
         { label: 'Open Farmbook', onClick: () => this.openFarmhouseOffice() },
       ]);
       return;
@@ -1078,7 +1079,7 @@ export class FarmEmpireApp {
       this.operatingPickup = true;
       this.walkTarget = null;
       this.playerActor.walking = false;
-      toast('Operating the old pickup. Drive to the farm gate for County services.', 'good');
+      toast('Operating the old pickup. Drive to the County Road gate for services.', 'good');
     }
     this.hud.update(this.state, this.tractorHudRuntime());
     this.farmAudio.playTransaction('success');
@@ -2274,6 +2275,11 @@ export class FarmEmpireApp {
           return plot ? [{ x: plot.x, y: plot.y }] : [];
         })
         : undefined,
+      starterGuideTarget: shouldPresentStarterGuideTarget({
+        tractorOperating: this.operatingTractor, tractorJob: !!this.tractorJob, tractorMoving: !!this.tractorTarget,
+        manualAction: !!this.manualFieldAction, manualJob: !!this.manualFieldJob, dragging: this.fieldDragSelection.length > 0,
+        farmhandJob: !!this.farmhandJob, farmhandAction: !!this.farmhandAction, farmhandMoving: !!this.farmhandTarget,
+      }) ? firstFarmMorningGuide(this.state, this.gameNow()).fieldTarget ?? undefined : undefined,
       farmhandAction: this.farmhandAction ? {
         kind: this.farmhandAction.kind,
         x: this.farmhandAction.x,

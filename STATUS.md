@@ -4,11 +4,10 @@
 
 - **Date:** 2026-08-17
 - **Branch:** `codex/first-town-contact`
-- **Head:** local checkpoint; see Git history for the commit
-- **Product state:** Manual harvest now commits into a persistent 24-unit hand basket, with a saved Barn/Pickup destination. Whole-basket unloads are weighted, destination-capacity checked, and atomic; large manual harvest selections walk to unload and resume only after success. Tractor and farmhand harvests remain direct-to-barn and cannot interact with the basket; mounting is blocked while carrying it.
-- **Verification:** 265/265 tests passed, including 8 focused basket tests; strict typecheck, Vite production build, and `git diff --check` passed. Save v17 migration resets any pre-v17 stray basket data; v17 normalization bounds known crops and capacity deterministically.
-- **Review:** Independent Red Team found and the repair closed two medium state-machine issues: mounted basket action isolation and Escape during batch auto-unload. Browser interaction verification was not run because the browser runtime hit a Windows ACL-helper failure; visual/player-facing acceptance is therefore still required before any release claim.
-
+- **Head:** `feat: add first farm morning guide` (local; see Git history for hash)
+- **Product state:** First Farm Morning V1 adds a runtime-only welcome only for untouched unmet farms, plus a DOM-free corn-delivery presenter. It truthfully routes prepare → plant → water → manual basket → barn/pickup → Mae → Eli, exposes `Pickup loaded · x/12 corn`, and never changes save, economy, or transaction authority. Farmbook separates Today’s delivery from Later on; one amber field pulse is suppressed during all competing work overlays.
+- **Verification:** 268/268 tests passed, including 3 focused first-morning tests; strict typecheck, Vite production build, and `git diff --check` passed. Independent re-review found no High or Medium issue.
+- **Browser:** Player-surface validation remains blocked: the prescribed in-app browser runtime exits with the recorded Windows ACL-helper failure. No standalone fallback was used.
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.

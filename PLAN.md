@@ -35,10 +35,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 29. **Progression Interaction Reliability Pass** - full visible-silhouette town NPC/pickup selection, one-click pickup routing to a labeled barn cargo pad, corrected cargo-panel hierarchy/copy, exact transfer and town-save acceptance, and a refreshed verified Desktop build without economy or save changes.
 30. **County Life V1** - one clock-aware roadside-stand visitor and two ambient County residents on deterministic safe routes, distinct basket/neighbor silhouettes, preserved service hit priority, save-neutral reconstruction, and a refreshed verified Desktop build.
 31. **Manual Harvest Basket Logistics V1** - persisted 24-unit owner basket, selectable barn/pickup destination, all-or-nothing weighted unloads, automatic large-selection unload/resume, safe cancel/reload, direct-to-barn tractor/farmhand isolation, and save-v17 migration.
+32. **First Farm Morning V1** - a runtime-only fresh-farm welcome and deterministic corn-delivery guide, compact pickup-progress chip, single safe field pulse, and Farmbook Today/Later framing without save, economy, or transaction changes.
 
 ## Current authorization
 
-No additional feature package is currently active. Browser/playtest the manual harvest basket across destination choice, full-destination failure, automatic unload/resume, Escape cancellation, reload, and mounted exclusion; this pass remains outstanding after a Windows ACL-helper browser failure. Use observed logistics readability and convenience alongside the existing County, market, workforce, weather, and progression playtests to select a deliberately designed next package.
+No additional feature package is currently active. First Farm Morning V1 is complete and automated checks are green; player-surface browser validation remains blocked by the recorded Windows ACL-helper failure. Use future observed first-session and basket-logistics readability alongside the existing County, market, workforce, weather, and progression playtests to select a deliberately designed next package.
 
 ## Later directions
 

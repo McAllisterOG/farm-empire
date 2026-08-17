@@ -318,7 +318,7 @@ function renderCountyWorkOrder(body: HTMLElement, state: GameState, actions: Far
   if (status === 'active') {
     body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-active' },
       h('strong', {}, COUNTY_PANTRY_CORN_ORDER.title),
-      h('span', {}, `Mae Carter: Eli at the County Grain Exchange is waiting for ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} corn.`),
+      h('span', {}, `Mae Carter: Take ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} corn in the pickup to Eli at the Grain Exchange.`),
       h('span', {}, `Pickup cargo progress: ${progress.storedUnits} / ${progress.requiredUnits} corn.`),
       h('span', {}, `Fixed county payout: ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)}.`),
     ));
@@ -326,8 +326,8 @@ function renderCountyWorkOrder(body: HTMLElement, state: GameState, actions: Far
   }
   body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-work-order-offer' },
     h('strong', {}, 'A first county delivery'),
-    h('span', {}, 'Mae Carter: Welcome to the County Service Center. The County Pantry needs a dependable first corn delivery.'),
-    h('span', {}, `Grow and harvest ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} corn, load it into the pickup, and Eli will pay a fixed ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)} at the Grain Exchange.`),
+    h('span', {}, 'Mae Carter: The County Pantry could use your first corn delivery.'),
+    h('span', {}, `Grow ${COUNTY_PANTRY_CORN_ORDER.requiredUnits} corn by hand, carry it through barn and pickup, then let Eli accept it at the Grain Exchange for ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)}.`),
     h('button', {
       class: 'btn btn-primary', 'data-testid': 'accept-county-work-order',
       onclick: () => runAndRender(actions.acceptCountyWorkOrder(), actions, () => renderCountyWorkOrder(body, state, actions)),

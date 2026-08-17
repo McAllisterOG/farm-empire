@@ -310,3 +310,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Large manual selections automatically walk to unload and resume only after success. Escape stops the current unload and unfinished selection while preserving the saved basket. Reload restores basket contents/destination but not transient walking/job state.
 - The pickup must be present at the farm for pickup unloads. Tractor and farmhand harvests remain direct-to-barn; mounted entry and basket controls fail closed while carrying or operating a vehicle.
 - Save v16 and earlier discard any stray basket field; malformed v17 basket data normalizes deterministically to known crops within capacity and a safe barn destination. Wagons, field caches, worker logistics, further basket tiers, spoilage, and economy rebalance remain deferred.
+
+## 2026-08-17 - Make first-session guidance a derived, optional morning
+
+**Status:** Approved by the owner
+
+- An untouched unmet farm may show one runtime-only welcome; dismissal never writes a save field or gameplay state.
+- A DOM-free presenter derives corn-only first-delivery progress and next action from authoritative fields, basket, barn, pickup, stats, and County contact state. It sends loaded-but-unmet farms to Mae before Eli and never alters transactions.
+- The compact pickup chip and one field pulse are presentation-only, suppress around town and competing work, and Farmbook separates today’s delivery from later progression.
+- Save v17, crop values, yield, grow time, storage, equipment, NPC services, and unlocks remain unchanged. Browser acceptance remains deferred solely by the recorded Windows ACL-helper failure.

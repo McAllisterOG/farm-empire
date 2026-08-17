@@ -5,6 +5,7 @@ import { pickupCargoCapacity, pickupCargoUsed } from '../../core/farmPickup';
 import { countyFreightBoardState } from '../../core/farmCountyFreight';
 import { farmWeatherForecast } from '../../core/farmWeather';
 import { roadsideStandView } from '../../core/farmRoadsideStand';
+import { firstFarmMorningGuide } from '../../core/firstFarmMorning';
 import { h } from '../dom';
 import { openPanel } from '../modal';
 
@@ -31,6 +32,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
   const freight = countyFreightBoardState(state);
   const forecast = farmWeatherForecast(state, 3);
   const stand = roadsideStandView(state);
+  const morning = firstFarmMorningGuide(state, Date.now());
   const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offers.length > 0 ? `${freight.offers.length} routes posted` : 'Route complete today';
   openPanel({ title: farm.parcels.northOwned ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
@@ -57,8 +59,12 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('small', {}, index === 0 ? weather.fieldNote : weather.kind === 'rain' ? 'Rain can establish new planting.' : 'Plan on manual establishment water.'),
       ))),
     ),
+    ...(!morning.complete ? [h('section', { class: 'farmbook-section' },
+      h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Today’s delivery'), h('span', {}, `${morning.cornProgress.current}/${morning.cornProgress.required} corn`)),
+      h('div', { class: 'farmbook-next' }, h('strong', {}, morning.title), h('span', {}, morning.detail)),
+    )] : []),
     h('section', { class: 'farmbook-section' },
-      h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Farm Guide'), h('span', {}, `${completed}/${guide.length}`)),
+      h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Later on'), h('span', {}, `${completed}/${guide.length}`)),
       next ? h('div', { class: 'farmbook-next' }, h('strong', {}, `Next · ${next.label}`), h('span', {}, next.hint)) : h('div', { class: 'farmbook-next complete' }, 'Core farm route complete.'),
       h('div', { class: 'farmbook-guide-list' }, ...guide.map((step) => h('div', { class: `farmbook-guide-step ${step.done ? 'done' : ''}` },
         h('span', { class: 'farmbook-check' }, step.done ? '✓' : '·'),

@@ -89,6 +89,7 @@ export interface RenderScene {
     destination?: { kind: 'walk' | 'pickup' | 'tractor'; x: number; y: number };
     manualAction?: { kind: ManualFieldActionKind; x: number; y: number; progress: number };
     manualSelection?: { x: number; y: number }[];
+    starterGuideTarget?: { uid: number; x: number; y: number };
     farmhandAction?: { kind: ManualFieldActionKind; x: number; y: number; progress: number };
     farmhandSelection?: { x: number; y: number }[];
   };
@@ -501,6 +502,13 @@ export class Renderer {
       ctx.strokeStyle = 'rgba(126, 184, 104, .9)'; ctx.lineWidth = Math.max(1.5, zoom * 2); ctx.stroke(); ctx.restore();
     }
 
+    const guideTarget = scene.farm!.starterGuideTarget;
+    if (guideTarget) {
+      const pulse = .42 + (Math.sin(now / 240) + 1) * .18;
+      farmFootprintPath(ctx, camera, farmPlotFootprint(guideTarget));
+      ctx.fillStyle = `rgba(229, 166, 59, ${pulse * .16})`; ctx.fill();
+      ctx.strokeStyle = `rgba(181, 111, 42, ${pulse})`; ctx.lineWidth = Math.max(2, zoom * 2.6); ctx.stroke();
+    }
     if (scene.hover) {
       farmFootprintPath(ctx, camera, farmPlotFootprint({ x: scene.hover.tx, y: scene.hover.ty }));
       ctx.fillStyle = 'rgba(255, 239, 132, .18)'; ctx.fill();

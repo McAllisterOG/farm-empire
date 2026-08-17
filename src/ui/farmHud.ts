@@ -5,6 +5,7 @@ import { pickupCargoCapacity, pickupCargoUsed } from '../core/farmPickup';
 import { HAND_BASKET_CAPACITY, handBasketUsed } from '../core/farmHarvestBasket';
 import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../core/farmKnowledge';
 import { currentFarmWeather } from '../core/farmWeather';
+import { firstFarmMorningGuide } from '../core/firstFarmMorning';
 import { h, spriteImg } from './dom';
 
 export interface FarmHudCallbacks {
@@ -29,6 +30,9 @@ export interface TractorHudRuntime {
   farmhandWorking?: boolean;
 }
 
+export function shouldShowFirstDeliveryChip(mode: FarmHudMode, complete: boolean, runtime?: TractorHudRuntime): boolean {
+  return mode === 'farm' && !complete && !runtime?.operating && !runtime?.working && !runtime?.manualWorking && !runtime?.farmhandWorking;
+}
 function clockText(minute: number): string {
   const hour24 = Math.floor(minute / 60) % 24;
   const minutes = minute % 60;
@@ -57,6 +61,9 @@ export class FarmHud {
   private unloadBasketButton: HTMLButtonElement;
   private farmControls: HTMLElement;
   private townControls: HTMLElement;
+  private morningCard: HTMLElement;
+  private deliveryChip: HTMLElement;
+  private morningDismissed = false;
   private mode: FarmHudMode = 'farm';
   private cropButtons = new Map<string, HTMLButtonElement>();
 
@@ -89,6 +96,16 @@ export class FarmHud {
       'data-testid': 'unload-basket-button',
       onclick: cb.onUnloadBasket,
     }, 'Unload Basket') as HTMLButtonElement;
+    this.deliveryChip = h('div', { class: 'first-delivery-chip', 'data-testid': 'first-delivery-chip' });
+    const dismissMorning = (): void => { this.morningDismissed = true; this.morningCard.classList.add('hidden'); };
+    this.morningCard = h('section', { class: 'first-morning-card', 'data-testid': 'first-morning-card' },
+      h('strong', {}, 'Good morning.'),
+      h('span', {}, 'The old place is yours. Today, grow corn for a first County delivery.'),
+      h('div', { class: 'first-morning-actions' },
+        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': 'start-first-morning', onclick: dismissMorning }, 'Start the morning'),
+        h('button', { class: 'btn btn-sm', 'data-testid': 'explore-first', onclick: dismissMorning }, 'I’ll explore first'),
+      ),
+    );
 
     const top = h('div', { class: 'farm-hud-top' },
       h('div', { class: 'farm-brand' }, h('span', { class: 'farm-brand-mark' }, 'FE'), h('div', {},
@@ -139,7 +156,7 @@ export class FarmHud {
     const bottom = h('div', { class: 'farm-hud-bottom' }, this.farmControls, this.townControls);
 
     this.helpEl = h('div', { class: 'farm-help' }, 'Select a crop, then click an empty field section to plant. Click a ready crop to harvest.');
-    this.root = h('div', { class: 'farm-hud-root' }, top, bottom, this.operationEl, this.helpEl);
+    this.root = h('div', { class: 'farm-hud-root' }, top, bottom, this.deliveryChip, this.morningCard, this.operationEl, this.helpEl);
     document.body.append(this.root);
   }
 
@@ -180,9 +197,15 @@ export class FarmHud {
     const knowledge = farmerKnowledgeSummary(state);
     const guide = farmGuideSteps(state);
     const nextGuide = nextFarmGuideStep(state);
+    const morning = firstFarmMorningGuide(state, Date.now());
     this.farmbookButton.textContent = `Farmbook · ${guide.filter((step) => step.done).length}/${guide.length}`;
     this.farmbookButton.title = `${knowledge.level.name}${nextGuide ? ` · Next: ${nextGuide.label}` : ' · Core route complete'}`;
     if (this.mode === 'farm') this.brandSubEl.textContent = `${knowledge.level.name} · Farming Business`;
+    this.deliveryChip.classList.toggle('hidden', !shouldShowFirstDeliveryChip(this.mode, morning.complete, runtime));
+    this.deliveryChip.textContent = `County Pantry · Pickup loaded · ${morning.cornProgress.current}/${morning.cornProgress.required} corn`;
+    this.morningCard.classList.toggle('hidden', this.mode !== 'farm' || this.morningDismissed || !morning.showWelcome);
+    const greeting = this.morningCard.querySelector('strong');
+    if (greeting) greeting.textContent = `Good morning, ${state.player.name?.trim() || 'Farm'}.`;
     this.tractorEl.textContent = runtime?.working
       ? 'Field job active'
       : runtime?.operating
@@ -199,7 +222,7 @@ export class FarmHud {
       ? 'The tractor is working section by section. Press Escape to cancel safely.'
       : runtime?.operating
         ? 'Click open ground to drive. Click an owned field parcel for batch planting or harvesting.'
-        : nextGuide ? `Next · ${nextGuide.label} — ${nextGuide.hint}` : 'Core farm route complete. Keep growing the operation your way.';
+        : !morning.complete ? `Today · ${morning.title} — ${morning.detail}` : nextGuide ? `Next · ${nextGuide.label} — ${nextGuide.hint}` : 'Core farm route complete. Keep growing the operation your way.';
     for (const [cropId, button] of this.cropButtons) {
       const unlock = farmCropUnlockInfo(state, cropId);
       const def = farmCropDef(cropId);

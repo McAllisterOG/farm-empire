@@ -558,6 +558,18 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   font-size: 12px; box-shadow: var(--shadow); line-height: 1.35;
   animation: farm-hud-in .22s ease-out;
 }
+.first-delivery-chip {
+  position: absolute; top: 82px; right: 10px; max-width: 390px; padding: 7px 10px;
+  border: 2px solid #d0a743; border-radius: 10px; background: rgba(255, 248, 218, .97);
+  color: #694a25; font-size: 12px; font-weight: 800; box-shadow: var(--shadow);
+}
+.first-morning-card {
+  position: absolute; top: 128px; left: 10px; width: min(350px, calc(100vw - 20px)); padding: 11px 12px;
+  display: flex; flex-direction: column; gap: 6px; border: 2px solid #b9cc91; border-radius: 12px;
+  background: rgba(255, 252, 238, .98); color: #40513c; box-shadow: var(--shadow); font-size: 12px; line-height: 1.35;
+}
+.first-morning-card strong { color: #315b3a; font-size: 14px; }
+.first-morning-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .farm-operation-status {
   position: absolute; top: 82px; right: 10px; padding: 8px 12px; max-width: 560px;
   background: rgba(255, 248, 218, 0.97); color: #6d4124; border: 2px solid #d6ad48;
@@ -669,11 +681,15 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 @keyframes farm-hud-in { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 900px) {
+  .farm-help { top: 136px; left: 10px; right: 10px; max-width: none; }
+  .first-delivery-chip { top: 188px; left: 10px; right: auto; max-width: calc(100vw - 20px); }
+  .first-morning-card { top: 242px; }
+  .farm-operation-status { top: 82px; right: 10px; }
   .farm-brand { min-width: 180px; }
   .farm-stat { min-width: 100px; }
   .farm-hud-bottom { align-items: flex-start; flex-wrap: wrap; }
   .farm-actions { width: 100%; justify-content: center; }
-  .farm-operation-status { top: 142px; max-width: calc(100vw - 20px); }
+  .farm-operation-status { top: 82px; max-width: calc(100vw - 20px); }
   .farm-hud-top { max-width: calc(100vw - 20px); overflow-x: auto; scrollbar-width: thin; }
   .farm-brand, .farm-stat { flex: 0 0 auto; }
   .farm-hud-bottom { width: calc(100vw - 20px); }
@@ -685,6 +701,10 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 }
 
 @media (max-width: 560px) {
+  .farm-help { top: 126px; font-size: 11px; }
+  .first-delivery-chip { top: 178px; font-size: 11px; }
+  .first-morning-card { top: 228px; width: calc(100vw - 20px); font-size: 11px; }
+  .farm-operation-status { top: 76px; left: 10px; right: 10px; max-width: none; }
   .farm-hud-top { gap: 5px; }
   .farm-brand { min-width: 168px; padding: 6px 8px; }
   .farm-brand-mark { width: 32px; height: 32px; }
@@ -694,7 +714,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .farm-selected { min-width: 128px; }
   .farm-actions { gap: 4px; }
   .farm-actions .btn { padding: 6px 9px; font-size: 12px; }
-  .farm-help { top: 76px; max-width: calc(100vw - 20px); }
+  .farm-help { top: 126px; max-width: calc(100vw - 20px); }
   .modal-panel { width: calc(100vw - 20px); max-height: 88vh; border-width: 2px; }
   .panel-header { padding: 11px 13px 9px; }
   .panel-title { font-size: 17px; }
