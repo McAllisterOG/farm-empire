@@ -1,4 +1,4 @@
-import type { ActionResult, GameState } from '../core/types';
+import type { ActionResult, FarmHarvestDestination, GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
@@ -10,6 +10,10 @@ import {
 import { ensureOwnedFarmParcelPlots, farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { pickupPositionForSave } from '../core/farmPickupData';
+import {
+  HAND_BASKET_CAPACITY, basketInteractionBlockReason, handBasketHasCargo, handBasketRemaining, handBasketUsed, harvestFarmCropToBasket,
+  inspectBasketHarvest, setHarvestDestination, unloadHandBasket,
+} from '../core/farmHarvestBasket';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY, TILE_H } from '../render/iso';
 import { farmhousePresentationTier, farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
@@ -93,6 +97,12 @@ interface ManualFieldJob {
   lastFailure?: string;
 }
 
+interface BasketUnload {
+  destination: FarmHarvestDestination;
+  afterSuccess: (() => void) | null;
+  onFailure: ((reason: string) => void) | null;
+}
+
 interface FarmhandJob {
   kind: FarmhandWorkKind;
   parcelId: FarmParcelId;
@@ -142,6 +152,7 @@ export class FarmEmpireApp {
   private tractorJob: TractorJob | null = null;
   private manualFieldAction: RunningManualFieldAction | null = null;
   private manualFieldJob: ManualFieldJob | null = null;
+  private basketUnload: BasketUnload | null = null;
   private fieldDragSelection: number[] = [];
   private farmhandActor: SceneActor;
   private farmhandFacing: FarmFacing = 'south';
@@ -189,6 +200,8 @@ export class FarmEmpireApp {
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
       onMarket: () => { if (this.manualActionBlocksUi()) return; this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions(), 'farm'); },
       onFarmbook: () => { if (!this.manualActionBlocksUi()) this.openFarmhouseOffice(); },
+      onToggleHarvestDestination: () => this.toggleHarvestDestination(),
+      onUnloadBasket: () => this.requestBasketUnload(),
       onEquipment: () => { if (!this.manualActionBlocksUi()) this.openEquipmentPanel(); },
       onReturnFarm: () => this.requestReturnToFarm(),
       onSave: () => {
@@ -324,7 +337,10 @@ export class FarmEmpireApp {
       } else if (event.type === 'water') {
         toast(`${farmCropDef(String(event.target)).name} watered. Growth has started.`, 'good');
       } else if (event.type === 'harvest') {
-        toast(`Harvested ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} into the barn.`, 'good');
+        const destination = (event.data as { destination?: string } | undefined)?.destination === 'basket'
+          ? 'basket'
+          : 'barn';
+        toast(`Harvested ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} into the ${destination}.`, 'good');
         floatText(this.playerScreenX(), this.playerScreenY() - 45, `+${event.amount ?? 0}`, 'float-good');
       } else if (event.type === 'sell') {
         this.farmAudio.playTransaction('sell');
@@ -546,7 +562,11 @@ export class FarmEmpireApp {
         if (isActionMenuOpen()) hideActionMenu();
         return;
       }
-      if (this.manualFieldJob) this.cancelManualFieldJob();
+      if (this.basketUnload) {
+        this.cancelBasketUnload();
+        if (this.manualFieldJob) this.cancelManualFieldJob(false);
+      }
+      else if (this.manualFieldJob) this.cancelManualFieldJob();
       else if (this.manualFieldAction) this.cancelManualFieldAction();
       else if (this.scoutWaitingForScratch) this.cancelScoutApproach();
       else if (this.tractorJob) this.cancelTractorJob();
@@ -592,7 +612,11 @@ export class FarmEmpireApp {
       this.onClickTown(sx, sy);
       return;
     }
-    if (this.manualFieldJob || this.manualFieldAction) {
+    if (this.manualFieldJob || this.manualFieldAction || this.basketUnload) {
+      if (this.basketUnload) {
+        toast('Basket unloading in progress. Press Escape to stop walking; the harvest stays safe.', 'bad');
+        return;
+      }
       const kind = this.manualFieldJob?.kind ?? this.manualFieldAction!.kind;
       toast(`${MANUAL_FIELD_ACTION_LABELS[kind]} in progress. Press Escape to cancel.`, 'bad');
       return;
@@ -859,6 +883,10 @@ export class FarmEmpireApp {
       toast('Restore the inherited tractor at the County Equipment Desk before operating it.', 'bad');
       return;
     }
+    if (!this.operatingTractor && handBasketHasCargo(this.state)) {
+      toast('Unload the harvest basket before operating the tractor.', 'bad');
+      return;
+    }
     if (this.operatingTractor) {
       const dismount = placePlayerAtTractorDismount(this.state);
       this.operatingTractor = false;
@@ -940,7 +968,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Harvest enters the barn. Park the pickup at the marked barn cargo pad and use Barn → Pickup before driving to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Drag open ground or use WASD/arrow keys to pan after zooming; the mouse wheel zooms. Completing the Pantry delivery unlocks tractor restoration and three daily Freight Board bids. Later, Mara can complete whole-acreage assignments while you run the business.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried. Large selections unload automatically and continue.'), h('p', {}, 'Park the pickup at the marked barn cargo pad to move existing barn produce with Barn → Pickup, then drive it to the County Grain Exchange to sell or deliver. Drag open ground or use WASD/arrow keys to pan; the mouse wheel zooms.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration and three daily Freight Board bids. Later, Mara can complete whole-acreage assignments while you run the business.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1032,6 +1060,10 @@ export class FarmEmpireApp {
   private togglePickupOperating(): void {
     if (this.operatingTractor || this.tractorJob || this.tractorTarget) {
       toast('Exit the tractor before operating the pickup.', 'bad');
+      return;
+    }
+    if (!this.operatingPickup && handBasketHasCargo(this.state)) {
+      toast('Unload the harvest basket before operating the pickup.', 'bad');
       return;
     }
     const pickup = farmOf(this.state).pickup;
@@ -1289,6 +1321,15 @@ export class FarmEmpireApp {
   }
 
   private tractorHudRuntime(): { operating: boolean; working: boolean; statusText: string; manualWorking?: boolean; farmhandWorking?: boolean } {
+    if (this.basketUnload) {
+      const destination = this.basketUnload.destination === 'pickup' ? 'pickup' : 'barn';
+      return {
+        operating: false,
+        working: false,
+        manualWorking: true,
+        statusText: `Carrying harvest basket · ${handBasketUsed(this.state)} / ${HAND_BASKET_CAPACITY} cargo units · walking to ${destination} · Escape stops safely`,
+      };
+    }
     const manualJob = this.manualFieldJob;
     if (manualJob) {
       const total = manualJob.targetPlotUids.length;
@@ -1502,6 +1543,16 @@ export class FarmEmpireApp {
   ): void {
     if (targets.length === 0) return;
     if (targets.length === 1 || scope === 'section') {
+      if (kind === 'harvest') {
+        const readiness = inspectBasketHarvest(this.state, targets[0], this.gameNow());
+        if (readiness.ok && Number(readiness.capacityUnits) > handBasketRemaining(this.state) && handBasketHasCargo(this.state)) {
+          this.beginBasketUnload(
+            () => this.startManualTargetList(kind, targets, scope, cropId),
+            (reason) => toast(`${reason} The selected crop remains ready in the field.`, 'bad'),
+          );
+          return;
+        }
+      }
       this.startManualFieldAction(kind, targets[0], () => this.applyManualFieldAction(kind, targets[0], cropId));
       return;
     }
@@ -1520,11 +1571,18 @@ export class FarmEmpireApp {
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
-  private applyManualFieldAction(kind: ManualFieldActionKind, plotUid: number, cropId?: string): ActionResult {
+  private applyManualFieldAction(
+    kind: ManualFieldActionKind,
+    plotUid: number,
+    cropId?: string,
+    harvestToBasket = true,
+  ): ActionResult {
     if (kind === 'prepare' || kind === 'rework') return tillFarmField(this.state, plotUid);
     if (kind === 'plant') return plantFarmCrop(this.state, plotUid, String(cropId), this.gameNow(), 'manual');
     if (kind === 'water') return waterFarmCrop(this.state, plotUid, this.gameNow());
-    if (kind === 'harvest') return harvestFarmCrop(this.state, plotUid, this.gameNow(), 'manual');
+    if (kind === 'harvest') return harvestToBasket
+      ? harvestFarmCropToBasket(this.state, plotUid, this.gameNow())
+      : harvestFarmCrop(this.state, plotUid, this.gameNow(), 'manual');
     return clearWitheredFarmCrop(this.state, plotUid, this.gameNow());
   }
 
@@ -1574,7 +1632,7 @@ export class FarmEmpireApp {
     this.farmhandFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
     this.farmhandAction = {
       ...createManualFieldAction(job.kind, plotUid, plot, this.gameNow()),
-      apply: () => this.applyManualFieldAction(job.kind, plotUid, job.cropId),
+      apply: () => this.applyManualFieldAction(job.kind, plotUid, job.cropId, false),
     };
   }
 
@@ -1636,6 +1694,101 @@ export class FarmEmpireApp {
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
+  private toggleHarvestDestination(): void {
+    const blocked = this.basketInteractionBlockReason();
+    if (blocked) {
+      toast(blocked, 'bad');
+      return;
+    }
+    if (this.manualActionBlocksUi()) return;
+    const next: FarmHarvestDestination = farmOf(this.state).handBasket.destination === 'barn' ? 'pickup' : 'barn';
+    const result = setHarvestDestination(this.state, next);
+    this.dispatch(result);
+    if (result.ok) this.save();
+  }
+
+  private requestBasketUnload(): void {
+    const blocked = this.basketInteractionBlockReason();
+    if (blocked) {
+      toast(blocked, 'bad');
+      return;
+    }
+    if (this.manualActionBlocksUi()) return;
+    if (!handBasketHasCargo(this.state)) {
+      toast('The harvest basket is empty.', 'bad');
+      return;
+    }
+    this.beginBasketUnload();
+  }
+
+  private beginBasketUnload(
+    afterSuccess: (() => void) | null = null,
+    onFailure: ((reason: string) => void) | null = null,
+  ): void {
+    const blocked = this.basketInteractionBlockReason();
+    if (blocked) {
+      toast(blocked, 'bad');
+      onFailure?.(blocked);
+      return;
+    }
+    if (!handBasketHasCargo(this.state)) {
+      afterSuccess?.();
+      return;
+    }
+    if (this.basketUnload) return;
+    const farm = farmOf(this.state);
+    const destination = farm.handBasket.destination;
+    if (destination === 'pickup' && this.pickupAtTown) {
+      const result = unloadHandBasket(this.state, destination, false);
+      this.dispatch(result);
+      onFailure?.(result.reason ?? 'The pickup is unavailable.');
+      return;
+    }
+    this.basketUnload = { destination, afterSuccess, onFailure };
+    const barn = this.state.placements.find((placement) => placement.defId === 'bld_storage');
+    const target = destination === 'pickup'
+      ? { x: farm.pickup.x, y: farm.pickup.y }
+      : barn ? { x: barn.x + .5, y: barn.y + 1.85 } : farmLandmarks().cargoPad;
+    this.walkNear(target.x, target.y, () => {
+      const pending = this.basketUnload;
+      if (!pending) return;
+      this.basketUnload = null;
+      const result = unloadHandBasket(this.state, pending.destination, !this.pickupAtTown);
+      this.dispatch(result);
+      if (result.ok) {
+        this.save();
+        pending.afterSuccess?.();
+      } else {
+        pending.onFailure?.(result.reason ?? 'The basket could not be unloaded.');
+      }
+    });
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
+  private cancelBasketUnload(): void {
+    if (!this.basketUnload) return;
+    this.basketUnload = null;
+    this.walkTarget = null;
+    this.playerActor.walking = false;
+    toast('Basket walk cancelled. Every harvested crop is still safe in the basket.', 'good');
+    this.save();
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
+  private stopManualHarvestForUnloadFailure(reason: string): void {
+    const job = this.manualFieldJob;
+    if (!job) return;
+    const untouched = Math.max(0, job.targetPlotUids.length - job.nextIndex);
+    this.manualFieldJob = null;
+    this.manualFieldAction = null;
+    this.basketUnload = null;
+    this.walkTarget = null;
+    this.playerActor.walking = false;
+    toast(`Harvest paused: ${job.completed} completed, ${untouched} not attempted. ${reason} The basket contents remain safe.`, 'bad');
+    this.save();
+    this.hud.update(this.state, this.tractorHudRuntime());
+  }
+
   private beginManualFieldJobStep(): void {
     const job = this.manualFieldJob;
     if (!job || this.manualFieldAction || this.walkTarget) return;
@@ -1647,6 +1800,16 @@ export class FarmEmpireApp {
         job.lastFailure = 'A selected field section was unavailable.';
         job.nextIndex += 1;
         continue;
+      }
+      if (job.kind === 'harvest') {
+        const readiness = inspectBasketHarvest(this.state, plotUid, this.gameNow());
+        if (readiness.ok && Number(readiness.capacityUnits) > handBasketRemaining(this.state) && handBasketHasCargo(this.state)) {
+          this.beginBasketUnload(
+            () => this.beginManualFieldJobStep(),
+            (reason) => this.stopManualHarvestForUnloadFailure(reason),
+          );
+          return;
+        }
       }
       this.walkNear(plot.x, plot.y, () => this.startManualFieldAction(
         job.kind,
@@ -1683,6 +1846,13 @@ export class FarmEmpireApp {
   private finishManualFieldJob(): void {
     const job = this.manualFieldJob;
     if (!job) return;
+    if (job.kind === 'harvest' && handBasketHasCargo(this.state) && !this.basketUnload) {
+      this.beginBasketUnload(
+        () => this.finishManualFieldJob(),
+        (reason) => this.stopManualHarvestForUnloadFailure(reason),
+      );
+      return;
+    }
     const label = job.scope === 'row' ? 'Row' : job.scope === 'three-rows' ? 'Three-row block' : 'Custom area';
     const summary = `${label} complete: ${job.completed} completed${job.skipped ? `, ${job.skipped} skipped` : ''}.`;
     const detail = job.skipped && job.lastFailure ? ` ${job.lastFailure}` : '';
@@ -1695,25 +1865,38 @@ export class FarmEmpireApp {
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
-  private cancelManualFieldJob(): void {
+  private cancelManualFieldJob(unloadHarvestBasket = true): void {
     const job = this.manualFieldJob;
     if (!job) return;
     const untouched = Math.max(0, job.targetPlotUids.length - job.completed - job.skipped);
     const label = job.scope === 'row' ? 'Row work' : job.scope === 'three-rows' ? 'Three-row work' : 'Custom-area work';
     this.manualFieldJob = null;
     this.manualFieldAction = null;
+    this.basketUnload = null;
     this.walkTarget = null;
     this.playerActor.walking = false;
     toast(`${label} cancelled: ${job.completed} completed, ${job.skipped} skipped, ${untouched} not attempted.`, 'good');
     if (job.completed > 0) this.save();
+    if (unloadHarvestBasket && job.kind === 'harvest' && handBasketHasCargo(this.state)) this.beginBasketUnload();
     this.hud.update(this.state, this.tractorHudRuntime());
   }
 
   private manualActionBlocksUi(): boolean {
+    if (this.basketUnload) {
+      toast('Basket unloading in progress. Press Escape to stop walking; the harvest stays safe.', 'bad');
+      return true;
+    }
     const kind = this.manualFieldJob?.kind ?? this.manualFieldAction?.kind;
     if (!kind) return false;
     toast(`${MANUAL_FIELD_ACTION_LABELS[kind]} in progress. Finish it or press Escape to cancel.`, 'bad');
     return true;
+  }
+
+  private basketInteractionBlockReason(): string | null {
+    return basketInteractionBlockReason({
+      operatingTractor: this.operatingTractor,
+      operatingPickup: this.operatingPickup,
+    });
   }
 
   private updateManualFieldAction(now: number): void {
@@ -1728,6 +1911,7 @@ export class FarmEmpireApp {
     const job = this.manualFieldJob;
     if (!job) {
       this.dispatch(result);
+      if (result.ok && action.kind === 'harvest') this.beginBasketUnload();
       return;
     }
     if (result.ok) job.completed += 1;
@@ -1778,6 +1962,7 @@ export class FarmEmpireApp {
       fieldSelection: [...this.fieldDragSelection],
       cashCents: farm.cashCents,
       barn: { used: storageUsed(this.state), capacity: farm.storageCapacity },
+      basket: { used: handBasketUsed(this.state), capacity: HAND_BASKET_CAPACITY, destination: farm.handBasket.destination, unloading: !!this.basketUnload },
       pickup: { x: farm.pickup.x, y: farm.pickup.y, operating: this.operatingPickup, atTown: this.pickupAtTown, cargoUsed: pickupCargoUsed(this.state), cargoCapacity: pickupCargoCapacity(this.state), trailerOwned: farm.equipment.countyUtilityTrailerOwned },
       tractor: { x: farm.equipment.tractor.x, y: farm.equipment.tractor.y, operating: this.operatingTractor, working: !!this.tractorJob },
       workforce: {
@@ -2022,7 +2207,14 @@ export class FarmEmpireApp {
       return scene;
     }
     scene.actors = [
-      ...((this.operatingTractor || this.operatingPickup) ? [] : [{ ...this.playerActor, name: this.state.player.name, facing: this.playerFacing, variant: 'owner' as const }]),
+      ...((this.operatingTractor || this.operatingPickup) ? [] : [{
+        ...this.playerActor,
+        name: this.state.player.name,
+        facing: this.playerFacing,
+        variant: 'owner' as const,
+        carryingBasket: handBasketHasCargo(this.state),
+        basketFill: handBasketUsed(this.state) / HAND_BASKET_CAPACITY,
+      }]),
       ...(farm.workforce.farmhandHired ? [{
         ...this.farmhandActor,
         name: this.farmhandAction ? undefined : FIRST_FARMHAND.name,

@@ -2,18 +2,17 @@
 
 ## Current known-good checkpoint
 
-- **Date:** 2026-08-13
+- **Date:** 2026-08-17
 - **Branch:** `codex/first-town-contact`
-- **Head:** `fee808a`
-- **Product state:** County Life adds one visible basket-carrying visitor to an owned, open roadside stand and two distinct ambient residents to the County plaza. Their clock-aware routes are reconstructed from the existing seed, saved day, clock minute, and frame time; they never alter orders, prices, cash, services, or saves. The three named service NPCs and all progression-reliability fixes remain authoritative and unchanged.
-- **Verification:** 251/251 tests passed; strict typecheck, Vite and desktop-relative production builds, and whitespace checks passed. Focused coverage proves deterministic schedules, open-order/business-hour gating, smooth reversal, acreage avoidance, and plaza containment. Browser acceptance verified the stand visitor and basket, business-hour disappearance, both readable town lanes, unchanged Feed & Seed selection, town save/return, and zero console warnings/errors. `release/county-life-v1/verified-win-unpacked` contains the final relative-asset bundle; the literal Desktop shortcut launched four responsive native processes and left zero residue. The Desktop shortcut targets that verified executable.
-- **Review:** The architecture-strategist boundary kept schedules and routes in a pure render module, painters in presentation, the existing functional NPC roster untouched, and save v15 unchanged. The live browser pass caught and repaired an initial post-sort draw-queue insertion plus obscured route pauses. A bounded primary audit covered route safety, business-hour truth, service priority, layering, save neutrality, package contents, shortcut routing, and native cleanup. No high- or medium-severity issue remains.
+- **Head:** local checkpoint; see Git history for the commit
+- **Product state:** Manual harvest now commits into a persistent 24-unit hand basket, with a saved Barn/Pickup destination. Whole-basket unloads are weighted, destination-capacity checked, and atomic; large manual harvest selections walk to unload and resume only after success. Tractor and farmhand harvests remain direct-to-barn and cannot interact with the basket; mounting is blocked while carrying it.
+- **Verification:** 265/265 tests passed, including 8 focused basket tests; strict typecheck, Vite production build, and `git diff --check` passed. Save v17 migration resets any pre-v17 stray basket data; v17 normalization bounds known crops and capacity deterministically.
+- **Review:** Independent Red Team found and the repair closed two medium state-machine issues: mounted basket action isolation and Escape during batch auto-unload. Browser interaction verification was not run because the browser runtime hit a Windows ACL-helper failure; visual/player-facing acceptance is therefore still required before any release claim.
 
 ## Current presentation
-
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v15 adds minimal roadside-stand ownership/completed-day state; v14 workforce, v13 trailer, v12 freight, v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
+- Existing plot IDs and planted crops remain compatible. Save schema v17 adds persisted hand-basket crops and destination; v16 grain-silo, v15 roadside-stand, v14 workforce, v13 trailer, v12 freight, v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
@@ -28,6 +27,7 @@
 - Fresh farms inherit the Old Red Tractor in a visible repair state. The first County delivery unlocks its one-time $1,950 restoration; only then does the Equipment Desk sell the $1,250 Row-Crop Field Kit, whose bonuses apply only while the tractor is physically operated.
 - Farm crops remain ready for a generous 15-minute real-time window, then visibly wither and can be cleared without refund so field sections are never permanently blocked.
 - A true zero-asset farm may receive exactly one lifetime wheat seed from Mae; the claim is persisted and cannot be recycled through intentional crop loss.
+- Manual harvest carries a visible 24-unit saved basket until atomically unloaded to its chosen barn or present pickup destination; basket contents count as assets for County relief and survive reload.
 - Owning the neighboring parcel unlocks a one-time $1,800 Barn Loft Expansion that raises storage from 150 to 200 and visibly adds a lean-to to the barn.
 - The crop catalog now contains corn, wheat, soybeans, potatoes, carrots, tomatoes, cabbage, and pumpkins. New crops start with zero seeds and unlock from the existing County-order, neighboring-parcel, and Barn Loft milestones without new saved license state.
 - Carrots are a low-capital quick turn; tomatoes trade barn throughput for margin; cabbage is value-dense; pumpkins are the slowest, highest-gross, and consume three barn units per harvested item.
@@ -48,7 +48,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Owner-playtest whether the added plaza and farm-gate motion makes the County feel more alive without confusing the three real services, along with whether the local-order convenience is worth its $650 capital cost. Continue evaluating weather readability, Mara's daily shift, the Freight Board/trailer, tractor restoration, row fieldwork, farmhouse growth, and storage pressure before selecting the evidence-based economy study or another finite package.
+No additional feature package is currently active. First browser/playtest the manual harvest basket across destination switching, automatic unload/resume, cancellation, reload, full destinations, and mounted exclusion; the required browser pass was blocked by a Windows ACL-helper failure. Continue evaluating County life, weather readability, Mara's daily shift, the Freight Board/trailer, tractor restoration, row fieldwork, farmhouse growth, and storage pressure before selecting another finite package.
 
 ## Known limitations
 

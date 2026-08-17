@@ -423,3 +423,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Artifacts:** `release/field-controls-v1/verified-win-unpacked/Farm Empire.exe` (225,442,304 bytes) and `resources/app.asar` (1,433,194 bytes), generated and ignored. `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` targets this smoke-tested build.
 - **Known limitations:** Drag selection is rectangular and stays inside one acreage. Manual harvest still moves directly into barn storage; there is no carried basket, selectable destination, wagon, field cache, or worker logistics layer yet. Procedural sound changes were technically verified but still require the owner's subjective listening pass.
 - **Push:** Not yet pushed; external GitHub authorization is still required.
+
+## Manual Harvest Basket Logistics V1 - complete
+
+- **Date:** 2026-08-17
+- **Branch:** `codex/first-town-contact`
+- **Commit:** local-only `feat: add manual harvest basket logistics` (see Git history)
+- **Scope:** Add a persistent owner-only manual-harvest basket with barn/pickup destination choice and save v17, preserving existing crop values, barn/pickup authority, tractor/farmhand harvest semantics, workforce, and economy. No wagon, field cache, worker logistics, capacity tier, spoilage, or rebalance.
+- **Result:** Manual harvest now commits full yields into a visible 24-unit saved basket. Whole mixed baskets unload only when their weighted capacity fully fits the selected barn or present pickup, then transfer atomically. Multi-section harvests automatically unload and resume; Escape preserves basket contents while stopping the current unload and unfinished work. Mounting while carrying is blocked, and tractor/farmhand harvest remains direct-to-barn.
+- **Verification:** 265/265 tests passed, including 8 focused basket tests; strict typecheck, Vite production build, and `git diff --check` passed. Focused coverage proves basket harvest atomicity, mixed destination capacity checks, persistence, v16 migration, corrupt v17 normalization, relief eligibility, and mounted-action guard logic.
+- **Review:** Independent Red Team identified mounted basket motion and Escape auto-restart as medium issues; both received one bounded repair and regression coverage. Browser interaction verification was not run because the browser runtime hit a Windows ACL-helper failure, so visual/player-facing acceptance remains outstanding.
+- **Known limitations:** Basket capacity is one fixed 24-unit owner inventory. There is no wagon, field cache, worker basket use, automatic hauling, partial unload, crop spoilage, further capacity tier, or economy rebalance.
+- **Push:** Not pushed.

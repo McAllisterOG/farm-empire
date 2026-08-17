@@ -78,10 +78,13 @@ describe('Barn expansion and recovery', () => {
     expect(issueCountyReliefSeed(reloaded, NOW + 2).ok).toBe(false);
   });
 
-  it('blocks relief when stored, seeded, or viable planted assets exist, but ignores withered plots', () => {
+  it('blocks relief when stored, carried, hauled, seeded, or viable planted assets exist, but ignores withered plots', () => {
     const state = makeFarm(); const farm = farmOf(state); farm.cashCents = 0;
     Object.keys(farm.seeds).forEach((id) => { farm.seeds[id] = 0; });
     farm.storage.crop_corn = 1; expect(countyReliefEligible(state, NOW)).toBe(false); farm.storage.crop_corn = 0;
+    farm.handBasket.crops.crop_corn = 1; expect(countyReliefEligible(state, NOW)).toBe(false); farm.handBasket.crops = {};
+    farm.pickup.cargo.crops.crop_corn = 1; expect(countyReliefEligible(state, NOW)).toBe(false); farm.pickup.cargo.crops = {};
+    farm.pickup.cargo.seeds.crop_wheat = 1; expect(countyReliefEligible(state, NOW)).toBe(false); farm.pickup.cargo.seeds = {};
     farm.seeds.crop_wheat = 1; expect(countyReliefEligible(state, NOW)).toBe(false); farm.seeds.crop_wheat = 0;
     state.plots[0].crop = { defId: 'crop_wheat', plantedAt: NOW, wateredBonusMs: 0, lastWateredAt: 0 };
     expect(countyReliefEligible(state, NOW)).toBe(false);

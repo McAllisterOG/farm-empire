@@ -300,3 +300,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Crop buttons expose both seed count and keyboard slots 1–8. Ground dragging remains camera pan, and WASD/arrow keys add an explicit bounded camera alternative; drag selection does not change saved camera or field state until a normal action completes.
 - Barn/pickup transfer controls name their direction and disable impossible zero-source actions. Grain Exchange sale controls similarly disable zero-cargo sales instead of returning a quantity error.
 - Harvest still enters authoritative barn storage. A carried basket, selectable harvest destination, wagon inventory, and field-edge logistics would change inventory authority and remain a separate designed package.
+
+## 2026-08-17 - Make manual harvest a persisted hand-basket logistics loop
+
+**Status:** Approved by the owner
+
+- Manual owner harvest commits to one authoritative 24 cargo-unit hand basket rather than directly to barn storage. The basket persists exact known-crop counts and a selected `barn` or `pickup` destination in save v17.
+- Harvest never partially fits: a field section changes only when its full yield fits. Basket unload first proves the complete weighted basket fits in the destination, then transfers every crop and clears the basket atomically.
+- Large manual selections automatically walk to unload and resume only after success. Escape stops the current unload and unfinished selection while preserving the saved basket. Reload restores basket contents/destination but not transient walking/job state.
+- The pickup must be present at the farm for pickup unloads. Tractor and farmhand harvests remain direct-to-barn; mounted entry and basket controls fail closed while carrying or operating a vehicle.
+- Save v16 and earlier discard any stray basket field; malformed v17 basket data normalizes deterministically to known crops within capacity and a safe barn destination. Wagons, field caches, worker logistics, further basket tiers, spoilage, and economy rebalance remain deferred.

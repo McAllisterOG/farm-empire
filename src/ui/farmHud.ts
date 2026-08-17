@@ -2,6 +2,7 @@ import type { GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
 import { farmCropUnlockInfo, farmOf, formatMoney, storageUsed } from '../core/farmBusiness';
 import { pickupCargoCapacity, pickupCargoUsed } from '../core/farmPickup';
+import { HAND_BASKET_CAPACITY, handBasketUsed } from '../core/farmHarvestBasket';
 import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../core/farmKnowledge';
 import { currentFarmWeather } from '../core/farmWeather';
 import { h, spriteImg } from './dom';
@@ -11,6 +12,8 @@ export interface FarmHudCallbacks {
   onMarket: () => void;
   onEquipment: () => void;
   onFarmbook: () => void;
+  onToggleHarvestDestination: () => void;
+  onUnloadBasket: () => void;
   onReturnFarm: () => void;
   onSave: () => void;
   onMenu: () => void;
@@ -50,6 +53,8 @@ export class FarmHud {
   private equipmentButton: HTMLButtonElement;
   private locationStat: HTMLElement;
   private farmbookButton: HTMLButtonElement;
+  private harvestDestinationButton: HTMLButtonElement;
+  private unloadBasketButton: HTMLButtonElement;
   private farmControls: HTMLElement;
   private townControls: HTMLElement;
   private mode: FarmHudMode = 'farm';
@@ -74,6 +79,16 @@ export class FarmHud {
     this.equipmentButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'equipment-button', onclick: cb.onEquipment }, h('span', {}, 'Old Tractor'), this.tractorEl) as HTMLButtonElement;
     this.locationStat = h('div', { class: 'farm-stat town-location-stat hidden', 'data-testid': 'town-location-stat' }, h('span', {}, 'Location'), h('strong', {}, 'County Service Center'));
     this.farmbookButton = h('button', { class: 'btn btn-primary farmbook-button', 'data-testid': 'farmbook-button', onclick: cb.onFarmbook }, 'Farmbook') as HTMLButtonElement;
+    this.harvestDestinationButton = h('button', {
+      class: 'btn harvest-destination-button',
+      'data-testid': 'harvest-destination-button',
+      onclick: cb.onToggleHarvestDestination,
+    }, 'Harvest → Barn') as HTMLButtonElement;
+    this.unloadBasketButton = h('button', {
+      class: 'btn btn-primary hidden',
+      'data-testid': 'unload-basket-button',
+      onclick: cb.onUnloadBasket,
+    }, 'Unload Basket') as HTMLButtonElement;
 
     const top = h('div', { class: 'farm-hud-top' },
       h('div', { class: 'farm-brand' }, h('span', { class: 'farm-brand-mark' }, 'FE'), h('div', {},
@@ -106,6 +121,8 @@ export class FarmHud {
       h('div', { class: 'farm-selected' }, h('span', {}, 'Selected crop'), this.selectedEl),
       cropStrip,
       h('div', { class: 'farm-actions' },
+        this.harvestDestinationButton,
+        this.unloadBasketButton,
         this.farmbookButton,
       ),
     );
@@ -153,6 +170,13 @@ export class FarmHud {
     const selectedIndex = allFarmCrops().findIndex((def) => def.id === farm.selectedCropId);
     const selectedSeeds = farm.seeds[farm.selectedCropId] ?? 0;
     this.selectedEl.textContent = `${selectedIndex + 1} · ${farmCropDef(farm.selectedCropId).name} · ${selectedSeeds} seed${selectedSeeds === 1 ? '' : 's'}`;
+    const basketUsed = handBasketUsed(state);
+    const basketDestination = farm.handBasket.destination === 'pickup' ? 'Pickup' : 'Barn';
+    this.harvestDestinationButton.textContent = `Harvest → ${basketDestination}`;
+    this.harvestDestinationButton.title = `Click to switch where manual harvest baskets are unloaded. Basket: ${basketUsed} / ${HAND_BASKET_CAPACITY}.`;
+    this.unloadBasketButton.classList.toggle('hidden', basketUsed <= 0);
+    this.unloadBasketButton.textContent = `Unload Basket · ${basketUsed}/${HAND_BASKET_CAPACITY}`;
+    this.unloadBasketButton.title = `Walk to the ${basketDestination.toLowerCase()} and unload the saved harvest basket.`;
     const knowledge = farmerKnowledgeSummary(state);
     const guide = farmGuideSteps(state);
     const nextGuide = nextFarmGuideStep(state);

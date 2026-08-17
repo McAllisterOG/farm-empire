@@ -39,6 +39,8 @@ export interface SceneActor {
   name?: string;
   facing?: FarmFacing;
   variant?: 'owner' | 'farmhand';
+  carryingBasket?: boolean;
+  basketFill?: number;
 }
 
 /** 渲染层看到的统一场景描述 */
@@ -572,7 +574,9 @@ export class Renderer {
       const point = farmWorldPoint(actor);
       items.push({ depth: point.x + point.y + 0.4, draw: () => {
         const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y) + TILE_H / 2);
+        if (actor.carryingBasket && actor.facing === 'north') drawFarmHarvestBasket(ctx, sx, sy, zoom, actor.facing, actor.basketFill ?? 0);
         drawFarmFarmer(ctx, sx, sy, zoom, actor.avatar, actor.facing ?? 'south', actor.walking ? Math.floor(now / 100) % FARM_WALK_FRAME_COUNT : 0, now, actor.variant ?? 'owner');
+        if (actor.carryingBasket && actor.facing !== 'north') drawFarmHarvestBasket(ctx, sx, sy, zoom, actor.facing ?? 'south', actor.basketFill ?? 0);
         if (actor.name) drawFarmName(ctx, sx, sy, actor.name, zoom);
       } });
     }
@@ -957,6 +961,36 @@ function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoo
   if (facing === 'south') { ctx.fillStyle = '#fff'; ctx.fillRect(2, -39, 2, 2); ctx.strokeStyle = '#9f5d4e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, -35, 3, 0, Math.PI); ctx.stroke(); }
   if (facing === 'north') { ctx.fillStyle = hair; ctx.fillRect(-8, -43, 16, 10); ctx.strokeStyle = '#f0dfb5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5, -28); ctx.lineTo(-5, -18); ctx.moveTo(5, -28); ctx.lineTo(5, -18); ctx.stroke(); }
   if (facing === 'east' || facing === 'west') { ctx.fillStyle = skin; ctx.fillRect(facing === 'east' ? 8 : -10, -38, 3, 3); }
+  ctx.restore();
+}
+
+function drawFarmHarvestBasket(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  zoom: number,
+  facing: FarmFacing,
+  fill: number,
+): void {
+  const side = facing === 'west' ? -1 : facing === 'north' ? -0.75 : 1;
+  const lift = facing === 'north' ? -18 : -13;
+  ctx.save();
+  ctx.translate(x + side * 19 * zoom, y + lift * zoom);
+  ctx.scale(zoom * 1.45, zoom * 1.45);
+  ctx.strokeStyle = '#6f4527'; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.arc(0, -3, 7, Math.PI, 0); ctx.stroke();
+  ctx.fillStyle = '#b9803d';
+  ctx.beginPath(); ctx.moveTo(-8, -2); ctx.lineTo(8, -2); ctx.lineTo(6, 7); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#7b542e'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-6, 1); ctx.lineTo(6, 1); ctx.moveTo(-5, 4); ctx.lineTo(5, 4); ctx.stroke();
+  if (fill > 0) {
+    const visible = Math.max(2, Math.min(5, Math.ceil(fill * 5)));
+    const colors = ['#e7bd3d', '#8eac4e', '#d86b43', '#e1a240', '#759e45'];
+    for (let i = 0; i < visible; i++) {
+      ctx.fillStyle = colors[i];
+      ctx.beginPath(); ctx.arc(-5 + i * 2.5, -2.5 - (i % 2), 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+  }
   ctx.restore();
 }
 

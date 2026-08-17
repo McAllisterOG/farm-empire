@@ -471,6 +471,13 @@ export interface FarmPickupState {
   cargo: FarmPickupCargo;
 }
 
+export type FarmHarvestDestination = 'barn' | 'pickup';
+
+export interface FarmHandBasketState {
+  crops: Record<string, number>;
+  destination: FarmHarvestDestination;
+}
+
 export type FarmFieldSoil = 'rough' | 'tilled' | 'stubble';
 
 export interface FarmFieldCondition {
@@ -485,6 +492,7 @@ export interface FarmBusinessState {
   fieldConditions: Record<string, FarmFieldCondition>;
   countyReliefClaimed: boolean;
   pickup: FarmPickupState;
+  handBasket: FarmHandBasketState;
   selectedCropId: string;
   townContact: FarmTownContactState;
   countyFreight: FarmCountyFreightState;

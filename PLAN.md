@@ -34,10 +34,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 28. **Roadside Produce Stand V1** - a County-trust-gated $650 visible farm improvement, one deterministic 6–12-unit barn-sourced local request per farm day, a deliberately lower 90% convenience rate, exact one-time fulfillment, and defensive save-v15 ownership/completion state.
 29. **Progression Interaction Reliability Pass** - full visible-silhouette town NPC/pickup selection, one-click pickup routing to a labeled barn cargo pad, corrected cargo-panel hierarchy/copy, exact transfer and town-save acceptance, and a refreshed verified Desktop build without economy or save changes.
 30. **County Life V1** - one clock-aware roadside-stand visitor and two ambient County residents on deterministic safe routes, distinct basket/neighbor silhouettes, preserved service hit priority, save-neutral reconstruction, and a refreshed verified Desktop build.
+31. **Manual Harvest Basket Logistics V1** - persisted 24-unit owner basket, selectable barn/pickup destination, all-or-nothing weighted unloads, automatic large-selection unload/resume, safe cancel/reload, direct-to-barn tractor/farmhand isolation, and save-v17 migration.
 
 ## Current authorization
 
-No additional feature package is currently active. Playtest the rebuilt Windows Desktop game across the new ambient County routes, repaired cargo/town interactions, local stand, Grain Exchange, and Freight Board choices as well as weather, Mara's shifts, row fieldwork, tractor restoration, utility trailer, farmhouse growth, hauling, knowledge pacing, and larger fields. Use observed readability, convenience value, wage/capital pressure, storage limits, and sense of progression to select one deliberately designed package.
+No additional feature package is currently active. Browser/playtest the manual harvest basket across destination choice, full-destination failure, automatic unload/resume, Escape cancellation, reload, and mounted exclusion; this pass remains outstanding after a Windows ACL-helper browser failure. Use observed logistics readability and convenience alongside the existing County, market, workforce, weather, and progression playtests to select a deliberately designed next package.
 
 ## Later directions
 

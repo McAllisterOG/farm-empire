@@ -550,6 +550,8 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   background: #796b55; color: #fff9e6; font-size: 7px; letter-spacing: .04em;
 }
 .farm-actions { display: flex; gap: 5px; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+.harvest-destination-button { border-color: #b99854; background: #fff7da; color: #5f4d2f; }
+.harvest-destination-button:hover { background: #ffefb8; }
 .farm-help {
   position: absolute; top: 82px; left: 10px; padding: 7px 11px; max-width: 440px;
   background: rgba(47, 96, 56, 0.92); color: white; border-radius: 9px;

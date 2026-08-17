@@ -7,6 +7,7 @@ import { fail } from './types';
 import { BARN_LOFT_EXPANSION, COUNTY_GRAIN_SILO, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
 import { COUNTY_FREIGHT_TEMPLATES } from '../data/countyFreight.data';
 import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, PICKUP_TRAILER_CARGO_CAPACITY, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
+import { HAND_BASKET_CAPACITY, emptyHandBasket } from './farmHarvestBasketData';
 import {
   STARTER_FIELD_TILES, ensureOwnedFarmParcelPlots, farmParcelAtTile,
   farmParcelSectionCount, farmParcelTiles, type FarmParcelId,
@@ -108,6 +109,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     fieldConditions: {},
     countyReliefClaimed: false,
     pickup: { id: PICKUP_ID, name: PICKUP_NAME, x: PICKUP_START.x, y: PICKUP_START.y, cargo: emptyPickupCargo() },
+    handBasket: emptyHandBasket(),
     selectedCropId: 'crop_corn',
     townContact: { status: 'unmet' },
     countyFreight: { active: null, lastCompletedDay: 0 },
@@ -171,6 +173,26 @@ function normalizePickup(rawPickup: unknown, capacity: number): FarmBusinessStat
     x: position.x,
     y: position.y,
     cargo: { crops, seeds },
+  };
+}
+
+function normalizeHandBasket(rawBasket: unknown): FarmBusinessState['handBasket'] {
+  const raw = objectRecord(rawBasket);
+  const source = objectRecord(raw.crops);
+  const crops: Record<string, number> = {};
+  let used = 0;
+  for (const def of allFarmCrops()) {
+    const count = Number.isInteger(source[def.id]) && Number(source[def.id]) > 0
+      ? Number(source[def.id])
+      : 0;
+    const available = Math.floor(Math.max(0, HAND_BASKET_CAPACITY - used) / def.storageUnitsPerItem);
+    const kept = Math.min(count, available);
+    if (kept > 0) crops[def.id] = kept;
+    used += kept * def.storageUnitsPerItem;
+  }
+  return {
+    crops,
+    destination: raw.destination === 'pickup' ? 'pickup' : 'barn',
   };
 }
 
@@ -260,6 +282,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     fieldConditions: {},
     countyReliefClaimed: raw.countyReliefClaimed === true,
     pickup: normalizePickup(raw.pickup, trailerOwned ? PICKUP_TRAILER_CARGO_CAPACITY : PICKUP_BASE_CARGO_CAPACITY),
+    handBasket: normalizeHandBasket(raw.handBasket),
     selectedCropId,
     townContact: { status: townStatus === 'offered' || townStatus === 'active' || townStatus === 'completed' ? townStatus : 'unmet' },
     countyFreight: {
@@ -643,6 +666,9 @@ export function countyReliefEligible(state: GameState, now: number): boolean {
   if (farm.cashCents >= cheapest.priceCents) return false;
   if (allFarmCrops().some((def) => (farm.seeds[def.id] ?? 0) > 0)) return false;
   if (storageUsed(state) > 0) return false;
+  if (Object.values(farm.handBasket.crops).some((count) => Number(count) > 0)) return false;
+  if (Object.values(farm.pickup.cargo.crops).some((count) => Number(count) > 0)) return false;
+  if (Object.values(farm.pickup.cargo.seeds).some((count) => Number(count) > 0)) return false;
   return !state.plots.some((plot) => plot.crop && !isFarmCropWithered(plot.crop, now));
 }
 

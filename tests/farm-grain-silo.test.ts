@@ -18,7 +18,7 @@ function unlockSilo(state: ReturnType<typeof farm>): void {
 describe('County Grain Silo', () => {
   it('starts closed and requires the acreage plus barn loft', () => {
     const state = farm(); const business = farmOf(state);
-    expect(SAVE_VERSION).toBe(16);
+    expect(SAVE_VERSION).toBe(17);
     expect(business.equipment.countyGrainSiloOwned).toBe(false);
     const initial = JSON.stringify(business);
     expect(purchaseCountyGrainSilo(state).ok).toBe(false);

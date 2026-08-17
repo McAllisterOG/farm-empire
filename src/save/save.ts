@@ -145,6 +145,13 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (equipment) delete equipment.countyGrainSiloOwned;
     raw.version = 16;
   },
+  16: (raw) => {
+    // Hand-carried produce becomes authoritative in v17. Never trust a stray
+    // pre-v17 basket field; defensive farm normalization creates it empty.
+    const farm = raw.farm && typeof raw.farm === 'object' ? raw.farm as Record<string, unknown> : null;
+    if (farm) delete farm.handBasket;
+    raw.version = 17;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {
