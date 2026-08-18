@@ -364,3 +364,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Farm seed and produce transfers preserve exact quantity entry and add per-direction authoritative All amounts derived from source stock, mixed pickup capacity, crop weights, barn space, and cargo-pad presence.
 - Combined storage now derives 480 base barn, 720 Barn Loft, or 1,200 County Grain Silo. V19 saves never trust stored capacity; old valid 150/200 values normalize forward while crops and the hand basket remain untouched. No schema bump is required.
 - Prices, yields, pickup 72/144 capacities, freight, manager/workforce, direct controls, map, and the rest of the economy remain unchanged. Browser/player-surface validation remains outstanding.
+
+## 2026-08-18 - Keep Farm readability presentation-only and lifecycle-truthful
+
+**Status:** Approved and complete
+
+- Farm crop rows use a Farm-only immutable visual table and direct Canvas painter for every current catalog crop; the inherited Paradise Isle crop painter remains unchanged.
+- Ripe produce is reserved for ready crops. Withered plants retain crop silhouette identity but render smaller, desaturated, drooping, and without ripe produce; generic readiness/withered cues remain supplementary.
+- Ground/field variation, section depth, and manual-harvest completion feedback are deterministic runtime presentation only. The burst is restricted to successful player basket harvests, never farmhand/direct-to-barn work.
+- No save/schema, economy, capacity, layout, hitbox, control, camera, town, narrative, or dependency decision changes with this checkpoint.

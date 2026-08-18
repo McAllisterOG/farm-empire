@@ -49,14 +49,20 @@ export function paintFarmGroundTile(ctx: Ctx, variant: number): void {
   const cx = TILE_W / 2;
   const cy = TILE_H / 2;
   diamondPath(ctx, cx, cy);
-  ctx.fillStyle = ['#829d62', '#86a165', '#7e9960', '#849f63'][variant % 4];
+  ctx.fillStyle = ['#829d62', '#86a165', '#7e9960', '#849f63', '#819b60', '#88a568', '#7b965d', '#8aa367'][variant % 8];
   ctx.fill();
   const rng = mulberry32(900 + variant * 37);
-  ctx.fillStyle = 'rgba(48, 91, 42, 0.18)';
-  for (let i = 0; i < 7; i++) {
+  ctx.fillStyle = 'rgba(48, 91, 42, 0.16)';
+  for (let i = 0; i < 10; i++) {
     const x = cx + (rng() - 0.5) * 42;
     const y = cy + (rng() - 0.5) * 18;
-    ctx.fillRect(x, y, 1.5, 1.5);
+    if ((variant + i) % 3 === 0) {
+      ctx.beginPath(); ctx.moveTo(x, y + 2); ctx.lineTo(x + 1.6, y - 2.2); ctx.strokeStyle = 'rgba(47, 91, 41, .26)'; ctx.lineWidth = .8; ctx.stroke();
+    } else ctx.fillRect(x, y, 1.4, 1.2);
+  }
+  if (variant % 4 === 0) {
+    ctx.strokeStyle = 'rgba(222, 232, 176, .17)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - 19, cy + 2); ctx.quadraticCurveTo(cx, cy - 4, cx + 16, cy - 1); ctx.stroke();
   }
 }
 

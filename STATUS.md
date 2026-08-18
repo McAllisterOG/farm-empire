@@ -2,19 +2,20 @@
 
 ## Current known-good checkpoint
 
-- **Date:** 2026-08-17
+- **Date:** 2026-08-18
 - **Branch:** `codex/first-town-contact`
-- **Head:** Playtest Rescue V1 (local checkpoint; see Git history for hash)
-- **Product state:** Functional world targets always win over Scout; an overlap keeps the normal action and shows throttled guidance, while open grass still opens Scout’s menu. Scout has a transient deterministic frisbee fetch that cancels for Escape, vehicle/job/town/basket work. Cargo panels retain exact entry and add authoritative per-direction All actions for seed bags and produce.
-- **Save/economy/map:** Storage derives 480 base / 720 Barn Loft / 1,200 County Grain Silo. Old v19 150/200 storage values normalize forward without a schema bump and preserve crops/basket; prices, crop yields, pickup 72/144 capacity, economy, map, and progression otherwise remain unchanged.
-- **Verification:** 299/299 tests passed, including Scout priority/fetch/manual-basket cancellation, transfer maximum, and literal 144 stored + 18 basket rescue/unload coverage; strict typecheck, Vite production build, and `git diff --check` passed. Red Team’s Medium manual/basket cancellation finding and re-review basket finding were repaired.
-- **Browser:** Player-surface browser/UI validation has not run. Transfer-card density and a real current-save rescue surface remain pending.
+- **Head:** Runtime Farm Readability + First-Loop Contract V1 (local checkpoint; see Git history for hash)
+- **Product state:** The Farm-only renderer gives corn, wheat, soybeans, potatoes, carrots, tomatoes, cabbage, and pumpkins distinct procedural field silhouettes and stage progression. Ready plants show crop-specific produce; withered plants are visibly desaturated/drooping with no ripe produce. Ground/field treatment is deterministic and richer, and a successful player basket harvest gets a short Canvas burst.
+- **Boundaries:** Legacy Paradise Isle painting is preserved. No save/schema, economy, capacity, layout, hitbox, control, camera, town, narrative, or dependency change was made.
+- **Verification:** 304 tests in 42 files passed, including 5 focused first-loop/render tests; strict typecheck, Vite production build, and `git diff --check` passed. Independent Red Team findings on withered truth, feedback authority, and catalog coverage were repaired.
+- **Desktop acceptance:** `release/runtime-readability-v1/win-unpacked` contains the relative-asset packaged build. Its bundled title rendered from the expected `file://` URL, and the literal OneDrive Desktop shortcut launched four responsive processes from that executable with zero residue after cleanup. The QA profile override did not isolate `%APPDATA%\Farm Empire`, so the real McAllister Farm slot was not entered; live-farm visual judgment remains for the owner's next play session.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
 - Existing plot IDs and planted crops remain compatible. Save schema v17 adds persisted hand-basket crops and destination; v16 grain-silo, v15 roadside-stand, v14 workforce, v13 trailer, v12 freight, v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
+- Farm-only crops use immutable runtime presentation data and deterministic Canvas painting; 16 cached ground variants plus textured, edged field sections improve readability without persistent visual state.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
 - The operated tractor now accelerates and brakes smoothly, turns with a deterministic heading, rolls its wheels, steers visibly, and keeps an upright direction-aware silhouette; all motion state remains transient.
@@ -50,7 +51,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Playtest Rescue V1 is complete; evaluate Scout overlap/open-grass petting, frisbee cancellation, transfer-card density, and an existing 150/200-capacity save during the next permitted player-surface pass alongside the existing basket, County life, weather, workforce, freight, tractor, row-fieldwork, farmhouse, and storage checks before selecting another finite package.
+No additional feature package is currently active. Runtime Farm Readability + First-Loop Contract V1 is complete; evaluate its crop/lifecycle readability and transient harvest burst during the next permitted player-surface pass alongside the existing basket, County life, weather, workforce, freight, tractor, row-fieldwork, farmhouse, and storage checks before selecting another finite package.
 
 ## Known limitations
 

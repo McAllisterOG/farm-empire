@@ -54,6 +54,7 @@ import { openFarmWorkforce } from '../ui/panels/farmWorkforce';
 import { openFarmRoadsideStand } from '../ui/panels/farmRoadsideStand';
 import { saveToSlot } from '../save/save';
 import { h } from '../ui/dom';
+import { shouldTriggerFarmHarvestFeedback } from './farmHarvestFeedback';
 
 const AUTOSAVE_MS = 15_000;
 const FIELD_ACTION_PAUSE_MS = 260;
@@ -104,6 +105,8 @@ interface BasketUnload {
   afterSuccess: (() => void) | null;
   onFailure: ((reason: string) => void) | null;
 }
+
+interface HarvestFeedback { x: number; y: number; cropId: string; startedAt: number }
 
 interface FarmhandJob {
   kind: FarmhandWorkKind;
@@ -157,6 +160,7 @@ export class FarmEmpireApp {
   private manualFieldAction: RunningManualFieldAction | null = null;
   private manualFieldJob: ManualFieldJob | null = null;
   private basketUnload: BasketUnload | null = null;
+  private harvestFeedback: HarvestFeedback | null = null;
   private fieldDragSelection: number[] = [];
   private farmhandActor: SceneActor;
   private farmhandFacing: FarmFacing = 'south';
@@ -1683,9 +1687,17 @@ export class FarmEmpireApp {
     if (kind === 'prepare' || kind === 'rework') return tillFarmField(this.state, plotUid);
     if (kind === 'plant') return plantFarmCrop(this.state, plotUid, String(cropId), this.gameNow(), 'manual');
     if (kind === 'water') return waterFarmCrop(this.state, plotUid, this.gameNow());
-    if (kind === 'harvest') return harvestToBasket
+    if (kind === 'harvest') {
+      const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+      const harvestedCropId = plot?.crop?.defId;
+      const result = harvestToBasket
       ? harvestFarmCropToBasket(this.state, plotUid, this.gameNow())
       : harvestFarmCrop(this.state, plotUid, this.gameNow(), 'manual');
+      if (shouldTriggerFarmHarvestFeedback(result.ok, harvestToBasket, harvestedCropId) && plot) {
+        this.harvestFeedback = { x: plot.x, y: plot.y, cropId: harvestedCropId!, startedAt: this.gameNow() };
+      }
+      return result;
+    }
     return clearWitheredFarmCrop(this.state, plotUid, this.gameNow());
   }
 
@@ -2420,6 +2432,9 @@ export class FarmEmpireApp {
           const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
           return plot ? [{ x: plot.x, y: plot.y }] : [];
         })
+        : undefined,
+      harvestFeedback: this.harvestFeedback && this.gameNow() - this.harvestFeedback.startedAt < 760
+        ? this.harvestFeedback
         : undefined,
       destination: this.tractorTarget
         ? { x: this.tractorTarget.x, y: this.tractorTarget.y, kind: 'tractor' }

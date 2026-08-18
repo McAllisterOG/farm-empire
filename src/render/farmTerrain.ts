@@ -3,7 +3,7 @@ import { farmMainlandBounds, type FarmBounds } from './farmLayout';
 
 /** Small, deterministic variation for a flat rural grass mainland. */
 export function farmGroundVariant(seed: number, x: number, y: number): number {
-  return hashSeed(`${seed}:${x}:${y}`) % 4;
+  return hashSeed(`${seed}:farm-ground-v2:${x}:${y}`) % 16;
 }
 
 export function farmTerrainBounds(): FarmBounds {

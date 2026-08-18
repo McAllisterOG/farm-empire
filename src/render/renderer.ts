@@ -31,6 +31,7 @@ import { drawOldPickup } from './pickupPainter';
 import type { FarmWeatherKind } from '../core/farmWeather';
 import { drawWeatherCast, drawWeatherPrecipitation } from './farmWeatherEffects';
 import { frisbeeThrowProgress } from '../core/farmCompanion';
+import { farmCropVisualFor, isFarmCropRipeStage, type FarmCropVisual } from './farmCropVisuals';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -94,6 +95,7 @@ export interface RenderScene {
     starterGuideTarget?: { uid: number; x: number; y: number };
     farmhandAction?: { kind: ManualFieldActionKind; x: number; y: number; progress: number };
     farmhandSelection?: { x: number; y: number }[];
+    harvestFeedback?: { x: number; y: number; cropId: string; startedAt: number };
   };
   /** Optional isolated County Service Center scene; never serialized. */
   town?: TownRenderScene;
@@ -628,6 +630,7 @@ export class Renderer {
       });
     }
     items.sort((a, b) => a.depth - b.depth); items.forEach((item) => item.draw());
+    if (scene.farm!.harvestFeedback) drawFarmHarvestCompletion(ctx, camera, zoom, now, scene.farm!.harvestFeedback);
     const na = farmNightAlpha(scene.farm!.clockMinute);
     if (na > .01) {
       ctx.fillStyle = `rgba(24, 34, 76, ${na})`; ctx.fillRect(0, 0, camera.viewW, camera.viewH);
@@ -666,6 +669,9 @@ function drawFarmSection(
   condition: FarmFieldCondition,
 ): void {
   const footprint = farmPlotFootprint(plot);
+  // A low offset silhouette gives every large section a grounded, raised edge.
+  ctx.save(); ctx.translate(0, 3.2 * zoom); farmFootprintPath(ctx, camera, footprint);
+  ctx.fillStyle = locked ? 'rgba(75, 51, 34, .36)' : 'rgba(64, 43, 28, .3)'; ctx.fill(); ctx.restore();
   farmFootprintPath(ctx, camera, footprint);
   const wet = !!plot.crop && now - plot.crop.lastWateredAt < WATER_COOLDOWN_MS;
   ctx.fillStyle = locked
@@ -677,6 +683,16 @@ function drawFarmSection(
   ctx.fill();
   ctx.strokeStyle = locked ? '#6d452c' : '#593a27'; ctx.lineWidth = Math.max(1.2, zoom * 1.7); ctx.stroke();
   if (locked) return;
+  const detailSeed = (plot.uid * 37 + plot.x * 19 + plot.y * 53) >>> 0;
+  // Restrained deterministic soil texture; it is anchored in logical space so
+  // camera movement never makes it shimmer or seam.
+  ctx.fillStyle = condition.soil === 'rough' ? 'rgba(73, 48, 30, .36)' : 'rgba(65, 39, 23, .22)';
+  for (let index = 0; index < 12; index++) {
+    const px = footprint.minX + (.12 + ((detailSeed + index * 29) % 76) / 100) * (footprint.maxX - footprint.minX);
+    const py = footprint.minY + (.12 + ((detailSeed * 3 + index * 17) % 76) / 100) * (footprint.maxY - footprint.minY);
+    const x = camera.sx(isoX(px, py)); const y = camera.sy(isoY(px, py));
+    ctx.beginPath(); ctx.ellipse(x, y, (1.2 + index % 3) * zoom, (0.65 + index % 2) * zoom, index * .43, 0, Math.PI * 2); ctx.fill();
+  }
   if (condition.soil === 'rough' && !plot.crop) {
     ctx.fillStyle = 'rgba(91,62,38,.38)';
     for (let index = 0; index < 9; index++) {
@@ -689,7 +705,7 @@ function drawFarmSection(
   }
   // Furrows use the actual large footprint, rather than duplicating old tile artwork.
   ctx.strokeStyle = wet ? 'rgba(56, 35, 21, .46)' : 'rgba(78, 46, 27, .42)'; ctx.lineWidth = Math.max(1, zoom * 1.25);
-  for (let index = 1; index < 5; index++) {
+  for (let index = 1; index < 6; index++) {
     const t = index / 5; const x = footprint.minX + (footprint.maxX - footprint.minX) * t;
     const a = { x: camera.sx(isoX(x, footprint.minY)), y: camera.sy(isoY(x, footprint.minY)) };
     const b = { x: camera.sx(isoX(x, footprint.maxY)), y: camera.sy(isoY(x, footprint.maxY)) };
@@ -701,7 +717,7 @@ function drawFarmSection(
       const px = footprint.minX + (col + .5) * (footprint.maxX - footprint.minX) / 5;
       const py = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / 4;
       const x = camera.sx(isoX(px, py)); const y = camera.sy(isoY(px, py));
-      ctx.beginPath(); ctx.moveTo(x, y + 1.5 * zoom); ctx.lineTo(x, y - 4 * zoom); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y + 1.5 * zoom); ctx.lineTo(x + ((row + col) % 2 ? 1.5 : -1.5) * zoom, y - 4 * zoom); ctx.stroke();
     }
   }
 }
@@ -777,15 +793,16 @@ function drawManualFieldAction(
 
 function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: FarmPlot, stage: string, zoom: number, now: number, bob: number): void {
   const footprint = farmPlotFootprint(plot);
+  const visual = farmCropVisualFor(plot.crop!.defId);
   // Five by four deterministic plants make each section feel like one planted field.
   for (let row = 0; row < 4; row++) for (let col = 0; col < 5; col++) {
     const x = footprint.minX + (col + .5 + (row % 2 ? .08 : 0)) * (footprint.maxX - footprint.minX) / 5;
     const y = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / 4;
     const sx = camera.sx(isoX(x, y)); const sy = camera.sy(isoY(x, y) + TILE_H / 2);
     // Separate row phases read as a breeze across the section, not a global bob.
-    const spriteStage = stage === 'needs-water' ? 'seedling' : stage;
-    const sway = Math.sin(now / 720 + row * 1.17 + col * .34 + plot.x * .7 + plot.y) * (spriteStage === 'seedling' ? .45 : 1.15) * zoom;
-    drawSprite(ctx, `crop:${plot.crop!.defId}:${spriteStage}`, sx + sway, sy, zoom * .54);
+    const cropStage = stage === 'needs-water' ? 'seedling' : stage;
+    const sway = Math.sin(now / 720 + row * 1.17 + col * .34 + plot.x * .7 + plot.y) * (cropStage === 'seedling' ? .45 : 1.15) * zoom;
+    drawFarmCropPlant(ctx, sx + sway, sy, zoom * .72, visual, cropStage, row * 5 + col);
   }
   const centre = farmWorldPoint(plot); const sx = camera.sx(isoX(centre.x, centre.y)); const sy = camera.sy(isoY(centre.x, centre.y) + TILE_H / 2);
   if (stage === 'ready') drawSprite(ctx, 'fx:ready', sx, sy - 67 * zoom + bob * zoom, zoom * 1.15);
@@ -795,6 +812,43 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
     ctx.fillStyle = '#75b9d0'; ctx.strokeStyle = '#315c68'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(0, -10); ctx.bezierCurveTo(-7, -2, -8, 3, 0, 7); ctx.bezierCurveTo(8, 3, 7, -2, 0, -10); ctx.fill(); ctx.stroke(); ctx.restore();
   }
+}
+
+function drawFarmCropPlant(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, visual: FarmCropVisual, stage: string, index: number): void {
+  const withered = stage === 'withered';
+  const growth = stage === 'seedling' ? .38 : stage === 'growing' ? .72 : visual.matureScale * (withered ? .78 : 1);
+  const ripe = isFarmCropRipeStage(stage);
+  const h = 29 * growth; const spread = 8 * growth;
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom); ctx.lineCap = 'round';
+  if (withered) { ctx.filter = 'saturate(22%) brightness(68%)'; ctx.globalAlpha = .78; ctx.rotate((index % 3 - 1) * .12); }
+  const stem = (height = h) => { ctx.strokeStyle = visual.stem; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -height); ctx.stroke(); };
+  if (visual.silhouette === 'corn') {
+    stem(); ctx.strokeStyle = visual.leaf; ctx.lineWidth = 3; for (const side of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, -h * .42); ctx.quadraticCurveTo(side * 8, -h * .52, side * 10, -h * .66); ctx.stroke(); }
+    if (ripe) { ctx.fillStyle = visual.produce; ctx.fillRect(-2.5, -h * .76, 5, 8); }
+  } else if (visual.silhouette === 'wheat') {
+    stem(h * .9); if (!withered) { ctx.strokeStyle = visual.produce; ctx.lineWidth = 1.6; for (let i = 0; i < 5; i++) { const yy = -h * (.55 + i * .075); ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(i % 2 ? 3 : -3, yy - 3); ctx.stroke(); } }
+  } else if (visual.silhouette === 'tomato') {
+    stem(h * .86); ctx.strokeStyle = '#9b7a4d'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-5, 1); ctx.lineTo(-5, -h); ctx.stroke(); ctx.strokeStyle = visual.leaf; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -h * .45); ctx.lineTo(7, -h * .6); ctx.moveTo(0, -h * .62); ctx.lineTo(-7, -h * .72); ctx.stroke(); if (ripe) for (const dx of [-4, 4]) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.arc(dx, -h * .35, 3.2, 0, Math.PI * 2); ctx.fill(); }
+  } else if (visual.silhouette === 'carrot') {
+    ctx.strokeStyle = visual.leaf; ctx.lineWidth = 2.5; for (const dx of [-1, 0, 1]) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(dx * 5, -h * .45, dx * 4, -h * .78); ctx.stroke(); } if (ripe) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.moveTo(-3, -1); ctx.lineTo(3, -1); ctx.lineTo(0, 7); ctx.closePath(); ctx.fill(); }
+  } else if (visual.silhouette === 'cabbage') {
+    ctx.fillStyle = visual.leaf; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.ellipse(Math.sin(i * 1.26) * spread * .55, -4 - Math.cos(i * 1.26) * 3, spread, spread * .5, i * .55, 0, Math.PI * 2); ctx.fill(); } if (ripe) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.arc(0, -5, spread * .65, 0, Math.PI * 2); ctx.fill(); }
+  } else if (visual.silhouette === 'pumpkin') {
+    ctx.strokeStyle = visual.stem; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(-spread, 0); ctx.quadraticCurveTo(0, -h * .35, spread, 0); ctx.stroke(); ctx.fillStyle = visual.leaf; for (const dx of [-spread, spread]) { ctx.beginPath(); ctx.ellipse(dx, -h * .18, 5, 3, dx * .12, 0, Math.PI * 2); ctx.fill(); } if (ripe) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#b65f2e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(0, 5); ctx.stroke(); }
+  } else {
+    const low = visual.silhouette === 'potato'; const bushH = low ? h * .45 : h * .62; ctx.fillStyle = visual.leaf; for (let i = 0; i < 5; i++) { const dx = (i - 2) * spread * .42; ctx.beginPath(); ctx.ellipse(dx, -bushH * (.55 + (i % 2) * .16), spread * .55, bushH * .46, i * .5, 0, Math.PI * 2); ctx.fill(); } if (visual.silhouette === 'soybean' && ripe) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.ellipse(2, -bushH * .35, 2.5, 4, .2, 0, Math.PI * 2); ctx.fill(); }
+  }
+  if (stage === 'ready' && index % 3 === 0) { ctx.strokeStyle = 'rgba(255, 241, 159, .62)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-3, -h - 4); ctx.lineTo(3, -h - 4); ctx.stroke(); }
+  ctx.restore();
+}
+
+function drawFarmHarvestCompletion(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number, feedback: NonNullable<NonNullable<RenderScene['farm']>['harvestFeedback']>): void {
+  const elapsed = now - feedback.startedAt; if (elapsed < 0 || elapsed > 760) return;
+  const progress = elapsed / 760; const point = farmWorldPoint(feedback); const x = camera.sx(isoX(point.x, point.y)); const y = camera.sy(isoY(point.x, point.y) + TILE_H / 2);
+  const color = farmCropVisualFor(feedback.cropId).produce;
+  ctx.save(); ctx.globalAlpha = 1 - progress; ctx.fillStyle = color;
+  for (let index = 0; index < 8; index++) { const angle = index * Math.PI / 4 + .18; const distance = (10 + progress * 31) * zoom; ctx.beginPath(); ctx.ellipse(x + Math.cos(angle) * distance, y - 24 * zoom + Math.sin(angle) * distance * .55 - progress * 16 * zoom, 2.6 * zoom, 1.8 * zoom, angle, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
 }
 
 function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number): void {

@@ -2,6 +2,18 @@
 
 Record major completed packages and stable checkpoints here. Keep day-to-day chat and minor edits out.
 
+## Runtime Farm Readability + First-Loop Contract V1 - complete
+
+- **Date:** 2026-08-18
+- **Branch:** `codex/first-town-contact`
+- **Commit:** local `feat: improve farm runtime readability` (see Git history for hash)
+- **Result:** Replaced only Farm crop rows with immutable-data-driven Canvas silhouettes for all eight catalog crops; legacy Paradise Isle painting remains intact. Ready crops display crop-specific produce, while withered crops are smaller, desaturated/drooping, and produce-free. Farm ground now has 16 deterministic cached variants; large sections add edge depth, stable clods, straw, and furrows. A short crop-colored Canvas burst follows only a successful player basket harvest.
+- **Contract:** A joined DOM-free fresh-state regression prepares, plants, waters, grows, basket-harvests, unloads to pickup, fulfills the County Pantry order exactly once, and runs a repeat crop cycle with non-negative inventory and valid barn/pickup capacity assertions.
+- **Boundaries:** No save/schema, economy, capacity, layout, hitbox, control, camera, town, narrative, or dependency change.
+- **Verification:** 5 focused tests and 304 tests across 42 files passed; strict typecheck, Vite production build, and `git diff --check` passed. Independent Red Team findings on withered visuals, feedback authority, and catalog completeness were repaired.
+- **Desktop acceptance:** `release/runtime-readability-v1/win-unpacked/Farm Empire.exe` and its relative-asset `resources/app.asar` were generated locally. Native CDP confirmed the packaged title and expected bundled `file://` URL; the literal `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` launched four responsive processes from this build and left zero residue after cleanup.
+- **Known limitation:** The attempted child `%APPDATA%` override did not isolate Electron's stable `%APPDATA%\Farm Empire` profile. The real McAllister Farm slot was therefore not entered, deleted, or saved; crop/soil/harvest-burst visual judgment remains for the owner's next live play session.
+
 ## Farming Business V1 - complete
 
 - **Date:** 2026-08-09
