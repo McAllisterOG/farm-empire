@@ -5,8 +5,8 @@ import { deleteSlot, loadFromSlot, newGameInSlot, slotInfos } from './save/save'
 import { setLang } from './i18n';
 import { h, clearChildren } from './ui/dom';
 import { initToast, toast } from './ui/toast';
-import { confirmDialog, initModal, promptDialog } from './ui/modal';
-import { initActionMenu } from './ui/actionMenu';
+import { closePanel, confirmDialog, initModal, promptDialog } from './ui/modal';
+import { hideActionMenu, initActionMenu } from './ui/actionMenu';
 
 let currentApp: FarmEmpireApp | null = null;
 
@@ -28,6 +28,8 @@ function startGame(state: GameState, slot: number): void {
 function showTitle(): void {
   currentApp?.destroy();
   currentApp = null;
+  hideActionMenu();
+  closePanel();
   canvasEl().classList.add('hidden');
   const title = document.getElementById('title-screen')!;
   title.classList.remove('hidden');

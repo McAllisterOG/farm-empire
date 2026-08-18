@@ -4,16 +4,16 @@
 
 - **Date:** 2026-08-18
 - **Branch:** `codex/first-town-contact`
-- **Head:** Desktop Playtest Assurance V1 (local checkpoint; see Git history for hash)
-- **Product state:** The Farm-only renderer gives corn, wheat, soybeans, potatoes, carrots, tomatoes, cabbage, and pumpkins distinct procedural field silhouettes and stage progression. Ready plants show crop-specific produce; withered plants are visibly desaturated/drooping with no ripe produce. Ground/field treatment is deterministic and richer, and a successful player basket harvest gets a short Canvas burst.
-- **Boundaries:** Legacy Paradise Isle painting is preserved. No save/schema, economy, capacity, layout, hitbox, control, camera, town, narrative, or dependency change was made.
-- **Verification:** 306 tests in 42 files passed; strict typecheck, Vite production build, and `git diff --check` passed. The package adds an explicit absolute-path-only QA profile seam that fails closed to the stable real profile unless both QA environment values are supplied.
-- **Desktop acceptance:** A disposable isolated farm completed the real packaged prepare, plant, water, grow, harvest, basket-transfer, and barn-storage loop with correct state, no runtime/console errors, and no contact with the owner's `%APPDATA%\Farm Empire` saves. Actual screenshots confirmed the richer ground, field, crop, and harvest presentation. A stale pre-action field hover was cleared at manual-action start. The disposable profile and screenshots were removed after verification.
+- **Head:** Live Playtest Stability Rescue V1 (local checkpoint; see Git history for hash)
+- **Product state:** Farm saves now pause crop aging and the business clock while the desktop app is closed or hidden. The v19-to-v20 migration rescues crops already spoiled by the former offline wall clock exactly once. Title transitions close every field menu/panel, and large displays use a bounded Full-HD Canvas backing store plus 10 Hz HUD refresh while retaining full-window input/camera coordinates.
+- **Boundaries:** Crop prices, yields, growth times, the active-session 15-minute ready window, storage, equipment, progression, layout, controls, and legacy Paradise Isle behavior remain unchanged.
+- **Verification:** 311 tests in 44 files passed; strict typecheck, Vite production build, and `git diff --check` passed. Focused coverage pins v20 migration/rescue, future offline pause, non-repeat resurrection, render-pixel bounds, and existing camera framing.
+- **Desktop acceptance:** A disposable packaged v19 farm with 36 spoiled soybean sections migrated to v20 with every section harvestable. Returning to Farms while its field menu was open left both menu and panel hidden. An emulated 3840x2160 viewport used a 1920x1080 Canvas backing store, maintained bounded frame cadence under the 36-crop scene, and logged zero runtime errors. The disposable profile was removed afterward.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v17 adds persisted hand-basket crops and destination; v16 grain-silo, v15 roadside-stand, v14 workforce, v13 trailer, v12 freight, v11 tractor restoration, v10 soil, v9 acreage, crops, pickup cargo, contact, field-kit, relief, loft, and catalog state remain intact.
+- Existing plot IDs and planted crops remain compatible. Save schema v20 pauses Farm Empire crops/clock outside active sessions and gives pre-v20 farms one migration rescue; v19 manager, v18 bulk-freight, v17 hand-basket, v16 grain-silo, v15 roadside-stand, v14 workforce, v13 trailer, v12 freight, v11 tractor restoration, v10 soil, and v9 acreage state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - Farm-only crops use immutable runtime presentation data and deterministic Canvas painting; 16 cached ground variants plus textured, edged field sections improve readability without persistent visual state.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
@@ -51,7 +51,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Desktop Playtest Assurance V1 is complete; the owner can now evaluate the current game from the refreshed Desktop build without the prior fresh-loop uncertainty. The next finite package should be selected from actual owner playtest evidence rather than another speculative feature wave.
+No additional feature package is currently active. Live Playtest Stability Rescue V1 is complete; the owner's existing v19 farm is intentionally recoverable and should be loaded before deciding to restart. The next finite package should be selected from the next owner playtest rather than another speculative wave.
 
 ## Known limitations
 
@@ -68,7 +68,7 @@ No additional feature package is currently active. Desktop Playtest Assurance V1
 - Audio is an original procedural V1: quiet filtered wind and a restrained rain mix replace the removed recurring wildlife notes; no recorded soundtrack, voice acting, spatial occlusion, or accessibility captions for environmental cues are included yet.
 - The farmhouse has one land-derived visual tier but no separately purchased renovations, rooms, or functional bonuses. Tractor timing now has one finite first-restoration step, but later machinery tiers remain undesigned.
 - Starting cash remains $5,000; no economy values were changed during this repair, pending an evidence-based proportional economy study.
-- Crop withering uses wall-clock time and a 15-minute post-maturity window; this should be evaluated during the owner's first longer play session.
+- Crops retain the 15-minute post-maturity window during active play, but crop aging and the Farm business clock now pause whenever the desktop app is closed, minimized, or hidden.
 - The branch has not been pushed; external GitHub authorization is still required.
 - Windows artifacts are local x64 builds and unsigned, so SmartScreen may warn. The executable retains Electron file metadata because this account cannot run the normal resource-edit helper; the supported Desktop shortcut and game window use the verified Farm Empire ICO explicitly.
 - Desktop saves are intentionally separate from browser-hosted saves. Removing `%APPDATA%\Farm Empire` removes desktop saves; there is no automatic import, cloud sync, code signing, auto-update, or macOS/Linux package yet.

@@ -43,10 +43,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 37. **Playtest Rescue V1** - functional-first Scout hit priority, transient frisbee fetch, one-click authoritative cargo maximums, and a save-safe 480/720/1,200 storage calibration.
 38. **Runtime Farm Readability + First-Loop Contract V1** - Farm-only crop silhouettes and truthful lifecycle rendering, richer deterministic ground/field treatment, transient manual basket-harvest feedback, and a joined fresh-farm basket-to-County regression without save or business-rule changes.
 39. **Desktop Playtest Assurance V1** - an opt-in absolute-path-only isolated Electron QA profile, a real packaged fresh-farm prepare-to-storage acceptance pass, stale field-hover cleanup, and disposable verification that never opens or modifies the owner's save profile.
+40. **Live Playtest Stability Rescue V1** - save-v20 offline crop/clock pause with one-time v19 crop recovery, complete title-overlay cleanup, bounded large-display Canvas resolution, throttled HUD work, and packaged 36-crop 4K stress acceptance.
 
 ## Current authorization
 
-No additional feature package is currently active. Desktop Playtest Assurance V1 proved the packaged fresh-farm prepare, plant, water, grow, harvest, basket, and storage path on a disposable isolated Electron profile. The real save path remains the default and the QA path is available only with an explicit two-part environment opt-in. The next package should respond to the owner's current playtest rather than broaden scope speculatively.
+No additional feature package is currently active. Live Playtest Stability Rescue V1 keeps offline time from spoiling crops, restores pre-v20 offline losses once, closes leaked gameplay overlays at the title, and caps the 4K render cost without changing world coordinates or gameplay rules. The next package should respond to the owner's next playtest rather than broaden scope speculatively.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.

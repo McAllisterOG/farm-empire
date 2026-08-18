@@ -55,6 +55,7 @@ import { openFarmRoadsideStand } from '../ui/panels/farmRoadsideStand';
 import { saveToSlot } from '../save/save';
 import { h } from '../ui/dom';
 import { shouldTriggerFarmHarvestFeedback } from './farmHarvestFeedback';
+import { resumeFarmSession } from '../core/farmOfflineSafety';
 
 const AUTOSAVE_MS = 15_000;
 const FIELD_ACTION_PAUSE_MS = 260;
@@ -107,6 +108,8 @@ interface BasketUnload {
 }
 
 interface HarvestFeedback { x: number; y: number; cropId: string; startedAt: number }
+
+const HUD_REFRESH_MS = 100;
 
 interface FarmhandJob {
   kind: FarmhandWorkKind;
@@ -171,6 +174,8 @@ export class FarmEmpireApp {
   private running = true;
   private raf = 0;
   private lastFrame = 0;
+  private lastHudRefresh = 0;
+  private hiddenAt: number | null = null;
   private lastSave: number;
   private simulationOffsetMs = 0;
   private lastRainNoticeDay = 0;
@@ -310,7 +315,17 @@ export class FarmEmpireApp {
   }
 
   private onVisibilityChange = (): void => {
-    if (document.hidden) this.save();
+    if (document.hidden) {
+      if (this.hiddenAt === null) this.hiddenAt = Date.now();
+      this.save();
+      return;
+    }
+    if (this.hiddenAt === null) return;
+    const now = Date.now();
+    resumeFarmSession(this.state, this.hiddenAt, now, false);
+    this.hiddenAt = null;
+    this.lastFrame = now;
+    this.hud.update(this.state, this.tractorHudRuntime());
   };
 
   save = (): void => {
@@ -2219,6 +2234,10 @@ export class FarmEmpireApp {
 
   private loop = (): void => {
     if (!this.running) return;
+    if (document.hidden) {
+      this.raf = requestAnimationFrame(this.loop);
+      return;
+    }
     const realNow = Date.now();
     const now = this.gameNow();
     const dt = this.lastFrame ? Math.min(100, realNow - this.lastFrame) : 16;
@@ -2315,7 +2334,10 @@ export class FarmEmpireApp {
     this.farmAudio.update(activeVehicle, vehicleMoving, weather.kind);
 
     this.renderer.render(this.buildScene(), now);
-    this.hud.update(this.state, this.tractorHudRuntime());
+    if (realNow - this.lastHudRefresh >= HUD_REFRESH_MS) {
+      this.lastHudRefresh = realNow;
+      this.hud.update(this.state, this.tractorHudRuntime());
+    }
     this.updateDevTools();
     if (realNow - this.lastSave >= AUTOSAVE_MS) {
       this.lastSave = realNow;

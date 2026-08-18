@@ -266,7 +266,10 @@ describe('land and save compatibility', () => {
     farm.equipment.tractor.x = 11;
     farm.equipment.tractor.y = 8;
     const loaded = deserialize(serialize(state, NOW + 5_000), NOW + 6_000);
-    expect(loaded.farm).toEqual(state.farm);
+    expect(loaded.farm).toEqual({
+      ...state.farm,
+      clock: { ...state.farm!.clock, lastRealAt: NOW + 6_000 },
+    });
     expect(loaded.plots).toEqual(state.plots);
     expect(loaded.farm!.equipment.tractor.name).toBe('Old Red Tractor');
     expect(loaded.farm!.equipment.tractor.x).toBe(11);

@@ -382,3 +382,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Electron selects the profile before the single-instance lock so a disposable QA launch cannot silently attach to the owner's already-running profile.
 - QA farms, screenshots, and process state are disposable artifacts, not game saves, fixtures, progression, or release content. Verification must remove them after acceptance.
 - Manual farm actions clear the cached pre-action hover when valid work starts so old lifecycle text cannot coexist with current progress/result feedback.
+
+## 2026-08-18 - Pause Farm Empire outside active desktop sessions
+
+**Status:** Approved and complete
+
+- Farm crop age and the Farm business clock advance only while the farm is actively visible. Loading or returning from a hidden/minimized window shifts crop timestamps by the verified inactive interval and resets the clock's real-time anchor; prices, growth durations, and the active-session ready window are unchanged.
+- Save v20 adds no nested field. Any pre-v20 farm receives one migration rescue that restores already-withered Farm crops to ready; later v20 crops that genuinely wither during active play are not repeatedly revived.
+- Returning to the farm-selection title must hide the action menu and modal panel after destroying the live app so gameplay controls cannot leak over title slots.
+- Canvas backing stores are capped at 1920x1080 pixels on large/high-DPI displays while retaining CSS viewport coordinates. HUD DOM work refreshes at 10 Hz; immediate action-driven HUD updates remain authoritative.

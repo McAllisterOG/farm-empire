@@ -172,7 +172,7 @@ describe('Town Gateway travel and save boundary', () => {
       const townFraming = { cx: renderer.camera.cx, cy: renderer.camera.cy, zoom: renderer.camera.zoom };
       viewport.width = 1280; viewport.height = 720;
       renderer.resize();
-      expect({ width: canvas.width, height: canvas.height }).toEqual({ width: 2560, height: 1440 });
+      expect({ width: canvas.width, height: canvas.height }).toEqual({ width: 1920, height: 1080 });
       expect({ viewW: renderer.camera.viewW, viewH: renderer.camera.viewH }).toEqual({ viewW: 1280, viewH: 720 });
       expect({ cx: renderer.camera.cx, cy: renderer.camera.cy, zoom: renderer.camera.zoom }).toEqual(townFraming);
     } finally {

@@ -8,6 +8,7 @@ import { initNeighbors } from '../core/social';
 import { normalizeFarmBusinessState } from '../core/farmBusiness';
 import { PICKUP_START } from '../core/farmPickupData';
 import { FARM_TOWN_RETURN, LEGACY_FARM_TOWN_GATE, LEGACY_FARM_TOWN_RETURN } from '../core/townGateway';
+import { resumeFarmSession } from '../core/farmOfflineSafety';
 
 export const SLOT_COUNT = 3;
 const KEY_PREFIX = 'farm-empire:save:';
@@ -164,6 +165,12 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (workforce) delete workforce.manager;
     raw.version = 19;
   },
+  19: (raw) => {
+    // Farm sessions now pause crops and the business clock while the app is
+    // closed. No new persisted field is required; deserialize performs the
+    // one-time legacy crop rescue using the source version.
+    raw.version = 20;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {
@@ -183,9 +190,14 @@ export function deserialize(json: string, now: number): GameState {
   if (typeof raw !== 'object' || raw === null || !raw.player) {
     throw new Error('not a valid save');
   }
+  const sourceVersion = Number(raw.version ?? 1);
+  const previousSavedAt = Number(raw.savedAt ?? now);
   const state = migrate(raw);
   // 邻居为空（老档/异常）时重建
-  if (Object.prototype.hasOwnProperty.call(raw, 'farm')) normalizeFarmBusinessState(state, now);
+  if (Object.prototype.hasOwnProperty.call(raw, 'farm')) {
+    normalizeFarmBusinessState(state, now);
+    resumeFarmSession(state, previousSavedAt, now, sourceVersion < 20);
+  }
   else initNeighbors(state, now);
   return state;
 }

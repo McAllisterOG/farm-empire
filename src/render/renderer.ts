@@ -32,6 +32,7 @@ import type { FarmWeatherKind } from '../core/farmWeather';
 import { drawWeatherCast, drawWeatherPrecipitation } from './farmWeatherEffects';
 import { frisbeeThrowProgress } from '../core/farmCompanion';
 import { farmCropVisualFor, isFarmCropRipeStage, type FarmCropVisual } from './farmCropVisuals';
+import { boundedRenderScale } from './renderResolution';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -157,11 +158,11 @@ export class Renderer {
   }
 
   resize(): void {
-    this.dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = this.canvas.clientWidth || window.innerWidth;
     const h = this.canvas.clientHeight || window.innerHeight;
-    this.canvas.width = Math.round(w * this.dpr);
-    this.canvas.height = Math.round(h * this.dpr);
+    this.dpr = boundedRenderScale(w, h, window.devicePixelRatio || 1);
+    this.canvas.width = Math.max(1, Math.round(w * this.dpr));
+    this.canvas.height = Math.max(1, Math.round(h * this.dpr));
     this.camera.resize(w, h);
   }
 

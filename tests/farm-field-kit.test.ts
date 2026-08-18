@@ -20,7 +20,7 @@ function farm() {
 describe('County Row-Crop Field Kit', () => {
   it('starts unowned and stays locked until the County Pantry order is complete', () => {
     const state = farm();
-    expect(SAVE_VERSION).toBe(19);
+    expect(SAVE_VERSION).toBe(20);
     expect(farmOf(state).equipment.countyRowCropFieldKitOwned).toBe(false);
     const before = farmOf(state).cashCents;
     expect(purchaseCountyRowCropFieldKit(state).ok).toBe(false);

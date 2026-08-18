@@ -515,3 +515,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Electron now fails closed to the stable `%APPDATA%\Farm Empire` profile unless both explicit QA environment values select a valid absolute alternate path before the single-instance lock. The isolated packaged farm completed prepare, plant, water, grow, harvest, basket transfer, and barn storage. Actual Canvas inspection confirmed the richer crops/ground/field and harvest feedback; one stale lifecycle hover was cleared at manual-action start.
 - **Verification:** 306/306 tests passed, including seven focused desktop-policy checks; strict typecheck, Vite production build, and `git diff --check` passed. The packaged UI produced no runtime/console errors. The QA save and temporary screenshots were deleted after acceptance; the owner's real profile was untouched.
 - **Known limitations:** The acceptance pass intentionally covered the fresh farming/storage spine, not every long-form County, manager, freight, equipment, and expansion branch. Those remain owner-playtest targets.
+
+## Live Playtest Stability Rescue V1 - complete
+
+- **Date:** 2026-08-18
+- **Branch:** `codex/first-town-contact`
+- **Trigger:** Owner playtest reported severe lag at 4K, many crops spoiled between sessions, and a withered-field action menu visibly leaking over the farm-selection title.
+- **Result:** Save v20 pauses crop age and the Farm clock while closed or hidden and restores pre-v20 withered Farm crops to ready once. Title entry now clears action menus and panels. Canvas work is bounded to 1920x1080 backing pixels and HUD DOM refreshes at 10 Hz without changing input/camera coordinates or immediate transaction feedback.
+- **Verification:** 311/311 tests passed in 44 files; strict typecheck, Vite production build, and diff check passed. A disposable packaged v19 farm containing 36 withered soybean sections migrated to v20 with harvest actions on every section; an open field menu disappeared on title return. Emulated 4K used an exact 1920x1080 backing store with bounded frame cadence and zero runtime errors.
+- **Cleanup:** The isolated QA process and disposable profile were removed. The owner's real save was never opened or modified during verification.
