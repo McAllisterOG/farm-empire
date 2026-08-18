@@ -345,3 +345,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The saved v19 manager record is only a standing `enabled` acreage/crop preference and `lastReviewedDay`; v18 migration grants nothing, invalid ownership closes the plan, and all actor/job/progress state remains runtime-only.
 - A pure deterministic review chooses one existing Mara plan for the configured owned acreage: fully fitting ready harvest, needs-water, stubble then rough soil preparation, seed-limited planting, then idle. Withered crops stay owner-only.
 - Dispatch is explicit from Workforce on the live current day. It reuses Mara’s existing real-job and $120 daily-shift path, marks review only after success, never works offline, buys supplies, moves cargo, sells, clears, or creates hidden spend. **Update plan** persists dropdown choices separately from Pause/Enable.
+
+## 2026-08-17 - Make operated farm movement direct and cargo controls explicit
+
+**Status:** Approved and complete
+
+- On the farm only, an operated old pickup or operational tractor receives short, clamped screen-relative WASD/arrow targets. Idle on-foot directional input remains bounded camera pan; text input, panels, action menus, tractor field jobs, and active owner work consume directional input rather than moving a vehicle or camera.
+- A standalone secondary-click gesture moves only to valid open ground. It never invokes farm objects, fields, gates, services, exits, or a parked town pickup; it cannot interfere with a primary drag/selection/pan. Town vehicles remain non-operable.
+- Pickup wording must identify farm transfers as Farm/Barn ↔ Pickup and County entry points as Buy Seed Bags / Sell / Deliver Produce, while retaining the existing authoritative transactions and cargo-pad route.
+- No save version or state, economy/business rule, map/camera policy, collision/pathfinding, vehicle speed/effects, art, audio, setting, or progression changes are part of this checkpoint.

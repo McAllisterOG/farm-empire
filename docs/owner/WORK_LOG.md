@@ -474,3 +474,13 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Added Farm Services’ one-time $2,400 manager contract after County trust, north acreage, and Mara hire. A v19 saved standing plan previews exactly one real Mara task and requires an explicit current-day dispatch; Mara’s existing $120 wage is still the only shift charge. The manager has no offline work, cargo/supply handling, sales, clearing, or hidden spend.
 - **Verification:** 287/287 tests passed, including five focused manager tests; strict typecheck, Vite production build, and diff check passed. Independent re-review accepted with no High/Medium findings. The repair added an explicit **Update plan** control and north/crop saved-plan regression coverage.
 - **Known limitations:** Browser/player-surface and DOM click-flow verification remain blocked by the recorded Windows ACL-helper failure; no fallback was used.
+
+## Direct Controls & Cargo Clarity V1 - complete
+
+- **Date:** 2026-08-17
+- **Branch:** `codex/first-town-contact`
+- **Commit:** `feat: add direct vehicle controls` (local; see Git history for hash)
+- **Result:** Farm-operated pickups and operational tractors now take bounded screen-relative WASD/arrow steering targets. Idle on-foot input still pans the bounded camera. A separately armed right-click moves only on open ground and never opens services or menus; it cannot disturb primary drag selection/panning. Cargo entry labels now distinguish farm transfers from County buying/selling, without changing any transaction or route.
+- **Boundaries:** No save/schema, economy, business transaction, map/camera-policy, vehicle-speed/effect, collision, pathfinding, art, audio, setting, or progression change.
+- **Verification:** 293/293 tests passed, including focused mapping, bounds, non-mutation, directional block routing, gesture, move-only-ground, and pickup-help coverage; strict typecheck, Vite production build, and `git diff --check` passed. Independent Red Team re-review accepted with no Critical/High/Medium findings.
+- **Known limitation:** Computer Use packaged-app launch approval timed out, and the prior browser ACL-helper issue remains. Event sequencing is pure-test-reviewed but not browser-click-validated; no fallback, package, shortcut, or push was used.

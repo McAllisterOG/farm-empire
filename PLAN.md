@@ -39,10 +39,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 33. **Economy & Commercial-Scale Calibration V1** - a $4,250 neighboring parcel, 1,200-unit commercial silo, pure crop-capital planning, and concise planning copy without changing crop values, logistics, or save v17.
 34. **Commercial Freight Route V2** - three daily routes remain one-active-only; a trailer-owned farm gets one 40%-premium commercial bulk load (96/104/112/120 weight-1 items or 32/36/40 pumpkins) plus two 25%-premium standard routes, all deterministic and save-v18 safe.
 35. **First Farm Manager V1 — Morning Review & Dispatch** - a Mara-gated $2,400 one-time Farm Services contract, saved enabled acreage/crop plan and explicit daily review, deterministic real-resource work preview, save-v19 no-grant migration, and no offline/hidden operation.
+36. **Direct Controls & Cargo Clarity V1** - farm-only WASD/arrow steering for operated vehicles, safe open-ground secondary-click movement, clear pickup cargo labels, and no save, economy, map, or vehicle-physics change.
 
 ## Current authorization
 
-No additional feature package is currently active. First Farm Manager V1 is complete: Farm Services sells a $2,400 one-time contract after County trust, neighboring acreage, and Mara hire; it saves a standing acreage/crop plan and requires an explicit Day-N Workforce review to start one real Mara assignment. Save v19 grants nothing from v18, and the manager never spends, moves cargo, works offline, or creates a second wage path. Player-surface browser validation remains blocked by the recorded Windows ACL-helper failure.
+No additional feature package is currently active. Direct Controls & Cargo Clarity V1 is complete: farm-operated pickups and operational tractors accept bounded screen-relative WASD/arrow targets, while standalone right-clicks move only over open ground and never invoke services or field menus. Cargo labels now make farm transfer and town commerce direction explicit. Saves, economy, map/camera policy, speed/effects, collision, and progression remain unchanged. Player-surface browser validation remains blocked by the recorded Windows ACL-helper failure and timed-out Computer Use packaged-app launch approval.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.

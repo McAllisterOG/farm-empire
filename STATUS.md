@@ -4,11 +4,11 @@
 
 - **Date:** 2026-08-17
 - **Branch:** `codex/first-town-contact`
-- **Head:** First Farm Manager V1 (local checkpoint; see Git history for hash)
-- **Product state:** Farm Services offers a $2,400 one-time manager contract only after County trust, north acreage, and Mara hire. It stores an enabled/pause acreage-and-crop standing plan; the owner must explicitly review and dispatch Mara for the current farm day. The preview selects one real Mara job by harvest, water, stubble/rough soil, then seed-limited planting priority. Withered crops remain owner-only.
-- **Save:** Save v19 adds `farm.workforce.manager` and migrates v18 closed with no ownership, plan, or review grant. Normalization requires every prerequisite, safely defaults invalid parcel/crop, disables invalid ownership, and keeps all actor/job/motion state runtime-only.
-- **Verification:** 287/287 tests passed, including focused manager contract, migration, normalization, priority/resource, and saved north/crop-plan coverage; strict typecheck, Vite production build, and `git diff --check` passed. Independent re-review accepted with no High/Medium findings; the UI repair adds explicit **Update plan** so dropdown selections persist without toggling pause.
-- **Browser:** Player-surface validation remains blocked by the recorded Windows ACL-helper failure; DOM click-flow coverage is not available. No fallback was used.
+- **Head:** Direct Controls & Cargo Clarity V1 (local checkpoint; see Git history for hash)
+- **Product state:** On the farm, operated pickups and operational tractors accept short clamped WASD/arrow steering targets; idle on-foot input continues to pan the bounded camera. Secondary-click gestures move only on open ground and never open farm/town interactions. Pickup controls now name their cargo direction clearly.
+- **Save/economy/map:** No schema, transaction, economy, map, camera-policy, speed, collision, or progression change. Vehicle motion remains transient and direct.
+- **Verification:** 293/293 tests passed, including focused control-routing, bounded target, move-only, and HUD-copy coverage; strict typecheck, Vite production build, and `git diff --check` passed. Independent re-review accepted with no Critical/High/Medium findings.
+- **Browser:** Computer Use packaged-app launch approval timed out; the prior browser ACL-helper issue also remains. Event sequencing is pure-test-reviewed, not browser-click-validated; no fallback was used.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
@@ -19,6 +19,7 @@
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
 - The operated tractor now accelerates and brakes smoothly, turns with a deterministic heading, rolls its wheels, steers visibly, and keeps an upright direction-aware silhouette; all motion state remains transient.
 - The owned old pickup has the same deterministic acceleration/turning presentation, a direction-aware upright silhouette, a 72-unit mixed seed/produce bed, persistent farm position, and transient operating state. The first completed Freight Board haul unlocks one visible $2,400 utility trailer that doubles real cargo capacity to 144.
+- On the farm, an operated pickup or tractor can use WASD/arrows or click/right-click open ground to drive; unsupported/blocked input cannot leak into camera panning. On foot, WASD/arrows pan and a standalone right-click moves only on open ground. Town pickups remain parked and non-operable.
 - A signed road gateway now leads to a separate walkable County Service Center with three distinct buildings, three animated service townspeople, two clock-aware ambient residents, and real seed, market, land-record, and context-safe equipment services.
 - Town actor motion, gestures, camera mode, and location remain transient. Saving in town preserves normal farm business state and reloads safely at the farm gateway.
 - Farm-side Seed and Market surfaces are cargo-management points: crops and seed bags move reversibly between the barn/farm inventory and the pickup, while ordinary buying and selling are no longer available at the farm.
@@ -49,7 +50,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. First browser/playtest the manual harvest basket across destination switching, automatic unload/resume, cancellation, reload, full destinations, and mounted exclusion; the required browser pass was blocked by a Windows ACL-helper failure. Continue evaluating County life, weather readability, Mara's daily shift, the Freight Board/trailer, tractor restoration, row fieldwork, farmhouse growth, and storage pressure before selecting another finite package.
+No additional feature package is currently active. Direct Controls & Cargo Clarity V1 is complete; evaluate its controls during the next permitted player-surface pass alongside the existing basket, County life, weather, workforce, freight, tractor, row-fieldwork, farmhouse, and storage checks before selecting another finite package.
 
 ## Known limitations
 

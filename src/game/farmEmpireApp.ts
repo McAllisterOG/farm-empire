@@ -10,6 +10,7 @@ import {
 import { ensureOwnedFarmParcelPlots, farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { pickupPositionForSave } from '../core/farmPickupData';
+import { farmDirectionalInputRoute, farmVehicleControlTarget, isMoveOnlyFarmGround, isMoveOnlyPointerButton, shouldCompleteMoveOnlyGesture } from '../core/farmVehicleControls';
 import {
   HAND_BASKET_CAPACITY, basketInteractionBlockReason, handBasketHasCargo, handBasketRemaining, handBasketUsed, harvestFarmCropToBasket,
   inspectBasketHarvest, setHarvestDestination, unloadHandBasket,
@@ -442,8 +443,14 @@ export class FarmEmpireApp {
     let panning = false;
     let selectionAnchorUid: number | null = null;
     let fieldSelecting = false;
+    let secondaryGestureArmed = false;
     const onPointerDown = (event: PointerEvent): void => {
       this.farmAudio.ensureStarted();
+      if (isMoveOnlyPointerButton(event.button)) {
+        secondaryGestureArmed = !dragging;
+        return;
+      }
+      if (event.button !== 0) return;
       downX = event.clientX;
       downY = event.clientY;
       dragging = true;
@@ -491,7 +498,13 @@ export class FarmEmpireApp {
       this.townHover = this.mode === 'town' ? this.townInteractionHintAtScreen(event.clientX, event.clientY) : null;
     };
     const onPointerUp = (event: PointerEvent): void => {
+      if (event.button !== 0) {
+        if (isMoveOnlyPointerButton(event.button) && shouldCompleteMoveOnlyGesture(secondaryGestureArmed, dragging)) this.onMoveOnlyClick(event.clientX, event.clientY);
+        if (isMoveOnlyPointerButton(event.button)) secondaryGestureArmed = false;
+        return;
+      }
       dragging = false;
+      secondaryGestureArmed = false;
       if (selectionAnchorUid !== null) {
         const wasSelecting = fieldSelecting;
         selectionAnchorUid = null;
@@ -513,6 +526,7 @@ export class FarmEmpireApp {
       dragging = false;
       selectionAnchorUid = null;
       fieldSelecting = false;
+      secondaryGestureArmed = false;
       this.hover = null;
       this.townHover = null;
     };
@@ -521,6 +535,7 @@ export class FarmEmpireApp {
       this.renderer.camera.zoomAt(event.deltaY < 0 ? 1.12 : 0.9, event.clientX, event.clientY);
       if (this.mode === 'town') this.renderer.clampTownCamera(); else this.renderer.clampFarmCamera();
     };
+    const onContextMenu = (event: MouseEvent): void => event.preventDefault();
     const onKeyDown = (event: KeyboardEvent): void => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       const isTyping = !!target && (target.matches('input, textarea, select') || target.isContentEditable);
@@ -538,6 +553,27 @@ export class FarmEmpireApp {
           return;
         }
         const key = event.key.toLowerCase();
+        const route = farmDirectionalInputRoute(key, {
+          mode: this.mode,
+          operatingVehicle: this.operatingTractor || this.operatingPickup,
+          tractorFieldJobActive: !!this.tractorJob,
+          panelOpen: isPanelOpen(),
+          actionMenuOpen: isActionMenuOpen(),
+          activeOwnerWork: !!this.manualFieldAction || !!this.manualFieldJob || !!this.basketUnload,
+        });
+        if (route === 'blocked') {
+          event.preventDefault();
+          return;
+        }
+        const vehicleTarget = route === 'vehicle'
+          ? farmVehicleControlTarget(key, this.operatingTractor ? farmOf(this.state).equipment.tractor : farmOf(this.state).pickup)
+          : null;
+        if (vehicleTarget) {
+          event.preventDefault();
+          if (this.operatingTractor) this.driveTractorTo(vehicleTarget.x, vehicleTarget.y);
+          else this.drivePickupTo(vehicleTarget.x, vehicleTarget.y);
+          return;
+        }
         const panStep = 52;
         const pan = key === 'arrowleft' || key === 'a' ? { x: panStep, y: 0 }
           : key === 'arrowright' || key === 'd' ? { x: -panStep, y: 0 }
@@ -592,6 +628,7 @@ export class FarmEmpireApp {
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointerleave', onPointerLeave);
     canvas.addEventListener('wheel', onWheel, { passive: false });
+    canvas.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('keydown', onKeyDown);
     this.inputCleanup = () => {
       canvas.removeEventListener('pointerdown', onPointerDown);
@@ -599,6 +636,7 @@ export class FarmEmpireApp {
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
       canvas.removeEventListener('wheel', onWheel);
+      canvas.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('keydown', onKeyDown);
     };
   }
@@ -700,6 +738,26 @@ export class FarmEmpireApp {
     if (this.operatingTractor) this.driveTractorTo(tx, ty);
     else if (this.operatingPickup) this.drivePickupTo(tx, ty);
     else this.walkNear(tx, ty, null);
+  }
+
+  /** Secondary clicks deliberately skip all interaction and service menus. */
+  private onMoveOnlyClick(sx: number, sy: number): void {
+    if (isActionMenuOpen() || isPanelOpen() || this.manualFieldJob || this.manualFieldAction || this.basketUnload || this.tractorJob) return;
+    if (this.mode === 'town') {
+      const point = this.renderer.camera.tilePointAt(sx, sy);
+      const pickupAnchor = this.townScreenAnchor(TOWN_PICKUP_PARKING);
+      if (this.townNpcAtScreen(sx, sy) || (this.pickupAtTown && (pointInTownPickupScreenHitbox({ x: sx, y: sy }, pickupAnchor, this.renderer.camera.zoom) || townPickupHit(point, true)))) return;
+      const interaction = townInteractionAt(point);
+      if (interaction.kind === 'ground') this.townTarget = { ...interaction.point, cb: null };
+      return;
+    }
+    const interaction = this.farmInteractionAtScreen(sx, sy);
+    if (!isMoveOnlyFarmGround(interaction?.kind)) return;
+    const target = this.farmTargetAtScreen(sx, sy);
+    if (!target) return;
+    if (this.operatingTractor) this.driveTractorTo(target.tx, target.ty);
+    else if (this.operatingPickup) this.drivePickupTo(target.tx, target.ty);
+    else this.walkNear(target.tx, target.ty, null);
   }
 
   private openFarmGateMenu(sx: number, sy: number): void {
@@ -902,7 +960,7 @@ export class FarmEmpireApp {
       this.cancelScoutApproach();
       this.operatingTractor = true;
       this.tractorMotion = resetTractorMotion(this.tractorMotion);
-      toast('Operating the old tractor. Click ground to drive or a field parcel for batch work.', 'good');
+      toast('Operating the old tractor. WASD/arrow keys or click/right-click ground to drive.', 'good');
     }
     this.hud.update(this.state, this.tractorHudRuntime());
     this.farmAudio.playTransaction('success');
@@ -917,8 +975,8 @@ export class FarmEmpireApp {
             h('div', { class: 'pickup-panel-illustration' }, 'OLD PICKUP'),
             h('div', { class: 'farm-card-title' }, `Cargo · ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)}`),
             h('div', { class: 'farm-panel-summary' }, 'County services use cargo in this pickup.'),
-            h('button', { class: 'btn btn-primary', onclick: () => openFarmSeedShop(this.state, this.panelActions()) }, 'Feed & Seed'),
-            h('button', { class: 'btn', onclick: () => openFarmMarket(this.state, this.panelActions(), 'town') }, 'Grain Exchange'),
+            h('button', { class: 'btn btn-primary', onclick: () => openFarmSeedShop(this.state, this.panelActions()) }, 'Buy Seed Bags'),
+            h('button', { class: 'btn', onclick: () => openFarmMarket(this.state, this.panelActions(), 'town') }, 'Sell / Deliver Produce'),
             h('button', { class: 'btn', onclick: () => { closePanel(); this.requestReturnToFarm(); } }, 'Return to Farm'),
           ),
         ),
@@ -936,8 +994,8 @@ export class FarmEmpireApp {
           ...(!atPad ? [h('button', { class: 'btn btn-primary', 'data-testid': 'drive-pickup-to-cargo-pad', onclick: () => this.drivePickupToCargoPad() }, 'Drive to Barn Cargo Pad')] : []),
           h('button', { class: `btn ${atPad ? 'btn-primary' : ''}`, 'data-testid': this.operatingPickup ? 'exit-pickup' : 'operate-pickup', onclick: () => { closePanel(); this.togglePickupOperating(); } }, this.operatingPickup ? 'Exit Pickup' : 'Operate Pickup'),
           ...(atPad ? [
-            h('button', { class: 'btn', 'data-testid': 'manage-pickup-cargo', onclick: () => { closePanel(); openFarmMarket(this.state, this.panelActions(), 'farm'); } }, 'Produce Cargo'),
-            h('button', { class: 'btn', 'data-testid': 'manage-pickup-seeds', onclick: () => { closePanel(); openFarmSeedShop(this.state, this.panelActions()); } }, 'Seed Bags'),
+            h('button', { class: 'btn', 'data-testid': 'manage-pickup-cargo', onclick: () => { closePanel(); openFarmMarket(this.state, this.panelActions(), 'farm'); } }, 'Load / Unload Produce'),
+            h('button', { class: 'btn', 'data-testid': 'manage-pickup-seeds', onclick: () => { closePanel(); openFarmSeedShop(this.state, this.panelActions()); } }, 'Load / Unload Seed Bags'),
           ] : []),
         ),
       ),
@@ -969,7 +1027,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried. Large selections unload automatically and continue.'), h('p', {}, 'Park the pickup at the marked barn cargo pad to move existing barn produce with Barn → Pickup, then drive it to the County Grain Exchange to sell or deliver. Drag open ground or use WASD/arrow keys to pan; the mouse wheel zooms.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration and three daily Freight Board bids. With the County Utility Trailer attached, one daily bid is a trailer-required commercial bulk load. Later, Mara can complete whole-acreage assignments while you run the business.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried. Large selections unload automatically and continue.'), h('p', {}, 'Park the pickup at the marked barn cargo pad to move existing barn produce with Barn → Pickup, then drive it to the County Grain Exchange to sell or deliver. On foot: WASD/arrows pan · right-click moves · drag open ground pans · wheel zooms.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration and three daily Freight Board bids. With the County Utility Trailer attached, one daily bid is a trailer-required commercial bulk load. Later, Mara can complete whole-acreage assignments while you run the business.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1082,7 +1140,7 @@ export class FarmEmpireApp {
       this.operatingPickup = true;
       this.walkTarget = null;
       this.playerActor.walking = false;
-      toast('Operating the old pickup. Drive to the County Road gate for services.', 'good');
+      toast('Operating the old pickup. WASD/arrow keys or click/right-click ground to drive.', 'good');
     }
     this.hud.update(this.state, this.tractorHudRuntime());
     this.farmAudio.playTransaction('success');
@@ -1324,12 +1382,13 @@ export class FarmEmpireApp {
     this.save();
   }
 
-  private tractorHudRuntime(): { operating: boolean; working: boolean; statusText: string; manualWorking?: boolean; farmhandWorking?: boolean } {
+  private tractorHudRuntime(): { operating: boolean; working: boolean; activeVehicle: 'tractor' | 'pickup' | null; statusText: string; manualWorking?: boolean; farmhandWorking?: boolean } {
     if (this.basketUnload) {
       const destination = this.basketUnload.destination === 'pickup' ? 'pickup' : 'barn';
       return {
         operating: false,
         working: false,
+        activeVehicle: null,
         manualWorking: true,
         statusText: `Carrying harvest basket · ${handBasketUsed(this.state)} / ${HAND_BASKET_CAPACITY} cargo units · walking to ${destination} · Escape stops safely`,
       };
@@ -1343,6 +1402,7 @@ export class FarmEmpireApp {
       return {
         operating: false,
         working: false,
+        activeVehicle: null,
         manualWorking: true,
         statusText: `${MANUAL_FIELD_ACTION_LABELS[manualJob.kind]} · ${manualJob.completed}/${total} complete${manualJob.skipped ? ` · ${manualJob.skipped} skipped` : ''} · section ${current}/${total}${action ? ` · ${progress}%` : ''} · Escape cancels`,
       };
@@ -1353,6 +1413,7 @@ export class FarmEmpireApp {
       return {
         operating: false,
         working: false,
+        activeVehicle: null,
         manualWorking: true,
         statusText: `${MANUAL_FIELD_ACTION_LABELS[manual.kind]} | ${progress}% | Escape cancels safely`,
       };
@@ -1365,11 +1426,15 @@ export class FarmEmpireApp {
       return {
         operating: true,
         working: true,
+        activeVehicle: 'tractor',
         statusText: `${job.kind === 'plant' ? 'Planting' : 'Harvesting'}${cropLabel} · ${job.completed}/${total} completed${job.skipped ? ` · ${job.skipped} skipped` : ''} · section ${current}/${total}`,
       };
     }
     if (this.operatingTractor && this.tractorTarget) {
-      return { operating: true, working: false, statusText: 'Driving tractor · press Escape to stop' };
+      return { operating: true, working: false, activeVehicle: 'tractor', statusText: 'Driving tractor · press Escape to stop' };
+    }
+    if (this.operatingPickup && this.pickupTarget) {
+      return { operating: true, working: false, activeVehicle: 'pickup', statusText: 'Driving pickup · press Escape to stop' };
     }
     const farmhandJob = this.farmhandJob;
     if (farmhandJob) {
@@ -1379,14 +1444,18 @@ export class FarmEmpireApp {
       return {
         operating: this.operatingTractor,
         working: false,
+        activeVehicle: this.operatingTractor ? 'tractor' : this.operatingPickup ? 'pickup' : null,
         farmhandWorking: true,
         statusText: `${FIRST_FARMHAND.name} · ${MANUAL_FIELD_ACTION_LABELS[farmhandJob.kind]} · ${farmhandJob.completed}/${total} complete${farmhandJob.skipped ? ` · ${farmhandJob.skipped} skipped` : ''} · section ${current}/${total}${this.farmhandAction ? ` · ${progress}%` : ''}`,
       };
     }
     return {
-      operating: this.operatingTractor,
+      operating: this.operatingTractor || this.operatingPickup,
       working: false,
-      statusText: this.operatingTractor ? 'Operating old tractor · click a field for acreage work' : '',
+      activeVehicle: this.operatingTractor ? 'tractor' : this.operatingPickup ? 'pickup' : null,
+      statusText: this.operatingTractor
+        ? 'Operating old tractor · WASD/arrow keys or click/right-click ground to drive'
+        : this.operatingPickup ? 'Operating old pickup · WASD/arrow keys or click/right-click ground to drive' : '',
     };
   }
 

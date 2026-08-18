@@ -25,9 +25,16 @@ export type FarmHudMode = 'farm' | 'town';
 export interface TractorHudRuntime {
   operating: boolean;
   working: boolean;
+  activeVehicle?: 'tractor' | 'pickup' | null;
   statusText?: string;
   manualWorking?: boolean;
   farmhandWorking?: boolean;
+}
+
+export function vehicleOperationHelp(activeVehicle: TractorHudRuntime['activeVehicle']): string {
+  return activeVehicle === 'pickup'
+    ? 'WASD/arrow keys or click/right-click ground to drive. Drive to the cargo pad or County Road.'
+    : 'WASD/arrow keys or click/right-click ground to drive. Click an owned field parcel for batch planting or harvesting.';
 }
 
 export function shouldShowFirstDeliveryChip(mode: FarmHudMode, complete: boolean, runtime?: TractorHudRuntime): boolean {
@@ -206,9 +213,9 @@ export class FarmHud {
     this.morningCard.classList.toggle('hidden', this.mode !== 'farm' || this.morningDismissed || !morning.showWelcome);
     const greeting = this.morningCard.querySelector('strong');
     if (greeting) greeting.textContent = `Good morning, ${state.player.name?.trim() || 'Farm'}.`;
-    this.tractorEl.textContent = runtime?.working
+    this.tractorEl.textContent = runtime?.activeVehicle === 'tractor' && runtime.working
       ? 'Field job active'
-      : runtime?.operating
+      : runtime?.activeVehicle === 'tractor'
         ? 'Operating'
         : farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Needs restoration';
     this.operationEl.classList.toggle('hidden', this.mode === 'town' || (!runtime?.operating && !runtime?.manualWorking && !runtime?.farmhandWorking));
@@ -221,7 +228,7 @@ export class FarmHud {
       : runtime?.working
       ? 'The tractor is working section by section. Press Escape to cancel safely.'
       : runtime?.operating
-        ? 'Click open ground to drive. Click an owned field parcel for batch planting or harvesting.'
+        ? vehicleOperationHelp(runtime.activeVehicle)
         : !morning.complete ? `Today · ${morning.title} — ${morning.detail}` : nextGuide ? `Next · ${nextGuide.label} — ${nextGuide.hint}` : 'Core farm route complete. Keep growing the operation your way.';
     for (const [cropId, button] of this.cropButtons) {
       const unlock = farmCropUnlockInfo(state, cropId);
