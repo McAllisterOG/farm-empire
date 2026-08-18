@@ -373,3 +373,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Ripe produce is reserved for ready crops. Withered plants retain crop silhouette identity but render smaller, desaturated, drooping, and without ripe produce; generic readiness/withered cues remain supplementary.
 - Ground/field variation, section depth, and manual-harvest completion feedback are deterministic runtime presentation only. The burst is restricted to successful player basket harvests, never farmhand/direct-to-barn work.
 - No save/schema, economy, capacity, layout, hitbox, control, camera, town, narrative, or dependency decision changes with this checkpoint.
+
+## 2026-08-18 - Keep desktop QA isolated and explicitly opt-in
+
+**Status:** Approved and complete
+
+- The normal desktop profile remains exactly `%APPDATA%\Farm Empire`. Test data may use another profile only when `FARM_EMPIRE_QA=1` and `FARM_EMPIRE_QA_USER_DATA` is a non-empty, NUL-free absolute path; incomplete or invalid input fails closed to the normal profile.
+- Electron selects the profile before the single-instance lock so a disposable QA launch cannot silently attach to the owner's already-running profile.
+- QA farms, screenshots, and process state are disposable artifacts, not game saves, fixtures, progression, or release content. Verification must remove them after acceptance.
+- Manual farm actions clear the cached pre-action hover when valid work starts so old lifecycle text cannot coexist with current progress/result feedback.

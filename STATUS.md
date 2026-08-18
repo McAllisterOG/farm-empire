@@ -4,11 +4,11 @@
 
 - **Date:** 2026-08-18
 - **Branch:** `codex/first-town-contact`
-- **Head:** Runtime Farm Readability + First-Loop Contract V1 (local checkpoint; see Git history for hash)
+- **Head:** Desktop Playtest Assurance V1 (local checkpoint; see Git history for hash)
 - **Product state:** The Farm-only renderer gives corn, wheat, soybeans, potatoes, carrots, tomatoes, cabbage, and pumpkins distinct procedural field silhouettes and stage progression. Ready plants show crop-specific produce; withered plants are visibly desaturated/drooping with no ripe produce. Ground/field treatment is deterministic and richer, and a successful player basket harvest gets a short Canvas burst.
 - **Boundaries:** Legacy Paradise Isle painting is preserved. No save/schema, economy, capacity, layout, hitbox, control, camera, town, narrative, or dependency change was made.
-- **Verification:** 304 tests in 42 files passed, including 5 focused first-loop/render tests; strict typecheck, Vite production build, and `git diff --check` passed. Independent Red Team findings on withered truth, feedback authority, and catalog coverage were repaired.
-- **Desktop acceptance:** `release/runtime-readability-v1/win-unpacked` contains the relative-asset packaged build. Its bundled title rendered from the expected `file://` URL, and the literal OneDrive Desktop shortcut launched four responsive processes from that executable with zero residue after cleanup. The QA profile override did not isolate `%APPDATA%\Farm Empire`, so the real McAllister Farm slot was not entered; live-farm visual judgment remains for the owner's next play session.
+- **Verification:** 306 tests in 42 files passed; strict typecheck, Vite production build, and `git diff --check` passed. The package adds an explicit absolute-path-only QA profile seam that fails closed to the stable real profile unless both QA environment values are supplied.
+- **Desktop acceptance:** A disposable isolated farm completed the real packaged prepare, plant, water, grow, harvest, basket-transfer, and barn-storage loop with correct state, no runtime/console errors, and no contact with the owner's `%APPDATA%\Farm Empire` saves. Actual screenshots confirmed the richer ground, field, crop, and harvest presentation. A stale pre-action field hover was cleared at manual-action start. The disposable profile and screenshots were removed after verification.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
@@ -51,7 +51,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Runtime Farm Readability + First-Loop Contract V1 is complete; evaluate its crop/lifecycle readability and transient harvest burst during the next permitted player-surface pass alongside the existing basket, County life, weather, workforce, freight, tractor, row-fieldwork, farmhouse, and storage checks before selecting another finite package.
+No additional feature package is currently active. Desktop Playtest Assurance V1 is complete; the owner can now evaluate the current game from the refreshed Desktop build without the prior fresh-loop uncertainty. The next finite package should be selected from actual owner playtest evidence rather than another speculative feature wave.
 
 ## Known limitations
 

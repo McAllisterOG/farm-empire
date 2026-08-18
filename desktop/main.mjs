@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, shell } from 'electron';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APP_ID, GITHUB_ATTRIBUTION_URL, isAllowedExternalUrl, isDevUrlEnabled } from './policy.mjs';
+import { APP_ID, GITHUB_ATTRIBUTION_URL, isAllowedExternalUrl, isDevUrlEnabled, resolveUserDataPath } from './policy.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isExplicitDev = isDevUrlEnabled({
@@ -13,7 +13,11 @@ const iconPath = app.isPackaged ? join(process.resourcesPath, 'icon.ico') : join
 
 app.setAppUserModelId(APP_ID);
 app.setName('Farm Empire');
-app.setPath('userData', join(app.getPath('appData'), 'Farm Empire'));
+app.setPath('userData', resolveUserDataPath({
+  appDataPath: app.getPath('appData'),
+  qaFlag: process.env.FARM_EMPIRE_QA,
+  qaUserDataPath: process.env.FARM_EMPIRE_QA_USER_DATA,
+}));
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();

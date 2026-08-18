@@ -1959,6 +1959,7 @@ export class FarmEmpireApp {
     if (!plot) return;
     this.walkTarget = null;
     this.playerActor.walking = false;
+    this.hover = null;
     const dx = plot.x - this.playerActor.x;
     const dy = plot.y - this.playerActor.y;
     this.playerFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');

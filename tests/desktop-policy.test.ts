@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { isDevUrlEnabled } from '../desktop/policy.mjs';
+import { isDevUrlEnabled, resolveUserDataPath } from '../desktop/policy.mjs';
 import { isFarmEmpireHtml } from '../desktop/devPolicy.mjs';
 
 const policy = readFileSync(resolve('desktop/policy.mjs'), 'utf8');
@@ -30,6 +30,24 @@ describe('Windows desktop release boundary', () => {
     expect(isDevUrlEnabled({ isPackaged: false, devFlag: '1', devUrl: 'http://127.0.0.1:5173/' })).toBe(true);
     expect(isDevUrlEnabled({ isPackaged: true, devFlag: '1', devUrl: 'http://127.0.0.1:5173/' })).toBe(false);
     expect(isDevUrlEnabled({ isPackaged: false, devFlag: '0', devUrl: 'http://127.0.0.1:5173/' })).toBe(false);
+  });
+
+  it('uses an explicit, absolute QA profile only when the full opt-in pair is supplied', () => {
+    const appDataPath = resolve('test-app-data');
+    const qaUserDataPath = resolve('test-qa-user-data');
+    const defaultPath = join(appDataPath, 'Farm Empire');
+
+    expect(resolveUserDataPath({ appDataPath })).toBe(defaultPath);
+    expect(resolveUserDataPath({ appDataPath, qaFlag: '1' })).toBe(defaultPath);
+    expect(resolveUserDataPath({ appDataPath, qaUserDataPath })).toBe(defaultPath);
+    expect(resolveUserDataPath({ appDataPath, qaFlag: '1', qaUserDataPath: 'test-qa-user-data' })).toBe(defaultPath);
+    expect(resolveUserDataPath({ appDataPath, qaFlag: '1', qaUserDataPath: `${qaUserDataPath}\0` })).toBe(defaultPath);
+    expect(resolveUserDataPath({ appDataPath, qaFlag: '1', qaUserDataPath })).toBe(qaUserDataPath);
+  });
+
+  it('keeps the user-data profile decision ahead of the single-instance lock', () => {
+    expect(main).toContain('resolveUserDataPath');
+    expect(main.indexOf("app.setPath('userData'")).toBeLessThan(main.indexOf('app.requestSingleInstanceLock()'));
   });
 
   it('uses a strict fixed Vite port and waits for HTTP readiness before Electron', () => {

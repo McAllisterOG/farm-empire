@@ -506,3 +506,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Functional world targets now outrank overlapping Scout with a throttled open-grass prompt; open grass retains scratches and a transient deterministic frisbee fetch. Seed and produce panels retain exact entry plus safe authoritative All actions. Farm capacity derives 480 base, 720 loft, or 1,200 silo; valid v19 150/200-capacity saves normalize forward. The literal stranded 144-corn + 18-basket save unloads successfully to 162 corn.
 - **Verification:** 299/299 tests passed; strict typecheck, Vite production build, and `git diff --check` passed. Red Team’s Medium manual/basket-fetch cancellation issue was repaired, and the re-review basket-unload finding received one surgical repair with source readback and focused companion/basket coverage.
 - **Known limitation:** Browser/player UI validation was not run. The denser transfer controls and a real existing-save rescue remain pending player-surface checks. No package, shortcut, commit-push, or browser fallback was used before this checkpoint commit.
+
+## Desktop Playtest Assurance V1 - complete
+
+- **Date:** 2026-08-18
+- **Branch:** `codex/first-town-contact`
+- **Scope:** Add a safe disposable desktop QA profile and use it for a real packaged fresh-farm acceptance pass without opening or changing the owner's Farm Empire saves. No save schema, economy, progression, gameplay transaction, asset, or dependency change.
+- **Result:** Electron now fails closed to the stable `%APPDATA%\Farm Empire` profile unless both explicit QA environment values select a valid absolute alternate path before the single-instance lock. The isolated packaged farm completed prepare, plant, water, grow, harvest, basket transfer, and barn storage. Actual Canvas inspection confirmed the richer crops/ground/field and harvest feedback; one stale lifecycle hover was cleared at manual-action start.
+- **Verification:** 306/306 tests passed, including seven focused desktop-policy checks; strict typecheck, Vite production build, and `git diff --check` passed. The packaged UI produced no runtime/console errors. The QA save and temporary screenshots were deleted after acceptance; the owner's real profile was untouched.
+- **Known limitations:** The acceptance pass intentionally covered the fresh farming/storage spine, not every long-form County, manager, freight, equipment, and expansion branch. Those remain owner-playtest targets.

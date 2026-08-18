@@ -42,10 +42,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 36. **Direct Controls & Cargo Clarity V1** - farm-only WASD/arrow steering for operated vehicles, safe open-ground secondary-click movement, clear pickup cargo labels, and no save, economy, map, or vehicle-physics change.
 37. **Playtest Rescue V1** - functional-first Scout hit priority, transient frisbee fetch, one-click authoritative cargo maximums, and a save-safe 480/720/1,200 storage calibration.
 38. **Runtime Farm Readability + First-Loop Contract V1** - Farm-only crop silhouettes and truthful lifecycle rendering, richer deterministic ground/field treatment, transient manual basket-harvest feedback, and a joined fresh-farm basket-to-County regression without save or business-rule changes.
+39. **Desktop Playtest Assurance V1** - an opt-in absolute-path-only isolated Electron QA profile, a real packaged fresh-farm prepare-to-storage acceptance pass, stale field-hover cleanup, and disposable verification that never opens or modifies the owner's save profile.
 
 ## Current authorization
 
-No additional feature package is currently active. Runtime Farm Readability + First-Loop Contract V1 is complete: Farm-only Canvas crops now give all eight catalog crops distinct lifecycle silhouettes, preserve ready-only produce and truthful withered presentation, and add deterministic field/ground readability plus a transient player basket-harvest burst. The joined public-core first-loop contract proves basket-to-pickup County fulfillment and a repeat-cycle invariant path. No save, economy, layout, hitbox, control, dependency, or legacy-island change was made. Player-surface visual inspection remains pending.
+No additional feature package is currently active. Desktop Playtest Assurance V1 proved the packaged fresh-farm prepare, plant, water, grow, harvest, basket, and storage path on a disposable isolated Electron profile. The real save path remains the default and the QA path is available only with an explicit two-part environment opt-in. The next package should respond to the owner's current playtest rather than broaden scope speculatively.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
