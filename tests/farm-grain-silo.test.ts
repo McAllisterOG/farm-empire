@@ -4,6 +4,7 @@ import { COUNTY_GRAIN_SILO } from '../src/data/farmEquipment.data';
 import { farmOf, purchaseCountyGrainSilo } from '../src/core/farmBusiness';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { deserialize, serialize } from '../src/save/save';
+import { unloadHandBasket } from '../src/core/farmHarvestBasket';
 
 const NOW = Date.UTC(2026, 7, 13, 12);
 const farm = () => createFarmGame('Silo Test', 1616, NOW);
@@ -74,7 +75,7 @@ describe('County Grain Silo', () => {
     expect(farmOf(closed).storageCapacity).toBe(COUNTY_GRAIN_SILO.fromCapacity);
   });
 
-  it('round-trips ownership at 1,200 but keeps non-silo normalization at 150 or 200', () => {
+  it('round-trips ownership at 1,200 but keeps non-silo normalization at 480 or 720', () => {
     const owned = farm(); unlockSilo(owned);
     farmOf(owned).equipment.countyGrainSiloOwned = true;
     farmOf(owned).storageCapacity = COUNTY_GRAIN_SILO.toCapacity;
@@ -87,12 +88,32 @@ describe('County Grain Silo', () => {
     farmOf(impossible).storageCapacity = COUNTY_GRAIN_SILO.toCapacity;
     const safe = deserialize(serialize(impossible, NOW + 5), NOW + 6);
     expect(farmOf(safe).equipment.countyGrainSiloOwned).toBe(false);
-    expect(farmOf(safe).storageCapacity).toBe(150);
+    expect(farmOf(safe).storageCapacity).toBe(480);
 
     const loftOnly = farm();
     farmOf(loftOnly).parcels.northOwned = true;
     farmOf(loftOnly).equipment.barnLoftExpansionOwned = true;
     farmOf(loftOnly).storageCapacity = COUNTY_GRAIN_SILO.toCapacity;
-    expect(farmOf(deserialize(serialize(loftOnly, NOW + 7), NOW + 8)).storageCapacity).toBe(200);
+    expect(farmOf(deserialize(serialize(loftOnly, NOW + 7), NOW + 8)).storageCapacity).toBe(720);
+  });
+
+  it('rescues a v19 old-capacity barn without touching stored crops or the hand basket', () => {
+    const stranded = farm() as unknown as Record<string, any>;
+    stranded.version = 19;
+    stranded.farm.storageCapacity = 150;
+    stranded.farm.storage.crop_corn = 144;
+    stranded.farm.handBasket = { crops: { crop_corn: 18 }, destination: 'barn' };
+    const loaded = deserialize(JSON.stringify(stranded), NOW + 9);
+    expect(farmOf(loaded).storageCapacity).toBe(480);
+    expect(farmOf(loaded).storage.crop_corn).toBe(144);
+    expect(farmOf(loaded).handBasket).toEqual({ crops: { crop_corn: 18 }, destination: 'barn' });
+    expect(unloadHandBasket(loaded, 'barn').ok).toBe(true);
+    expect(farmOf(loaded).storage.crop_corn).toBe(162);
+    expect(farmOf(loaded).handBasket.crops).toEqual({});
+
+    stranded.farm.parcels.northOwned = true;
+    stranded.farm.equipment.barnLoftExpansionOwned = true;
+    stranded.farm.storageCapacity = 200;
+    expect(farmOf(deserialize(JSON.stringify(stranded), NOW + 10)).storageCapacity).toBe(720);
   });
 });

@@ -96,6 +96,15 @@ describe('authoritative farm object interactions', () => {
     expect(farmInteractionAtWorldPoint(state, farmWorldPoint(farmhand), { ...rt, farmhand, pickup: farmhand })?.kind).toBe('pickup');
   });
 
+  it('lets functional targets win when Scout visibly overlaps them, while open grass still selects Scout', () => {
+    const state = makeFarm(); const rt = runtime(state); const field = state.plots[0];
+    rt.scout = { x: field.x, y: field.y };
+    expect(farmInteractionAtWorldPoint(state, farmWorldPoint(field), rt)?.kind).toBe('field');
+    const pickup = { x: 8.4, y: 12.1 };
+    expect(farmInteractionAtWorldPoint(state, farmWorldPoint(pickup), { ...rt, pickup, scout: pickup })?.kind).toBe('pickup');
+    expect(farmInteractionAtWorldPoint(state, farmWorldPoint({ x: 7.95, y: 12.3 }), { ...rt, scout: { x: 7.95, y: 12.3 } })?.kind).toBe('scout');
+  });
+
   it('routes each visible homestead landmark to its own concise action target', () => {
     const state = makeFarm();
     const rt = runtime(state);
@@ -111,7 +120,7 @@ describe('authoritative farm object interactions', () => {
     for (const [point, kind] of cases) {
       expect(farmInteractionAtWorldPoint(state, farmWorldPoint(point), rt)?.kind).toBe(kind);
     }
-    expect(farmInteractionAtWorldPoint(state, farmWorldPoint(landmarks.doghouse), rt)?.kind).toBe('scout');
+    expect(farmInteractionAtWorldPoint(state, farmWorldPoint(landmarks.doghouse), rt)?.kind).toBe('doghouse');
     expect(farmInteractionAtWorldPoint(state, farmWorldPoint(landmarks.doghouse), { ...rt, scout: { x: 2, y: 2 } })?.kind).toBe('doghouse');
   });
 

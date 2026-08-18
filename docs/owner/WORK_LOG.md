@@ -484,3 +484,13 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Boundaries:** No save/schema, economy, business transaction, map/camera-policy, vehicle-speed/effect, collision, pathfinding, art, audio, setting, or progression change.
 - **Verification:** 293/293 tests passed, including focused mapping, bounds, non-mutation, directional block routing, gesture, move-only-ground, and pickup-help coverage; strict typecheck, Vite production build, and `git diff --check` passed. Independent Red Team re-review accepted with no Critical/High/Medium findings.
 - **Known limitation:** Computer Use packaged-app launch approval timed out, and the prior browser ACL-helper issue remains. Event sequencing is pure-test-reviewed but not browser-click-validated; no fallback, package, shortcut, or push was used.
+
+## Playtest Rescue V1 - complete
+
+- **Date:** 2026-08-17
+- **Branch:** `codex/first-town-contact`
+- **Commit:** local checkpoint `feat: rescue farm playtest flow` (see Git history for hash)
+- **Scope:** Repair reproduced Scout click theft, cargo-transfer friction, and the base/loft storage dead end without changing prices, crop yields, pickup 72/144 capacity, save schema, or unrelated systems.
+- **Result:** Functional world targets now outrank overlapping Scout with a throttled open-grass prompt; open grass retains scratches and a transient deterministic frisbee fetch. Seed and produce panels retain exact entry plus safe authoritative All actions. Farm capacity derives 480 base, 720 loft, or 1,200 silo; valid v19 150/200-capacity saves normalize forward. The literal stranded 144-corn + 18-basket save unloads successfully to 162 corn.
+- **Verification:** 299/299 tests passed; strict typecheck, Vite production build, and `git diff --check` passed. Red Team’s Medium manual/basket-fetch cancellation issue was repaired, and the re-review basket-unload finding received one surgical repair with source readback and focused companion/basket coverage.
+- **Known limitation:** Browser/player UI validation was not run. The denser transfer controls and a real existing-save rescue remain pending player-surface checks. No package, shortcut, commit-push, or browser fallback was used before this checkpoint commit.

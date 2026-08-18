@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { farmOf } from '../src/core/farmBusiness';
-import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoRemaining, pickupCargoUsed, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
+import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, pickupCargoRemaining, pickupCargoUsed, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../src/core/farmTownContact';
 import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
 import { deserialize, serialize } from '../src/save/save';
@@ -63,6 +63,20 @@ describe('old pickup cargo loop', () => {
     expect(unloadPickupSeedsToFarm(state, 'crop_wheat', 1).ok).toBe(true);
     expect(farm.pickup.cargo.seeds.crop_wheat).toBe(1);
     expect(farm.seeds.crop_wheat).toBe(3);
+  });
+
+  it('derives safe All transfer amounts from mixed cargo, source stock, and weighted barn space', () => {
+    const state = createFarmGame('Pickup max', 40, NOW); const farm = farmOf(state);
+    farm.storage.crop_pumpkin = 30; farm.pickup.cargo.seeds.crop_wheat = 12;
+    expect(maxBarnCropLoadToPickup(state, 'crop_pumpkin')).toBe(20); // 60 weighted units fit after seeds.
+    expect(loadBarnCropToPickup(state, 'crop_pumpkin', maxBarnCropLoadToPickup(state, 'crop_pumpkin')).ok).toBe(true);
+    farm.storageCapacity = 93; farm.storage.crop_corn = 60;
+    expect(maxPickupCropUnloadToBarn(state, 'crop_pumpkin')).toBe(1); // 3 free units / 3 per pumpkin.
+    expect(maxFarmSeedLoadToPickup(state, 'crop_wheat')).toBe(0);
+    expect(maxPickupSeedUnloadToFarm(state, 'crop_wheat')).toBe(12);
+    farm.pickup.x += 4;
+    expect(maxBarnCropLoadToPickup(state, 'crop_pumpkin')).toBe(0);
+    expect(maxPickupCropUnloadToBarn(state, 'crop_pumpkin')).toBe(0);
   });
 
   it('uses pickup cargo for an atomic County delivery and round trips it', () => {

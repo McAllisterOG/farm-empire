@@ -109,12 +109,12 @@ describe('Barn expansion and recovery', () => {
     const migrated = deserialize(JSON.stringify(state), NOW + 1);
     expect(migrated.version).toBe(SAVE_VERSION);
     expect(farmOf(migrated).equipment.barnLoftExpansionOwned).toBe(false);
-    expect(farmOf(migrated).storageCapacity).toBe(150);
+    expect(farmOf(migrated).storageCapacity).toBe(480);
     const corrupt = makeFarm() as unknown as Record<string, any>;
     corrupt.farm.equipment.barnLoftExpansionOwned = 'yes'; corrupt.farm.storageCapacity = 9999;
     const loaded = deserialize(serialize(corrupt as any, NOW), NOW + 1);
     expect(farmOf(loaded).equipment.barnLoftExpansionOwned).toBe(false);
-    expect(farmOf(loaded).storageCapacity).toBe(150);
+    expect(farmOf(loaded).storageCapacity).toBe(480);
     const malformed = makeFarm() as unknown as Record<string, any>;
     malformed.version = 6; malformed.farm.equipment = 'malformed';
     const safe = deserialize(JSON.stringify(malformed), NOW + 2);
@@ -124,7 +124,7 @@ describe('Barn expansion and recovery', () => {
       primitive.version = 6; primitive.farm = malformedFarm;
       const loadedPrimitive = deserialize(JSON.stringify(primitive), NOW + 3);
       expect(loadedPrimitive.version).toBe(SAVE_VERSION);
-      expect(farmOf(loadedPrimitive).storageCapacity).toBe(150);
+      expect(farmOf(loadedPrimitive).storageCapacity).toBe(480);
       expect(farmOf(loadedPrimitive).countyReliefClaimed).toBe(false);
     }
     const inconsistent = makeFarm() as unknown as Record<string, any>;
@@ -132,7 +132,7 @@ describe('Barn expansion and recovery', () => {
     inconsistent.farm.parcels.northOwned = false;
     const closed = deserialize(JSON.stringify(inconsistent), NOW + 4);
     expect(farmOf(closed).equipment.barnLoftExpansionOwned).toBe(false);
-    expect(farmOf(closed).storageCapacity).toBe(150);
+    expect(farmOf(closed).storageCapacity).toBe(480);
     const nonLiteral = makeFarm() as unknown as Record<string, any>;
     nonLiteral.farm.equipment.barnLoftExpansionOwned = 1;
     nonLiteral.farm.parcels.northOwned = true;

@@ -4,11 +4,11 @@
 
 - **Date:** 2026-08-17
 - **Branch:** `codex/first-town-contact`
-- **Head:** Direct Controls & Cargo Clarity V1 (local checkpoint; see Git history for hash)
-- **Product state:** On the farm, operated pickups and operational tractors accept short clamped WASD/arrow steering targets; idle on-foot input continues to pan the bounded camera. Secondary-click gestures move only on open ground and never open farm/town interactions. Pickup controls now name their cargo direction clearly.
-- **Save/economy/map:** No schema, transaction, economy, map, camera-policy, speed, collision, or progression change. Vehicle motion remains transient and direct.
-- **Verification:** 293/293 tests passed, including focused control-routing, bounded target, move-only, and HUD-copy coverage; strict typecheck, Vite production build, and `git diff --check` passed. Independent re-review accepted with no Critical/High/Medium findings.
-- **Browser:** Computer Use packaged-app launch approval timed out; the prior browser ACL-helper issue also remains. Event sequencing is pure-test-reviewed, not browser-click-validated; no fallback was used.
+- **Head:** Playtest Rescue V1 (local checkpoint; see Git history for hash)
+- **Product state:** Functional world targets always win over Scout; an overlap keeps the normal action and shows throttled guidance, while open grass still opens Scout’s menu. Scout has a transient deterministic frisbee fetch that cancels for Escape, vehicle/job/town/basket work. Cargo panels retain exact entry and add authoritative per-direction All actions for seed bags and produce.
+- **Save/economy/map:** Storage derives 480 base / 720 Barn Loft / 1,200 County Grain Silo. Old v19 150/200 storage values normalize forward without a schema bump and preserve crops/basket; prices, crop yields, pickup 72/144 capacity, economy, map, and progression otherwise remain unchanged.
+- **Verification:** 299/299 tests passed, including Scout priority/fetch/manual-basket cancellation, transfer maximum, and literal 144 stored + 18 basket rescue/unload coverage; strict typecheck, Vite production build, and `git diff --check` passed. Red Team’s Medium manual/basket cancellation finding and re-review basket finding were repaired.
+- **Browser:** Player-surface browser/UI validation has not run. Transfer-card density and a real current-save rescue surface remain pending.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
@@ -30,7 +30,7 @@
 - Farm crops remain ready for a generous 15-minute real-time window, then visibly wither and can be cleared without refund so field sections are never permanently blocked.
 - A true zero-asset farm may receive exactly one lifetime wheat seed from Mae; the claim is persisted and cannot be recycled through intentional crop loss.
 - Manual harvest carries a visible 24-unit saved basket until atomically unloaded to its chosen barn or present pickup destination; basket contents count as assets for County relief and survive reload.
-- The neighboring commercial parcel costs $4,250 plus working seed capital; ownership unlocks the one-time $1,800 Barn Loft Expansion from 150 to 200 storage and visibly adds a lean-to to the barn.
+- The neighboring commercial parcel costs $4,250 plus working seed capital; ownership unlocks the one-time $1,800 Barn Loft Expansion from 480 to 720 storage and visibly adds a lean-to to the barn. A valid County Grain Silo raises combined storage to 1,200.
 - The crop catalog now contains corn, wheat, soybeans, potatoes, carrots, tomatoes, cabbage, and pumpkins. New crops start with zero seeds and unlock from the existing County-order, neighboring-parcel, and Barn Loft milestones without new saved license state.
 - Carrots are a low-capital quick turn; tomatoes trade barn throughput for margin; cabbage is value-dense; pumpkins are the slowest, highest-gross, and consume three barn units per harvested item.
 - The public-demo pass improves HUD/modal hierarchy, controls, feedback, transitions, and compact layouts without changing game transactions.
@@ -50,7 +50,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Direct Controls & Cargo Clarity V1 is complete; evaluate its controls during the next permitted player-surface pass alongside the existing basket, County life, weather, workforce, freight, tractor, row-fieldwork, farmhouse, and storage checks before selecting another finite package.
+No additional feature package is currently active. Playtest Rescue V1 is complete; evaluate Scout overlap/open-grass petting, frisbee cancellation, transfer-card density, and an existing 150/200-capacity save during the next permitted player-surface pass alongside the existing basket, County life, weather, workforce, freight, tractor, row-fieldwork, farmhouse, and storage checks before selecting another finite package.
 
 ## Known limitations
 

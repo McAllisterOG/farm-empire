@@ -33,6 +33,11 @@ function near(point: FarmPoint, anchor: FarmPoint, radius: number): boolean {
   return Math.hypot(point.x - anchor.x, point.y - anchor.y) <= radius;
 }
 
+/** Scout is decorative-priority only: functional world targets always receive the click. */
+export function farmScoutHitAtWorldPoint(worldPoint: FarmPoint, runtime: Pick<FarmInteractionRuntime, 'scout'>): boolean {
+  return near(farmLogicalPoint(worldPoint), runtime.scout, .8);
+}
+
 /** One authoritative, explicit hit order for the farm's visible focal objects. */
 export function farmInteractionAtWorldPoint(
   state: GameState,
@@ -45,8 +50,6 @@ export function farmInteractionAtWorldPoint(
   if (near(logical, runtime.pickup, 1.05)) return { kind: 'pickup', label: 'Old Pickup', point: { ...runtime.pickup } };
   if (near(logical, runtime.tractor, 1.0)) return { kind: 'tractor', label: 'Old Tractor', point: { ...runtime.tractor } };
   if (runtime.farmhand && near(logical, runtime.farmhand, .8)) return { kind: 'farmhand', label: 'Mara Bell · County Farmhand', point: { ...runtime.farmhand } };
-  if (near(logical, runtime.scout, .8)) return { kind: 'scout', label: 'Scout', point: { ...runtime.scout } };
-
   const landmarks = farmLandmarks();
   const farmhouseTier = farmhousePresentationTier(farm.parcels.northOwned);
   if (near(logical, landmarks.farmhouse, farmhouseInteractionRadius(farmhouseTier))) {
@@ -93,5 +96,6 @@ export function farmInteractionAtWorldPoint(
       plotY: plot.y,
     };
   }
+  if (farmScoutHitAtWorldPoint(worldPoint, runtime)) return { kind: 'scout', label: 'Scout', point: { ...runtime.scout } };
   return null;
 }

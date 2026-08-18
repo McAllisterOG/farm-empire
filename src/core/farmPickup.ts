@@ -45,6 +45,29 @@ export function pickupCargoRemaining(state: GameState): number {
   return Math.max(0, pickupCargoCapacity(state) - pickupCargoUsed(state));
 }
 
+/** Authoritative per-crop maximums for cargo-panel All actions. */
+export function maxBarnCropLoadToPickup(state: GameState, cropId: string): number {
+  const def = farmCropDefOrNull(cropId);
+  if (!def || !pickupIsAtCargoPad(state)) return 0;
+  return Math.max(0, Math.min(farmOf(state).storage[cropId] ?? 0, Math.floor(pickupCargoRemaining(state) / def.storageUnitsPerItem)));
+}
+
+export function maxPickupCropUnloadToBarn(state: GameState, cropId: string): number {
+  const def = farmCropDefOrNull(cropId);
+  if (!def || !pickupIsAtCargoPad(state)) return 0;
+  return Math.max(0, Math.min(pickupCropUnits(state, cropId), Math.floor(Math.max(0, farmOf(state).storageCapacity - storageUsed(state)) / def.storageUnitsPerItem)));
+}
+
+export function maxFarmSeedLoadToPickup(state: GameState, cropId: string): number {
+  if (!farmCropDefOrNull(cropId) || !pickupIsAtCargoPad(state)) return 0;
+  return Math.max(0, Math.min(farmOf(state).seeds[cropId] ?? 0, pickupCargoRemaining(state)));
+}
+
+export function maxPickupSeedUnloadToFarm(state: GameState, cropId: string): number {
+  if (!farmCropDefOrNull(cropId) || !pickupIsAtCargoPad(state)) return 0;
+  return Math.max(0, pickupSeedUnits(state, cropId));
+}
+
 export function pickupHasCargo(state: GameState): boolean {
   return pickupCargoUsed(state) > 0;
 }

@@ -18,7 +18,7 @@ import {
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY, TILE_H } from '../render/iso';
 import { farmhousePresentationTier, farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
-import { updateFarmCompanion, type FarmCompanionState } from '../core/farmCompanion';
+import { advanceFarmCompanionFetch, canAdvanceFarmCompanionFetch, updateFarmCompanion, type FarmCompanionFetchState, type FarmCompanionState } from '../core/farmCompanion';
 import { recordFarmStat } from '../core/farmKnowledge';
 import { firstFarmMorningGuide, shouldPresentStarterGuideTarget } from '../core/firstFarmMorning';
 import { FarmSoundscape, type FarmAudioSettings } from '../audio/farmSoundscape';
@@ -37,7 +37,7 @@ import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTra
 import { TOWN_NPCS, type TownNpcDef, type TownServiceId } from '../data/town.data';
 import { FIRST_FARMHAND } from '../data/farmWorkforce.data';
 import type { FarmFacing } from '../render/farmSprites';
-import { farmInteractionAtWorldPoint, type FarmInteractionTarget } from '../render/farmInteractions';
+import { farmInteractionAtWorldPoint, farmScoutHitAtWorldPoint, type FarmInteractionTarget } from '../render/farmInteractions';
 import {
   TOWN_EXIT, TOWN_PICKUP_PARKING, TOWN_SPAWN, cancelTownMovement, pointInTownNpcScreenHitbox,
   pointInTownPickupScreenHitbox, townInteractionAt, townPickupHit, type TownMoveTarget,
@@ -140,6 +140,8 @@ export class FarmEmpireApp {
   private scout: FarmCompanionState;
   private scoutScratchUntil = 0;
   private scoutWaitingForScratch = false;
+  private scoutFetch: FarmCompanionFetchState | null = null;
+  private scoutOverlapToastAt = 0;
   private scoutFacing: FarmFacing = 'south';
   private hover: FarmInteractionTarget | null = null;
   private townHover: { label: string; x: number; y: number } | null = null;
@@ -606,6 +608,7 @@ export class FarmEmpireApp {
       else if (this.manualFieldJob) this.cancelManualFieldJob();
       else if (this.manualFieldAction) this.cancelManualFieldAction();
       else if (this.scoutWaitingForScratch) this.cancelScoutApproach();
+      else if (this.scoutFetch) this.cancelScoutFetch();
       else if (this.tractorJob) this.cancelTractorJob();
       else if (this.tractorTarget) {
         this.tractorTarget = null;
@@ -677,6 +680,7 @@ export class FarmEmpireApp {
       scout: this.scout,
       now: this.gameNow(),
     });
+    if (interaction && interaction.kind !== 'scout' && farmScoutHitAtWorldPoint(worldPoint, { scout: this.scout })) this.notifyScoutOverlap();
     if (interaction?.kind === 'pickup') {
       if (this.operatingPickup) this.togglePickupOperating(); else this.openPickupPanel();
       return;
@@ -687,12 +691,13 @@ export class FarmEmpireApp {
       this.walkNear(interaction.point.x, interaction.point.y, () => this.openWorkforcePanel('farm'));
       return;
     }
-    if (interaction?.kind === 'scout' || interaction?.kind === 'doghouse') {
+    if (interaction?.kind === 'scout') {
       if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to visit Scout.', 'bad'); return; }
       this.scoutWaitingForScratch = true;
       this.walkNear(this.scout.x, this.scout.y, () => { this.scoutWaitingForScratch = false; this.openScoutMenu(); });
       return;
     }
+    if (interaction?.kind === 'doghouse') { toast("Scout's doghouse is cozy. Catch him on open grass for scratches.", 'good'); return; }
     if (interaction?.kind === 'farmhouse') {
       if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to use the farmhouse office.', 'bad'); return; }
       this.walkNear(interaction.point.x, interaction.point.y, () => this.openFarmhouseOffice());
@@ -858,7 +863,7 @@ export class FarmEmpireApp {
     if (blocked) { toast(blocked, 'bad'); return; }
     const returnPoint = placePlayerAtTownReturn(this.state);
     this.playerActor.x = returnPoint.x; this.playerActor.y = returnPoint.y; this.playerActor.walking = false;
-    this.walkTarget = null; this.hover = null; this.townHover = null; this.cancelScoutApproach();
+    this.walkTarget = null; this.hover = null; this.townHover = null; this.cancelScoutApproach(); this.cancelScoutFetch(false);
     this.farmCamera = { cx: this.renderer.camera.cx, cy: this.renderer.camera.cy, zoom: this.renderer.camera.zoom, viewW: this.renderer.camera.viewW, viewH: this.renderer.camera.viewH };
     this.townActor = { avatar: this.state.player.avatar, ...TOWN_SPAWN, walking: false };
     this.townFacing = 'north'; this.townTarget = null; this.townGesture = null; this.mode = 'town';
@@ -928,6 +933,19 @@ export class FarmEmpireApp {
     this.playerActor.walking = false;
   }
 
+  private cancelScoutFetch(notice = true): void {
+    if (!this.scoutFetch) return;
+    this.scoutFetch = null;
+    if (notice) toast('Scout leaves the frisbee and heads back.', 'good');
+  }
+
+  private notifyScoutOverlap(): void {
+    const now = this.gameNow();
+    if (now - this.scoutOverlapToastAt < 1_500) return;
+    this.scoutOverlapToastAt = now;
+    toast('Scout’s helping here—pet him when he’s back on open grass.', 'good');
+  }
+
   private toggleTractorOperating(): void {
     const tractor = farmOf(this.state).equipment.tractor;
     if (!this.operatingTractor && this.operatingPickup) {
@@ -946,6 +964,7 @@ export class FarmEmpireApp {
       toast('Unload the harvest basket before operating the tractor.', 'bad');
       return;
     }
+    this.cancelScoutFetch(false);
     if (this.operatingTractor) {
       const dismount = placePlayerAtTractorDismount(this.state);
       this.operatingTractor = false;
@@ -1128,6 +1147,7 @@ export class FarmEmpireApp {
       toast('Unload the harvest basket before operating the pickup.', 'bad');
       return;
     }
+    this.cancelScoutFetch(false);
     const pickup = farmOf(this.state).pickup;
     if (this.operatingPickup) {
       this.operatingPickup = false;
@@ -1156,6 +1176,14 @@ export class FarmEmpireApp {
         this.scoutScratchUntil = this.gameNow() + 1_200;
         this.farmAudio.playTransaction('scout');
         toast('Scout wags and leans into the scratches.', 'good');
+      },
+    }, {
+      label: 'Throw frisbee',
+      onClick: () => {
+        this.cancelScoutApproach();
+        this.scoutFetch = { phase: 'outbound', target: { x: 7.95, y: 12.3 }, throwFrom: { x: this.playerActor.x, y: this.playerActor.y }, phaseStartedAt: this.gameNow() };
+        this.farmAudio.playTransaction('scout');
+        toast('Frisbee away! Scout is on it.', 'good');
       },
     }]);
   }
@@ -1291,6 +1319,7 @@ export class FarmEmpireApp {
       toast(farmCropUnlockInfo(this.state, cropId).requirement, 'bad');
       return;
     }
+    this.cancelScoutFetch(false);
     this.tractorJob = {
       kind,
       parcelId,
@@ -1615,6 +1644,7 @@ export class FarmEmpireApp {
     cropId?: string,
   ): void {
     if (targets.length === 0) return;
+    this.cancelScoutFetch(false);
     if (targets.length === 1 || scope === 'section') {
       if (kind === 'harvest') {
         const readiness = inspectBasketHarvest(this.state, targets[0], this.gameNow());
@@ -1663,6 +1693,7 @@ export class FarmEmpireApp {
     if (this.farmhandJob) return { ok: false, reason: `${FIRST_FARMHAND.name} already has an acreage assignment.` };
     const start = startFarmhandShift(this.state, parcelId, kind, this.gameNow(), cropId);
     if (!start.result.ok || !start.plan) return start.result;
+    this.cancelScoutFetch(false);
     this.farmhandJob = {
       kind,
       parcelId,
@@ -1832,6 +1863,7 @@ export class FarmEmpireApp {
       onFailure?.(result.reason ?? 'The pickup is unavailable.');
       return;
     }
+    this.cancelScoutFetch(false);
     this.basketUnload = { destination, afterSuccess, onFailure };
     const barn = this.state.placements.find((placement) => placement.defId === 'bld_storage');
     const target = destination === 'pickup'
@@ -2250,7 +2282,16 @@ export class FarmEmpireApp {
 
     const scoutHome = farmLandmarks().scoutHome;
     const scoutBefore = this.scout;
-    this.scout = this.scoutWaitingForScratch && !this.operatingTractor && !this.operatingPickup && this.mode === 'farm'
+    if (this.scoutFetch && canAdvanceFarmCompanionFetch({
+      onFarm: this.mode === 'farm', operatingVehicle: this.operatingTractor || this.operatingPickup,
+      tractorJob: !!this.tractorJob, farmhandJob: !!this.farmhandJob, manualFieldAction: !!this.manualFieldAction,
+      manualFieldJob: !!this.manualFieldJob, basketUnload: !!this.basketUnload,
+    })) {
+      const nextFetch = advanceFarmCompanionFetch(this.scout, this.scoutFetch, this.playerActor, scoutHome, dt, this.gameNow());
+      this.scout = nextFetch.scout;
+      this.scoutFetch = nextFetch.fetch;
+      if (!this.scoutFetch) toast('Scout brings the frisbee back, tail wagging.', 'good');
+    } else this.scout = this.scoutWaitingForScratch && !this.operatingTractor && !this.operatingPickup && this.mode === 'farm'
       ? { ...this.scout, moving: false }
       : updateFarmCompanion(this.scout, this.playerActor, scoutHome, dt, this.mode === 'town' || this.operatingTractor || this.operatingPickup || !!this.tractorJob);
     const scoutDx = this.scout.x - scoutBefore.x; const scoutDy = this.scout.y - scoutBefore.y;
@@ -2337,6 +2378,7 @@ export class FarmEmpireApp {
         wheelPhase: this.pickupMotion.wheelPhase,
       },
       scout: { ...this.scout, facing: this.scoutFacing, scratching: this.gameNow() < this.scoutScratchUntil },
+      frisbee: this.scoutFetch ? { throwFrom: this.scoutFetch.throwFrom, carrier: this.scout, to: this.scoutFetch.target, phase: this.scoutFetch.phase, phaseStartedAt: this.scoutFetch.phaseStartedAt } : undefined,
       farmhouseTier: farmhousePresentationTier(farm.parcels.northOwned),
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
       grainSiloOwned: farm.equipment.countyGrainSiloOwned,

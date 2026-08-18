@@ -18,7 +18,7 @@ export { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from './farmParcels';
 export type { FarmParcelId } from './farmParcels';
 
 export const STARTING_CASH_CENTS = 500_000;
-export const STARTING_STORAGE_CAPACITY = 150;
+export const STARTING_STORAGE_CAPACITY = 480;
 export const FIRST_PARCEL_PRICE_CENTS = 425_000;
 export const GAME_MINUTES_PER_REAL_SECOND = 8;
 export const FARM_MARKET_MAX_MULTIPLIER = 1.55;
@@ -729,7 +729,7 @@ export function purchaseBarnLoftExpansion(state: GameState): ActionResult {
   farm.storageCapacity = BARN_LOFT_EXPANSION.toCapacity;
   recordFarmStat(state, 'farmCashSpentCents', BARN_LOFT_EXPANSION.priceCents);
   syncCashMirror(state);
-  return { ok: true, events: [{ type: 'toast', target: 'Barn Loft Expansion purchased. Storage capacity is now 200.' }] };
+  return { ok: true, events: [{ type: 'toast', target: `Barn Loft Expansion purchased. Storage capacity is now ${BARN_LOFT_EXPANSION.toCapacity}.` }] };
 }
 
 export function purchaseCountyGrainSilo(state: GameState): ActionResult {

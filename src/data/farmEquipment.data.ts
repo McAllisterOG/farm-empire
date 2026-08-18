@@ -16,8 +16,8 @@ export const BARN_LOFT_EXPANSION = {
   id: 'barn-loft-expansion',
   name: 'Barn Loft Expansion',
   priceCents: 180_000,
-  fromCapacity: 150,
-  toCapacity: 200,
+  fromCapacity: 480,
+  toCapacity: 720,
 } as const;
 
 export const COUNTY_UTILITY_TRAILER = {
@@ -32,6 +32,6 @@ export const COUNTY_GRAIN_SILO = {
   id: 'county-grain-silo',
   name: 'County Grain Silo',
   priceCents: 480_000,
-  fromCapacity: 200,
+  fromCapacity: 720,
   toCapacity: 1_200,
 } as const;

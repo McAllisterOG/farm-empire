@@ -354,3 +354,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - A standalone secondary-click gesture moves only to valid open ground. It never invokes farm objects, fields, gates, services, exits, or a parked town pickup; it cannot interfere with a primary drag/selection/pan. Town vehicles remain non-operable.
 - Pickup wording must identify farm transfers as Farm/Barn ↔ Pickup and County entry points as Buy Seed Bags / Sell / Deliver Produce, while retaining the existing authoritative transactions and cargo-pad route.
 - No save version or state, economy/business rule, map/camera policy, collision/pathfinding, vehicle speed/effects, art, audio, setting, or progression changes are part of this checkpoint.
+
+## 2026-08-17 - Rescue the live farm flow without widening the economy
+
+**Status:** Approved and complete
+
+- Functional farm targets always take hit precedence over Scout. When Scout visibly overlaps one, the functional action proceeds and a throttled truthful prompt directs scratches to open grass; Scout remains pettable only where no other world target is hit.
+- Scout’s open-ground menu offers a deterministic runtime-only frisbee fetch: a bounded arc, pickup pause, return carry, and safe cancellation for Escape, vehicle operation, tractor/farmhand/manual/basket work, town travel, and reload. It adds no save field, progression, collision system, or economy effect.
+- Farm seed and produce transfers preserve exact quantity entry and add per-direction authoritative All amounts derived from source stock, mixed pickup capacity, crop weights, barn space, and cargo-pad presence.
+- Combined storage now derives 480 base barn, 720 Barn Loft, or 1,200 County Grain Silo. V19 saves never trust stored capacity; old valid 150/200 values normalize forward while crops and the hand basket remain untouched. No schema bump is required.
+- Prices, yields, pickup 72/144 capacities, freight, manager/workforce, direct controls, map, and the rest of the economy remain unchanged. Browser/player-surface validation remains outstanding.

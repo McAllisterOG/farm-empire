@@ -30,6 +30,7 @@ import { clampCameraCenter, clampCameraZoom, cameraFitCenter, cameraFitZoom, far
 import { drawOldPickup } from './pickupPainter';
 import type { FarmWeatherKind } from '../core/farmWeather';
 import { drawWeatherCast, drawWeatherPrecipitation } from './farmWeatherEffects';
+import { frisbeeThrowProgress } from '../core/farmCompanion';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -78,6 +79,7 @@ export interface RenderScene {
     };
     pickup: { name: string; x: number; y: number; operating: boolean; moving: boolean; trailerOwned: boolean; headingX?: number; headingY?: number; steer?: number; wheelPhase?: number };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
+    frisbee?: { throwFrom: { x: number; y: number }; carrier: { x: number; y: number }; to: { x: number; y: number }; phase: 'outbound' | 'pickup' | 'returning'; phaseStartedAt: number };
     farmhouseTier: FarmhousePresentationTier;
     barnLoftOwned: boolean;
     grainSiloOwned: boolean;
@@ -578,6 +580,11 @@ export class Renderer {
     items.push({ depth: pickupPoint.x + pickupPoint.y + 0.31, draw: () => drawOldPickup(ctx, camera.sx(isoX(pickupPoint.x, pickupPoint.y)), camera.sy(isoY(pickupPoint.x, pickupPoint.y) + TILE_H / 2), zoom, pickup.operating, pickup.moving, now, pickup.headingX, pickup.headingY, pickup.steer, pickup.wheelPhase, pickup.trailerOwned) });
     const scoutPoint = farmWorldPoint(scene.farm!.scout);
     items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.mode === 'home' && !scene.farm!.scout.moving, scene.farm!.scout.facing) });
+    if (scene.farm!.frisbee) {
+      const frisbee = scene.farm!.frisbee;
+      const target = farmWorldPoint(frisbee.to);
+      items.push({ depth: target.x + target.y + .34, draw: () => drawScoutFrisbee(ctx, camera, zoom, now, farmWorldPoint(frisbee.throwFrom), farmWorldPoint(frisbee.carrier), target, frisbee.phase, frisbee.phaseStartedAt) });
+    }
     for (const actor of scene.actors) {
       const point = farmWorldPoint(actor);
       items.push({ depth: point.x + point.y + 0.4, draw: () => {
@@ -1021,6 +1028,31 @@ function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: nu
 
 function drawScoutHeart(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {
   ctx.save(); ctx.translate(x, y - (now % 1200) / 1200 * 12 * zoom); ctx.scale(zoom * 1.5, zoom * 1.5); ctx.font = '22px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#f2e2c1'; ctx.fillText('♥', 1, 1); ctx.fillStyle = '#ef7d96'; ctx.fillText('♥', 0, 0); ctx.restore();
+}
+
+function drawScoutFrisbee(
+  ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number,
+  throwFrom: { x: number; y: number }, carrier: { x: number; y: number }, to: { x: number; y: number }, phase: 'outbound' | 'pickup' | 'returning', phaseStartedAt: number,
+): void {
+  const start = { x: camera.sx(isoX(throwFrom.x, throwFrom.y)), y: camera.sy(isoY(throwFrom.x, throwFrom.y) + TILE_H / 2) };
+  const end = { x: camera.sx(isoX(to.x, to.y)), y: camera.sy(isoY(to.x, to.y) + TILE_H / 2) };
+  const carrierPoint = { x: camera.sx(isoX(carrier.x, carrier.y)), y: camera.sy(isoY(carrier.x, carrier.y) + TILE_H / 2) };
+  ctx.save();
+  if (phase === 'outbound') {
+    ctx.strokeStyle = 'rgba(245, 193, 64, .72)'; ctx.lineWidth = Math.max(1, 1.5 * zoom); ctx.setLineDash([4 * zoom, 4 * zoom]);
+    ctx.beginPath(); ctx.moveTo(start.x, start.y - 20 * zoom); ctx.quadraticCurveTo((start.x + end.x) / 2, Math.min(start.y, end.y) - 58 * zoom, end.x, end.y - 10 * zoom); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const progress = frisbeeThrowProgress(phase, phaseStartedAt, now);
+  const curve = { x: (start.x + end.x) / 2, y: Math.min(start.y, end.y) - 58 * zoom };
+  const thrownPoint = {
+    x: (1 - progress) * (1 - progress) * start.x + 2 * (1 - progress) * progress * curve.x + progress * progress * end.x,
+    y: (1 - progress) * (1 - progress) * (start.y - 20 * zoom) + 2 * (1 - progress) * progress * curve.y + progress * progress * (end.y - 10 * zoom),
+  };
+  const frisbeePoint = phase === 'returning' ? carrierPoint : thrownPoint;
+  const bob = phase === 'outbound' ? 10 + Math.sin(now / 80) * 4 : phase === 'pickup' ? 3 : 8 + Math.sin(now / 100) * 2;
+  ctx.translate(frisbeePoint.x, frisbeePoint.y - bob * zoom); ctx.rotate(now / 230);
+  ctx.fillStyle = '#ef7d35'; ctx.beginPath(); ctx.ellipse(0, 0, 7 * zoom, 2.8 * zoom, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#fff0bc'; ctx.lineWidth = Math.max(1, zoom); ctx.beginPath(); ctx.moveTo(-4 * zoom, 0); ctx.lineTo(4 * zoom, 0); ctx.stroke(); ctx.restore();
 }
 
 function drawFarmTree(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, phase: number): void {
