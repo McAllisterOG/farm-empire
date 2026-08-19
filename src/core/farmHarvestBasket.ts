@@ -7,6 +7,7 @@ import {
 import { pickupCargoRemaining } from './farmPickup';
 import { recordFarmStat } from './farmKnowledge';
 import { HAND_BASKET_CAPACITY } from './farmHarvestBasketData';
+import { formatFarmCargoWeight } from './farmCargoScale';
 
 export { HAND_BASKET_CAPACITY } from './farmHarvestBasketData';
 
@@ -70,7 +71,7 @@ export function harvestFarmCropToBasket(state: GameState, plotUid: number, now: 
     return fail(readiness.reason ?? 'This crop cannot be harvested.');
   }
   if (readiness.capacityUnits > handBasketRemaining(state)) {
-    return fail(`Basket needs ${readiness.capacityUnits} open cargo units. Unload it before harvesting.`);
+    return fail(`Basket needs ${formatFarmCargoWeight(readiness.capacityUnits)} of open payload. Unload it before harvesting.`);
   }
   const plot = state.plots.find((candidate) => candidate.uid === plotUid)!;
   const farm = farmOf(state);
@@ -101,10 +102,10 @@ export function unloadHandBasket(
   if (used <= 0) return fail('The harvest basket is empty.');
   const farm = farmOf(state);
   if (destination === 'barn') {
-    if (storageRemaining(state) < used) return fail(`Barn needs ${used} open cargo units before the basket can be unloaded.`);
+    if (storageRemaining(state) < used) return fail(`Barn needs ${formatFarmCargoWeight(used)} of open storage before the basket can be unloaded.`);
   } else {
     if (!pickupPresent) return fail('Bring the old pickup back to the farm before unloading the basket into it.');
-    if (pickupCargoRemaining(state) < used) return fail(`Pickup needs ${used} open cargo units before the basket can be unloaded.`);
+    if (pickupCargoRemaining(state) < used) return fail(`Pickup needs ${formatFarmCargoWeight(used)} of open payload before the basket can be unloaded.`);
   }
 
   for (const [cropId, count] of Object.entries(farm.handBasket.crops)) {

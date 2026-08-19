@@ -13,12 +13,12 @@ const NOW = 1_784_394_000_000;
 const makeFarm = () => createFarmGame('Recovery Test', 77, NOW);
 
 describe('Barn expansion and recovery', () => {
-  it('uses explicit time boundaries with a generous 15 minute wither window', () => {
+  it('uses explicit time boundaries with a forgiving one-active-hour harvest window', () => {
     const crop = { defId: 'crop_wheat', plantedAt: NOW, wateredBonusMs: 0, lastWateredAt: 0 };
     const def = farmCropDef('crop_wheat');
     expect(farmCropStage(crop, NOW + def.growMs - 1)).toBe('growing');
     expect(farmCropStage(crop, NOW + def.growMs)).toBe('ready');
-    expect(def.witherMs).toBeGreaterThanOrEqual(900_000);
+    expect(def.witherMs).toBe(3_600_000);
     expect(farmCropStage(crop, NOW + def.growMs + def.witherMs)).toBe('withered');
   });
 

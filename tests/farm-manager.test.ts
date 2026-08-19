@@ -3,6 +3,7 @@ import '../src/data';
 import { FIRST_FARMHAND, FIRST_FARM_MANAGER } from '../src/data/farmWorkforce.data';
 import { advanceFarmDays, farmOf, syncCashMirror } from '../src/core/farmBusiness';
 import { farmParcelTiles } from '../src/core/farmParcels';
+import { farmCropDef } from '../src/core/registry';
 import { hireFarmManager, hireFirstFarmhand, planFarmManagerDispatch, updateFarmManagerPlan } from '../src/core/farmWorkforce';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { deserialize, serialize } from '../src/save/save';
@@ -74,7 +75,8 @@ describe('Farm Manager V1', () => {
     farm.seeds.crop_corn = 0; expect(planFarmManagerDispatch(state, NOW).eligibleCount).toBe(0);
     const plot = state.plots[0]; plot.crop = { defId: 'crop_corn', plantedAt: NOW, wateredBonusMs: 0, lastWateredAt: 0, awaitingWater: true };
     expect(planFarmManagerDispatch(state, NOW).kind).toBe('water');
-    plot.crop = { defId: 'crop_corn', plantedAt: NOW - 999_999, wateredBonusMs: 0, lastWateredAt: NOW, awaitingWater: false };
+    const corn = farmCropDef('crop_corn');
+    plot.crop = { defId: 'crop_corn', plantedAt: NOW - corn.growMs - corn.witherMs - 1, wateredBonusMs: 0, lastWateredAt: NOW, awaitingWater: false };
     expect(planFarmManagerDispatch(state, NOW).eligibleCount).toBe(0);
     expect(updateFarmManagerPlan(state, { enabled: false, parcelId: 'starter', cropId: 'crop_corn' }).ok).toBe(true);
     expect(planFarmManagerDispatch(state, NOW).reason).toMatch(/paused/);

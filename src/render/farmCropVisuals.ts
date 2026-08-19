@@ -38,3 +38,9 @@ export function farmCropVisualFor(cropId: string): FarmCropVisual {
 export function isFarmCropRipeStage(stage: string): boolean {
   return stage === 'ready';
 }
+
+/** Six variants cover every index-dependent crop detail without unbounded cache keys. */
+export function farmCropSpriteVariant(index: number): number {
+  const safe = Number.isFinite(index) ? Math.trunc(index) : 0;
+  return ((safe % 6) + 6) % 6;
+}

@@ -56,6 +56,8 @@ import { saveToSlot } from '../save/save';
 import { h } from '../ui/dom';
 import { shouldTriggerFarmHarvestFeedback } from './farmHarvestFeedback';
 import { resumeFarmSession } from '../core/farmOfflineSafety';
+import { shouldRenderFarmFrame } from '../render/renderResolution';
+import { formatFarmCargoWeight } from '../core/farmCargoScale';
 
 const AUTOSAVE_MS = 15_000;
 const FIELD_ACTION_PAUSE_MS = 260;
@@ -174,6 +176,7 @@ export class FarmEmpireApp {
   private running = true;
   private raf = 0;
   private lastFrame = 0;
+  private lastRenderedAt = 0;
   private lastHudRefresh = 0;
   private hiddenAt: number | null = null;
   private lastSave: number;
@@ -431,8 +434,8 @@ export class FarmEmpireApp {
     const point = this.renderer.camera.tilePointAt(sx, sy);
     if (this.pickupAtTown && pointInTownPickupScreenHitbox(
       { x: sx, y: sy }, pickupAnchor, this.renderer.camera.zoom,
-    )) return { label: `Old Pickup · Cargo ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)}`, ...TOWN_PICKUP_PARKING };
-    if (townPickupHit(point, this.pickupAtTown)) return { label: `Old Pickup · Cargo ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)}`, ...TOWN_PICKUP_PARKING };
+    )) return { label: `Old Pickup · ${formatFarmCargoWeight(pickupCargoUsed(this.state))} / ${formatFarmCargoWeight(pickupCargoCapacity(this.state))}`, ...TOWN_PICKUP_PARKING };
+    if (townPickupHit(point, this.pickupAtTown)) return { label: `Old Pickup · ${formatFarmCargoWeight(pickupCargoUsed(this.state))} / ${formatFarmCargoWeight(pickupCargoCapacity(this.state))}`, ...TOWN_PICKUP_PARKING };
     const screenNpc = this.townNpcAtScreen(sx, sy);
     if (screenNpc) return { label: `${screenNpc.name} · ${screenNpc.role}`, x: screenNpc.x, y: screenNpc.y };
     const interaction = townInteractionAt(point);
@@ -1130,7 +1133,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried. Large selections unload automatically and continue.'), h('p', {}, 'Park the pickup at the marked barn cargo pad to move existing barn produce with Barn → Pickup, then drive it to the County Grain Exchange to sell or deliver. On foot: WASD/arrows pan · right-click moves · drag open ground pans · wheel zooms.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration and three daily Freight Board bids. With the County Utility Trailer attached, one daily bid is a trailer-required commercial bulk load. Later, Mara can complete whole-acreage assignments while you run the business.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Ready crops remain harvestable for one active hour. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried.'), h('p', {}, 'Cargo is measured in pounds. Each seed bag uses 10 lb of payload; produce lots vary by crop. Park the pickup at the marked barn cargo pad to load, then drive it to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration and three daily Freight Board bids. Tractor field jobs visibly attach the planter or harvest wagon they need. With the County Utility Trailer attached, one daily bid is a trailer-required commercial bulk load.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1553,7 +1556,7 @@ export class FarmEmpireApp {
         working: false,
         activeVehicle: null,
         manualWorking: true,
-        statusText: `Carrying harvest basket · ${handBasketUsed(this.state)} / ${HAND_BASKET_CAPACITY} cargo units · walking to ${destination} · Escape stops safely`,
+        statusText: `Carrying harvest basket · ${formatFarmCargoWeight(handBasketUsed(this.state))} / ${formatFarmCargoWeight(HAND_BASKET_CAPACITY)} · walking to ${destination} · Escape stops safely`,
       };
     }
     const manualJob = this.manualFieldJob;
@@ -2199,6 +2202,7 @@ export class FarmEmpireApp {
     this.updateManualFieldAction(now);
     this.updateFarmhand(now, Math.max(0, Math.min(5_000, Math.floor(ms))));
     this.renderer.render(this.buildScene(), now);
+    this.updateDevTools();
     this.hud.update(this.state, this.tractorHudRuntime());
     return this.renderGameToText();
   }
@@ -2448,12 +2452,15 @@ export class FarmEmpireApp {
     const vehicleMoving = this.operatingTractor ? !!this.tractorTarget : this.operatingPickup ? !!this.pickupTarget : false;
     this.farmAudio.update(activeVehicle, vehicleMoving, weather.kind);
 
-    this.renderer.render(this.buildScene(), now);
+    if (shouldRenderFarmFrame(this.lastRenderedAt, realNow)) {
+      this.lastRenderedAt = realNow;
+      this.renderer.render(this.buildScene(), now);
+      this.updateDevTools();
+    }
     if (realNow - this.lastHudRefresh >= HUD_REFRESH_MS) {
       this.lastHudRefresh = realNow;
       this.hud.update(this.state, this.tractorHudRuntime());
     }
-    this.updateDevTools();
     if (realNow - this.lastSave >= AUTOSAVE_MS) {
       this.lastSave = realNow;
       this.save();
@@ -2514,6 +2521,7 @@ export class FarmEmpireApp {
         headingY: this.tractorMotion.headingY,
         steer: this.tractorMotion.steer,
         wheelPhase: this.tractorMotion.wheelPhase,
+        workKind: this.tractorJob?.kind,
       },
       pickup: {
         name: farm.pickup.name,

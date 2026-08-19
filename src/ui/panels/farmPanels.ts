@@ -13,6 +13,7 @@ import { countyFreightBoardState, countyFreightProgress } from '../../core/farmC
 import { maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, maxTownSeedPurchase, pickupCargoCapacity, pickupCargoRemaining, pickupCargoUsed, pickupCropUnits, pickupSeedUnits } from '../../core/farmPickup';
 import { h, spriteImg, clearChildren } from '../dom';
 import { closePanel, openPanel } from '../modal';
+import { farmCropPricePerPoundCents, formatFarmCargoWeight, formatFarmCropWeight } from '../../core/farmCargoScale';
 
 type Dispatch = (result: ActionResult) => void;
 
@@ -90,8 +91,8 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
   const cargoCapacity = pickupCargoCapacity(state);
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', {}, `Available cash: ${formatMoney(farm.cashCents)}`),
-    h('strong', { 'data-testid': 'seed-shop-pickup-capacity' }, `Pickup cargo: ${cargoUsed} / ${cargoCapacity} · ${pickupCargoRemaining(state)} open`),
-    h('span', {}, actions.context === 'town' ? 'Purchased seed bags enter the pickup cargo bed.' : 'Farm inventory stays here until you load it into the pickup.'),
+    h('strong', { 'data-testid': 'seed-shop-pickup-capacity' }, `Pickup payload: ${formatFarmCargoWeight(cargoUsed)} / ${formatFarmCargoWeight(cargoCapacity)} · ${formatFarmCargoWeight(pickupCargoRemaining(state))} open`),
+    h('span', {}, actions.context === 'town' ? 'Purchased 10 lb seed bags enter the pickup cargo bed.' : 'Farm seed bags stay here until you load them into the pickup.'),
     ...(actions.context === 'town' && !actions.pickupPresent ? [h('strong', { class: 'panel-note' }, 'On foot: bring the pickup here to buy seeds.')] : []),
   ));
   const list = h('div', { class: 'farm-card-list' });
@@ -111,9 +112,9 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
       h('div', { class: 'farm-card-main' },
         h('div', { class: 'farm-card-title' }, def.name),
         h('div', { class: 'farm-card-sub' },
-          `${formatMoney(def.seedPriceCents)} per seed · ${Math.round(def.growMs / 1000)}s base growth · ${def.harvestYield} units + tractor bonus`,
+          `${formatMoney(def.seedPriceCents)} per 10 lb seed bag · ${Math.round(def.growMs / 1000)}s base growth · ${formatFarmCropWeight(def, def.harvestYield)} base harvest`,
         ),
-        h('div', { class: 'farm-card-sub' }, `${def.role} · Expected gross ${formatMoney(gross)} · margin ${formatMoney(margin)} · ${def.storageUnitsPerItem} barn/unit · ${unlock.unlocked ? unlock.requirement : `Locked: ${unlock.requirement}`}`),
+        h('div', { class: 'farm-card-sub' }, `${def.role} · Expected gross ${formatMoney(gross)} · margin ${formatMoney(margin)} · ${formatFarmCropWeight(def, 1)} per produce lot · ${unlock.unlocked ? unlock.requirement : `Locked: ${unlock.requirement}`}`),
         h('div', { class: 'farm-card-stock', 'data-testid': `seed-count-${def.id}` }, `Farm seeds: ${farm.seeds[def.id] ?? 0} · Pickup: ${pickupSeedUnits(state, def.id)}`),
       ),
       h('div', { class: 'farm-card-actions' },
@@ -152,8 +153,8 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   const pickupUsed = pickupCargoUsed(state);
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', { 'data-testid': 'market-cash' }, `Cash: ${formatMoney(farm.cashCents)}`),
-    h('strong', { 'data-testid': 'market-capacity' }, `Barn: ${used} / ${farm.storageCapacity} · Pickup: ${pickupUsed} / ${pickupCargoCapacity(state)}`),
-    h('span', {}, context === 'town' ? (actions.pickupPresent ? 'Sell pickup produce or deliver a County order.' : 'On foot: bring the pickup to sell or deliver.') : `${storageRemaining(state)} barn capacity remaining. Move produce between Barn and Pickup here; sales happen at the Grain Exchange.`),
+    h('strong', { 'data-testid': 'market-capacity' }, `Barn: ${formatFarmCargoWeight(used)} / ${formatFarmCargoWeight(farm.storageCapacity)} · Pickup: ${formatFarmCargoWeight(pickupUsed)} / ${formatFarmCargoWeight(pickupCargoCapacity(state))}`),
+    h('span', {}, context === 'town' ? (actions.pickupPresent ? 'Sell pickup produce or deliver a County order.' : 'On foot: bring the pickup to sell or deliver.') : `${formatFarmCargoWeight(storageRemaining(state))} barn capacity remaining. Move produce between Barn and Pickup here; sales happen at the Grain Exchange.`),
     ...(context === 'farm' && !actions.cargoAtPad ? [h('strong', { class: 'panel-note', 'data-testid': 'cargo-pad-guidance' }, 'Park the pickup at the barn cargo pad to load or unload.')] : []),
   ));
 
@@ -183,7 +184,7 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     const order = h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-work-order-market' },
       h('div', { class: 'farm-card-main' },
         h('div', { class: 'farm-card-title' }, COUNTY_PANTRY_CORN_ORDER.title),
-        h('div', { class: 'farm-card-sub' }, `County delivery: ${progress.storedUnits} / ${progress.requiredUnits} corn in pickup cargo · fixed ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)} payout`),
+        h('div', { class: 'farm-card-sub' }, `County delivery: ${formatFarmCropWeight(farmCropDef(COUNTY_PANTRY_CORN_ORDER.cropId), progress.storedUnits)} / ${formatFarmCropWeight(farmCropDef(COUNTY_PANTRY_CORN_ORDER.cropId), progress.requiredUnits)} corn in pickup · fixed ${formatMoney(COUNTY_PANTRY_CORN_ORDER.payoutCents)} payout`),
         h('div', { class: 'farm-card-stock' }, countyDelivery.deliveryReady ? 'Ready for Eli to accept.' : 'Load the remaining corn into the pickup.'),
       ),
       h('button', {
@@ -207,7 +208,7 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
       body.append(h('div', { class: 'farm-card county-work-order', 'data-testid': 'county-freight-active' },
         h('div', { class: 'farm-card-main' },
           h('div', { class: 'farm-card-title' }, `${contract.kind === 'bulk' ? 'Commercial Bulk Route · ' : 'County Freight Board · '}${template.title}`),
-          h('div', { class: 'farm-card-sub' }, `${template.buyer} · ${progress.loadedUnits} / ${contract.requiredUnits} ${crop.name} in pickup cargo · ${weightedCargo} weighted cargo`),
+          h('div', { class: 'farm-card-sub' }, `${template.buyer} · ${formatFarmCropWeight(crop, progress.loadedUnits)} / ${formatFarmCargoWeight(weightedCargo)} ${crop.name} in pickup`),
           h('div', { class: 'farm-card-stock' }, `Accepted Day ${contract.issuedDay} · locked payout ${formatMoney(contract.payoutCents)} · ${contract.kind === 'bulk' ? 'TRAILER REQUIRED · 40% above today’s posted rate' : '25% above today’s posted rate'} · no deadline`),
         ),
         h('button', {
@@ -229,8 +230,8 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
         body.append(h('div', { class: 'farm-card county-work-order', 'data-testid': `county-freight-offer-${offer.cropId}` },
           h('div', { class: 'farm-card-main' },
             h('div', { class: 'farm-card-title' }, `${offer.kind === 'bulk' ? 'Commercial Bulk Route · ' : ''}${template.title}`),
-            h('div', { class: 'farm-card-sub' }, `${template.buyer} requests ${offer.requiredUnits} ${crop.name} · ${weightedCargo} weighted cargo.`),
-            h('div', { class: 'farm-card-stock' }, `${offer.kind === 'bulk' ? 'TRAILER REQUIRED · ' : ''}Pickup: ${pickupCropUnits(state, offer.cropId)} · ${formatMoney(offer.payoutCents)} locked payout · ${(premiumBps / 100).toFixed(0)}% above today’s posted rate`),
+            h('div', { class: 'farm-card-sub' }, `${template.buyer} requests ${formatFarmCargoWeight(weightedCargo)} of ${crop.name}.`),
+            h('div', { class: 'farm-card-stock' }, `${offer.kind === 'bulk' ? 'TRAILER REQUIRED · ' : ''}Pickup: ${formatFarmCropWeight(crop, pickupCropUnits(state, offer.cropId))} · ${formatMoney(offer.payoutCents)} locked payout · ${(premiumBps / 100).toFixed(0)}% above today’s posted rate`),
           ),
           h('button', { class: 'btn btn-primary btn-sm', 'data-testid': `accept-county-freight-${offer.cropId}`, onclick: () => runAndRender(actions.acceptCountyFreight(offer.id), actions, rerender) }, 'Accept Route'),
         ));
@@ -266,10 +267,10 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
       h('div', { class: 'farm-card-main' },
         h('div', { class: 'farm-card-title' }, def.name),
         h('div', { class: `market-price ${movement.direction}` },
-          `${formatMoney(quote.currentCents)} / unit · ${movement.direction === 'up' ? '▲' : movement.direction === 'down' ? '▼' : '•'} ${formatMoney(Math.abs(movement.delta))}`,
+          `${formatMoney(quote.currentCents)} / ${formatFarmCropWeight(def, 1)} lot · ${formatMoney(farmCropPricePerPoundCents({ ...def, basePriceCents: quote.currentCents }))}/lb · ${movement.direction === 'up' ? '▲' : movement.direction === 'down' ? '▼' : '•'} ${formatMoney(Math.abs(movement.delta))}`,
         ),
         h('div', { class: 'farm-card-sub' }, `Previous ${formatMoney(quote.previousCents)} · Base ${formatMoney(def.basePriceCents)}`),
-        h('div', { class: 'farm-card-stock', 'data-testid': `stored-${def.id}` }, `${context === 'town' ? 'Pickup cargo' : 'Barn'}: ${stored}`),
+        h('div', { class: 'farm-card-stock', 'data-testid': `stored-${def.id}` }, `${context === 'town' ? 'Pickup cargo' : 'Barn'}: ${formatFarmCropWeight(def, stored)} · ${stored} lot${stored === 1 ? '' : 's'}`),
       ),
       h('div', { class: 'market-sell-controls' },
         input,
@@ -282,7 +283,7 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
           ...(actions.loadCrop ? [h('button', { class: 'btn btn-sm', 'data-testid': `crop-all-barn-to-pickup-${def.id}`, ...(!maxBarnToPickup ? { disabled: 'true', title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : 'No barn produce can fit.' } : {}), onclick: () => runAndRender(actions.loadCrop!(def.id, maxBarnToPickup), actions, rerender) }, 'All → Pickup')] : []),
           ...(actions.unloadCrop ? [h('button', { class: 'btn btn-sm', ...(!canUnload ? { disabled: 'true' } : {}), title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : pickupStored <= 0 ? 'No pickup crop to unload.' : 'Move the entered quantity from Pickup to Barn.', onclick: () => runAndRender(actions.unloadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Pickup → Barn')] : []),
           ...(actions.unloadCrop ? [h('button', { class: 'btn btn-sm', 'data-testid': `crop-all-pickup-to-barn-${def.id}`, ...(!maxPickupToBarn ? { disabled: 'true', title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : 'No pickup produce fits in the barn.' } : {}), onclick: () => runAndRender(actions.unloadCrop!(def.id, maxPickupToBarn), actions, rerender) }, 'All → Barn')] : []),
-          h('span', { class: 'panel-note' }, `Pickup: ${pickupStored}`),
+          h('span', { class: 'panel-note' }, `Pickup: ${formatFarmCropWeight(def, pickupStored)}`),
         ]),
       ),
     ));
@@ -464,9 +465,9 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
       ),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-utility-trailer' },
         h('div', { class: 'farm-card-title' }, COUNTY_UTILITY_TRAILER.name),
-        h('p', {}, `One-time larger mixed-cargo convenience · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · doubles pickup cargo from ${COUNTY_UTILITY_TRAILER.fromCapacity} to ${COUNTY_UTILITY_TRAILER.toCapacity} units. Unlocks one trailer-required Commercial Bulk Route among daily bids.`),
+        h('p', {}, `One-time larger mixed-cargo convenience · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · doubles pickup payload from ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.fromCapacity)} to ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.toCapacity)}. Unlocks one trailer-required Commercial Bulk Route among daily bids.`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-utility-trailer-status' }, trailerOwned
-          ? `Owned · attached · ${pickupCargoCapacity(state)} cargo units`
+          ? `Owned · attached · ${formatFarmCargoWeight(pickupCargoCapacity(state))} payload`
           : trailerUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · complete one Freight Board haul'),
         ...(!onFarm && !trailerOwned && trailerUnlocked && actions.context === 'town' ? [h('button', {
           class: 'btn btn-primary', 'data-testid': 'buy-county-utility-trailer', onclick: () => {
@@ -479,9 +480,9 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
       ),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-grain-silo' },
         h('div', { class: 'farm-card-title' }, COUNTY_GRAIN_SILO.name),
-        h('p', {}, `One-time storage build · ${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · ${COUNTY_GRAIN_SILO.toCapacity} combined storage. A full 96-section operated corn, soy, or cabbage harvest fits; tomatoes and pumpkins require load-out.`),
+        h('p', {}, `One-time storage build · ${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · ${formatFarmCargoWeight(COUNTY_GRAIN_SILO.toCapacity)} combined storage. A full 96-section operated corn, soy, or cabbage harvest fits; tomatoes and pumpkins require load-out.`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-grain-silo-status' }, siloOwned
-          ? `Owned · ${farmOf(state).storageCapacity} farm storage units`
+          ? `Owned · ${formatFarmCargoWeight(farmOf(state).storageCapacity)} farm storage`
           : siloUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · own the neighboring acreage and install the barn loft'),
         ...(!onFarm && !siloOwned && siloUnlocked && actions.context === 'town' ? [h('button', {
           class: 'btn btn-primary', 'data-testid': 'buy-county-grain-silo', onclick: () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FARM_CROPS } from '../src/data/farm.data';
 import { shouldTriggerFarmHarvestFeedback } from '../src/game/farmHarvestFeedback';
-import { FARM_CROP_VISUALS, farmCropVisualFor, isFarmCropRipeStage } from '../src/render/farmCropVisuals';
+import { FARM_CROP_VISUALS, farmCropSpriteVariant, farmCropVisualFor, isFarmCropRipeStage } from '../src/render/farmCropVisuals';
 import { farmGroundVariant } from '../src/render/farmTerrain';
 
 describe('farm runtime presentation data', () => {
@@ -44,5 +44,12 @@ describe('farm runtime presentation data', () => {
     expect(first).toEqual(Array.from({ length: 24 }, (_, index) => farmGroundVariant(91, index, index * 3)));
     expect(new Set(first).size).toBeGreaterThan(4);
     expect(first.every((variant) => variant >= 0 && variant < 16)).toBe(true);
+  });
+
+  it('bounds crop sprite cache variants across every plot index', () => {
+    const variants = Array.from({ length: 132 }, (_, index) => farmCropSpriteVariant(index));
+    expect(new Set(variants)).toEqual(new Set([0, 1, 2, 3, 4, 5]));
+    expect(farmCropSpriteVariant(-1)).toBe(5);
+    expect(farmCropSpriteVariant(Number.NaN)).toBe(0);
   });
 });

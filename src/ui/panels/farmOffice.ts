@@ -11,6 +11,7 @@ import { roadsideStandView } from '../../core/farmRoadsideStand';
 import { firstFarmMorningGuide } from '../../core/firstFarmMorning';
 import { h } from '../dom';
 import { openPanel } from '../modal';
+import { formatFarmCargoWeight } from '../../core/farmCargoScale';
 
 export interface FarmOfficeActions {
   onSave: () => void;
@@ -80,17 +81,17 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
     h('section', { class: 'farmbook-section farmbook-capital-plan', 'data-testid': 'farmbook-capital-plan' },
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, `Capital Plan · ${selectedCrop.name}`), h('span', {}, 'base market')),
       h('div', { class: 'farmbook-capital-rows' },
-        h('div', {}, h('strong', {}, '36 starter'), h('span', {}, `Seed ${formatMoney(starterPlan.seedCostCents)} · Gross ${formatMoney(starterPlan.grossBaseValueCents)} · Net ${formatMoney(starterPlan.netBaseValueCents)} · ${starterPlan.totalStorageUnits} storage`)),
-        h('div', {}, h('strong', {}, '96 north'), h('span', {}, `Seed ${formatMoney(northPlan.seedCostCents)} · Gross ${formatMoney(northPlan.grossBaseValueCents)} · Net ${formatMoney(northPlan.netBaseValueCents)} · ${northPlan.totalStorageUnits} storage`)),
+        h('div', {}, h('strong', {}, '36 starter'), h('span', {}, `Seed ${formatMoney(starterPlan.seedCostCents)} · Gross ${formatMoney(starterPlan.grossBaseValueCents)} · Net ${formatMoney(starterPlan.netBaseValueCents)} · ${formatFarmCargoWeight(starterPlan.totalStorageUnits)} storage`)),
+        h('div', {}, h('strong', {}, '96 north'), h('span', {}, `Seed ${formatMoney(northPlan.seedCostCents)} · Gross ${formatMoney(northPlan.grossBaseValueCents)} · Net ${formatMoney(northPlan.netBaseValueCents)} · ${formatFarmCargoWeight(northPlan.totalStorageUnits)} storage`)),
       ),
     ),
     h('section', { class: 'farmbook-section' },
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Operation'), h('span', {}, `${ownedSections} sections`)),
       h('div', { class: 'farmbook-snapshot' },
         h('div', {}, h('span', {}, 'Cash'), h('strong', {}, formatMoney(farm.cashCents))),
-        h('div', {}, h('span', {}, 'Barn'), h('strong', {}, `${storageUsed(state)} / ${farm.storageCapacity}`)),
+        h('div', {}, h('span', {}, 'Barn'), h('strong', {}, `${formatFarmCargoWeight(storageUsed(state))} / ${formatFarmCargoWeight(farm.storageCapacity)}`)),
         h('div', {}, h('span', {}, 'Silo'), h('strong', {}, farm.equipment.countyGrainSiloOwned ? 'County grain silo' : farm.equipment.barnLoftExpansionOwned ? 'Build unlocked' : 'Not built')),
-        h('div', {}, h('span', {}, 'Pickup'), h('strong', {}, `${pickupCargoUsed(state)} / ${pickupCargoCapacity(state)}`)),
+        h('div', {}, h('span', {}, 'Pickup'), h('strong', {}, `${formatFarmCargoWeight(pickupCargoUsed(state))} / ${formatFarmCargoWeight(pickupCargoCapacity(state))}`)),
         h('div', {}, h('span', {}, 'Trailer'), h('strong', {}, farm.equipment.countyUtilityTrailerOwned ? 'County utility trailer' : 'Not owned')),
         h('div', {}, h('span', {}, 'Land'), h('strong', {}, farm.parcels.northOwned ? '2 acreages' : '1 acreage')),
         h('div', {}, h('span', {}, 'Tractor'), h('strong', {}, farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Restoration needed')),

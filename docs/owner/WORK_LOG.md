@@ -544,3 +544,13 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Verification:** 314/314 tests passed in 44 files; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Browser acceptance worked exactly six dragged sections, confirmed the clicked section first, switched both vehicle directions without an intermediate panel, safely cancelled a partial job, visually confirmed the halo removal, and found zero runtime errors.
 - **Evidence:** `docs/screenshots/tractor-selection-repair-operating.png` and `docs/screenshots/tractor-selection-repair-complete.png`. The relative-asset build is `release/tractor-control-repair-v1/win-unpacked/Farm Empire.exe`; the Desktop shortcut target, working directory, icon, and executable existence were read back successfully.
 - **Boundaries:** No save/schema, economy, crop transaction, acreage, capacity, progression, vehicle speed/position, town-vehicle, dependency, or legacy Paradise Isle change. No push performed.
+
+## Cargo Scale & Long-Session Performance V1 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Trigger:** Owner playtest found the pickup/trailer numbers physically unclear, dense tomato sessions progressively choppy, active-session crop loss too punishing, and tractor jobs missing the implement they visually require.
+- **Result:** Farm cargo and storage surfaces now project each existing integer cargo lot as 10 lb, producing a 720 lb base pickup, 1,440 lb trailer payload, and 4,800 lb base barn without changing saved counts or transactions. The ready window is one active hour. A finite per-crop/stage sprite cache and stable 30 FPS presentation gate remove repeated vector-paint cost while keeping gameplay updates live. Tractor planting and harvesting now draw a job-specific planter or harvest wagon.
+- **Performance evidence:** A disposable 132-section ready-tomato rain scene measured about 116 ms mean frame work before repair and about 7.7 ms after repair. The visually inspected dense scene retained crop identity; browser console errors were empty.
+- **Verification:** 318/318 tests passed in 45 files; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Real browser field menus showed both attachments during active jobs and confirmed the operating halo stayed absent.
+- **Artifact:** `release/cargo-performance-v1/win-unpacked/Farm Empire.exe` with a current relative-asset `resources/app.asar`; the verified Desktop shortcut targets it. The owner's real save was not opened or changed. No push performed.

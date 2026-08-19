@@ -409,3 +409,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Dragging while parked in the operated tractor selects and works only the exact owned field sections covered by the drag. Seed/storage limits and every per-section transaction remain authoritative.
 - An idle farm vehicle click may transfer control directly between the pickup and an operational tractor. Active tractor field work and an unrestored tractor still fail closed rather than being cancelled or bypassed implicitly.
 - The operating tractor's white selection halo is removed. Save v20, vehicle position and motion fields, crop/economy rules, acreage ownership, camera, town vehicles, and legacy presentation remain unchanged.
+
+## 2026-08-19 - Express cargo in pounds and bound dense-farm rendering
+
+**Status:** Approved and complete
+
+- Keep save-compatible integer cargo lots and all existing transaction math authoritative, but present one lot as 10 lb throughout Farm cargo, storage, seed, market, freight, basket, and equipment surfaces. The base pickup therefore reads 720 lb, its utility-trailer configuration 1,440 lb, and the base barn 4,800 lb without a save migration or capacity grant.
+- Ready crops remain harvestable for one active hour. Save v20 still pauses crop age outside active visible sessions, so the wider window protects active play without creating offline spoilage or repeated crop recovery.
+- Cache a finite six-variant set of procedural crop silhouettes per crop/stage and pace Farm Canvas presentation at a stable 30 FPS. Keep gameplay updates, timers, input, transactions, audio, and immediate HUD feedback independent of the presentation gate.
+- Operated tractor field jobs may show a runtime-only planter or harvest wagon derived from the active job kind. The attachment adds no inventory, hitching transaction, capacity, bonus, persistence, or separate control.

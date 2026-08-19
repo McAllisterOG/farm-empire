@@ -704,7 +704,7 @@ export function purchaseCountyUtilityTrailer(state: GameState): ActionResult {
   farm.equipment.countyUtilityTrailerOwned = true;
   recordFarmStat(state, 'farmCashSpentCents', COUNTY_UTILITY_TRAILER.priceCents);
   syncCashMirror(state);
-  return { ok: true, events: [{ type: 'toast', target: 'County Utility Trailer purchased. Pickup cargo capacity is now 144.' }] };
+  return { ok: true, events: [{ type: 'toast', target: 'County Utility Trailer purchased. Pickup payload is now 1,440 lb.' }] };
 }
 
 function farmCropReady(plot: FarmPlot, now: number): boolean {

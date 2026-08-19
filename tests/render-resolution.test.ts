@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boundedRenderScale, MAX_RENDER_PIXELS } from '../src/render/renderResolution';
+import { boundedRenderScale, FARM_RENDER_INTERVAL_MS, MAX_RENDER_PIXELS, shouldRenderFarmFrame } from '../src/render/renderResolution';
 
 describe('desktop Canvas resolution budget', () => {
   it('keeps ordinary displays crisp while bounding 4K and high-DPI backing stores', () => {
@@ -15,5 +15,13 @@ describe('desktop Canvas resolution budget', () => {
 
   it('fails safely for invalid viewport inputs', () => {
     expect(boundedRenderScale(0, Number.NaN, 0)).toBe(1);
+  });
+
+  it('paces expensive farm presentation at a stable 30 fps', () => {
+    expect(FARM_RENDER_INTERVAL_MS).toBeCloseTo(33.3333, 3);
+    expect(shouldRenderFarmFrame(0, 10)).toBe(true);
+    expect(shouldRenderFarmFrame(100, 120)).toBe(false);
+    expect(shouldRenderFarmFrame(100, 134)).toBe(true);
+    expect(shouldRenderFarmFrame(100, Number.NaN)).toBe(false);
   });
 });

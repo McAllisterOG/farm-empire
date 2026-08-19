@@ -5,6 +5,7 @@ import { farmOf, storageUsed, syncCashMirror } from './farmBusiness';
 import { recordFarmStat } from './farmKnowledge';
 
 import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_TRAILER_CARGO_CAPACITY, pickupAtCargoPad } from './farmPickupData';
+import { formatFarmCargoWeight } from './farmCargoScale';
 
 export { PICKUP_BASE_CARGO_CAPACITY, PICKUP_TRAILER_CARGO_CAPACITY } from './farmPickupData';
 
@@ -109,7 +110,7 @@ export function loadBarnCropToPickup(state: GameState, cropId: string, count: nu
   const owned = farm.storage[cropId] ?? 0;
   if (count > owned) return fail(`Only ${owned} ${def.name} unit${owned === 1 ? '' : 's'} are in the barn.`);
   const needed = count * def.storageUnitsPerItem;
-  if (needed > pickupCargoRemaining(state)) return fail(`Pickup cargo needs ${needed} open unit${needed === 1 ? '' : 's'}.`);
+  if (needed > pickupCargoRemaining(state)) return fail(`Pickup needs ${formatFarmCargoWeight(needed)} of open payload.`);
   farm.storage[cropId] = owned - count;
   farm.pickup.cargo.crops[cropId] = pickupCropUnits(state, cropId) + count;
   recordFarmStat(state, 'farmCargoLoads');
@@ -126,7 +127,7 @@ export function unloadPickupCropToBarn(state: GameState, cropId: string, count: 
   const owned = pickupCropUnits(state, cropId);
   if (count > owned) return fail(`Only ${owned} ${def.name} unit${owned === 1 ? '' : 's'} are in the pickup.`);
   const needed = count * def.storageUnitsPerItem;
-  if (storageUsed(state) + needed > farm.storageCapacity) return fail(`Barn needs ${needed} open unit${needed === 1 ? '' : 's'}.`);
+  if (storageUsed(state) + needed > farm.storageCapacity) return fail(`Barn needs ${formatFarmCargoWeight(needed)} of open storage.`);
   farm.pickup.cargo.crops[cropId] = owned - count;
   farm.storage[cropId] = (farm.storage[cropId] ?? 0) + count;
   return { ok: true, events: [{ type: 'toast', target: `Unloaded ${count} ${def.name} into the barn.` }] };
@@ -142,7 +143,7 @@ export function loadFarmSeedsToPickup(state: GameState, cropId: string, count: n
   if (!def) return fail('Unknown crop.');
   const owned = farm.seeds[cropId] ?? 0;
   if (count > owned) return fail(`Only ${owned} ${def.name} seed${owned === 1 ? '' : 's'} are in farm inventory.`);
-  if (count > pickupCargoRemaining(state)) return fail(`Pickup cargo needs ${count} open unit${count === 1 ? '' : 's'}.`);
+  if (count > pickupCargoRemaining(state)) return fail(`Pickup needs ${formatFarmCargoWeight(count)} of open payload.`);
   farm.seeds[cropId] = owned - count;
   farm.pickup.cargo.seeds[cropId] = pickupSeedUnits(state, cropId) + count;
   recordFarmStat(state, 'farmCargoLoads');
@@ -173,7 +174,7 @@ export function buyTownSeedsIntoPickup(state: GameState, cropId: string, count: 
   if (def.unlock !== 'starter' && !((def.unlock === 'county-order' && farm.townContact.status === 'completed') || (def.unlock === 'north-parcel' && farm.parcels.northOwned) || (def.unlock === 'barn-loft' && farm.equipment.barnLoftExpansionOwned))) return fail(`${def.name} is still locked.`);
   const cost = def.seedPriceCents * count;
   if (farm.cashCents < cost) return fail('Not enough cash for those seeds.');
-  if (count > pickupCargoRemaining(state)) return fail(`Pickup cargo needs ${count} open unit${count === 1 ? '' : 's'}.`);
+  if (count > pickupCargoRemaining(state)) return fail(`Pickup needs ${formatFarmCargoWeight(count)} of open payload.`);
   farm.cashCents -= cost;
   farm.pickup.cargo.seeds[cropId] = pickupSeedUnits(state, cropId) + count;
   recordFarmStat(state, 'farmCashSpentCents', cost);

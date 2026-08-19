@@ -9,6 +9,7 @@ import { buildTerrain } from '../core/island';
 import { buildingDef } from '../core/registry';
 import { cropView } from '../core/crops';
 import { farmCropStage } from '../core/farmBusiness';
+import type { ParcelWorkKind } from '../core/farmBusiness';
 import { animalPhase } from '../core/animals';
 import { WATER_COOLDOWN_MS } from '../core/balance';
 import { FARM_TOWN_GATE } from '../core/townGateway';
@@ -24,14 +25,13 @@ import { renderTown, type TownRenderScene } from './townRenderer';
 import { roadsideCustomerActors } from './countyLife';
 import { drawCountyLifeActor } from './townSprites';
 import { TOWN_CAMERA } from './townLayout';
-import { tractorToolbarPoseFromRenderState } from '../core/farmTractorMotion';
 import { MANUAL_FIELD_ACTION_LABELS, type ManualFieldActionKind } from '../core/farmManualAction';
 import { clampCameraCenter, clampCameraZoom, cameraFitCenter, cameraFitZoom, farmCameraPolicy, townCameraPolicy } from './cameraPolicy';
 import { drawOldPickup } from './pickupPainter';
 import type { FarmWeatherKind } from '../core/farmWeather';
 import { drawWeatherCast, drawWeatherPrecipitation } from './farmWeatherEffects';
 import { frisbeeThrowProgress } from '../core/farmCompanion';
-import { farmCropVisualFor, isFarmCropRipeStage, type FarmCropVisual } from './farmCropVisuals';
+import { farmCropSpriteVariant, farmCropVisualFor, isFarmCropRipeStage, type FarmCropVisual } from './farmCropVisuals';
 import { boundedRenderScale } from './renderResolution';
 
 export interface SceneActor {
@@ -78,6 +78,7 @@ export interface RenderScene {
       headingY?: number;
       steer?: number;
       wheelPhase?: number;
+      workKind?: ParcelWorkKind;
     };
     pickup: { name: string; x: number; y: number; operating: boolean; moving: boolean; trailerOwned: boolean; headingX?: number; headingY?: number; steer?: number; wheelPhase?: number };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
@@ -577,7 +578,7 @@ export class Renderer {
     items.push({ depth: doghousePoint.x + doghousePoint.y + 0.15, draw: () => drawFarmDoghouse(ctx, camera.sx(isoX(doghousePoint.x, doghousePoint.y)), camera.sy(isoY(doghousePoint.x, doghousePoint.y) + TILE_H / 2), zoom) });
     const tractor = scene.farm!.tractor;
     const tractorPoint = farmWorldPoint(tractor);
-    items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now, tractor.headingX, tractor.headingY, tractor.steer, tractor.wheelPhase, !!tractor.moving) });
+    items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now, tractor.headingX, tractor.headingY, tractor.steer, tractor.wheelPhase, !!tractor.moving, tractor.workKind) });
     const pickup = scene.farm!.pickup;
     const pickupPoint = farmWorldPoint(pickup);
     items.push({ depth: pickupPoint.x + pickupPoint.y + 0.31, draw: () => drawOldPickup(ctx, camera.sx(isoX(pickupPoint.x, pickupPoint.y)), camera.sy(isoY(pickupPoint.x, pickupPoint.y) + TILE_H / 2), zoom, pickup.operating, pickup.moving, now, pickup.headingX, pickup.headingY, pickup.steer, pickup.wheelPhase, pickup.trailerOwned) });
@@ -815,7 +816,39 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
   }
 }
 
+const FARM_CROP_SPRITE_SIZE = 112;
+const FARM_CROP_SPRITE_ANCHOR_X = 56;
+const FARM_CROP_SPRITE_ANCHOR_Y = 94;
+const farmCropPlantSpriteCache = new WeakMap<FarmCropVisual, Map<string, HTMLCanvasElement>>();
+
+function farmCropPlantSprite(visual: FarmCropVisual, stage: string, index: number): HTMLCanvasElement {
+  let cache = farmCropPlantSpriteCache.get(visual);
+  if (!cache) { cache = new Map(); farmCropPlantSpriteCache.set(visual, cache); }
+  const variant = farmCropSpriteVariant(index);
+  const key = `${stage}:${variant}`;
+  const cached = cache.get(key);
+  if (cached) return cached;
+  const canvas = document.createElement('canvas');
+  canvas.width = FARM_CROP_SPRITE_SIZE;
+  canvas.height = FARM_CROP_SPRITE_SIZE;
+  const spriteCtx = canvas.getContext('2d');
+  if (spriteCtx) drawFarmCropPlantVector(spriteCtx, FARM_CROP_SPRITE_ANCHOR_X, FARM_CROP_SPRITE_ANCHOR_Y, 1, visual, stage, variant);
+  cache.set(key, canvas);
+  return canvas;
+}
+
 function drawFarmCropPlant(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, visual: FarmCropVisual, stage: string, index: number): void {
+  const sprite = farmCropPlantSprite(visual, stage, index);
+  ctx.drawImage(
+    sprite,
+    x - FARM_CROP_SPRITE_ANCHOR_X * zoom,
+    y - FARM_CROP_SPRITE_ANCHOR_Y * zoom,
+    FARM_CROP_SPRITE_SIZE * zoom,
+    FARM_CROP_SPRITE_SIZE * zoom,
+  );
+}
+
+function drawFarmCropPlantVector(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, visual: FarmCropVisual, stage: string, index: number): void {
   const withered = stage === 'withered';
   const growth = stage === 'seedling' ? .34 : stage === 'growing' ? .7 : visual.matureScale * (withered ? .78 : 1);
   const ripe = isFarmCropRipeStage(stage);
@@ -980,6 +1013,9 @@ function drawExpandedFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: numb
 }
 
 function drawFarmDestination(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number, destination: NonNullable<NonNullable<RenderScene['farm']>['destination']>): void {
+  // Tractor movement is already readable from the machine itself.  Avoid the
+  // oversized selection ring that used to travel underneath it.
+  if (destination.kind === 'tractor') return;
   const point = farmWorldPoint(destination); const x = camera.sx(isoX(point.x, point.y)); const y = camera.sy(isoY(point.x, point.y));
   const pulse = 1 + Math.sin(now / 180) * .12;
   ctx.save(); ctx.translate(x, y); ctx.scale(pulse, pulse); ctx.strokeStyle = destination.kind === 'walk' ? '#f5df84' : '#d8f0c1'; ctx.lineWidth = Math.max(1.5, 2.2 * zoom); ctx.globalAlpha = .8; ctx.beginPath(); ctx.ellipse(0, 0, 21 * zoom, 9 * zoom, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
@@ -1265,6 +1301,7 @@ function drawOldTractor(
   steer = 0,
   wheelPhase = 0,
   moving = false,
+  workKind?: ParcelWorkKind,
 ): void {
   ctx.save();
   ctx.translate(x, y);
@@ -1275,6 +1312,7 @@ function drawOldTractor(
   const pose = farmUprightPose({ x: headingX, y: headingY });
   ctx.rotate(pose.slope);
   if (pose.mirrored) ctx.scale(-1, 1);
+  if (working && workKind) drawTractorImplement(ctx, workKind, now);
   ctx.fillStyle = 'rgba(40, 30, 20, 0.22)';
   ctx.beginPath();
   ctx.ellipse(0, 2, 34, 10, 0, 0, Math.PI * 2);
@@ -1321,14 +1359,26 @@ function drawOldTractor(
   ctx.fillRect(15, -36, 3, 10);
   ctx.fillStyle = '#ead9a8';
   ctx.fillRect(18, -24, 5, 4);
-  if (operating) {
-    ctx.strokeStyle = tractorToolbarPoseFromRenderState({ operating, moving, working }) === 'lowered' ? '#d9b44a' : '#8e6a3a';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(25, -9);
-    ctx.lineTo(working ? 39 : 33, working ? 10 : -21);
-    ctx.lineTo(working ? 55 : 47, working ? 10 : -21);
-    ctx.stroke();
+  ctx.restore();
+}
+
+function drawTractorImplement(ctx: CanvasRenderingContext2D, workKind: ParcelWorkKind, now: number): void {
+  const bounce = Math.sin(now / 115) * .8;
+  ctx.save(); ctx.translate(0, bounce);
+  ctx.strokeStyle = '#6b5237'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, -11); ctx.lineTo(-42, -10); ctx.stroke();
+  if (workKind === 'plant') {
+    // Compact row-crop planter: hopper, toolbar, gauge wheel, and three openers.
+    ctx.fillStyle = '#486f3b'; ctx.fillRect(-67, -26, 29, 15);
+    ctx.fillStyle = '#d8b950'; ctx.beginPath(); ctx.moveTo(-65, -26); ctx.lineTo(-42, -26); ctx.lineTo(-47, -34); ctx.lineTo(-60, -34); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#76532f'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(-72, -8); ctx.lineTo(-35, -8); ctx.stroke();
+    ctx.fillStyle = '#3b3b36'; for (const opener of [-66, -54, -42]) { ctx.beginPath(); ctx.arc(opener, -3, 4.2, 0, Math.PI * 2); ctx.fill(); }
+  } else {
+    // Harvest wagon follows the tractor and visibly carries the collected crop.
+    ctx.fillStyle = '#8b5938'; ctx.fillRect(-78, -29, 37, 20);
+    ctx.fillStyle = '#b67a42'; ctx.beginPath(); ctx.moveTo(-81, -31); ctx.lineTo(-39, -31); ctx.lineTo(-43, -8); ctx.lineTo(-76, -8); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#654128'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#d8ad4b'; for (const cargoX of [-72, -62, -52, -44]) { ctx.beginPath(); ctx.ellipse(cargoX, -31, 5, 2.6, 0, 0, Math.PI * 2); ctx.fill(); }
+    drawTractorWheel(ctx, -69, -6, 7, 2.6, now / 130);
   }
   ctx.restore();
 }
