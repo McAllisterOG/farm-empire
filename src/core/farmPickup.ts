@@ -45,6 +45,20 @@ export function pickupCargoRemaining(state: GameState): number {
   return Math.max(0, pickupCargoCapacity(state) - pickupCargoUsed(state));
 }
 
+/** Maximum seed bags the town shop can sell right now, bounded by cash and cargo space. */
+export function maxTownSeedPurchase(state: GameState, cropId: string, pickupPresent: boolean): number {
+  if (!pickupPresent) return 0;
+  const farm = farmOf(state);
+  const def = farmCropDefOrNull(cropId);
+  if (!def) return 0;
+  const unlocked = def.unlock === 'starter'
+    || (def.unlock === 'county-order' && farm.townContact.status === 'completed')
+    || (def.unlock === 'north-parcel' && farm.parcels.northOwned)
+    || (def.unlock === 'barn-loft' && farm.equipment.barnLoftExpansionOwned);
+  if (!unlocked) return 0;
+  return Math.max(0, Math.min(pickupCargoRemaining(state), Math.floor(farm.cashCents / def.seedPriceCents)));
+}
+
 /** Authoritative per-crop maximums for cargo-panel All actions. */
 export function maxBarnCropLoadToPickup(state: GameState, cropId: string): number {
   const def = farmCropDefOrNull(cropId);

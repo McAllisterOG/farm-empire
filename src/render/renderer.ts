@@ -795,15 +795,15 @@ function drawManualFieldAction(
 function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: FarmPlot, stage: string, zoom: number, now: number, bob: number): void {
   const footprint = farmPlotFootprint(plot);
   const visual = farmCropVisualFor(plot.crop!.defId);
-  // Five by four deterministic plants make each section feel like one planted field.
-  for (let row = 0; row < 4; row++) for (let col = 0; col < 5; col++) {
-    const x = footprint.minX + (col + .5 + (row % 2 ? .08 : 0)) * (footprint.maxX - footprint.minX) / 5;
-    const y = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / 4;
+  // Crop-specific spacing favors fewer, readable silhouettes over indistinct micro-detail.
+  for (let row = 0; row < visual.rows; row++) for (let col = 0; col < visual.columns; col++) {
+    const x = footprint.minX + (col + .5 + (row % 2 ? .08 : 0)) * (footprint.maxX - footprint.minX) / visual.columns;
+    const y = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / visual.rows;
     const sx = camera.sx(isoX(x, y)); const sy = camera.sy(isoY(x, y) + TILE_H / 2);
     // Separate row phases read as a breeze across the section, not a global bob.
     const cropStage = stage === 'needs-water' ? 'seedling' : stage;
     const sway = Math.sin(now / 720 + row * 1.17 + col * .34 + plot.x * .7 + plot.y) * (cropStage === 'seedling' ? .45 : 1.15) * zoom;
-    drawFarmCropPlant(ctx, sx + sway, sy, zoom * .72, visual, cropStage, row * 5 + col);
+    drawFarmCropPlant(ctx, sx + sway, sy, zoom * .78, visual, cropStage, row * visual.columns + col);
   }
   const centre = farmWorldPoint(plot); const sx = camera.sx(isoX(centre.x, centre.y)); const sy = camera.sy(isoY(centre.x, centre.y) + TILE_H / 2);
   if (stage === 'ready') drawSprite(ctx, 'fx:ready', sx, sy - 67 * zoom + bob * zoom, zoom * 1.15);
@@ -817,27 +817,62 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
 
 function drawFarmCropPlant(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, visual: FarmCropVisual, stage: string, index: number): void {
   const withered = stage === 'withered';
-  const growth = stage === 'seedling' ? .38 : stage === 'growing' ? .72 : visual.matureScale * (withered ? .78 : 1);
+  const growth = stage === 'seedling' ? .34 : stage === 'growing' ? .7 : visual.matureScale * (withered ? .78 : 1);
   const ripe = isFarmCropRipeStage(stage);
-  const h = 29 * growth; const spread = 8 * growth;
+  const h = visual.baseHeight * growth; const spread = 8.5 * growth;
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom); ctx.lineCap = 'round';
   if (withered) { ctx.filter = 'saturate(22%) brightness(68%)'; ctx.globalAlpha = .78; ctx.rotate((index % 3 - 1) * .12); }
-  const stem = (height = h) => { ctx.strokeStyle = visual.stem; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -height); ctx.stroke(); };
+  ctx.fillStyle = 'rgba(52,43,27,.16)'; ctx.beginPath(); ctx.ellipse(0, 1.5, Math.max(4, spread * .82), 2.4, 0, 0, Math.PI * 2); ctx.fill();
+  const strokeStem = (fromX: number, fromY: number, toX: number, toY: number, width = 2.5): void => {
+    ctx.strokeStyle = 'rgba(43,68,35,.75)'; ctx.lineWidth = width + 1.5; ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX, toY); ctx.stroke();
+    ctx.strokeStyle = visual.stem; ctx.lineWidth = width; ctx.beginPath(); ctx.moveTo(fromX, fromY); ctx.lineTo(toX, toY); ctx.stroke();
+  };
+  const leaf = (cx: number, cy: number, rx: number, ry: number, rotation: number, color = visual.leaf): void => {
+    ctx.fillStyle = color; ctx.strokeStyle = 'rgba(48,76,37,.7)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(cx, cy, Math.max(1.2, rx), Math.max(1, ry), rotation, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  };
   if (visual.silhouette === 'corn') {
-    stem(); ctx.strokeStyle = visual.leaf; ctx.lineWidth = 3; for (const side of [-1, 1]) { ctx.beginPath(); ctx.moveTo(0, -h * .42); ctx.quadraticCurveTo(side * 8, -h * .52, side * 10, -h * .66); ctx.stroke(); }
-    if (ripe) { ctx.fillStyle = visual.produce; ctx.fillRect(-2.5, -h * .76, 5, 8); }
+    strokeStem(0, 0, 0, -h, 3.2);
+    const leafCount = stage === 'seedling' ? 2 : 4;
+    for (let i = 0; i < leafCount; i++) {
+      const side = i % 2 ? 1 : -1; const yy = -h * (.25 + i * .13);
+      ctx.fillStyle = i % 2 ? visual.leaf : '#82ad4c'; ctx.strokeStyle = '#496b33'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, yy + 3); ctx.quadraticCurveTo(side * 7, yy - 2, side * (11 + i), yy - 8); ctx.quadraticCurveTo(side * 6, yy + 4, 0, yy + 6); ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+    if (stage !== 'seedling') {
+      ctx.strokeStyle = ripe ? '#d6a83a' : '#6c8f3f'; ctx.lineWidth = 1.4;
+      for (const dx of [-4, 0, 4]) { ctx.beginPath(); ctx.moveTo(0, -h); ctx.lineTo(dx, -h - 7 + Math.abs(dx) * .25); ctx.stroke(); }
+    }
+    if (ripe) {
+      const earSide = index % 2 ? 1 : -1;
+      ctx.fillStyle = visual.produce; ctx.strokeStyle = '#9c7625'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(earSide * 3.8, -h * .58, 3.8, 8.2, earSide * .18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#6f953e'; ctx.beginPath(); ctx.moveTo(0, -h * .43); ctx.lineTo(earSide * 7, -h * .62); ctx.lineTo(earSide * 2, -h * .7); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,238,126,.8)'; ctx.fillRect(earSide * 2.5 - 1, -h * .62, 1.4, 7);
+    }
   } else if (visual.silhouette === 'wheat') {
-    stem(h * .9); if (!withered) { ctx.strokeStyle = visual.produce; ctx.lineWidth = 1.6; for (let i = 0; i < 5; i++) { const yy = -h * (.55 + i * .075); ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(i % 2 ? 3 : -3, yy - 3); ctx.stroke(); } }
+    for (const offset of [-3.5, 0, 3.5]) {
+      const height = h * (offset ? .84 : 1); strokeStem(offset, 0, offset * .5, -height, 1.5);
+      if (stage !== 'seedling' && !withered) for (let grain = 0; grain < 4; grain++) leaf(offset * .5 + (grain % 2 ? 2 : -2), -height + 3 + grain * 3, 2.5, 1.2, grain % 2 ? .55 : -.55, ripe ? visual.produce : visual.leaf);
+    }
   } else if (visual.silhouette === 'tomato') {
-    stem(h * .86); ctx.strokeStyle = '#9b7a4d'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-5, 1); ctx.lineTo(-5, -h); ctx.stroke(); ctx.strokeStyle = visual.leaf; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -h * .45); ctx.lineTo(7, -h * .6); ctx.moveTo(0, -h * .62); ctx.lineTo(-7, -h * .72); ctx.stroke(); if (ripe) for (const dx of [-4, 4]) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.arc(dx, -h * .35, 3.2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.strokeStyle = '#9b7a4d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-5, 1); ctx.lineTo(-5, -h - 3); ctx.stroke(); strokeStem(0, 0, 0, -h * .9, 2.2);
+    for (const side of [-1, 1]) { strokeStem(0, -h * .45, side * 7, -h * .61, 1.4); leaf(side * 7, -h * .61, 5, 2.6, side * .35); }
+    if (ripe) for (const dx of [-5, 1, 5]) { ctx.fillStyle = visual.produce; ctx.strokeStyle = '#92352d'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(dx, -h * (.28 + (Math.abs(dx) % 2) * .08), 3.6, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
   } else if (visual.silhouette === 'carrot') {
-    ctx.strokeStyle = visual.leaf; ctx.lineWidth = 2.5; for (const dx of [-1, 0, 1]) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(dx * 5, -h * .45, dx * 4, -h * .78); ctx.stroke(); } if (ripe) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.moveTo(-3, -1); ctx.lineTo(3, -1); ctx.lineTo(0, 7); ctx.closePath(); ctx.fill(); }
+    for (const dx of [-1.3, -.5, .5, 1.3]) { ctx.strokeStyle = visual.leaf; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(dx * 5, -h * .48, dx * 4, -h * (.72 + Math.abs(dx) * .08)); ctx.stroke(); }
+    if (ripe) { ctx.fillStyle = visual.produce; ctx.strokeStyle = '#a94d27'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-3.8, -1); ctx.quadraticCurveTo(0, -4, 3.8, -1); ctx.lineTo(0, 8); ctx.closePath(); ctx.fill(); ctx.stroke(); }
   } else if (visual.silhouette === 'cabbage') {
-    ctx.fillStyle = visual.leaf; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.ellipse(Math.sin(i * 1.26) * spread * .55, -4 - Math.cos(i * 1.26) * 3, spread, spread * .5, i * .55, 0, Math.PI * 2); ctx.fill(); } if (ripe) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.arc(0, -5, spread * .65, 0, Math.PI * 2); ctx.fill(); }
+    for (let i = 0; i < 7; i++) leaf(Math.sin(i * .9) * spread * .48, -4 - Math.cos(i * .9) * 3, spread * .78, spread * .42, i * .55);
+    if (ripe) { ctx.fillStyle = visual.produce; ctx.strokeStyle = '#587d45'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(0, -6, spread * .72, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.strokeStyle = 'rgba(255,255,220,.45)'; ctx.beginPath(); ctx.arc(-2, -8, spread * .35, Math.PI, Math.PI * 1.75); ctx.stroke(); }
   } else if (visual.silhouette === 'pumpkin') {
-    ctx.strokeStyle = visual.stem; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(-spread, 0); ctx.quadraticCurveTo(0, -h * .35, spread, 0); ctx.stroke(); ctx.fillStyle = visual.leaf; for (const dx of [-spread, spread]) { ctx.beginPath(); ctx.ellipse(dx, -h * .18, 5, 3, dx * .12, 0, Math.PI * 2); ctx.fill(); } if (ripe) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#b65f2e'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(0, 5); ctx.stroke(); }
+    ctx.strokeStyle = visual.stem; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(-spread * 1.25, 0); ctx.quadraticCurveTo(0, -h * .42, spread * 1.25, 0); ctx.stroke();
+    for (const dx of [-spread, spread]) leaf(dx, -h * .2, 6, 3.6, dx * .09);
+    if (ripe) { ctx.fillStyle = visual.produce; ctx.strokeStyle = '#a95628'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(0, 0, 7.5, 6.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); for (const dx of [-3, 0, 3]) { ctx.beginPath(); ctx.moveTo(dx, -5); ctx.quadraticCurveTo(dx * .65, 0, dx, 5); ctx.stroke(); } }
   } else {
-    const low = visual.silhouette === 'potato'; const bushH = low ? h * .45 : h * .62; ctx.fillStyle = visual.leaf; for (let i = 0; i < 5; i++) { const dx = (i - 2) * spread * .42; ctx.beginPath(); ctx.ellipse(dx, -bushH * (.55 + (i % 2) * .16), spread * .55, bushH * .46, i * .5, 0, Math.PI * 2); ctx.fill(); } if (visual.silhouette === 'soybean' && ripe) { ctx.fillStyle = visual.produce; ctx.beginPath(); ctx.ellipse(2, -bushH * .35, 2.5, 4, .2, 0, Math.PI * 2); ctx.fill(); }
+    const low = visual.silhouette === 'potato'; const bushH = low ? h * .54 : h * .82; strokeStem(0, 0, 0, -bushH, 2);
+    for (let i = 0; i < 7; i++) { const side = i % 2 ? 1 : -1; const level = Math.floor(i / 2); leaf(side * (4 + level * 1.2), -bushH * (.25 + level * .18), spread * .6, bushH * .12, side * .42); }
+    if (visual.silhouette === 'soybean' && ripe) for (const side of [-1, 1]) { ctx.fillStyle = visual.produce; ctx.strokeStyle = '#76813f'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(side * 3.5, -bushH * .38, 2.2, 5, side * .22, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+    if (visual.silhouette === 'potato' && ripe) for (const dx of [-3, 3]) { ctx.fillStyle = '#f4e6d5'; ctx.strokeStyle = '#8d6b8e'; ctx.lineWidth = .8; ctx.beginPath(); ctx.arc(dx, -bushH * .7, 2, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
   }
   if (stage === 'ready' && index % 3 === 0) { ctx.strokeStyle = 'rgba(255, 241, 159, .62)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-3, -h - 4); ctx.lineTo(3, -h - 4); ctx.stroke(); }
   ctx.restore();

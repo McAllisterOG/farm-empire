@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { farmOf } from '../src/core/farmBusiness';
-import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, pickupCargoRemaining, pickupCargoUsed, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
+import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, maxTownSeedPurchase, pickupCargoRemaining, pickupCargoUsed, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../src/core/farmTownContact';
 import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
 import { deserialize, serialize } from '../src/save/save';
-import { pickupPositionForSave, PICKUP_START } from '../src/core/farmPickupData';
+import { pickupHomeArrival, pickupPositionForSave, PICKUP_HOME_PLAYER, PICKUP_START } from '../src/core/farmPickupData';
 import { FARM_TOWN_GATE } from '../src/core/townGateway';
 
 const NOW = Date.UTC(2026, 0, 1);
@@ -63,6 +63,24 @@ describe('old pickup cargo loop', () => {
     expect(unloadPickupSeedsToFarm(state, 'crop_wheat', 1).ok).toBe(true);
     expect(farm.pickup.cargo.seeds.crop_wheat).toBe(1);
     expect(farm.seeds.crop_wheat).toBe(3);
+  });
+
+  it('derives a truthful maximum town seed purchase from cash and remaining pickup cargo', () => {
+    const state = createFarmGame('Seed quantity', 44, NOW); const farm = farmOf(state);
+    farm.cashCents = 5_500;
+    expect(maxTownSeedPurchase(state, 'crop_wheat', true)).toBe(5);
+    farm.pickup.cargo.seeds.crop_corn = 69;
+    expect(maxTownSeedPurchase(state, 'crop_wheat', false)).toBe(0);
+    expect(maxTownSeedPurchase(state, 'crop_wheat', true)).toBe(3);
+    expect(buyTownSeedsIntoPickup(state, 'crop_wheat', maxTownSeedPurchase(state, 'crop_wheat', true), true).ok).toBe(true);
+    expect(pickupCargoUsed(state)).toBe(72);
+    expect(farm.cashCents).toBe(2_500);
+    expect(maxTownSeedPurchase(state, 'crop_wheat', true)).toBe(0);
+  });
+
+  it('provides a deterministic dismounted pickup-home arrival beside the cargo pad', () => {
+    expect(pickupHomeArrival()).toEqual({ pickup: PICKUP_START, player: PICKUP_HOME_PLAYER });
+    expect(Math.hypot(PICKUP_HOME_PLAYER.x - PICKUP_START.x, PICKUP_HOME_PLAYER.y - PICKUP_START.y)).toBeLessThan(1);
   });
 
   it('derives safe All transfer amounts from mixed cargo, source stock, and weighted barn space', () => {

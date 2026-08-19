@@ -391,3 +391,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Save v20 adds no nested field. Any pre-v20 farm receives one migration rescue that restores already-withered Farm crops to ready; later v20 crops that genuinely wither during active play are not repeatedly revived.
 - Returning to the farm-selection title must hide the action menu and modal panel after destroying the live app so gameplay controls cannot leak over title slots.
 - Canvas backing stores are capped at 1920x1080 pixels on large/high-DPI displays while retaining CSS viewport coordinates. HUD DOM work refreshes at 10 Hz; immediate action-driven HUD updates remain authoritative.
+
+## 2026-08-18 - Make town buying exact and crop identity readable
+
+**Status:** Approved and complete
+
+- County Feed & Seed accepts any positive whole quantity up to an authoritative maximum derived from the selected crop's real price, available cash, unlock state, and remaining mixed pickup capacity. A Max action and live `used / capacity / open` summary replace hardcoded Buy 1 / Buy 5 choices; purchase accounting and cargo authority remain in the existing core transaction path.
+- Returning from town with the pickup is a vehicle trip: the pickup and farmer arrive together at the barn cargo pad. On-foot County visits retain the existing walk-to-exit return.
+- Farm-only crop art uses fewer, larger procedural plants with distinct crop silhouettes. Mature corn is deliberately taller and carries readable leaves, tassels, husks, and ears; other crops retain crop-specific forms. External asset packs are deferred until a coherent licensed art direction is approved.
+- Scout overlap guidance uses plain punctuation-safe text. Save v20, prices, yields, timings, capacity tiers, progression, town geometry, and legacy Paradise Isle presentation do not change.

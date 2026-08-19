@@ -16,6 +16,10 @@ describe('farm runtime presentation data', () => {
       expect(farmCropVisualFor(crop.id).silhouette).toBeTruthy();
     }
     expect(farmCropVisualFor('unknown').silhouette).toBe('corn');
+    const corn = farmCropVisualFor('crop_corn');
+    expect(corn.baseHeight).toBeGreaterThanOrEqual(44);
+    expect(corn.columns * corn.rows).toBeLessThanOrEqual(12);
+    expect(corn.baseHeight).toBeGreaterThan(farmCropVisualFor('crop_soybean').baseHeight);
     expect(Object.isFrozen(FARM_CROP_VISUALS)).toBe(true);
     expect(Object.values(FARM_CROP_VISUALS).every(Object.isFrozen)).toBe(true);
   });

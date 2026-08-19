@@ -11,6 +11,7 @@ export const PICKUP_CARGO_CAPACITY = PICKUP_BASE_CARGO_CAPACITY;
 // that loading and unloading still reads as one compact farmyard interaction.
 export const PICKUP_START = Object.freeze({ x: 6.25, y: 5.1 });
 export const PICKUP_CARGO_PAD = PICKUP_START;
+export const PICKUP_HOME_PLAYER = Object.freeze({ x: PICKUP_CARGO_PAD.x + .7, y: PICKUP_CARGO_PAD.y + .25 });
 export const PICKUP_CARGO_PAD_TOLERANCE = .8;
 export const PICKUP_GATE_CONFLICT_TOLERANCE = .9;
 /** Shared logical movement envelope for the farm's drivable vehicles. */
@@ -31,6 +32,11 @@ export function sanitizePickupPosition(x: unknown, y: unknown): { x: number; y: 
 
 export function pickupPositionForSave(pickupAtTown: boolean, current: { x: number; y: number }): { x: number; y: number } {
   return pickupAtTown ? { x: PICKUP_CARGO_PAD.x, y: PICKUP_CARGO_PAD.y } : { x: current.x, y: current.y };
+}
+
+/** Deterministic dismounted arrival used when the owner drives the pickup home from town. */
+export function pickupHomeArrival(): { pickup: { x: number; y: number }; player: { x: number; y: number } } {
+  return { pickup: { ...PICKUP_CARGO_PAD }, player: { ...PICKUP_HOME_PLAYER } };
 }
 
 export function emptyPickupCargo(): FarmPickupCargo {

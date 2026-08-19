@@ -9,7 +9,7 @@ import {
 } from '../core/farmBusiness';
 import { ensureOwnedFarmParcelPlots, farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
-import { pickupPositionForSave } from '../core/farmPickupData';
+import { pickupHomeArrival, pickupPositionForSave } from '../core/farmPickupData';
 import { farmDirectionalInputRoute, farmVehicleControlTarget, isMoveOnlyFarmGround, isMoveOnlyPointerButton, shouldCompleteMoveOnlyGesture } from '../core/farmVehicleControls';
 import {
   HAND_BASKET_CAPACITY, basketInteractionBlockReason, handBasketHasCargo, handBasketRemaining, handBasketUsed, harvestFarmCropToBasket,
@@ -893,6 +893,7 @@ export class FarmEmpireApp {
 
   private requestReturnToFarm(): void {
     if (this.mode !== 'town') return;
+    if (this.pickupAtTown) { this.returnToFarm('pickup'); return; }
     this.walkTownNear(TOWN_EXIT.x, TOWN_EXIT.y, () => this.returnToFarm());
   }
 
@@ -905,13 +906,26 @@ export class FarmEmpireApp {
     return true;
   }
 
-  private returnToFarm(): void {
+  private returnToFarm(arrival: 'gate' | 'pickup' = 'gate'): void {
     if (this.mode !== 'town') return;
     hideActionMenu(); if (isPanelOpen()) closePanel();
     this.townTarget = null; this.townActor.walking = false; this.townGesture = null; this.mode = 'farm';
-    const returnPoint = placePlayerAtTownReturn(this.state);
+    const drovePickupHome = arrival === 'pickup' && this.pickupAtTown;
+    const home = drovePickupHome ? pickupHomeArrival() : null;
+    const returnPoint = home ? home.player : placePlayerAtTownReturn(this.state);
+    if (home) {
+      const pickup = farmOf(this.state).pickup;
+      pickup.x = home.pickup.x; pickup.y = home.pickup.y;
+      this.state.player.px = home.player.x; this.state.player.py = home.player.y;
+      this.pickupAtTown = false;
+    }
     this.playerActor.x = returnPoint.x; this.playerActor.y = returnPoint.y; this.playerActor.walking = false;
-    if (this.farmCamera && this.farmCamera.viewW === this.renderer.camera.viewW && this.farmCamera.viewH === this.renderer.camera.viewH) {
+    if (drovePickupHome) {
+      const pad = farmWorldPoint(farmLandmarks().cargoPad);
+      this.renderer.camera.centerOnTile(pad.x, pad.y);
+      if (this.farmCamera) this.renderer.camera.zoom = this.farmCamera.zoom;
+      this.renderer.clampFarmCamera();
+    } else if (this.farmCamera && this.farmCamera.viewW === this.renderer.camera.viewW && this.farmCamera.viewH === this.renderer.camera.viewH) {
       this.renderer.camera.cx = this.farmCamera.cx; this.renderer.camera.cy = this.farmCamera.cy; this.renderer.camera.zoom = this.farmCamera.zoom;
       this.renderer.clampFarmCamera();
     } else this.renderer.centerOnFarm();
@@ -922,7 +936,7 @@ export class FarmEmpireApp {
       pickup.x = pad.x; pickup.y = pad.y;
       this.pickupAtTown = false;
     }
-    toast('Back at the farm.', 'good');
+    toast(drovePickupHome ? 'Pickup parked at the barn cargo pad. You are beside it.' : 'Back at the farm.', 'good');
   }
 
   private openEquipmentPanel(): void {
@@ -962,7 +976,7 @@ export class FarmEmpireApp {
     const now = this.gameNow();
     if (now - this.scoutOverlapToastAt < 1_500) return;
     this.scoutOverlapToastAt = now;
-    toast('Scout’s helping here—pet him when he’s back on open grass.', 'good');
+    toast('Scout is helping here. Pet him when he is back on open grass.', 'good');
   }
 
   private toggleTractorOperating(): void {
@@ -1015,7 +1029,7 @@ export class FarmEmpireApp {
             h('div', { class: 'farm-panel-summary' }, 'County services use cargo in this pickup.'),
             h('button', { class: 'btn btn-primary', onclick: () => openFarmSeedShop(this.state, this.panelActions()) }, 'Buy Seed Bags'),
             h('button', { class: 'btn', onclick: () => openFarmMarket(this.state, this.panelActions(), 'town') }, 'Sell / Deliver Produce'),
-            h('button', { class: 'btn', onclick: () => { closePanel(); this.requestReturnToFarm(); } }, 'Return to Farm'),
+            h('button', { class: 'btn btn-primary', 'data-testid': 'drive-pickup-home', onclick: () => { closePanel(); this.returnToFarm('pickup'); } }, 'Drive Pickup Home'),
           ),
         ),
       });

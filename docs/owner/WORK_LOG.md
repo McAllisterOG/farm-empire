@@ -524,3 +524,13 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Save v20 pauses crop age and the Farm clock while closed or hidden and restores pre-v20 withered Farm crops to ready once. Title entry now clears action menus and panels. Canvas work is bounded to 1920x1080 backing pixels and HUD DOM refreshes at 10 Hz without changing input/camera coordinates or immediate transaction feedback.
 - **Verification:** 311/311 tests passed in 44 files; strict typecheck, Vite production build, and diff check passed. A disposable packaged v19 farm containing 36 withered soybean sections migrated to v20 with harvest actions on every section; an open field menu disappeared on title return. Emulated 4K used an exact 1920x1080 backing store with bounded frame cadence and zero runtime errors.
 - **Cleanup:** The isolated QA process and disposable profile were removed. The owner's real save was never opened or modified during verification.
+
+## Town Purchase & Crop Readability Repair V1 - complete
+
+- **Date:** 2026-08-18
+- **Branch:** `codex/first-town-contact`
+- **Trigger:** Owner playtest found hardcoded Buy 1 / Buy 5 seed quantities, missing pickup-capacity feedback, an incoherent pickup return that separated farmer and truck, weak mature-crop identity, and malformed Scout overlap punctuation.
+- **Result:** Town seed purchasing now accepts an exact whole quantity or the real cash/cargo-bounded maximum and shows live pickup used/capacity/open space. **Drive Pickup Home** returns the farmer and loaded truck together at the barn cargo pad. Farm-only procedural crop painting uses fewer, larger, distinct plants, with substantially taller and recognizable mature corn. Scout guidance is punctuation-safe.
+- **Verification:** 313/313 tests passed in 44 files; strict typecheck, Vite production build, desktop-relative build, and diff check passed. Browser acceptance purchased exactly 17 corn seeds, confirmed `17 / 72 · 55 open`, drove the pickup home with cargo intact, inspected six distinct ready-crop rows, retained the 1920x1080 backing cap at 4K, and found zero runtime errors.
+- **Artifact:** `release/playtest-quality-v1/win-unpacked/Farm Empire.exe`; the generated app archive contains the accepted relative-asset build and the Desktop shortcut now targets it. The automated hidden native smoke was limited by the machine's existing Electron GPU-process restriction; the browser/player workflow itself is accepted.
+- **Boundaries:** No save migration, price/yield/growth change, capacity increase, external art pack, dependency, map rewrite, or progression change. No push performed.
