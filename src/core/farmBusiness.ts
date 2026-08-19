@@ -66,6 +66,13 @@ export interface ParcelWorkPlan {
   harvestPlotUids: number[];
 }
 
+export interface ParcelWorkPlanOptions {
+  /** Begin a clicked or dragged job at the section the player actually chose. */
+  anchorPlotUid?: number;
+  /** Limit powered work to this transient selection without changing parcel ownership. */
+  selectedPlotUids?: readonly number[];
+}
+
 export const TRACTOR_DISMOUNT_OFFSET = { x: 0.75, y: 0.25 } as const;
 
 /** Stable row-by-row route with alternating direction, independent of plot array order. */
@@ -180,6 +187,32 @@ function normalizePickup(rawPickup: unknown, capacity: number): FarmBusinessStat
     y: position.y,
     cargo: { crops, seeds },
   };
+}
+
+/**
+ * Reorder an already stable field route around the player's chosen section.
+ * Each next section is the nearest remaining neighbor, with coordinate/UID
+ * tie-breaks so repeated planning is deterministic and never depends on array
+ * insertion order.
+ */
+export function fieldWorkRouteFromAnchor<T extends { uid: number; x: number; y: number }>(
+  plots: readonly T[],
+  anchorPlotUid: number,
+): T[] {
+  const remaining = [...plots].sort((a, b) => a.y - b.y || a.x - b.x || a.uid - b.uid);
+  const startIndex = remaining.findIndex((plot) => plot.uid === anchorPlotUid);
+  if (startIndex < 0) return remaining;
+  const route: T[] = [remaining.splice(startIndex, 1)[0]];
+  while (remaining.length > 0) {
+    const current = route[route.length - 1];
+    remaining.sort((a, b) => {
+      const aDistance = (a.x - current.x) ** 2 + (a.y - current.y) ** 2;
+      const bDistance = (b.x - current.x) ** 2 + (b.y - current.y) ** 2;
+      return aDistance - bDistance || a.y - b.y || a.x - b.x || a.uid - b.uid;
+    });
+    route.push(remaining.shift()!);
+  }
+  return route;
 }
 
 function normalizeHandBasket(rawBasket: unknown): FarmBusinessState['handBasket'] {
@@ -530,7 +563,13 @@ export function placePlayerAtTractorDismount(state: GameState): { x: number; y: 
  * Build a read-only parcel work plan. The app applies each UID through the existing
  * transactional per-plot actions as the tractor reaches it.
  */
-export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: number, cropId?: string): ParcelWorkPlan {
+export function planParcelWork(
+  state: GameState,
+  parcelId: FarmParcelId,
+  now: number,
+  cropId?: string,
+  options: ParcelWorkPlanOptions = {},
+): ParcelWorkPlan {
   const farm = farmOf(state);
   const plannedCropId = cropId ?? farm.selectedCropId;
   const owned = parcelId === 'starter' ? farm.parcels.starterOwned : farm.parcels.northOwned;
@@ -539,9 +578,16 @@ export function planParcelWork(state: GameState, parcelId: FarmParcelId, now: nu
   }
 
   const plotByCoordinate = new Map(state.plots.map((plot) => [`${plot.x}:${plot.y}`, plot]));
-  const orderedPlots = serpentineFieldTiles(farmParcelTiles(parcelId))
+  let orderedPlots = serpentineFieldTiles(farmParcelTiles(parcelId))
     .map((tile) => plotByCoordinate.get(`${tile.x}:${tile.y}`))
     .filter((plot): plot is FarmPlot => !!plot);
+  if (options.selectedPlotUids !== undefined) {
+    const selected = new Set(options.selectedPlotUids);
+    orderedPlots = orderedPlots.filter((plot) => selected.has(plot.uid));
+  }
+  if (options.anchorPlotUid !== undefined) {
+    orderedPlots = fieldWorkRouteFromAnchor(orderedPlots, options.anchorPlotUid);
+  }
   const availableSeeds = Math.max(0, Math.floor(farm.seeds[plannedCropId] ?? 0));
   const plantPlotUids = !isFarmCropUnlocked(state, plannedCropId) ? [] : orderedPlots
     .filter((plot) => !plot.crop)

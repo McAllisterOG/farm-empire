@@ -1329,12 +1329,6 @@ function drawOldTractor(
     ctx.lineTo(working ? 39 : 33, working ? 10 : -21);
     ctx.lineTo(working ? 55 : 47, working ? 10 : -21);
     ctx.stroke();
-    ctx.strokeStyle = working ? '#f2c018' : '#fff1c9';
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = working ? 0.72 + Math.sin(now / 120) * 0.2 : 0.72;
-    ctx.beginPath();
-    ctx.ellipse(0, -12, 38, 30, 0, 0, Math.PI * 2);
-    ctx.stroke();
   }
   ctx.restore();
 }

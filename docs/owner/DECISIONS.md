@@ -400,3 +400,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Returning from town with the pickup is a vehicle trip: the pickup and farmer arrive together at the barn cargo pad. On-foot County visits retain the existing walk-to-exit return.
 - Farm-only crop art uses fewer, larger procedural plants with distinct crop silhouettes. Mature corn is deliberately taller and carries readable leaves, tassels, husks, and ears; other crops retain crop-specific forms. External asset packs are deferred until a coherent licensed art direction is approved.
 - Scout overlap guidance uses plain punctuation-safe text. Save v20, prices, yields, timings, capacity tiers, progression, town geometry, and legacy Paradise Isle presentation do not change.
+
+## 2026-08-18 - Make tractor work begin where the owner points
+
+**Status:** Approved and complete
+
+- A single operated-tractor field click keeps the convenient whole-acreage action, but its deterministic route begins at that clicked section instead of a fixed parcel corner.
+- Dragging while parked in the operated tractor selects and works only the exact owned field sections covered by the drag. Seed/storage limits and every per-section transaction remain authoritative.
+- An idle farm vehicle click may transfer control directly between the pickup and an operational tractor. Active tractor field work and an unrestored tractor still fail closed rather than being cancelled or bypassed implicitly.
+- The operating tractor's white selection halo is removed. Save v20, vehicle position and motion fields, crop/economy rules, acreage ownership, camera, town vehicles, and legacy presentation remain unchanged.

@@ -4,11 +4,11 @@
 
 - **Date:** 2026-08-18
 - **Branch:** `codex/first-town-contact`
-- **Head:** Town Purchase & Crop Readability Repair V1 (local checkpoint; see Git history for hash)
-- **Product state:** The County Feed & Seed shop accepts exact whole seed quantities and offers the authoritative maximum permitted by both cash and open pickup cargo, with live `used / capacity / open` cargo feedback. Driving the pickup home returns and parks both the vehicle and farmer together at the barn cargo pad. Farm crops use fewer, larger crop-specific procedural plants; mature corn now reads as tall stalks with leaves, tassels, and visible ears. Scout's overlap guidance uses normal punctuation and spacing.
-- **Boundaries:** Save v20, seed prices, yields, growth times, crop aging, storage, pickup/trailer capacities, progression, transactions, and legacy Paradise Isle behavior remain unchanged. No external art pack or dependency was added.
-- **Verification:** 313 tests in 44 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Focused coverage pins cash/cargo-limited maximum purchases, exact accounting, deterministic pickup/home placement, and bounded crop density/height.
-- **Desktop acceptance:** Browser acceptance bought an exact 17 corn seeds into an empty pickup, observed cargo change from `0 / 72 · 72 open` to `17 / 72 · 55 open`, then used **Drive Pickup Home** and confirmed the farmer and 17-unit pickup beside one another at the cargo pad. A six-crop ready field visually confirmed distinct larger silhouettes, including tall mature corn. The 3840x2160 viewport retained the 1920x1080 backing cap and logged zero runtime errors. `release/playtest-quality-v1/win-unpacked/Farm Empire.exe` contains the accepted relative-asset build, and the Desktop shortcut targets it; the hidden packaged smoke runner encountered the machine's existing GPU-process restriction, so the final native-window launch remains the owner's next double-click check.
+- **Head:** Tractor Selection & Vehicle Handoff Repair V1 (local checkpoint; see Git history for hash)
+- **Product state:** An operated tractor can drag an exact field subset or click once for whole-acreage work. Both routes begin at the section the owner actually selected and continue through a deterministic adjacent route instead of jumping to a fixed far corner. The operating halo is removed, and clicking the other farm vehicle transfers control directly between the idle tractor and pickup without an exit-confirmation detour.
+- **Boundaries:** Save v20, crop and field transactions, seed limits, prices, yields, growth times, storage, vehicle capacities and positions, motion speeds, progression, and legacy Paradise Isle behavior remain unchanged. Vehicle handoff stays fail-closed during an active tractor field job or when the tractor is not operational.
+- **Verification:** 314 tests in 44 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Focused coverage pins clicked-anchor priority, exact dragged-subset containment, seed limiting, local route continuity, and deterministic replay independent of plot/selection array order.
+- **Desktop acceptance:** A disposable browser farm dragged six sections while operating the tractor and worked exactly those six; a Scout-side click began at that section rather than the opposite corner. One world click switched tractor to pickup and another switched back, Escape preserved completed partial work, the halo was visibly absent, and browser errors were empty. `release/tractor-control-repair-v1/win-unpacked/Farm Empire.exe` contains the accepted relative-asset build, and the verified Desktop shortcut targets it; the machine's existing hidden Electron GPU-process restriction still leaves the final native-window launch as the owner's next double-click check.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
@@ -20,7 +20,8 @@
 - Deterministic hay, crates, trough, pump, fences/gates, independent crop/tree motion, tractor exhaust, lamps, and off-field fireflies make the acreage feel occupied without adding interaction or saved state.
 - The operated tractor now accelerates and brakes smoothly, turns with a deterministic heading, rolls its wheels, steers visibly, and keeps an upright direction-aware silhouette; all motion state remains transient.
 - The owned old pickup has the same deterministic acceleration/turning presentation, a direction-aware upright silhouette, a 72-unit mixed seed/produce bed, persistent farm position, and transient operating state. The first completed Freight Board haul unlocks one visible $2,400 utility trailer that doubles real cargo capacity to 144.
-- On the farm, an operated pickup or tractor can use WASD/arrows or click/right-click open ground to drive; unsupported/blocked input cannot leak into camera panning. On foot, WASD/arrows pan and a standalone right-click moves only on open ground. Town pickups remain parked and non-operable.
+- On the farm, an operated pickup or tractor can use WASD/arrows or click/right-click open ground to drive; clicking the other idle farm vehicle transfers control directly. Unsupported/blocked input cannot leak into camera panning. On foot, WASD/arrows pan and a standalone right-click moves only on open ground. Town pickups remain parked and non-operable.
+- Tractor field work accepts either an exact dragged subset or the existing whole-acreage click. Both begin at the clicked/drag anchor and use a deterministic local route while preserving the existing seed, storage, cancellation, and transaction authority.
 - A signed road gateway now leads to a separate walkable County Service Center with three distinct buildings, three animated service townspeople, two clock-aware ambient residents, and real seed, market, land-record, and context-safe equipment services.
 - Town actor motion, gestures, camera mode, and location remain transient. Saving in town preserves normal farm business state and reloads safely at the farm gateway.
 - Farm-side Seed and Market surfaces are cargo-management points: crops and seed bags move reversibly between the barn/farm inventory and the pickup, while ordinary buying and selling are no longer available at the farm.
@@ -51,7 +52,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Live Playtest Stability Rescue V1 is complete; the owner's existing v19 farm is intentionally recoverable and should be loaded before deciding to restart. The next finite package should be selected from the next owner playtest rather than another speculative wave.
+No additional feature package is currently active. Tractor Selection & Vehicle Handoff Repair V1 is complete and packaged for the owner's current save. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
 
 ## Known limitations
 

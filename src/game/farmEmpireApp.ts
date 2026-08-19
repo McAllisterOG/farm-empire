@@ -5,7 +5,7 @@ import {
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyGrainSilo, purchaseCountyRowCropFieldKit, purchaseCountyUtilityTrailer, purchaseNeighborParcel, selectFarmCrop,
   issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
   syncCashMirror, ownedFarmParcelAt, planParcelWork, farmFieldCondition, tillFarmField, waterFarmCrop,
-  placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind,
+  placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind, type ParcelWorkPlan,
 } from '../core/farmBusiness';
 import { ensureOwnedFarmParcelPlots, farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
@@ -481,8 +481,9 @@ export class FarmEmpireApp {
       if (
         event.button === 0
         && this.mode === 'farm'
-        && !this.operatingTractor
         && !this.operatingPickup
+        && !this.tractorJob
+        && !this.tractorTarget
         && !this.manualFieldAction
         && !this.manualFieldJob
         && !isActionMenuOpen()
@@ -527,11 +528,16 @@ export class FarmEmpireApp {
       dragging = false;
       secondaryGestureArmed = false;
       if (selectionAnchorUid !== null) {
+        const anchorPlotUid = selectionAnchorUid;
         const wasSelecting = fieldSelecting;
         selectionAnchorUid = null;
         fieldSelecting = false;
         if (wasSelecting) {
-          this.showManualDragMenu(event.clientX, event.clientY, this.fieldDragSelection);
+          if (this.operatingTractor) {
+            this.showTractorDragMenu(event.clientX, event.clientY, this.fieldDragSelection, anchorPlotUid);
+          } else {
+            this.showManualDragMenu(event.clientX, event.clientY, this.fieldDragSelection);
+          }
           return;
         }
         this.fieldDragSelection = [];
@@ -701,10 +707,16 @@ export class FarmEmpireApp {
     });
     if (interaction && interaction.kind !== 'scout' && farmScoutHitAtWorldPoint(worldPoint, { scout: this.scout })) this.notifyScoutOverlap();
     if (interaction?.kind === 'pickup') {
-      if (this.operatingPickup) this.togglePickupOperating(); else this.openPickupPanel();
+      if (this.operatingTractor) this.switchTractorToPickup();
+      else if (this.operatingPickup) this.togglePickupOperating();
+      else this.openPickupPanel();
       return;
     }
-    if (interaction?.kind === 'tractor') { this.openEquipmentPanel(); return; }
+    if (interaction?.kind === 'tractor') {
+      if (this.operatingPickup) this.switchPickupToTractor();
+      else this.openEquipmentPanel();
+      return;
+    }
     if (interaction?.kind === 'farmhand') {
       if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to talk with Mara.', 'bad'); return; }
       this.walkNear(interaction.point.x, interaction.point.y, () => this.openWorkforcePanel('farm'));
@@ -751,7 +763,7 @@ export class FarmEmpireApp {
         return;
       }
       if (this.operatingTractor) {
-        if (parcelId) this.openTractorParcelMenu(parcelId, interaction.point.x, interaction.point.y, sx, sy);
+        if (parcelId) this.openTractorParcelMenu(parcelId, interaction.plotUid, interaction.point.x, interaction.point.y, sx, sy);
       } else if (this.operatingPickup) this.drivePickupTo(interaction.point.x, interaction.point.y);
       else this.walkNear(interaction.point.x, interaction.point.y, () => this.openPlotMenu(interaction.plotUid!, sx, sy));
       return;
@@ -1018,6 +1030,45 @@ export class FarmEmpireApp {
     this.farmAudio.playTransaction('success');
   }
 
+  private switchTractorToPickup(): void {
+    if (!this.operatingTractor || this.tractorJob) return;
+    this.cancelScoutFetch(false);
+    this.tractorTarget = null;
+    this.tractorMotion = resetTractorMotion(this.tractorMotion);
+    this.operatingTractor = false;
+    this.operatingPickup = true;
+    this.pickupTarget = null;
+    this.pickupMotion = resetTractorMotion(this.pickupMotion);
+    this.walkTarget = null;
+    this.playerActor.walking = false;
+    this.fieldDragSelection = [];
+    toast('Switched from the tractor to the pickup.', 'good');
+    this.hud.update(this.state, this.tractorHudRuntime());
+    this.farmAudio.playTransaction('success');
+  }
+
+  private switchPickupToTractor(): void {
+    const tractor = farmOf(this.state).equipment.tractor;
+    if (!this.operatingPickup) return;
+    if (tractor.status !== 'operational') {
+      toast('Restore the inherited tractor at the County Equipment Desk before operating it.', 'bad');
+      return;
+    }
+    this.cancelScoutFetch(false);
+    this.pickupTarget = null;
+    this.pickupMotion = resetTractorMotion(this.pickupMotion);
+    this.operatingPickup = false;
+    this.operatingTractor = true;
+    this.tractorTarget = null;
+    this.tractorMotion = resetTractorMotion(this.tractorMotion);
+    this.walkTarget = null;
+    this.playerActor.walking = false;
+    this.fieldDragSelection = [];
+    toast('Switched from the pickup to the tractor.', 'good');
+    this.hud.update(this.state, this.tractorHudRuntime());
+    this.farmAudio.playTransaction('success');
+  }
+
   private openPickupPanel(): void {
     if (this.mode === 'town') {
       openPanel({
@@ -1256,31 +1307,81 @@ export class FarmEmpireApp {
     walkNext();
   }
 
-  private openTractorParcelMenu(parcelId: FarmParcelId, tx: number, ty: number, sx: number, sy: number): void {
-    const plan = planParcelWork(this.state, parcelId, this.gameNow(), farmOf(this.state).selectedCropId);
+  private openTractorParcelMenu(parcelId: FarmParcelId, anchorPlotUid: number, tx: number, ty: number, sx: number, sy: number): void {
+    const plan = planParcelWork(this.state, parcelId, this.gameNow(), farmOf(this.state).selectedCropId, { anchorPlotUid });
+    const parcel = farmParcelDef(parcelId);
+    this.showTractorWorkMenu(parcelId, plan, tx, ty, sx, sy, `${parcel.name} · ${parcel.columns}×${parcel.rows} tractor work`);
+  }
+
+  private showTractorDragMenu(
+    sx: number,
+    sy: number,
+    selectedPlotUids: readonly number[],
+    anchorPlotUid: number,
+  ): void {
+    if (selectedPlotUids.length === 0 || !this.operatingTractor) return;
+    const anchor = this.state.plots.find((plot) => plot.uid === anchorPlotUid);
+    if (!anchor) return;
+    const parcelId = ownedFarmParcelAt(this.state, anchor.x, anchor.y);
+    if (!parcelId || this.farmhandJob?.parcelId === parcelId) {
+      this.fieldDragSelection = [];
+      return;
+    }
+    const plan = planParcelWork(this.state, parcelId, this.gameNow(), farmOf(this.state).selectedCropId, {
+      anchorPlotUid,
+      selectedPlotUids,
+    });
+    this.showTractorWorkMenu(
+      parcelId,
+      plan,
+      anchor.x,
+      anchor.y,
+      sx,
+      sy,
+      `${selectedPlotUids.length} field section${selectedPlotUids.length === 1 ? '' : 's'} selected · tractor`,
+    );
+  }
+
+  private showTractorWorkMenu(
+    parcelId: FarmParcelId,
+    plan: ParcelWorkPlan,
+    tx: number,
+    ty: number,
+    sx: number,
+    sy: number,
+    title: string,
+  ): void {
     const farm = farmOf(this.state);
     const crop = farmCropDef(farm.selectedCropId);
     const cropUnlock = farmCropUnlockInfo(this.state, crop.id);
     const seedCount = farm.seeds[crop.id] ?? 0;
-    const parcel = farmParcelDef(parcelId);
-    showActionMenu(sx, sy, `${parcel.name} · ${parcel.columns}×${parcel.rows} tractor work`, [
+    showActionMenu(sx, sy, title, [
       {
         label: cropUnlock.unlocked
           ? `Prepare & plant ${crop.name} on ${plan.plantPlotUids.length} field section${plan.plantPlotUids.length === 1 ? '' : 's'} (${seedCount} seeds)`
           : `${crop.name} locked: ${cropUnlock.requirement}`,
         icon: `icon:seed_${crop.id.replace('crop_', '')}`,
         disabled: !cropUnlock.unlocked || plan.plantPlotUids.length === 0,
-        onClick: () => this.startTractorJob('plant', parcelId, plan.plantPlotUids, crop.id),
+        onClick: () => {
+          this.fieldDragSelection = [];
+          this.startTractorJob('plant', parcelId, plan.plantPlotUids, crop.id);
+        },
       },
       {
         label: `Harvest ${plan.harvestPlotUids.length} ready field section${plan.harvestPlotUids.length === 1 ? '' : 's'} into barn`,
         icon: 'fx:ready',
         disabled: plan.harvestPlotUids.length === 0,
-        onClick: () => this.startTractorJob('harvest', parcelId, plan.harvestPlotUids),
+        onClick: () => {
+          this.fieldDragSelection = [];
+          this.startTractorJob('harvest', parcelId, plan.harvestPlotUids);
+        },
       },
       {
         label: 'Drive to selected field section',
-        onClick: () => this.driveTractorTo(tx, ty),
+        onClick: () => {
+          this.fieldDragSelection = [];
+          this.driveTractorTo(tx, ty);
+        },
       },
     ]);
   }

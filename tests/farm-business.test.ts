@@ -128,6 +128,36 @@ describe('tractor parcel work planning and transactional steps', () => {
     expect(planParcelWork(state, 'north', NOW).orderedPlotUids).toEqual([]);
   });
 
+  it('starts selected tractor work at the clicked section and stays inside the dragged area', () => {
+    const state = makeFarm();
+    const farm = farmOf(state);
+    farm.seeds.crop_corn = 3;
+    const selectedPlots = state.plots.filter((plot) => (
+      plot.x >= 2 && plot.x <= 4 && plot.y >= 10 && plot.y <= 12
+    ));
+    const selectedPlotUids = selectedPlots.map((plot) => plot.uid);
+    const anchor = selectedPlots.find((plot) => plot.x === 2 && plot.y === 12)!;
+    const plan = planParcelWork(state, 'starter', NOW, 'crop_corn', {
+      anchorPlotUid: anchor.uid,
+      selectedPlotUids,
+    });
+    const route = plan.orderedPlotUids.map((uid) => state.plots.find((plot) => plot.uid === uid)!);
+
+    expect(route[0].uid).toBe(anchor.uid);
+    expect(new Set(route.map((plot) => plot.uid))).toEqual(new Set(selectedPlotUids));
+    expect(plan.plantPlotUids).toHaveLength(3);
+    expect(plan.plantPlotUids[0]).toBe(anchor.uid);
+    for (let index = 1; index < route.length; index++) {
+      expect(Math.hypot(route[index].x - route[index - 1].x, route[index].y - route[index - 1].y)).toBeLessThanOrEqual(1);
+    }
+
+    state.plots.reverse();
+    expect(planParcelWork(state, 'starter', NOW, 'crop_corn', {
+      anchorPlotUid: anchor.uid,
+      selectedPlotUids: [...selectedPlotUids].reverse(),
+    })).toEqual(plan);
+  });
+
   it('keeps a seed-limited parcel planting job safe when each planned step is attempted', () => {
     const state = makeFarm();
     const farm = farmOf(state);

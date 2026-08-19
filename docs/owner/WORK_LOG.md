@@ -534,3 +534,13 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Verification:** 313/313 tests passed in 44 files; strict typecheck, Vite production build, desktop-relative build, and diff check passed. Browser acceptance purchased exactly 17 corn seeds, confirmed `17 / 72 · 55 open`, drove the pickup home with cargo intact, inspected six distinct ready-crop rows, retained the 1920x1080 backing cap at 4K, and found zero runtime errors.
 - **Artifact:** `release/playtest-quality-v1/win-unpacked/Farm Empire.exe`; the generated app archive contains the accepted relative-asset build and the Desktop shortcut now targets it. The automated hidden native smoke was limited by the machine's existing Electron GPU-process restriction; the browser/player workflow itself is accepted.
 - **Boundaries:** No save migration, price/yield/growth change, capacity increase, external art pack, dependency, map rewrite, or progression change. No push performed.
+
+## Tractor Selection & Vehicle Handoff Repair V1 - complete
+
+- **Date:** 2026-08-18
+- **Branch:** `codex/first-town-contact`
+- **Trigger:** Owner playtest found a distracting operating halo, drag selection unavailable in the tractor, whole-acreage work jumping from the clicked Scout-side section to a fixed opposite corner, and an unnecessary exit-confirmation step when changing farm vehicles.
+- **Result:** Operated-tractor drags now work an exact selected subset; whole-acreage clicks remain available but start at the clicked section. A deterministic nearest-neighbor route keeps subsequent work local. One click transfers control between an idle tractor and pickup, while active tractor work and an unrestored tractor remain protected. The operating halo is removed.
+- **Verification:** 314/314 tests passed in 44 files; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Browser acceptance worked exactly six dragged sections, confirmed the clicked section first, switched both vehicle directions without an intermediate panel, safely cancelled a partial job, visually confirmed the halo removal, and found zero runtime errors.
+- **Evidence:** `docs/screenshots/tractor-selection-repair-operating.png` and `docs/screenshots/tractor-selection-repair-complete.png`. The relative-asset build is `release/tractor-control-repair-v1/win-unpacked/Farm Empire.exe`; the Desktop shortcut target, working directory, icon, and executable existence were read back successfully.
+- **Boundaries:** No save/schema, economy, crop transaction, acreage, capacity, progression, vehicle speed/position, town-vehicle, dependency, or legacy Paradise Isle change. No push performed.

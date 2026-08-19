@@ -45,10 +45,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 39. **Desktop Playtest Assurance V1** - an opt-in absolute-path-only isolated Electron QA profile, a real packaged fresh-farm prepare-to-storage acceptance pass, stale field-hover cleanup, and disposable verification that never opens or modifies the owner's save profile.
 40. **Live Playtest Stability Rescue V1** - save-v20 offline crop/clock pause with one-time v19 crop recovery, complete title-overlay cleanup, bounded large-display Canvas resolution, throttled HUD work, and packaged 36-crop 4K stress acceptance.
 41. **Town Purchase & Crop Readability Repair V1** - arbitrary cash/cargo-bounded town seed quantities with a truthful Max action, visible pickup capacity, coherent pickup-and-player home arrival, corrected Scout overlap copy, and fewer larger crop-specific plants with a recognizable mature corn silhouette.
+42. **Tractor Selection & Vehicle Handoff Repair V1** - clicked-section-first whole-acreage routing, exact operated-tractor drag subsets, deterministic local traversal, direct idle tractor/pickup control transfer, and removal of the operating halo without save or economy changes.
 
 ## Current authorization
 
-No additional feature package is currently active. Town Purchase & Crop Readability Repair V1 responds directly to the owner's town-shopping, pickup-return, copy, and crop-art playtest findings without changing saves, prices, yields, growth times, cargo capacity, or progression. The next package should respond to the owner's next playtest rather than broaden scope speculatively.
+No additional feature package is currently active. Tractor Selection & Vehicle Handoff Repair V1 responds directly to the owner's operated-tractor playtest findings without changing saves, crop transactions, prices, yields, growth times, cargo capacity, or progression. The next package should respond to the owner's next playtest rather than broaden scope speculatively.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
