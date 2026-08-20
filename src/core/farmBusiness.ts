@@ -159,6 +159,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     countyKitchen: { status: 'unmet' },
     countyFreight: { active: null, lastCompletedDay: 0 },
     workforce: { farmhandHired: false, lastShiftPaidDay: 0, eliotHired: false, eliotLastShiftPaidDay: 0, dispatchApprovedDay: 0, workerLastDispatchedDay: { 'mara-bell': 0, 'eliot-reyes': 0 }, slots: [{ workerId: 'mara-bell', enabled: false, parcelId: 'starter', cropId: 'crop_corn', autoDispatch: true }, { workerId: 'eliot-reyes', enabled: false, parcelId: 'starter', cropId: 'crop_corn', autoDispatch: true }], manager: { hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 } },
+    farmstead: { officeQuartersOwned: false },
     roadsideStand: { owned: false, lastCompletedDay: 0 },
     clock: { day: 1, minute: 8 * 60, lastRealAt: now },
     market: { quotes, activeEvents: [], lastUpdatedDay: 1 },
@@ -318,6 +319,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const kitchenStatus = objectRecord(raw.countyKitchen).status;
   const rawCountyFreight = objectRecord(raw.countyFreight);
   const rawWorkforce = objectRecord(raw.workforce);
+  const rawFarmstead = objectRecord(raw.farmstead);
   const rawRoadsideStand = objectRecord(raw.roadsideStand);
   const rawSeeds = objectRecord(raw.seeds);
   const rawStorage = objectRecord(raw.storage);
@@ -362,7 +364,8 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const managerParcelId = rawManager.parcelId === 'north' && northOwned ? 'north' : 'starter';
   const managerCropId = validCropIds.has(String(rawManager.cropId)) && isFarmCropUnlocked(state, String(rawManager.cropId))
     ? String(rawManager.cropId) : 'crop_corn';
-  const eliotHired = rawWorkforce.eliotHired === true && townStatus === 'completed' && northOwned && managerHired;
+  const officeQuartersOwned = rawFarmstead.officeQuartersOwned === true && townStatus === 'completed' && northOwned && farmhandHired && managerHired;
+  const eliotHired = rawWorkforce.eliotHired === true && townStatus === 'completed' && northOwned && managerHired && officeQuartersOwned;
   const rawSlots = Array.isArray(rawWorkforce.slots) ? rawWorkforce.slots : [];
   const slotFor = (workerId: 'mara-bell' | 'eliot-reyes', fallback: { enabled: boolean; parcelId: 'starter' | 'north'; cropId: string; autoDispatch: boolean }) => {
     const candidate = objectRecord(rawSlots.find((entry) => objectRecord(entry).workerId === workerId));
@@ -463,6 +466,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
           ? Number(rawManager.lastReviewedDay) : 0,
       },
     },
+    farmstead: { officeQuartersOwned },
     roadsideStand: {
       owned: roadsideStandOwned,
       lastCompletedDay: roadsideStandOwned && Number.isInteger(rawRoadsideStand.lastCompletedDay)

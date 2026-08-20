@@ -53,9 +53,9 @@ export function farmInteractionAtWorldPoint(
   if (runtime.farmhand && near(logical, runtime.farmhand, .8)) return { kind: 'farmhand', label: 'Mara Bell · County Farmhand', point: { ...runtime.farmhand } };
   for (const worker of runtime.farmhands ?? []) if (near(logical, worker.point, .8)) return { kind: 'farmhand', label: worker.label, point: { ...worker.point } };
   const landmarks = farmLandmarks();
-  const farmhouseTier = farmhousePresentationTier(farm.parcels.northOwned);
+  const farmhouseTier = farmhousePresentationTier(farm.parcels.northOwned, farm.farmstead.officeQuartersOwned);
   if (near(logical, landmarks.farmhouse, farmhouseInteractionRadius(farmhouseTier))) {
-    return { kind: 'farmhouse', label: farmhouseTier === 'expanded' ? 'Expanded Farmhouse Office' : 'Farmhouse Office', point: { ...landmarks.farmhouse } };
+    return { kind: 'farmhouse', label: farmhouseTier === 'crew-quarters' ? 'Farmstead Office & Crew Quarters' : farmhouseTier === 'expanded' ? 'Expanded Farmhouse Office' : 'Farmhouse Office', point: { ...landmarks.farmhouse } };
   }
   // The physical pump sits beside the barn wall, so its tighter exact target
   // wins over the barn's intentionally generous footprint.

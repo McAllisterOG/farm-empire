@@ -15,6 +15,7 @@ describe('Farm Empire presentation layout', () => {
   it('derives the visual farmhouse tier and matching hit radius from parcel ownership', () => {
     expect(farmhousePresentationTier(false)).toBe('starter');
     expect(farmhousePresentationTier(true)).toBe('expanded');
+    expect(farmhousePresentationTier(true, true)).toBe('crew-quarters');
     expect(farmhouseInteractionRadius('starter')).toBe(1.3);
     expect(farmhouseInteractionRadius('expanded')).toBeGreaterThan(farmhouseInteractionRadius('starter'));
   });

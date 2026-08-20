@@ -215,6 +215,17 @@ const MIGRATIONS: Record<number, Migrator> = {
     }
     raw.version = 24;
   },
+  24: (raw) => {
+    // Existing valid Eliot hires already imply the historical quarters build.
+    // Do not grant it for malformed/ineligible records.
+    const farm = raw.farm && typeof raw.farm === 'object' && !Array.isArray(raw.farm) ? raw.farm as Record<string, unknown> : null;
+    const workforce = farm?.workforce && typeof farm.workforce === 'object' && !Array.isArray(farm.workforce) ? farm.workforce as Record<string, unknown> : null;
+    const parcels = farm?.parcels && typeof farm.parcels === 'object' && !Array.isArray(farm.parcels) ? farm.parcels as Record<string, unknown> : null;
+    const town = farm?.townContact && typeof farm.townContact === 'object' && !Array.isArray(farm.townContact) ? farm.townContact as Record<string, unknown> : null;
+    const manager = workforce?.manager && typeof workforce.manager === 'object' && !Array.isArray(workforce.manager) ? workforce.manager as Record<string, unknown> : null;
+    if (farm) farm.farmstead = { officeQuartersOwned: workforce?.eliotHired === true && workforce?.farmhandHired === true && manager?.hired === true && parcels?.northOwned === true && town?.status === 'completed' };
+    raw.version = 25;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

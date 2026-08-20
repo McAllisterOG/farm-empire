@@ -9,6 +9,7 @@ import type { ManualFieldActionKind } from './farmManualAction';
 import { farmCropDef } from './registry';
 import type { ActionResult, FarmWorkerId, FarmWorkerPlanSlot, GameState } from './types';
 import { fail } from './types';
+import { officeQuartersUnlocked } from './farmstead';
 
 export type FarmhandWorkKind = ManualFieldActionKind;
 
@@ -71,11 +72,11 @@ export function farmManagerUnlocked(state: GameState): boolean {
   return farmhandUnlocked(state) && farmOf(state).workforce.farmhandHired;
 }
 
-export function eliotUnlocked(state: GameState): boolean { return farmManagerUnlocked(state) && farmOf(state).workforce.manager.hired; }
+export function eliotUnlocked(state: GameState): boolean { return officeQuartersUnlocked(state) && farmOf(state).farmstead.officeQuartersOwned; }
 
 export function hireEliotReyes(state: GameState): ActionResult {
   const farm = farmOf(state);
-  if (!eliotUnlocked(state)) return fail('Add the Farm Manager contract after hiring Mara before building the second field crew position.');
+  if (!eliotUnlocked(state)) return fail('Build the Farmstead Office & Crew Quarters after adding the Farm Manager contract before hiring Eliot.');
   if (farm.workforce.eliotHired) return fail(`${ELIOT_REYES.name} is already on the farm team.`);
   if (farm.cashCents < ELIOT_REYES.hirePriceCents) return fail(`Not enough cash to hire ${ELIOT_REYES.name}.`);
   farm.cashCents -= ELIOT_REYES.hirePriceCents; farm.workforce.eliotHired = true;

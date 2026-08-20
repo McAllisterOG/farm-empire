@@ -601,3 +601,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Mara ($1,800/$120) and manager-gated Eliot ($2,100/$100) use two reviewed slots under a one-time $2,400 manager. Approval charges nothing; visible Farm-mode updates may start one real job per worker/day in deterministic order. Shared seed/barn/plot claims protect worker, player, and tractor authority; jobs remain transient and save-safe.
 - **Verification:** 338 tests in 50 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Red Team repairs removed dual Mara execution, paused jobs outside Farm mode, persisted dispatch-consumption tokens, and made start/cancel persistence atomic.
 - **Limit:** Browser/player-surface verification was not run; no package, shortcut, push, or owner save was modified.
+
+## Farmstead Office & Crew Quarters V1 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Scope/result:** Added immutable $1,600 Farm Services purchase authority after County Pantry contact, north acreage, Mara, and manager contract. Save v25 persists fail-closed quarters ownership; v24 grants it only for a valid existing Eliot hire. Eliot now requires quarters. The crew-quarters home adds an attached office/quarters wing while retaining one farmhouse interaction, safe worker home anchors, and existing pickup/tractor/Scout priority.
+- **Boundaries:** No third worker or output, wage, dispatch, capacity, cargo, automation, or logistics change.
+- **Verification:** Focused Farmstead tests plus 342 tests in 51 files passed; strict typecheck, Vite production, desktop-relative build, and `git diff --check` passed. Red Team accepted without High/Medium findings.
+- **Limit:** Browser/player-surface verification was not run; no package, shortcut, push, or owner save was modified.

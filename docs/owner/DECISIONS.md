@@ -452,3 +452,11 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The $2,400 manager remains one-time and wage-free. It owns two saved reviewed slots (Mara then Eliot) and one cost-free daily approval. Viable slots start in deterministic order only during visible Farm-mode updates; no load, hidden/offline, County, or approval action starts work.
 - Worker jobs, movement, and claims are runtime-only. A shared deterministic ledger reserves plots, planting seed, and direct-barn harvest space, releases only unconsumed claims, and prevents player/tractor conflicts. Worker harvest bypasses wagon/pickup cargo authority; tractor harvest remains wagon-only and pickup remains commerce-only.
 - Save v24 persists only defensive roster/slot/approval/dispatched-day state. V23 migration grants no Eliot, approval, claim, wage, or job; malformed values fail closed. Per-worker consumed-day tokens prevent same-day chaining across cancel, finish, reload, and manual/manager entry points.
+
+## 2026-08-19 - Add Farmstead Office & Crew Quarters as an Eliot housing gate
+
+**Status:** Approved and complete
+
+- Farm Services sells one immutable $1,600 Farmstead Office & Crew Quarters property after completed County Pantry contact, north acreage, Mara's hire, and the manager contract. The exact one-time transaction persists only literal ownership and fails without mutation when gated, short of cash, or repeated.
+- Eliot requires owned quarters in addition to his existing prerequisites. Save v25 normalizes ownership and Eliot fail-closed; v24 grants quarters only when the source has a valid existing Eliot hire.
+- The property adds a `crew-quarters` farmhouse presentation tier with an attached office/quarters wing and retains one authoritative farmhouse interaction. It preserves the existing two-worker crew, worker anchors, hit order, all output/wage/dispatch/capacity/cargo/automation rules, and adds no third worker or buffs.

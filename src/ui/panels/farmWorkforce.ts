@@ -4,6 +4,8 @@ import { eliotUnlocked, farmManagerUnlocked, farmhandUnlocked, planFarmhandWork,
 import { farmParcelDef, type FarmParcelId } from '../../core/farmParcels';
 import { allFarmCrops, farmCropDef } from '../../core/registry';
 import { ELIOT_REYES, FIRST_FARMHAND } from '../../data/farmWorkforce.data';
+import { FARMSTEAD_OFFICE_QUARTERS } from '../../data/farmstead.data';
+import { officeQuartersUnlocked } from '../../core/farmstead';
 import { clearChildren, h } from '../dom';
 import { closePanel, openPanel } from '../modal';
 
@@ -24,6 +26,7 @@ export interface FarmWorkforceActions {
   hire?: () => ActionResult;
   hireManager?: () => ActionResult;
   hireEliot?: () => ActionResult;
+  purchaseOfficeQuarters?: () => ActionResult;
   updateSlot?: (input: { workerId: 'mara-bell' | 'eliot-reyes'; enabled: boolean; parcelId: FarmParcelId; cropId: string; autoDispatch: boolean }) => ActionResult;
   approveDispatch?: () => ActionResult;
   updateManager?: (input: { enabled: boolean; parcelId: FarmParcelId; cropId: string }) => ActionResult;
@@ -97,10 +100,20 @@ function renderFarmWorkforce(body: HTMLElement, state: GameState, actions: FarmW
       h('div', { class: 'equipment-mode' }, manager.hired ? 'Contract owned · configure and review at the farm' : farmManagerUnlocked(state) ? 'Ready at this desk' : 'Locked · hire Mara first'),
       ...(!manager.hired && farmManagerUnlocked(state) ? [h('button', { class: 'btn btn-primary', 'data-testid': 'hire-farm-manager', onclick: () => { const result = actions.hireManager?.(); if (result) { actions.dispatch(result); if (result.ok) renderFarmWorkforce(body, state, actions); } } }, 'Add contract · $2,400')] : []),
     ));
+    const quartersReady = officeQuartersUnlocked(state);
+    body.append(h('div', { class: 'equipment-card', 'data-testid': 'farmstead-office-quarters-card' },
+      h('div', { class: 'farm-card-title' }, FARMSTEAD_OFFICE_QUARTERS.name),
+      h('p', {}, 'A staffed farm office and attached crew quarters. This is the final Farm Services improvement before Eliot can join Mara in the two-person crew.'),
+      h('div', { class: 'equipment-mode', 'data-testid': 'farmstead-office-quarters-status' }, farm.farmstead.officeQuartersOwned
+        ? 'Owned · two-person crew housing is ready'
+        : quartersReady ? 'Ready at this desk · $1,600 one-time'
+        : 'Locked · County Pantry contact, north acreage, Mara, and manager contract required'),
+      ...(!farm.farmstead.officeQuartersOwned && quartersReady ? [h('button', { class: 'btn btn-primary', 'data-testid': 'purchase-farmstead-office-quarters', onclick: () => { const result = actions.purchaseOfficeQuarters?.(); if (result) { actions.dispatch(result); if (result.ok) renderFarmWorkforce(body, state, actions); } } }, `Build · ${formatMoney(FARMSTEAD_OFFICE_QUARTERS.priceCents)}`)] : []),
+    ));
     body.append(h('div', { class: 'equipment-card', 'data-testid': 'eliot-hire-card' },
       h('div', { class: 'farm-card-title' }, `${ELIOT_REYES.name} · ${ELIOT_REYES.role}`),
       h('p', {}, '$2,100 one-time; $100 only on a farm day when a real reviewed assignment starts. Field work only: prepare, rework, plant, water, harvest.'),
-      h('div', { class: 'equipment-mode' }, farm.workforce.eliotHired ? 'Hired · configure at the farm' : eliotUnlocked(state) ? 'Ready after the manager contract' : 'Locked · manager, Mara, County contact, and north acreage required'),
+      h('div', { class: 'equipment-mode' }, farm.workforce.eliotHired ? 'Hired · configure at the farm' : eliotUnlocked(state) ? 'Ready · crew quarters built' : 'Locked · build Farmstead Office & Crew Quarters first'),
       ...(!farm.workforce.eliotHired && eliotUnlocked(state) ? [h('button', { class: 'btn btn-primary', 'data-testid': 'hire-eliot-reyes', onclick: () => { const result = actions.hireEliot?.(); if (result) { actions.dispatch(result); if (result.ok) renderFarmWorkforce(body, state, actions); } } }, 'Hire Eliot · $2,100')] : []),
     ));
     return;

@@ -32,6 +32,7 @@ import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } f
 import { acceptCountyKitchenDelivery, fulfillCountyKitchenDelivery, offerCountyKitchenDelivery } from '../core/farmCountyKitchen';
 import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
 import { approveWorkforceDispatch, hireEliotReyes, hireFarmManager, hireFirstFarmhand, planFarmManagerDispatch, planFarmhandWork, reviewWorkforceDispatch, startWorkerShift, updateFarmManagerPlan, updateWorkerPlanSlot, workerDefinition, workerDispatchAvailable, type FarmhandWorkKind } from '../core/farmWorkforce';
+import { purchaseFarmsteadOfficeQuarters } from '../core/farmstead';
 import { applyCurrentFarmRain, currentFarmWeather, farmWeatherForDay } from '../core/farmWeather';
 import { fulfillRoadsideStandOrder, purchaseRoadsideStand, roadsideStandOrder, roadsideStandView } from '../core/farmRoadsideStand';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
@@ -1241,6 +1242,7 @@ export class FarmEmpireApp {
       hire: context === 'town' ? () => hireFirstFarmhand(this.state) : undefined,
       hireManager: context === 'town' ? () => hireFarmManager(this.state) : undefined,
       hireEliot: context === 'town' ? () => hireEliotReyes(this.state) : undefined,
+      purchaseOfficeQuarters: context === 'town' ? () => { const result = purchaseFarmsteadOfficeQuarters(this.state); if (result.ok) this.save(); return result; } : undefined,
       updateManager: context === 'farm' ? (input) => { const result = updateFarmManagerPlan(this.state, input); if (result.ok) this.save(); return result; } : undefined,
       updateSlot: context === 'farm' ? (input) => { const result = updateWorkerPlanSlot(this.state, input); if (result.ok) this.save(); return result; } : undefined,
       approveDispatch: context === 'farm' ? () => { const result = approveWorkforceDispatch(this.state); if (result.ok) this.save(); return result; } : undefined,
@@ -2580,7 +2582,7 @@ export class FarmEmpireApp {
       },
       scout: { ...this.scout, facing: this.scoutFacing, scratching: this.gameNow() < this.scoutScratchUntil },
       frisbee: this.scoutFetch ? { throwFrom: this.scoutFetch.throwFrom, carrier: this.scout, to: this.scoutFetch.target, phase: this.scoutFetch.phase, phaseStartedAt: this.scoutFetch.phaseStartedAt } : undefined,
-      farmhouseTier: farmhousePresentationTier(farm.parcels.northOwned),
+      farmhouseTier: farmhousePresentationTier(farm.parcels.northOwned, farm.farmstead.officeQuartersOwned),
       barnLoftOwned: farm.equipment.barnLoftExpansionOwned,
       grainSiloOwned: farm.equipment.countyGrainSiloOwned,
       roadsideStand: {

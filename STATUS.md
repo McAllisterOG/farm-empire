@@ -4,10 +4,10 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** Workforce & Manager V2 (local checkpoint; see Git history for hash)
+- **Head:** Farmstead Office & Crew Quarters V1 (local checkpoint; see Git history for hash)
 - **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
-- **Save:** v24 preserves v23 Kitchen/logistics state and adds a normalized Workforce V2 record. V23 migration grants no Eliot, approval, claim, wage, or dispatch token; corrupt roster, slots, gates, and day values fail closed.
-- **Verification:** 338 tests in 50 files passed; focused workforce/reservation regressions, strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Red Team runtime, pause, and idempotence repairs were completed.
+- **Save:** v25 adds fail-closed `farmstead.officeQuartersOwned`. V24 migration grants it only for a valid existing Eliot hire; malformed/inconsistent property and Eliot state close without disturbing valid business data.
+- **Verification:** 342 tests in 51 files passed; focused Farmstead regressions, strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Red Team accepted without High/Medium findings.
 - **Player-surface limit:** No browser or packaged QA pass was run. No package, shortcut, QA profile, or owner save was modified.
 
 ## Current presentation
@@ -69,6 +69,7 @@ No additional feature package is currently active. Workforce & Manager V2 is com
 - Multi-section manual work intentionally automates walking and repeated short actions; it does not add pathfinding, stamina, tool durability, worker assignment, or a character-skill modifier.
 - Audio is an original procedural V1: quiet filtered wind and a restrained rain mix replace the removed recurring wildlife notes; no recorded soundtrack, voice acting, spatial occlusion, or accessibility captions for environmental cues are included yet.
 - The farmhouse has one land-derived visual tier but no separately purchased renovations, rooms, or functional bonuses. Tractor timing now has one finite first-restoration step, but later machinery tiers remain undesigned.
+- Farm Services offers one $1,600 Farmstead Office & Crew Quarters property only after County Pantry contact, north acreage, Mara, and the manager contract. It gates Eliot, adds an attached office/quarters wing, and retains one farmhouse interaction plus exactly the existing two-worker crew; it adds no output, wage, dispatch, capacity, cargo, automation, or third-worker benefit.
 - Starting cash remains $5,000. V2 intentionally changes only the approved crop economics/physical handling abstraction; real-acreage, spoilage, quality, fractional pounds, additional crops/assets/land, and live commodity data remain absent.
 - Crops retain the 15-minute post-maturity window during active play, but crop aging and the Farm business clock now pause whenever the desktop app is closed, minimized, or hidden.
 - The branch has not been pushed; external GitHub authorization is still required.

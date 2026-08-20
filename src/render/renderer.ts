@@ -965,6 +965,10 @@ function drawHomesteadLandscape(ctx: CanvasRenderingContext2D, camera: Camera, z
 }
 
 function drawFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, tier: FarmhousePresentationTier): void {
+  if (tier === 'crew-quarters') {
+    drawCrewQuartersFarmstead(ctx, x, y, zoom, now);
+    return;
+  }
   if (tier === 'expanded') {
     drawExpandedFarmhouse(ctx, x, y, zoom, now);
     return;
@@ -984,6 +988,27 @@ function drawFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom
   ctx.strokeStyle = 'rgba(78,53,38,.55)'; ctx.lineWidth = 2; for (const wx of [-21.5, 21.5]) { ctx.beginPath(); ctx.moveTo(wx, -32); ctx.lineTo(wx, -17); ctx.moveTo(wx - 7, -24.5); ctx.lineTo(wx + 7, -24.5); ctx.stroke(); }
   ctx.fillStyle = '#eee2bf'; ctx.fillRect(-40, -5, 80, 4); for (const post of [-32, 32]) ctx.fillRect(post - 2, -20, 4, 19);
   ctx.fillStyle = '#8b674b'; ctx.fillRect(-42, -2, 84, 5); ctx.restore();
+}
+
+/** Attached office/quarters wing: presentation only, sharing the farmhouse's single hit target. */
+function drawCrewQuartersFarmstead(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {
+  drawExpandedFarmhouse(ctx, x - 12 * zoom, y, zoom, now);
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.92, zoom * 1.92);
+  ctx.fillStyle = 'rgba(48,35,24,.23)'; ctx.beginPath(); ctx.ellipse(53, 7, 43, 12, 0, 0, Math.PI * 2); ctx.fill();
+  // Low attached wing with an unmistakable staffed-office frontage.
+  ctx.fillStyle = '#77523a'; ctx.fillRect(22, -3, 69, 7);
+  ctx.fillStyle = '#d4c095'; ctx.fillRect(27, -43, 59, 41);
+  ctx.fillStyle = '#674636'; ctx.beginPath(); ctx.moveTo(21, -42); ctx.lineTo(56, -67); ctx.lineTo(92, -42); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#866047'; ctx.fillRect(20, -43, 73, 6);
+  ctx.fillStyle = '#efe4c5'; ctx.fillRect(24, -7, 67, 5);
+  for (const wx of [40, 70]) { ctx.fillStyle = '#a6c9c4'; ctx.fillRect(wx - 6, -31, 12, 14); ctx.strokeStyle = 'rgba(78,53,38,.55)'; ctx.lineWidth = 1.6; ctx.strokeRect(wx - 6, -31, 12, 14); }
+  ctx.fillStyle = '#5a4032'; ctx.fillRect(52, -27, 12, 25);
+  // Sign, notice board, and outdoor work table establish the farmstead role.
+  ctx.fillStyle = '#eadba9'; ctx.fillRect(26, -58, 59, 12); ctx.strokeStyle = '#704a31'; ctx.lineWidth = 1; ctx.strokeRect(26, -58, 59, 12);
+  ctx.fillStyle = '#315d3a'; ctx.font = '900 7px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('FARMSTEAD OFFICE', 55, -50);
+  ctx.fillStyle = '#795437'; ctx.fillRect(12, -31, 11, 22); ctx.fillStyle = '#e6d29e'; ctx.fillRect(14, -29, 7, 12); ctx.strokeStyle = '#6b472f'; ctx.strokeRect(12, -31, 11, 22);
+  ctx.fillStyle = '#76503a'; ctx.fillRect(96, -13, 24, 5); ctx.fillRect(99, -8, 3, 10); ctx.fillRect(114, -8, 3, 10); ctx.fillStyle = '#d7c28e'; ctx.fillRect(98, -18, 20, 5);
+  ctx.restore();
 }
 
 function drawExpandedFarmhouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {

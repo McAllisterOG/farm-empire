@@ -467,6 +467,10 @@ export interface FarmWorkforceState {
   slots: FarmWorkerPlanSlot[];
 }
 
+export interface FarmsteadState {
+  officeQuartersOwned: boolean;
+}
+
 export interface FarmManagerState {
   hired: boolean;
   enabled: boolean;
@@ -531,6 +535,7 @@ export interface FarmBusinessState {
   countyKitchen: FarmCountyKitchenState;
   countyFreight: FarmCountyFreightState;
   workforce: FarmWorkforceState;
+  farmstead: FarmsteadState;
   roadsideStand: FarmRoadsideStandState;
   clock: FarmClockState;
   market: {

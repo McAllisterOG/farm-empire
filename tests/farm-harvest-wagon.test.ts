@@ -26,7 +26,7 @@ describe('Tractor harvest wagon v22', () => {
 
   it('grandfathers only an operational v21 tractor with an empty basic wagon', () => {
     const loaded = migratedOperationalFarm();
-    expect(loaded.version).toBe(24);
+    expect(loaded.version).toBe(25);
     expect(farmOf(loaded).equipment.harvestWagon).toEqual({ owned: true, tier: 'basic', crops: {} });
   });
 

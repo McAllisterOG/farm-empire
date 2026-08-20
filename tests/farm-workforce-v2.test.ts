@@ -16,6 +16,7 @@ function readyCrew() {
 describe('Workforce V2', () => {
   it('keeps Eliot gated and never charges approval or empty work', () => {
     const state = readyCrew(); const farm = farmOf(state); const before = farm.cashCents;
+    farm.farmstead.officeQuartersOwned = true;
     expect(eliotUnlocked(state)).toBe(true); expect(hireEliotReyes(state).ok).toBe(true);
     const afterHire = farm.cashCents; expect(approveWorkforceDispatch(state).ok).toBe(true); expect(farm.cashCents).toBe(afterHire);
     expect(approveWorkforceDispatch(state).ok).toBe(false); expect(farm.workforce.dispatchApprovedDay).toBe(farm.clock.day);
@@ -32,7 +33,7 @@ describe('Workforce V2', () => {
     farmOf(state).workforce.workerLastDispatchedDay['mara-bell'] = farmOf(state).clock.day;
     const old = state as unknown as { version: number; farm: Record<string, unknown> }; old.version = 23;
     const loaded = deserialize(JSON.stringify(old), NOW);
-    expect(SAVE_VERSION).toBe(24); expect(farmOf(loaded).workforce).toMatchObject({ eliotHired: false, eliotLastShiftPaidDay: 0, dispatchApprovedDay: 0 });
+    expect(SAVE_VERSION).toBe(25); expect(farmOf(loaded).workforce).toMatchObject({ eliotHired: false, eliotLastShiftPaidDay: 0, dispatchApprovedDay: 0 });
     expect(farmOf(loaded).workforce.slots[1].enabled).toBe(false);
     expect(farmOf(loaded).workforce.workerLastDispatchedDay).toEqual({ 'mara-bell': 0, 'eliot-reyes': 0 });
   });

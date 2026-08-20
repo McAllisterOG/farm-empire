@@ -13,6 +13,7 @@ import { h } from '../dom';
 import { openPanel } from '../modal';
 import { formatFarmCargoWeight } from '../../core/farmCargoScale';
 import { COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY } from '../../data/townWorkOrders.data';
+import { farmhousePresentationTier } from '../../render/farmLayout';
 
 export interface FarmOfficeActions {
   onSave: () => void;
@@ -42,7 +43,8 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
   const starterPlan = farmCropEconomics(selectedCrop, { sectionCount: farmParcelSectionCount('starter') });
   const northPlan = farmCropEconomics(selectedCrop, { sectionCount: farmParcelSectionCount('north') });
   const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offers.length > 0 ? `${freight.offers.length} routes posted` : 'Route complete today';
-  openPanel({ title: farm.parcels.northOwned ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
+  const homeTier = farmhousePresentationTier(farm.parcels.northOwned, farm.farmstead.officeQuartersOwned);
+  openPanel({ title: homeTier === 'crew-quarters' ? 'Farmstead Office & Crew Quarters' : homeTier === 'expanded' ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
       h('div', { class: 'farmbook-level-mark' }, String(knowledge.level.level)),
       h('div', { class: 'farmbook-level-copy' },
@@ -101,9 +103,9 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('div', {}, h('span', {}, 'Land'), h('strong', {}, farm.parcels.northOwned ? '2 acreages' : '1 acreage')),
         h('div', {}, h('span', {}, 'Tractor'), h('strong', {}, farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Restoration needed')),
         h('div', {}, h('span', {}, 'Harvest wagon'), h('strong', {}, harvestWagonReadout(state))),
-        h('div', {}, h('span', {}, 'Home'), h('strong', {}, farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),
+        h('div', {}, h('span', {}, 'Home'), h('strong', {}, homeTier === 'crew-quarters' ? 'Office & crew quarters' : farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),
         h('div', {}, h('span', {}, 'Freight'), h('strong', {}, freightStatus)),
-        h('div', {}, h('span', {}, 'Workforce'), h('strong', {}, farm.workforce.farmhandHired ? 'Mara Bell · hired' : farm.parcels.northOwned && farm.townContact.status === 'completed' ? 'Hiring unlocked' : 'Not hired')),
+        h('div', {}, h('span', {}, 'Workforce'), h('strong', {}, farm.workforce.eliotHired ? 'Mara + Eliot · two-person crew' : farm.workforce.farmhandHired ? (farm.farmstead.officeQuartersOwned ? 'Mara · crew quarters ready' : 'Mara Bell · hired') : farm.parcels.northOwned && farm.townContact.status === 'completed' ? 'Hiring unlocked' : 'Not hired')),
         ...(farm.workforce.manager.hired ? [h('div', {}, h('span', {}, 'Manager'), h('strong', {}, farm.workforce.manager.enabled ? `Plan active · Day ${farm.workforce.manager.lastReviewedDay || 'not reviewed'}` : 'Plan paused'))] : []),
         h('div', {}, h('span', {}, 'Farm Stand'), h('strong', {}, stand.owned ? stand.completedToday ? 'Sold out today' : 'Local order posted' : stand.unlocked ? 'Permit unlocked' : 'Not built')),
       ),

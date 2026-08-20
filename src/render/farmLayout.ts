@@ -24,16 +24,16 @@ export interface FarmLandmarks {
   roadsideStand: FarmPoint;
 }
 
-export type FarmhousePresentationTier = 'starter' | 'expanded';
+export type FarmhousePresentationTier = 'starter' | 'expanded' | 'crew-quarters';
 
 /** Existing parcel ownership is the only authority for the visual home tier. */
-export function farmhousePresentationTier(northParcelOwned: boolean): FarmhousePresentationTier {
-  return northParcelOwned ? 'expanded' : 'starter';
+export function farmhousePresentationTier(northParcelOwned: boolean, officeQuartersOwned = false): FarmhousePresentationTier {
+  return officeQuartersOwned && northParcelOwned ? 'crew-quarters' : northParcelOwned ? 'expanded' : 'starter';
 }
 
 /** Keep the interaction footprint aligned with the visibly wider home. */
 export function farmhouseInteractionRadius(tier: FarmhousePresentationTier): number {
-  return tier === 'expanded' ? 1.55 : 1.3;
+  return tier === 'crew-quarters' ? 1.72 : tier === 'expanded' ? 1.55 : 1.3;
 }
 
 /** Farm-only landmarks are presentation anchors, never saved world state. */
