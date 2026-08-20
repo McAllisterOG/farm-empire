@@ -575,3 +575,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Research anchors:** The calibration remains explicitly game-scale. Future literal/proportional work requires separately authorized primary agricultural sources; no live commodity feed, acreage valuation, fractional pounds, spoilage, or quality system was introduced.
 - **Verification:** 325/325 tests in 46 files passed; focused economy/save tests, strict typecheck, Vite production build, and `git diff --check` passed.
 - **Known limitation:** No browser/computer-control capability was available for the isolated QA-profile player-surface pass. No package, shortcut, QA profile, owner save, or push was changed.
+
+## Tractor Implements & Harvest Wagon V1 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Scope:** Add v22 persistent tractor-only harvest wagon logistics without changing V2 crop/economy values, starting cash, pickup/trailer authority, worker direct-to-barn harvest, vehicle speed/pacing, or other prices.
+- **Result:** Restoration supplies the inherited cultivator, row planter, and 2,400 lb basic wagon. Operated whole-section harvest now atomically fills wagon cargo and pauses truthfully when full; the tractor drives to the barn receiving bay for an all-or-nothing mixed unload. The County 4,800 lb wagon costs $2,400 after the Implement Set, north acreage, and first freight. Implement Set player copy now correctly names faster establishment plus +1 operated harvest item. Save v21 operational tractors grandfather an empty basic wagon; malformed wagon state normalizes closed. Farmbook, How to Play, Equipment Desk, and Barn/Cargo describe capacity/gates truthfully, including the re-review repair that hides capacity before restoration.
+- **Verification:** 329/329 tests in 47 files passed, including focused wagon/Farmbook regressions; strict typecheck, Vite production build, and `git diff --check` passed. Red Team Medium findings on pre-restoration capacity copy and physical-loop progression copy were repaired and re-reviewed.
+- **Known limitation:** No browser, isolated QA profile, package, shortcut, owner save, or push was used. The player-facing flow is source/test verified but not browser-click-accepted in this checkpoint.

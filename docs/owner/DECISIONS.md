@@ -426,3 +426,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Farm economy capacity is integer **10-lb handling lots**: basket 24, pickup 72, trailer 144, barn 480, loft 720, silo 1,200 (240/720/1,440/4,800/7,200/12,000 lb). This is a game abstraction, not real acreage or farm pricing. Starting cash remains $5,000; assets, unlocks, freight premiums/templates, and Paradise Isle remain unchanged.
 - The approved V2 crop table is authoritative for seed cost, grow time, yield, weight, and base sale price: corn 1400/70000/10/1/410; wheat 1000/55000/8/1/340; soy 1700/85000/9/1/500; potatoes 1900/75000/11/1/400; carrots 900/40000/8/1/380; tomatoes 2400/100000/16/1/470; cabbage 2600/140000/10/1/720; pumpkins 3200/180000/8/3/1350.
 - Save v21 pins output at planting with a yield plus explicit balance provenance. v20 migration marks extant crops V1 and assigns their canonical V1 yield; fresh plants are V2. Only provenance-matched V1/V2 snapshots are accepted. Missing, forged, mismatched, or malformed snapshots normalize to current V2. Migration preserves inventory/seeds/cargo/basket/ownership, resets market quotes to V2 base, and clears active events.
+
+## 2026-08-19 - Make tractor harvest logistics persistent and physical
+
+**Status:** Approved and complete
+
+- Restoring the Old Red Tractor includes its cultivator, basic row planter, and persistent 240-lot (2,400 lb) basic harvest wagon. Existing operational tractors receive only that empty basic wagon through save v22; maintenance tractors receive it on restoration.
+- Operated tractor harvest preflights and atomically moves each whole pinned-yield section plus Implement Set bonus into the wagon, never the barn. A full wagon pauses the job without split, skip, or loss; Escape/reload preserve completed field work and wagon cargo while active jobs remain runtime-only.
+- The tractor must physically drive its attached wagon to the barn receiving bay. Unload transfers the complete mixed load only when all weighted cargo fits the barn; failed capacity checks leave both inventories unchanged. Pickup cargo, trailer authority, idle vehicle handoff, farmhand, and manager logistics remain unchanged; workers still harvest direct to barn.
+- The internal County Row-Crop Field Kit ID/ownership/cost/gates remain stable but player-facing copy is County Row-Crop Implement Set: +20% faster establishment and +1 operated harvest item. Its north-acreage/first-freight/restored-tractor gate unlocks one $2,400 County wagon tier at 480 lots (4,800 lb).
+- Wagon attachment is automatic for operated harvest and visible while loaded; no manual hitching, combine, auger, header, tender, pickup redesign, worker logistics, or machinery/economy rebalance is authorized.

@@ -147,7 +147,7 @@ describe('County crop catalog', () => {
     raw.farm.market.quotes.crop_corn = { currentCents: 999, previousCents: 777 };
     raw.farm.market.activeEvents = [{ id: 'strong-corn-demand', remainingDays: 2 }];
     const loaded = deserialize(JSON.stringify(raw), NOW + 1);
-    expect(loaded.version).toBe(21);
+    expect(loaded.version).toBe(22);
     expect(loaded.plots[0].crop).toMatchObject({ harvestYieldItems: 8, harvestBalanceVersion: 1 }); expect(loaded.plots[1].crop).toMatchObject({ harvestYieldItems: 8, harvestBalanceVersion: 1 });
     expect(farmOf(loaded).storage.crop_wheat).toBe(5); expect(farmOf(loaded).pickup.cargo.crops.crop_potato).toBe(3); expect(farmOf(loaded).handBasket.crops.crop_carrot).toBe(2);
     expect(farmOf(loaded).market.quotes.crop_corn).toEqual({ currentCents: 410, previousCents: 410 });
@@ -194,6 +194,7 @@ describe('County crop catalog', () => {
     expect(harvestFarmCropToBasket(loaded, loaded.plots[1].uid, NOW + 2).ok).toBe(true);
     expect(harvestFarmCrop(loaded, loaded.plots[2].uid, NOW + 2, 'operatedTractor').ok).toBe(true);
     expect(loadedFarm.storage.crop_corn).toBe(21);
+    expect(loadedFarm.equipment.harvestWagon.crops.crop_corn).toBeUndefined();
     expect(loadedFarm.handBasket.crops.crop_corn).toBe(10);
   });
 
@@ -220,7 +221,8 @@ describe('County crop catalog', () => {
     expect(harvestFarmCrop(reloaded, reloaded.plots[0].uid, NOW + 4, 'manual').ok).toBe(true);
     expect(harvestFarmCropToBasket(reloaded, reloaded.plots[1].uid, NOW + 4).ok).toBe(true);
     expect(harvestFarmCrop(reloaded, reloaded.plots[2].uid, NOW + 4, 'operatedTractor').ok).toBe(true);
-    expect(reloadedFarm.storage.crop_tomato).toBe(37);
+    expect(reloadedFarm.storage.crop_tomato).toBe(18);
+    expect(reloadedFarm.equipment.harvestWagon.crops.crop_tomato).toBe(19);
     expect(reloadedFarm.handBasket.crops.crop_tomato).toBe(18);
   });
 

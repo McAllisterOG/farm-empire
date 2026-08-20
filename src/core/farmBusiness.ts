@@ -4,7 +4,7 @@ import type {
 import { allFarmCrops, allFarmMarketEvents, farmCropDef, farmCropDefOrNull, farmMarketEventDef } from './registry';
 import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
-import { BARN_LOFT_EXPANSION, COUNTY_GRAIN_SILO, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
+import { BARN_LOFT_EXPANSION, COUNTY_GRAIN_SILO, COUNTY_HARVEST_WAGON, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
 import { COUNTY_FREIGHT_BULK_PREMIUM_BPS, COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES, countyFreightBulkAllowedUnits } from '../data/countyFreight.data';
 import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, PICKUP_TRAILER_CARGO_CAPACITY, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
 import { HAND_BASKET_CAPACITY, emptyHandBasket } from './farmHarvestBasketData';
@@ -13,6 +13,7 @@ import {
   farmParcelSectionCount, farmParcelTiles, type FarmParcelId,
 } from './farmParcels';
 import { recordFarmStat } from './farmKnowledge';
+import { formatFarmCargoWeight } from './farmCargoScale';
 
 export { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from './farmParcels';
 export type { FarmParcelId } from './farmParcels';
@@ -22,6 +23,8 @@ export const STARTING_STORAGE_CAPACITY = 480;
 export const FIRST_PARCEL_PRICE_CENTS = 425_000;
 export const GAME_MINUTES_PER_REAL_SECOND = 8;
 export const FARM_MARKET_MAX_MULTIPLIER = 1.55;
+export const BASIC_HARVEST_WAGON_CAPACITY = 240;
+export const COUNTY_HARVEST_WAGON_CAPACITY = 480;
 
 /** V20's last shipped Farm Empire yields; only these legacy snapshots remain valid in v21. */
 export const FARM_V1_HARVEST_YIELD_ITEMS = Object.freeze({
@@ -164,6 +167,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
       barnLoftExpansionOwned: false,
       countyUtilityTrailerOwned: false,
       countyGrainSiloOwned: false,
+      harvestWagon: { owned: false, tier: 'basic', crops: {} },
       tractor: {
         id: 'old-tractor',
         name: 'Old Red Tractor',
@@ -263,6 +267,39 @@ function normalizeHandBasket(rawBasket: unknown): FarmBusinessState['handBasket'
   };
 }
 
+export function harvestWagonCapacity(state: GameState): number {
+  return farmOf(state).equipment.harvestWagon.tier === 'county' ? COUNTY_HARVEST_WAGON_CAPACITY : BASIC_HARVEST_WAGON_CAPACITY;
+}
+
+export function harvestWagonUsed(state: GameState): number {
+  return allFarmCrops().reduce((sum, def) => sum + (farmOf(state).equipment.harvestWagon.crops[def.id] ?? 0) * def.storageUnitsPerItem, 0);
+}
+
+/** Player-facing capacity is meaningful only after restoration supplies the wagon. */
+export function harvestWagonReadout(state: GameState): string {
+  const wagon = farmOf(state).equipment.harvestWagon;
+  return wagon.owned
+    ? `${formatFarmCargoWeight(harvestWagonUsed(state))} / ${formatFarmCargoWeight(harvestWagonCapacity(state))}`
+    : 'Restoration required';
+}
+
+function normalizeHarvestWagon(rawWagon: unknown, operational: boolean, northOwned: boolean, kitOwned: boolean, freightCompleted: boolean): FarmBusinessState['equipment']['harvestWagon'] {
+  const raw = objectRecord(rawWagon);
+  const county = raw.owned === true && raw.tier === 'county' && operational && kitOwned && northOwned && freightCompleted;
+  const owned = county || (raw.owned === true && operational);
+  const capacity = county ? COUNTY_HARVEST_WAGON_CAPACITY : BASIC_HARVEST_WAGON_CAPACITY;
+  const source = objectRecord(raw.crops);
+  const crops: Record<string, number> = {};
+  let used = 0;
+  for (const def of allFarmCrops()) {
+    const count = Number.isInteger(source[def.id]) && Number(source[def.id]) > 0 ? Number(source[def.id]) : 0;
+    const kept = Math.min(count, Math.floor(Math.max(0, capacity - used) / def.storageUnitsPerItem));
+    if (kept > 0 && owned) crops[def.id] = kept;
+    used += kept * def.storageUnitsPerItem;
+  }
+  return { owned, tier: county ? 'county' : 'basic', crops };
+}
+
 /** Fill missing/corrupt Farm Empire fields without trusting stored nested shapes. */
 export function normalizeFarmBusinessState(state: GameState, now: number): FarmBusinessState {
   const defaults = createFarmBusinessState(now);
@@ -313,6 +350,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     }));
 
   const northOwned = rawParcels.northOwned === true;
+  const tractorOperational = rawTractor.status === 'operational';
   const loftOwned = rawLoftOwned === true && northOwned;
   const grainSiloOwned = siloOwned && loftOwned;
   const clockDay = clampInt(rawClock.day, 1, 1);
@@ -429,10 +467,11 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
       barnLoftExpansionOwned: loftOwned,
       countyUtilityTrailerOwned: trailerOwned,
       countyGrainSiloOwned: grainSiloOwned,
+      harvestWagon: normalizeHarvestWagon(rawEquipment.harvestWagon, tractorOperational, northOwned, rawKitOwned === true, lastCompletedDay > 0),
       tractor: {
         id: String(rawTractor.id || defaults.equipment.tractor.id),
         name: String(rawTractor.name || defaults.equipment.tractor.name),
-        status: rawTractor.status === 'operational' ? 'operational' : 'maintenance',
+        status: tractorOperational ? 'operational' : 'maintenance',
         x: clampNumber(rawTractor.x, defaults.equipment.tractor.x),
         y: clampNumber(rawTractor.y, defaults.equipment.tractor.y),
         workSpeedBonusBps: clampInt(rawTractor.workSpeedBonusBps, 2_000),
@@ -622,7 +661,9 @@ export function planParcelWork(
     .filter((plot) => !plot.crop)
     .slice(0, availableSeeds)
     .map((plot) => plot.uid);
-  let freeCapacity = storageRemaining(state);
+  let freeCapacity = farm.equipment.harvestWagon.owned
+    ? harvestWagonCapacity(state) - harvestWagonUsed(state)
+    : storageRemaining(state);
   const harvestPlotUids: number[] = [];
   for (const plot of orderedPlots) {
     if (!farmCropReady(plot, now) || !plot.crop) continue;
@@ -689,6 +730,16 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
       ? COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits : 0;
   const amount = pinnedFarmHarvestYield(plot.crop) + bonus;
   const needed = amount * def.storageUnitsPerItem;
+  if (context === 'operatedTractor' && farm.equipment.harvestWagon.owned) {
+    const wagon = farm.equipment.harvestWagon;
+    const open = harvestWagonCapacity(state) - harvestWagonUsed(state);
+    if (needed > open) return fail(`Harvest wagon full: ${needed * 10} lb required; ${Math.max(0, open) * 10} lb open. Drive to the barn receiving bay to unload.`);
+    wagon.crops[def.id] = (wagon.crops[def.id] ?? 0) + amount;
+    plot.crop = null;
+    farm.fieldConditions[String(plotUid)] = { soil: 'stubble' };
+    recordFarmStat(state, 'harvests'); recordFarmStat(state, 'farmHarvestUnits', amount); recordFarmStat(state, 'farmTractorSections');
+    return { ok: true, events: [{ type: 'harvest', target: def.id, amount }] };
+  }
   if (storageRemaining(state) < needed) {
     return fail(`Barn full: ${needed} handling lots (${needed * 10} lb) of open storage are required. Sell crops before harvesting.`);
   }
@@ -708,22 +759,44 @@ export function restoreOldTractor(state: GameState): ActionResult {
   if (farm.cashCents < OLD_TRACTOR_RESTORATION.priceCents) return fail('Not enough cash for the Old Tractor Restoration.');
   farm.cashCents -= OLD_TRACTOR_RESTORATION.priceCents;
   farm.equipment.tractor.status = 'operational';
+  farm.equipment.harvestWagon = { owned: true, tier: 'basic', crops: {} };
   recordFarmStat(state, 'farmCashSpentCents', OLD_TRACTOR_RESTORATION.priceCents);
   syncCashMirror(state);
-  return { ok: true, events: [{ type: 'toast', target: 'The old tractor is restored and ready for field work.' }] };
+  return { ok: true, events: [{ type: 'toast', target: 'The old tractor is restored with its cultivator, row planter, and basic harvest wagon.' }] };
 }
 
 export function purchaseCountyRowCropFieldKit(state: GameState): ActionResult {
   const farm = farmOf(state);
   if (farm.townContact.status !== 'completed') return fail('Complete the County Pantry order before buying this field kit.');
-  if (farm.equipment.tractor.status !== 'operational') return fail('Restore the old tractor before installing the County Row-Crop Field Kit.');
-  if (farm.equipment.countyRowCropFieldKitOwned) return fail('The County Row-Crop Field Kit is already installed.');
-  if (farm.cashCents < COUNTY_ROW_CROP_FIELD_KIT.priceCents) return fail('Not enough cash for the County Row-Crop Field Kit.');
+  if (farm.equipment.tractor.status !== 'operational') return fail('Restore the old tractor before installing the County Row-Crop Implement Set.');
+  if (farm.equipment.countyRowCropFieldKitOwned) return fail('The County Row-Crop Implement Set is already installed.');
+  if (farm.cashCents < COUNTY_ROW_CROP_FIELD_KIT.priceCents) return fail('Not enough cash for the County Row-Crop Implement Set.');
   farm.cashCents -= COUNTY_ROW_CROP_FIELD_KIT.priceCents;
   farm.equipment.countyRowCropFieldKitOwned = true;
   recordFarmStat(state, 'farmCashSpentCents', COUNTY_ROW_CROP_FIELD_KIT.priceCents);
   syncCashMirror(state);
-  return { ok: true, events: [{ type: 'toast', target: 'County Row-Crop Field Kit purchased and installed.' }] };
+  return { ok: true, events: [{ type: 'toast', target: 'County Row-Crop Implement Set purchased and installed.' }] };
+}
+
+export function purchaseCountyHarvestWagon(state: GameState): ActionResult {
+  const farm = farmOf(state);
+  if (farm.equipment.harvestWagon.tier === 'county') return fail('The County Harvest Wagon is already owned.');
+  if (farm.equipment.tractor.status !== 'operational' || !farm.equipment.countyRowCropFieldKitOwned || !farm.parcels.northOwned || farm.countyFreight.lastCompletedDay < 1) return fail('Restore the tractor, install the Implement Set, own the neighboring acreage, and complete one freight haul first.');
+  if (farm.cashCents < COUNTY_HARVEST_WAGON.priceCents) return fail('Not enough cash for the County Harvest Wagon.');
+  farm.cashCents -= COUNTY_HARVEST_WAGON.priceCents;
+  farm.equipment.harvestWagon.owned = true; farm.equipment.harvestWagon.tier = 'county';
+  recordFarmStat(state, 'farmCashSpentCents', COUNTY_HARVEST_WAGON.priceCents); syncCashMirror(state);
+  return { ok: true, events: [{ type: 'toast', target: 'County Harvest Wagon purchased. Capacity is now 4,800 lb.' }] };
+}
+
+export function unloadHarvestWagonToBarn(state: GameState): ActionResult {
+  const farm = farmOf(state); const wagon = farm.equipment.harvestWagon; const used = harvestWagonUsed(state);
+  if (used <= 0) return fail('The harvest wagon is empty.');
+  const open = storageRemaining(state);
+  if (used > open) return fail(`Barn needs ${used * 10} lb open; only ${open * 10} lb is available. The wagon was not unloaded.`);
+  for (const def of allFarmCrops()) { const count = wagon.crops[def.id] ?? 0; if (count) farm.storage[def.id] = (farm.storage[def.id] ?? 0) + count; }
+  wagon.crops = {};
+  return { ok: true, events: [{ type: 'toast', target: `Harvest wagon unloaded: ${used * 10} lb received by the barn.` }] };
 }
 
 export function purchaseCountyUtilityTrailer(state: GameState): ActionResult {

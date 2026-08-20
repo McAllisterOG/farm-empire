@@ -55,7 +55,7 @@ export function farmGuideSteps(state: GameState): readonly FarmGuideStep[] {
     { id: 'load', label: 'Load the pickup', hint: 'Park beside the barn, then click the truck or barn.', done: loaded },
     { id: 'town', label: 'Reach County services', hint: 'Click the road gate; drive for cargo service.', done: visited },
     { id: 'trade', label: 'Complete a sale or delivery', hint: 'Eli handles crops at the Grain Exchange.', done: traded },
-    { id: 'restore', label: 'Restore the old tractor', hint: 'After the Pantry delivery, use the County Equipment Desk.', done: farm.equipment.tractor.status === 'operational' },
+    { id: 'restore', label: 'Restore the old tractor', hint: 'The restoration includes a basic harvest wagon; operated harvest loads it, then drive to the barn receiving bay to unload.', done: farm.equipment.tractor.status === 'operational' },
     { id: 'expand', label: 'Buy neighboring acreage', hint: 'Click the locked field or use the farmhouse records.', done: farm.parcels.northOwned },
     { id: 'storage', label: 'Build commercial storage', hint: 'Install the barn loft, then commission a grain silo at the County Equipment Desk.', done: farm.equipment.countyGrainSiloOwned },
   ];

@@ -79,6 +79,7 @@ export interface RenderScene {
       steer?: number;
       wheelPhase?: number;
       workKind?: ParcelWorkKind;
+      harvestWagon?: { tier: 'basic' | 'county'; used: number; attached: boolean };
     };
     pickup: { name: string; x: number; y: number; operating: boolean; moving: boolean; trailerOwned: boolean; headingX?: number; headingY?: number; steer?: number; wheelPhase?: number };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
@@ -578,7 +579,7 @@ export class Renderer {
     items.push({ depth: doghousePoint.x + doghousePoint.y + 0.15, draw: () => drawFarmDoghouse(ctx, camera.sx(isoX(doghousePoint.x, doghousePoint.y)), camera.sy(isoY(doghousePoint.x, doghousePoint.y) + TILE_H / 2), zoom) });
     const tractor = scene.farm!.tractor;
     const tractorPoint = farmWorldPoint(tractor);
-    items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now, tractor.headingX, tractor.headingY, tractor.steer, tractor.wheelPhase, !!tractor.moving, tractor.workKind) });
+    items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now, tractor.headingX, tractor.headingY, tractor.steer, tractor.wheelPhase, !!tractor.moving, tractor.workKind, tractor.harvestWagon) });
     const pickup = scene.farm!.pickup;
     const pickupPoint = farmWorldPoint(pickup);
     items.push({ depth: pickupPoint.x + pickupPoint.y + 0.31, draw: () => drawOldPickup(ctx, camera.sx(isoX(pickupPoint.x, pickupPoint.y)), camera.sy(isoY(pickupPoint.x, pickupPoint.y) + TILE_H / 2), zoom, pickup.operating, pickup.moving, now, pickup.headingX, pickup.headingY, pickup.steer, pickup.wheelPhase, pickup.trailerOwned) });
@@ -1302,6 +1303,7 @@ function drawOldTractor(
   wheelPhase = 0,
   moving = false,
   workKind?: ParcelWorkKind,
+  harvestWagon?: { tier: 'basic' | 'county'; used: number; attached: boolean },
 ): void {
   ctx.save();
   ctx.translate(x, y);
@@ -1313,6 +1315,7 @@ function drawOldTractor(
   ctx.rotate(pose.slope);
   if (pose.mirrored) ctx.scale(-1, 1);
   if (working && workKind) drawTractorImplement(ctx, workKind, now);
+  else if (harvestWagon?.attached) drawPersistentHarvestWagon(ctx, harvestWagon.tier, harvestWagon.used, now);
   ctx.fillStyle = 'rgba(40, 30, 20, 0.22)';
   ctx.beginPath();
   ctx.ellipse(0, 2, 34, 10, 0, 0, Math.PI * 2);
@@ -1360,6 +1363,15 @@ function drawOldTractor(
   ctx.fillStyle = '#ead9a8';
   ctx.fillRect(18, -24, 5, 4);
   ctx.restore();
+}
+
+function drawPersistentHarvestWagon(ctx: CanvasRenderingContext2D, tier: 'basic' | 'county', used: number, now: number): void {
+  const county = tier === 'county';
+  ctx.strokeStyle = '#6b5237'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, -11); ctx.lineTo(-42, -10); ctx.stroke();
+  ctx.fillStyle = county ? '#315f76' : '#8b5938'; ctx.fillRect(-78, -29, county ? 45 : 37, 20);
+  ctx.fillStyle = county ? '#5d99ad' : '#b67a42'; ctx.beginPath(); ctx.moveTo(-81, -31); ctx.lineTo(county ? -29 : -39, -31); ctx.lineTo(county ? -34 : -43, -8); ctx.lineTo(-76, -8); ctx.closePath(); ctx.fill();
+  if (used > 0) { ctx.fillStyle = '#d8ad4b'; for (const cargoX of [-72, -62, -52, -42]) { ctx.beginPath(); ctx.ellipse(cargoX, -31, 5, 2.6, 0, 0, Math.PI * 2); ctx.fill(); } }
+  drawTractorWheel(ctx, -69, -6, 7, 2.6, now / 130);
 }
 
 function drawTractorImplement(ctx: CanvasRenderingContext2D, workKind: ParcelWorkKind, now: number): void {

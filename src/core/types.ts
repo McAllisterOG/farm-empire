@@ -527,6 +527,11 @@ export interface FarmBusinessState {
     barnLoftExpansionOwned: boolean;
     countyUtilityTrailerOwned: boolean;
     countyGrainSiloOwned: boolean;
+    harvestWagon: {
+      owned: boolean;
+      tier: 'basic' | 'county';
+      crops: Record<string, number>;
+    };
     tractor: {
       id: string;
       name: string;

@@ -4,16 +4,16 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** Economy & Physical Scale V2 (local checkpoint; see Git history for hash)
+- **Head:** Tractor Implements & Harvest Wagon V1 (local checkpoint; see Git history for hash)
 - **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
-- **Save:** v21 pins each growing crop to a provenance-backed V1 migration or V2 planted yield. v20 migration preserves crop/seed/cargo/basket/ownership counts, resets quotes to V2 bases, clears active events, and rejects malformed harvest snapshots to current V2 output.
-- **Verification:** 325 tests in 46 files passed; focused economy/save regressions, strict typecheck, Vite production build, and `git diff --check` passed. Tests cover exact economics, capacity/mass, Pantry feasibility, premiums, long-session payback, and forged-save safety across every harvest authority.
+- **Save:** v22 retains v21 yield provenance and adds a defensive persistent tractor harvest wagon. V21 operational tractors receive only an empty basic wagon; malformed/forged cargo normalizes to known crops, weighted capacity, and valid tier gates without a spill or upgrade.
+- **Verification:** 329 tests in 47 files passed; focused wagon/Farmbook regressions, strict typecheck, Vite production build, and `git diff --check` passed. Red Team Medium UI truthfulness/guidance findings were repaired and re-reviewed.
 - **Player-surface limit:** No browser/computer-control capability was available for the isolated QA-profile packaged pass. No package, shortcut, QA profile, or owner save was modified.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v21 retains v20 session pause/recovery and adds only per-growing-crop harvest-balance provenance; earlier v19 manager, v18 bulk-freight, v17 hand-basket, v16 grain-silo, v15 roadside-stand, v14 workforce, v13 trailer, v12 freight, v11 tractor restoration, v10 soil, and v9 acreage state remain intact.
+- Existing plot IDs and planted crops remain compatible. Save schema v22 retains v21 yield provenance and adds a persistent harvest wagon; earlier v20 session pause/recovery, v19 manager, v18 bulk freight, v17 hand basket, v16 grain silo, v15 stand, v14 workforce, v13 trailer, v12 freight, v11 restoration, v10 soil, and v9 acreage state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - Farm-only crops use immutable runtime presentation data and deterministic Canvas painting; 16 cached ground variants plus textured, edged field sections improve readability without persistent visual state.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
@@ -28,7 +28,7 @@
 - Feed & Seed purchases, Grain Exchange sales, and the County Pantry delivery require the pickup at the County Service Center. On-foot visits remain useful for dialogue and inspection but fail closed for cargo transactions.
 - Mae Carter's finite County Pantry corn order now measures real pickup corn; only Eli Morgan can consume exactly 12 hauled units and issue the atomic one-time payout.
 - After that first delivery, Eli's County Freight Board posts one deterministic unlocked-crop haul per farm day. Accepted terms retain their exact quantity and 25% posted-rate premium across later market/day changes; exact pickup delivery pays once and a new route waits until a later farm day.
-- Fresh farms inherit the Old Red Tractor in a visible repair state. The first County delivery unlocks its one-time $1,950 restoration; only then does the Equipment Desk sell the $1,250 Row-Crop Field Kit, whose bonuses apply only while the tractor is physically operated.
+- Fresh farms inherit the Old Red Tractor in a visible repair state. Its $1,950 restoration includes cultivator, row planter, and a persistent 2,400 lb basic harvest wagon; operated whole-section harvest loads the wagon and the tractor must drive it to the barn receiving bay for an atomic unload. The $2,400 County 4,800 lb wagon requires the Implement Set, north acreage, and completed freight; farmhands/managers remain direct-to-barn.
 - Farm crops remain ready for one active hour, then visibly wither and can be cleared without refund so field sections are never permanently blocked. Closed or hidden Farm sessions remain paused by save v20.
 - A true zero-asset farm may receive exactly one lifetime wheat seed from Mae; the claim is persisted and cannot be recycled through intentional crop loss.
 - Manual harvest carries a visible 24-unit saved basket until atomically unloaded to its chosen barn or present pickup destination; basket contents count as assets for County relief and survive reload.
@@ -52,7 +52,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Long-Session Progression Assurance V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
+No additional feature package is currently active. Tractor Implements & Harvest Wagon V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
 
 ## Known limitations
 

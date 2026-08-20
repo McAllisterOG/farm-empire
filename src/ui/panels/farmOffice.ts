@@ -1,6 +1,6 @@
 import type { GameState } from '../../core/types';
 import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../../core/farmKnowledge';
-import { farmOf, formatMoney, storageUsed } from '../../core/farmBusiness';
+import { farmOf, formatMoney, harvestWagonReadout, storageUsed } from '../../core/farmBusiness';
 import { farmCropEconomics } from '../../core/farmCropEconomics';
 import { farmCropDef } from '../../core/registry';
 import { farmParcelSectionCount } from '../../core/farmParcels';
@@ -84,6 +84,9 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('div', {}, h('strong', {}, '36 starter'), h('span', {}, `Seed ${formatMoney(starterPlan.seedCostCents)} · Gross ${formatMoney(starterPlan.grossBaseValueCents)} · Net ${formatMoney(starterPlan.netBaseValueCents)} · ${formatFarmCargoWeight(starterPlan.totalStorageUnits)} storage`)),
         h('div', {}, h('strong', {}, '96 north'), h('span', {}, `Seed ${formatMoney(northPlan.seedCostCents)} · Gross ${formatMoney(northPlan.grossBaseValueCents)} · Net ${formatMoney(northPlan.netBaseValueCents)} · ${formatFarmCargoWeight(northPlan.totalStorageUnits)} storage`)),
       ),
+      h('small', { 'data-testid': 'farmbook-wagon-guidance' }, farm.equipment.harvestWagon.owned
+        ? 'Operated harvest loads the tractor wagon; drive it to the barn receiving bay for one whole-load unload. County wagon: Implement Set + neighboring acreage + completed freight + $2,400, expanding to 4,800 lb.'
+        : 'Tractor restoration includes the basic 2,400 lb harvest wagon. The County 4,800 lb wagon later requires the Implement Set, neighboring acreage, completed freight, and $2,400.'),
     ),
     h('section', { class: 'farmbook-section' },
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Operation'), h('span', {}, `${ownedSections} sections`)),
@@ -95,6 +98,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
         h('div', {}, h('span', {}, 'Trailer'), h('strong', {}, farm.equipment.countyUtilityTrailerOwned ? 'County utility trailer' : 'Not owned')),
         h('div', {}, h('span', {}, 'Land'), h('strong', {}, farm.parcels.northOwned ? '2 acreages' : '1 acreage')),
         h('div', {}, h('span', {}, 'Tractor'), h('strong', {}, farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Restoration needed')),
+        h('div', {}, h('span', {}, 'Harvest wagon'), h('strong', {}, harvestWagonReadout(state))),
         h('div', {}, h('span', {}, 'Home'), h('strong', {}, farm.parcels.northOwned ? 'Expanded farmhouse' : 'Humble farmhouse')),
         h('div', {}, h('span', {}, 'Freight'), h('strong', {}, freightStatus)),
         h('div', {}, h('span', {}, 'Workforce'), h('strong', {}, farm.workforce.farmhandHired ? 'Mara Bell · hired' : farm.parcels.northOwned && farm.townContact.status === 'completed' ? 'Hiring unlocked' : 'Not hired')),

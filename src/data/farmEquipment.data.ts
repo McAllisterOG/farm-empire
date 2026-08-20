@@ -6,7 +6,7 @@ export const OLD_TRACTOR_RESTORATION = {
 
 export const COUNTY_ROW_CROP_FIELD_KIT = {
   id: 'county-row-crop-field-kit',
-  name: 'County Row-Crop Field Kit',
+  name: 'County Row-Crop Implement Set',
   priceCents: 125_000,
   workSpeedBonusBps: 2_000,
   harvestBonusUnits: 1,
@@ -18,6 +18,14 @@ export const BARN_LOFT_EXPANSION = {
   priceCents: 180_000,
   fromCapacity: 480,
   toCapacity: 720,
+} as const;
+
+export const COUNTY_HARVEST_WAGON = {
+  id: 'county-harvest-wagon',
+  name: 'County Harvest Wagon',
+  priceCents: 240_000,
+  fromCapacity: 240,
+  toCapacity: 480,
 } as const;
 
 export const COUNTY_UTILITY_TRAILER = {

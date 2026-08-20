@@ -2,7 +2,7 @@ import type { ActionResult, FarmHarvestDestination, GameState } from '../core/ty
 import { allFarmCrops, farmCropDef } from '../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
-  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyGrainSilo, purchaseCountyRowCropFieldKit, purchaseCountyUtilityTrailer, purchaseNeighborParcel, selectFarmCrop,
+  formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyGrainSilo, purchaseCountyHarvestWagon, purchaseCountyRowCropFieldKit, purchaseCountyUtilityTrailer, purchaseNeighborParcel, selectFarmCrop, unloadHarvestWagonToBarn,
   issueCountyReliefSeed, clearWitheredFarmCrop, isFarmCropWithered, farmCropStage, farmCropUnlockInfo, isFarmCropUnlocked,
   syncCashMirror, ownedFarmParcelAt, planParcelWork, farmFieldCondition, tillFarmField, waterFarmCrop,
   placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind, type ParcelWorkPlan,
@@ -752,7 +752,15 @@ export class FarmEmpireApp {
     if (interaction?.kind === 'town-gate') { this.openFarmGateMenu(sx, sy); return; }
     if (interaction?.kind === 'locked-acreage') { openFarmLand(this.state, this.panelActions()); return; }
     if (interaction?.kind === 'barn') {
-      if (this.operatingTractor) { toast('Exit the tractor to manage barn cargo.', 'bad'); return; }
+      if (this.operatingTractor) {
+        const bay = farmLandmarks().cargoPad;
+        this.driveTractorTo(bay.x, bay.y, () => {
+          const result = unloadHarvestWagonToBarn(this.state);
+          if (result.ok) this.save();
+          this.dispatch(result);
+        });
+        return;
+      }
       if (this.operatingPickup) {
         const pad = farmLandmarks().cargoPad;
         this.drivePickupTo(pad.x, pad.y, () => { toast('Pickup parked at the cargo pad.', 'good'); this.openPickupPanel(); });
@@ -872,6 +880,7 @@ export class FarmEmpireApp {
           onPurchaseKit: () => purchaseCountyRowCropFieldKit(this.state),
           onPurchaseTrailer: () => purchaseCountyUtilityTrailer(this.state),
           onPurchaseSilo: () => purchaseCountyGrainSilo(this.state),
+          onPurchaseWagon: () => purchaseCountyHarvestWagon(this.state),
           dispatch: this.dispatch,
           onClose: () => {},
         }),
@@ -1133,7 +1142,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Ready crops remain harvestable for one active hour. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried.'), h('p', {}, 'Cargo is measured in pounds. Each seed bag uses 10 lb of payload; produce lots vary by crop. Park the pickup at the marked barn cargo pad to load, then drive it to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration and three daily Freight Board bids. Tractor field jobs visibly attach the planter or harvest wagon they need. With the County Utility Trailer attached, one daily bid is a trailer-required commercial bulk load.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Ready crops remain harvestable for one active hour. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried.'), h('p', {}, 'Cargo is measured in pounds. Each seed bag uses 10 lb of payload; produce lots vary by crop. Park the pickup at the marked barn cargo pad to load, then drive it to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration, including its basic 2,400 lb harvest wagon. Operated harvest loads that wagon—not the barn—so drive the tractor to the barn receiving bay to unload. The County 4,800 lb wagon costs $2,400 after the Implement Set, neighboring acreage, and one completed freight haul.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1275,12 +1284,12 @@ export class FarmEmpireApp {
     }]);
   }
 
-  private driveTractorTo(x: number, y: number): void {
+  private driveTractorTo(x: number, y: number, cb: (() => void) | null = () => toast('Tractor parked.', 'good')): void {
     if (!this.operatingTractor || this.tractorJob) return;
     this.tractorTarget = {
       x,
       y,
-      cb: () => toast('Tractor parked.', 'good'),
+      cb,
     };
   }
 
@@ -1512,9 +1521,17 @@ export class FarmEmpireApp {
         job.kind === 'plant' ? 'PLANTED' : `+${harvest?.amount ?? 0}`,
         'float-good',
       );
+      if (job.kind === 'harvest') this.save();
     } else {
       job.skipped += 1;
       job.lastFailure = result.reason || 'The field section was no longer eligible.';
+      if (job.kind === 'harvest' && result.reason?.startsWith('Harvest wagon full:')) {
+        this.tractorJob = null;
+        this.tractorTarget = null;
+        toast(`${result.reason} Harvest paused with completed sections safely in the wagon.`, 'bad');
+        this.hud.update(this.state, this.tractorHudRuntime());
+        return;
+      }
     }
     job.nextIndex += 1;
     job.waitUntil = this.gameNow() + FIELD_ACTION_PAUSE_MS;
@@ -2522,6 +2539,11 @@ export class FarmEmpireApp {
         steer: this.tractorMotion.steer,
         wheelPhase: this.tractorMotion.wheelPhase,
         workKind: this.tractorJob?.kind,
+        harvestWagon: {
+          tier: farm.equipment.harvestWagon.tier,
+          used: allFarmCrops().reduce((sum, def) => sum + (farm.equipment.harvestWagon.crops[def.id] ?? 0) * def.storageUnitsPerItem, 0),
+          attached: farm.equipment.harvestWagon.owned && (this.tractorJob?.kind === 'harvest' || Object.values(farm.equipment.harvestWagon.crops).some((count) => count > 0)),
+        },
       },
       pickup: {
         name: farm.pickup.name,

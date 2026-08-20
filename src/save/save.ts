@@ -189,6 +189,14 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (market) { market.quotes = {}; market.activeEvents = []; }
     raw.version = 21;
   },
+  21: (raw) => {
+    // v22 grants only an empty inherited basic wagon to already operational tractors.
+    const farm = raw.farm && typeof raw.farm === 'object' && !Array.isArray(raw.farm) ? raw.farm as Record<string, unknown> : null;
+    const equipment = farm?.equipment && typeof farm.equipment === 'object' && !Array.isArray(farm.equipment) ? farm.equipment as Record<string, unknown> : null;
+    const tractor = equipment?.tractor && typeof equipment.tractor === 'object' && !Array.isArray(equipment.tractor) ? equipment.tractor as Record<string, unknown> : null;
+    if (equipment && tractor?.status === 'operational') equipment.harvestWagon = { owned: true, tier: 'basic', crops: {} };
+    raw.version = 22;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {
