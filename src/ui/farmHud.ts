@@ -89,7 +89,7 @@ export class FarmHud {
       'aria-live': 'polite',
       'data-testid': 'tractor-operation-status',
     });
-    this.brandSubEl = h('div', { class: 'farm-brand-sub' }, 'Farming Business V1');
+    this.brandSubEl = h('div', { class: 'farm-brand-sub' }, 'Farm Manager · Farming Business');
     this.storageButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'storage-button', onclick: cb.onMarket }, h('span', {}, 'Barn'), this.storageEl) as HTMLButtonElement;
     this.equipmentButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'equipment-button', onclick: cb.onEquipment }, h('span', {}, 'Old Tractor'), this.tractorEl) as HTMLButtonElement;
     this.locationStat = h('div', { class: 'farm-stat town-location-stat hidden', 'data-testid': 'town-location-stat' }, h('span', {}, 'Location'), h('strong', {}, 'County Service Center'));
@@ -178,7 +178,7 @@ export class FarmHud {
     this.locationStat.classList.toggle('hidden', !town);
     this.storageButton.disabled = town;
     this.storageButton.classList.toggle('farm-stat-button', !town);
-    this.brandSubEl.textContent = town ? 'County Service Center' : 'Farming Business V1';
+    this.brandSubEl.textContent = town ? 'County Service Center' : 'Farm Manager · Farming Business';
     this.operationEl.classList.toggle('hidden', town || !this.operationEl.textContent);
   }
 

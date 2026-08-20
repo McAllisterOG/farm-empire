@@ -1,18 +1,21 @@
 # Farm Empire
 
-Farm Empire is an original isometric farming-business simulation built incrementally on the MIT-licensed Paradise Isle engine. Start with $5,000, buy seed, plant and harvest four commodity crops, manage finite barn storage, choose when to sell into a deterministic daily market, and purchase the neighboring field parcel.
+Farm Empire is an original isometric farming-business simulation built incrementally on the MIT-licensed Paradise Isle engine. Start with $5,000 and grow a small inherited farm into a County-scale operation: work fields by hand or machine, move weighted cargo through real storage and vehicles, read a deterministic market, fulfill local contracts, expand the property, and dispatch a small farm crew.
 
 ![Farm Empire starter farm](docs/screenshots/farm-empire-starter-farm.png)
 
 ![Farm Empire commodity market](docs/screenshots/farm-empire-market.png)
 
-## Farming Business V1
+## Current Farm Empire demo
 
-- Four data-driven crops: corn, wheat, soybeans, and potatoes.
-- Timestamped visible growth, transactional harvest storage, and an old tractor efficiency bonus.
-- Integer-cent cash, bounded daily prices, previous-price movement, and temporary saved market events.
-- One locked $6,500 neighboring parcel that permanently unlocks nine additional field tiles.
-- Versioned saves in a clean `farm-empire:*` browser namespace; legacy `paradise-isle:*` saves remain untouched.
+- Eight data-driven crops with distinct growth, yield, weight, price, unlock, presentation, and rotation-family roles.
+- A 36-section starter acreage and a $4,250, 96-section commercial tract with partial manual, tractor, and worker operations.
+- Hand basket, barn, pickup, utility trailer, and tractor-wagon logistics displayed in pounds over save-compatible handling lots.
+- Restorable tractor implements, wagon and storage upgrades, a roadside stand, farmhouse/crew-quarters progression, and two reviewed workers.
+- A separate County Service Center with four functional businesses, named townspeople, seed purchasing, commodity sales, and finite Pantry, Kitchen, and Freight deliveries.
+- Deterministic market quotes, clear/cloudy/rain days, one-hour active-play harvest windows, field rotation notes, integer-cent cash, and defensive versioned v26 saves.
+- Keyboard, mouse, and direct vehicle controls; persistent audio/accessibility settings; focus-safe menus; bounded renderer/Desktop recovery; and isolated QA-profile support.
+- Farm saves use the `farm-empire:*` browser namespace; preserved legacy `paradise-isle:*` saves remain untouched.
 
 ```bash
 npm ci
@@ -21,6 +24,8 @@ npm run typecheck
 npm run build
 npm run dev
 ```
+
+The Windows desktop package is built with `npm run desktop:package`. It stores desktop saves under `%APPDATA%\Farm Empire`; those saves are intentionally separate from browser-hosted saves.
 
 The original engine architecture, attribution, historical feature documentation, and MIT license are preserved below.
 

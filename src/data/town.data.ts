@@ -31,7 +31,7 @@ export const TOWN_SERVICE_IDS: readonly TownServiceId[] = [
   'county-kitchen',
 ] as const;
 
-/** Exactly three visible buildings, each backed by a real Farm Empire service. */
+/** Exactly four visible buildings, each backed by a real Farm Empire service. */
 export const TOWN_BUILDINGS: readonly TownBuildingDef[] = [
   {
     id: 'miller-feed-seed', name: 'Miller Feed & Seed', sign: 'FEED & SEED', service: 'seed-supplier',
