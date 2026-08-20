@@ -4,11 +4,11 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** Cargo Scale & Long-Session Performance V1 (local checkpoint; see Git history for hash)
-- **Product state:** Cargo now reads in pounds through a save-compatible 10 lb handling-lot projection: the base pickup is 720 lb, the utility-trailer pickup is 1,440 lb, and base barn storage is 4,800 lb. Ready crops remain harvestable for one active hour. Dense crop silhouettes are cached and farm presentation is paced at 30 FPS. Operated tractor planting and harvesting visibly attach a planter or harvest wagon.
-- **Boundaries:** Save v20, stored quantities, authoritative cargo lots, crop yields, prices, contracts, equipment ownership, progression, and legacy Paradise Isle behavior remain unchanged. This checkpoint does not claim a literal wholesale agricultural rebalance; pounds are a coherent player-facing scale over the existing deterministic economy.
-- **Verification:** 318 tests in 45 files passed; strict typecheck, Vite and desktop-relative production builds, and `git diff --check` passed. Focused tests cover weight projection, invalid input, the one-hour wither boundary, bounded crop-cache variants, and the 30 FPS gate.
-- **Desktop acceptance:** A disposable 132-section ready-tomato rain stress scene improved from about 116 ms mean frame work to about 7.7 ms, with zero browser errors. Real tractor field menus visibly showed the planter and loaded harvest wagon, and the operating halo remained absent. `release/cargo-performance-v1/win-unpacked/Farm Empire.exe` contains the accepted relative-asset build; the verified Desktop shortcut targets it. The owner's real save was not opened during verification.
+- **Head:** Long-Session Progression Assurance V1 (local checkpoint; see Git history for hash)
+- **Product state:** The existing fresh-farm-to-commercial-services route is now protected by an authoritative long-session regression: manual crop/basket/pickup County delivery, repeated seed-to-market earning, land/equipment/storage/workforce/manager/stand progression, freight, save reload, offline pause, and dense-frame bounds.
+- **Boundaries:** No production, schema, economy, save, cargo-unit, art, or package change. The test earns cash only through public seed purchase, field production, harvest, and market-sale transactions; delivery and stand crops are likewise physically produced and moved through their real authority.
+- **Verification:** 320 tests in 46 files passed; strict typecheck, Vite production build, and `git diff --check` passed. The regression also proves weighted barn/pickup bounds, failed/repeat transaction non-mutation, and exact logical cash/inventory/progression preservation across reload.
+- **Player-surface limit:** No browser/computer-control capability was available for the isolated QA-profile packaged pass. No package, shortcut, QA profile, or owner save was modified.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
@@ -52,7 +52,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Tractor Selection & Vehicle Handoff Repair V1 is complete and packaged for the owner's current save. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
+No additional feature package is currently active. Long-Session Progression Assurance V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
 
 ## Known limitations
 

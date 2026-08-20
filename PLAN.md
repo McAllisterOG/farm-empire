@@ -47,10 +47,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 41. **Town Purchase & Crop Readability Repair V1** - arbitrary cash/cargo-bounded town seed quantities with a truthful Max action, visible pickup capacity, coherent pickup-and-player home arrival, corrected Scout overlap copy, and fewer larger crop-specific plants with a recognizable mature corn silhouette.
 42. **Tractor Selection & Vehicle Handoff Repair V1** - clicked-section-first whole-acreage routing, exact operated-tractor drag subsets, deterministic local traversal, direct idle tractor/pickup control transfer, and removal of the operating halo without save or economy changes.
 43. **Cargo Scale & Long-Session Performance V1** - pound-based cargo presentation over save-compatible 10 lb handling lots, one-active-hour ready crops, cached crop silhouettes, stable 30 FPS farm presentation, and job-specific tractor planter/harvest-wagon art.
+44. **Long-Session Progression Assurance V1** - an authoritative fresh-farm-to-commercial-services regression that proves repeated production/market earning, cargo delivery, upgrades, workforce, stand fulfillment, save normalization, offline pause, and dense-frame bounds without production or schema changes.
 
 ## Current authorization
 
-No additional feature package is currently active. Cargo Scale & Long-Session Performance V1 responds directly to the owner's weight-scale, progressive lag, crop-loss, and tractor-attachment findings. The next package should respond to the owner's next playtest rather than broaden scope speculatively.
+No additional feature package is currently active. Long-Session Progression Assurance V1 is complete; the next package should respond to the owner's next playtest rather than broaden scope speculatively.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
@@ -62,4 +63,5 @@ No additional feature package is currently active. Cargo Scale & Long-Session Pe
 - Equipment and logistics depth after the pickup/trailer loop is exercised: manual hitching only if it adds useful decisions, distinct implements, combines, condition, further trailer tiers, and genuine dealership actions.
 - **Further contract depth:** Freight Board V1 now supports one persistent premium haul at a time. Multiple simultaneous jobs, deadlines, penalties, negotiation, reputation, contract chains, and special cargo still require deliberate logistics, economy, and save design.
 - Extend the new single-farmhand foundation only after playtesting: multiple workers, schedules, worker skills, managers, payroll depth, housing, and passive operation remain separate decisions.
+- **Long-session validation:** Preserve the production-authority progression regression as new systems are added. A later player-surface pass should cover the long County/equipment/workforce chain with the isolated QA profile before broadening progression.
 - Further environment art and ambient farm life after the current benchmark presentation is reviewed in play.

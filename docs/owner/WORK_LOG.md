@@ -554,3 +554,13 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Performance evidence:** A disposable 132-section ready-tomato rain scene measured about 116 ms mean frame work before repair and about 7.7 ms after repair. The visually inspected dense scene retained crop identity; browser console errors were empty.
 - **Verification:** 318/318 tests passed in 45 files; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Real browser field menus showed both attachments during active jobs and confirmed the operating halo stayed absent.
 - **Artifact:** `release/cargo-performance-v1/win-unpacked/Farm Empire.exe` with a current relative-asset `resources/app.asar`; the verified Desktop shortcut targets it. The owner's real save was not opened or changed. No push performed.
+
+## Long-Session Progression Assurance V1 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Result:** Added one deterministic progression-spanning regression without production or schema changes. It completes the fresh manual corn/basket/pickup/Pantry route, then earns milestone balances solely through public seed purchase, till/plant/water/harvest, and market-sale transactions. Freight and stand crops are physically produced and use their authoritative cargo/barn delivery paths.
+- **Assurance:** The audit covers land, tractor, field kit, loft, freight, trailer, silo, farmhand, manager, and stand gates; weighted barn/pickup limits; failed and repeated transaction non-mutation; save-normalized logical cash, positive inventory lots, capacities, ownership, completion, and workforce preservation; offline crop pause; and dense-frame bounds.
+- **Review:** Red Team identified fixture-funded cash/cargo and insufficient reload/invariant detail. The repair removed all direct cash/storage/cargo writes, added public-authority earning helpers and exact logical reload snapshots, and re-review accepted the result.
+- **Verification:** 320/320 tests in 46 files passed; strict typecheck, Vite production build, and `git diff --check` passed.
+- **Known limitation:** No browser/computer-control capability was available for the isolated QA-profile packaged player-surface pass. No package, shortcut, QA profile, owner save, or push was changed.
