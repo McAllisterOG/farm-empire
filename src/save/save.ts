@@ -197,6 +197,12 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (equipment && tractor?.status === 'operational') equipment.harvestWagon = { owned: true, tier: 'basic', crops: {} };
     raw.version = 22;
   },
+  22: (raw) => {
+    // County Kitchen is new in v23. Never trust a speculative pre-v23 state.
+    const farm = raw.farm && typeof raw.farm === 'object' && !Array.isArray(raw.farm) ? raw.farm as Record<string, unknown> : null;
+    if (farm) delete farm.countyKitchen;
+    raw.version = 23;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

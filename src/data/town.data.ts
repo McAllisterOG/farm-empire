@@ -1,12 +1,12 @@
 import type { FarmFacing } from '../render/farmSprites';
 
-export type TownServiceId = 'seed-supplier' | 'commodity-market' | 'farm-services';
-export type TownNpcStyle = 'supply-clerk' | 'grain-buyer' | 'service-manager';
+export type TownServiceId = 'seed-supplier' | 'commodity-market' | 'farm-services' | 'county-kitchen';
+export type TownNpcStyle = 'supply-clerk' | 'grain-buyer' | 'service-manager' | 'kitchen-host';
 
 export interface TownPoint { x: number; y: number }
 
 export interface TownBuildingDef {
-  id: 'miller-feed-seed' | 'county-grain-exchange' | 'farm-services-cooperative';
+  id: 'miller-feed-seed' | 'county-grain-exchange' | 'farm-services-cooperative' | 'county-pantry-kitchen';
   name: string;
   sign: string;
   service: TownServiceId;
@@ -18,7 +18,7 @@ export interface TownBuildingDef {
 }
 
 export interface TownNpcDef extends TownPoint {
-  id: 'nora-bell' | 'eli-morgan' | 'mae-carter';
+  id: 'nora-bell' | 'eli-morgan' | 'mae-carter' | 'rosa-alvarez';
   name: string;
   role: string;
   style: TownNpcStyle;
@@ -28,6 +28,7 @@ export interface TownNpcDef extends TownPoint {
 
 export const TOWN_SERVICE_IDS: readonly TownServiceId[] = [
   'seed-supplier', 'commodity-market', 'farm-services',
+  'county-kitchen',
 ] as const;
 
 /** Exactly three visible buildings, each backed by a real Farm Empire service. */
@@ -36,6 +37,7 @@ export const TOWN_BUILDINGS: readonly TownBuildingDef[] = [
     id: 'miller-feed-seed', name: 'Miller Feed & Seed', sign: 'FEED & SEED', service: 'seed-supplier',
     x: 3, y: 3, w: 4, h: 2.8, door: { x: 5, y: 6.3 },
   },
+  { id: 'county-pantry-kitchen', name: 'County Pantry & Kitchen', sign: 'PANTRY & KITCHEN', service: 'county-kitchen', x: 22, y: 7, w: 4.8, h: 3.3, door: { x: 24.4, y: 10.85 } },
   {
     id: 'county-grain-exchange', name: 'County Grain Exchange', sign: 'GRAIN EXCHANGE', service: 'commodity-market',
     x: 9, y: 2.5, w: 5, h: 3.5, door: { x: 11.5, y: 6.8 },
@@ -60,15 +62,17 @@ export const TOWN_NPCS: readonly TownNpcDef[] = [
     id: 'mae-carter', name: 'Mae Carter', role: 'Farm services manager', style: 'service-manager',
     x: 17.5, y: 9.2, facing: 'west', service: 'farm-services',
   },
+  { id: 'rosa-alvarez', name: 'Rosa Alvarez', role: 'County kitchen host', style: 'kitchen-host', x: 24.8, y: 11.8, facing: 'west', service: 'county-kitchen' },
 ] as const;
 
 export const TOWN_DECOR = [
   { id: 'lamp-west', kind: 'lamp', x: 7.2, y: 10.1 },
-  { id: 'lamp-east', kind: 'lamp', x: 16.8, y: 11.1 },
+  { id: 'lamp-east', kind: 'lamp', x: 20.8, y: 11.1 },
   { id: 'bench-square', kind: 'bench', x: 11.2, y: 11.8 },
-  { id: 'seed-sacks', kind: 'sacks', x: 4.1, y: 6.7 },
+  { id: 'seed-sacks', kind: 'sacks', x: 7.6, y: 8.7 },
   { id: 'grain-pallet', kind: 'pallet', x: 10.1, y: 7.0 },
-  { id: 'service-tires', kind: 'tires', x: 19.7, y: 8.8 },
+  { id: 'service-tires', kind: 'tires', x: 20.5, y: 8.8 },
+  { id: 'planter-market', kind: 'pallet', x: 15.2, y: 14.8 },
 ] as const;
 
 export type TownDecorDef = typeof TOWN_DECOR[number];

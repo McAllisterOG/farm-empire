@@ -156,6 +156,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     handBasket: emptyHandBasket(),
     selectedCropId: 'crop_corn',
     townContact: { status: 'unmet' },
+    countyKitchen: { status: 'unmet' },
     countyFreight: { active: null, lastCompletedDay: 0 },
     workforce: { farmhandHired: false, lastShiftPaidDay: 0, manager: { hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 } },
     roadsideStand: { owned: false, lastCompletedDay: 0 },
@@ -314,6 +315,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const trailerOwned = rawEquipment.countyUtilityTrailerOwned === true;
   const siloOwned = rawEquipment.countyGrainSiloOwned === true;
   const townStatus = objectRecord(raw.townContact).status;
+  const kitchenStatus = objectRecord(raw.countyKitchen).status;
   const rawCountyFreight = objectRecord(raw.countyFreight);
   const rawWorkforce = objectRecord(raw.workforce);
   const rawRoadsideStand = objectRecord(raw.roadsideStand);
@@ -412,6 +414,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
     handBasket: normalizeHandBasket(raw.handBasket),
     selectedCropId,
     townContact: { status: townStatus === 'offered' || townStatus === 'active' || townStatus === 'completed' ? townStatus : 'unmet' },
+    countyKitchen: { status: townStatus === 'completed' && (kitchenStatus === 'offered' || kitchenStatus === 'active' || kitchenStatus === 'completed') ? kitchenStatus : 'unmet' },
     countyFreight: {
       active: validActiveFreight ? {
         id: freightId,

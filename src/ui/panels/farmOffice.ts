@@ -12,6 +12,7 @@ import { firstFarmMorningGuide } from '../../core/firstFarmMorning';
 import { h } from '../dom';
 import { openPanel } from '../modal';
 import { formatFarmCargoWeight } from '../../core/farmCargoScale';
+import { COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY } from '../../data/townWorkOrders.data';
 
 export interface FarmOfficeActions {
   onSave: () => void;
@@ -70,6 +71,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Today’s delivery'), h('span', {}, `${morning.cornProgress.current}/${morning.cornProgress.required} corn`)),
       h('div', { class: 'farmbook-next' }, h('strong', {}, morning.title), h('span', {}, morning.detail)),
     )] : []),
+    ...(farm.townContact.status === 'completed' && farm.countyKitchen.status !== 'completed' ? [h('div', { class: 'farmbook-next', 'data-testid': 'farmbook-kitchen-line' }, h('strong', {}, 'County Kitchen'), h('span', {}, `Rosa’s Garden Table needs 8 corn, 6 carrots, and 4 tomatoes in the pickup · ${formatMoney(COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.payoutCents)} once.`))] : []),
     h('section', { class: 'farmbook-section' },
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Later on'), h('span', {}, `${completed}/${guide.length}`)),
       next ? h('div', { class: 'farmbook-next' }, h('strong', {}, `Next · ${next.label}`), h('span', {}, next.hint)) : h('div', { class: 'farmbook-next complete' }, 'Core farm route complete.'),

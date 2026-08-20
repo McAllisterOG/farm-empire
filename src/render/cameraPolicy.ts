@@ -45,4 +45,4 @@ export function farmCameraPolicy(): CameraPolicy {
     maxZoom: 1.15,
   };
 }
-export function townCameraPolicy(): CameraPolicy { return { bounds: tileBoundsToWorld(2, 2, 24, 18), padding: 60, minZoom: .72, maxZoom: 1.2 }; }
+export function townCameraPolicy(): CameraPolicy { return { bounds: tileBoundsToWorld(2, 2, 30, 20), padding: 60, minZoom: .72, maxZoom: 1.2 }; }

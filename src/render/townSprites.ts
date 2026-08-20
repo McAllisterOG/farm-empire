@@ -24,6 +24,7 @@ export function drawTownBuilding(
   zoom: number,
   building: TownBuildingDef,
   now: number,
+  kitchenCompleted = false,
 ): void {
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.16, zoom * 1.16);
   if (building.id === 'miller-feed-seed') {
@@ -53,6 +54,14 @@ export function drawTownBuilding(
     ctx.strokeStyle = '#886345'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(97, -80); ctx.lineTo(82, -42); ctx.stroke();
     buildingSign(ctx, building.sign, -68, 82, '#74402f');
     rect(ctx, -66, 1, 140, 7, '#63442e');
+  } else if (building.id === 'county-pantry-kitchen') {
+    ellipse(ctx, 0, 5, 67, 17, 'rgba(48,38,25,.24)'); rect(ctx, -58, -58, 116, 60, '#e7c58d');
+    ctx.beginPath(); ctx.moveTo(-66, -57); ctx.lineTo(0, -92); ctx.lineTo(66, -57); ctx.closePath(); ctx.fillStyle = '#a9533d'; ctx.fill();
+    rect(ctx, -17, -42, 34, 44, '#71442d'); rect(ctx, -13, -37, 26, 39, '#9a6040');
+    rect(ctx, -51, -41, 23, 20, '#c2d8ca'); rect(ctx, 29, -41, 23, 20, '#c2d8ca');
+    rect(ctx, -50, -13, 22, 12, '#7a9250'); rect(ctx, 28, -13, 22, 12, '#d36d4a');
+    if (kitchenCompleted) { rect(ctx, -10, -37, 20, 16, '#ffe794'); rect(ctx, -8, -35, 16, 12, '#fff5bd'); }
+    buildingSign(ctx, building.sign, -61, 112, '#7d4131'); rect(ctx, -62, 1, 124, 7, '#6d4934');
   } else {
     ellipse(ctx, 0, 5, 76, 18, 'rgba(48,38,25,.24)');
     rect(ctx, -66, -60, 132, 62, '#8ca2a0');
@@ -87,7 +96,7 @@ export function drawTownNpc(
     ? { shirt: '#e8d39e', apron: '#4d754d', hair: '#725039', hat: '#c99742', prop: '#80603d' }
     : npc.style === 'grain-buyer'
       ? { shirt: '#b98554', apron: '#71513d', hair: '#46352c', hat: '#6a4c39', prop: '#d9c89f' }
-      : { shirt: '#426f86', apron: '#274c61', hair: '#4d342b', hat: '#d4c5a2', prop: '#b9c0bd' };
+      : npc.style === 'kitchen-host' ? { shirt: '#d97049', apron: '#f0dfb5', hair: '#31261f', hat: '#f4ead0', prop: '#80a35e' } : { shirt: '#426f86', apron: '#274c61', hair: '#4d342b', hat: '#d4c5a2', prop: '#b9c0bd' };
   ctx.save(); ctx.translate(x, y + bob * zoom); ctx.scale(zoom * 1.65, zoom * 1.65);
   ellipse(ctx, 0, 2, 16, 5, 'rgba(38,30,24,.22)');
   ctx.strokeStyle = '#52392c'; ctx.lineWidth = 5; ctx.lineCap = 'round';
@@ -105,6 +114,8 @@ export function drawTownNpc(
     ctx.strokeStyle = '#b38b48'; for (let i = -23; i <= -17; i += 3) { ctx.beginPath(); ctx.moveTo(-20, 1); ctx.lineTo(i, 7); ctx.stroke(); }
   } else if (npc.style === 'grain-buyer') {
     rect(ctx, 10, -25, 10, 14, colors.prop); rect(ctx, 12, -23, 6, 1.5, '#7f6a48'); rect(ctx, 12, -19, 6, 1.5, '#7f6a48');
+  } else if (npc.style === 'kitchen-host') {
+    rect(ctx, 10, -26, 12, 10, colors.prop); ellipse(ctx, 16, -30, 7, 3, '#d6b744');
   } else {
     ctx.strokeStyle = colors.prop; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(12, -21); ctx.lineTo(20, -29); ctx.stroke();
     ellipse(ctx, 21, -30, 4, 2, colors.prop);

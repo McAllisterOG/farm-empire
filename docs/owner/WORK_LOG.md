@@ -584,3 +584,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Restoration supplies the inherited cultivator, row planter, and 2,400 lb basic wagon. Operated whole-section harvest now atomically fills wagon cargo and pauses truthfully when full; the tractor drives to the barn receiving bay for an all-or-nothing mixed unload. The County 4,800 lb wagon costs $2,400 after the Implement Set, north acreage, and first freight. Implement Set player copy now correctly names faster establishment plus +1 operated harvest item. Save v21 operational tractors grandfather an empty basic wagon; malformed wagon state normalizes closed. Farmbook, How to Play, Equipment Desk, and Barn/Cargo describe capacity/gates truthfully, including the re-review repair that hides capacity before restoration.
 - **Verification:** 329/329 tests in 47 files passed, including focused wagon/Farmbook regressions; strict typecheck, Vite production build, and `git diff --check` passed. Red Team Medium findings on pre-restoration capacity copy and physical-loop progression copy were repaired and re-reviewed.
 - **Known limitation:** No browser, isolated QA profile, package, shortcut, owner save, or push was used. The player-facing flow is source/test verified but not browser-click-accepted in this checkpoint.
+
+## County Kitchen & Market Street V1 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Scope/result:** Expanded the separate County scene to Market Street (x2..30, y2..20) with one convex public surface, safe pickup/service approaches, four presentation-only homes/field cues, and County Pantry & Kitchen/Rosa Alvarez. Rosa’s finite post-Pantry Garden Table Delivery atomically consumes 8 corn, 6 carrots, and 4 tomatoes from the present pickup and pays $115 once; completion changes the kitchen presentation. Save v23 preserves all existing business/logistics state while v22 migration deletes stray kitchen state.
+- **Review repair:** Rosa is visibly Pantry-first locked before contact completion; seed sacks moved away from Feed & Seed frontage; production town routes, pickup approaches, decor/door clearance, and service geometry are regression-tested.
+- **Verification:** 333/333 tests in 48 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed.
+- **Known limitation:** No browser or packaged QA flow was run; no package, shortcut, owner save, or push was changed.

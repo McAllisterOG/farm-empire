@@ -4,8 +4,8 @@ import {
 
 export interface TownBounds { minX: number; minY: number; maxX: number; maxY: number }
 
-export const TOWN_BOUNDS: Readonly<TownBounds> = Object.freeze({ minX: 2, minY: 2, maxX: 24, maxY: 18 });
-export const TOWN_CAMERA = Object.freeze({ x: 12, y: 9, zoom: 0.88 });
+export const TOWN_BOUNDS: Readonly<TownBounds> = Object.freeze({ minX: 2, minY: 2, maxX: 30, maxY: 20 });
+export const TOWN_CAMERA = Object.freeze({ x: 15.5, y: 10.5, zoom: 0.88 });
 export const TOWN_SPAWN = Object.freeze({ x: 15.3, y: 13.7 });
 export const TOWN_EXIT = Object.freeze({ x: 16, y: 14.5 });
 export const TOWN_PICKUP_PARKING = Object.freeze({ x: 8.5, y: 13.6 });
@@ -14,9 +14,9 @@ export const TOWN_INTERACTION_PRIORITY = ['npc', 'building', 'exit', 'ground'] a
 /** A single convex public surface, separated from every declared building footprint. */
 export const TOWN_WALK_POLYGON: readonly TownPoint[] = [
   { x: 4.4, y: 6.0 },
-  { x: 19.8, y: 7.4 },
-  { x: 18.0, y: 15.5 },
-  { x: 7.0, y: 15.5 },
+  { x: 27.9, y: 7.8 },
+  { x: 26.5, y: 17.2 },
+  { x: 6.5, y: 17.2 },
 ] as const;
 
 export type TownInteraction =

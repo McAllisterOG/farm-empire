@@ -23,6 +23,7 @@ export interface TownRenderScene {
   gestureUntil: number;
   pickup?: { x: number; y: number; trailerOwned: boolean };
   interactionHint?: { label: string; x: number; y: number };
+  kitchenCompleted?: boolean;
 }
 
 interface TownDrawItem { depth: number; draw: () => void }
@@ -51,6 +52,9 @@ function drawTownGround(ctx: CanvasRenderingContext2D, camera: Camera): void {
     ctx.strokeStyle = 'rgba(103,91,74,.16)'; ctx.lineWidth = 1; ctx.stroke();
   }
   ctx.restore();
+  const street = [{ x: 6.8, y: 12.2 }, { x: 25.8, y: 12.2 }];
+  ctx.save(); ctx.strokeStyle = 'rgba(119,101,78,.55)'; ctx.lineWidth = Math.max(3, camera.zoom * 5); ctx.lineCap = 'round';
+  for (const line of [street, [{ x: 20.5, y: 8.6 }, { x: 20.5, y: 13.2 }]]) { const a = project(camera, line[0]); const b = project(camera, line[1]); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); } ctx.restore();
 }
 
 function drawTownTree(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, phase: number): void {
@@ -68,12 +72,12 @@ function drawTownName(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
 }
 
 function drawTownEdgeCluster(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
-  for (const house of [{ x: 3.6, y: 3.2 }, { x: 21.4, y: 15.2 }, { x: 22.2, y: 4.0 }]) {
+  for (const house of [{ x: 4, y: 16.3 }, { x: 14.9, y: 17.2 }, { x: 27.4, y: 6.1 }, { x: 27.1, y: 15.7 }]) {
     const p = project(camera, house, true); ctx.save(); ctx.translate(p.x, p.y); ctx.scale(zoom * 1.45, zoom * 1.45);
     ctx.fillStyle = 'rgba(45,34,24,.2)'; ctx.beginPath(); ctx.ellipse(0, 3, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#caa66e'; ctx.fillRect(-17, -25, 34, 25); ctx.fillStyle = '#78533b'; ctx.beginPath(); ctx.moveTo(-22, -24); ctx.lineTo(0, -42); ctx.lineTo(22, -24); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#97b7b2'; ctx.fillRect(-11, -17, 7, 7); ctx.fillRect(5, -17, 7, 7); ctx.restore();
   }
-  const field = project(camera, { x: 21.8, y: 4.2 }, true); ctx.save(); ctx.translate(field.x, field.y); ctx.scale(zoom, zoom); ctx.strokeStyle = '#7c9e52'; ctx.lineWidth = 3; for (let i = -18; i <= 18; i += 9) { ctx.beginPath(); ctx.moveTo(i, -10); ctx.lineTo(i + 8, 12); ctx.stroke(); } ctx.restore();
+  for (const anchor of [{ x: 29, y: 3.8 }, { x: 29, y: 18.2 }]) { const field = project(camera, anchor, true); ctx.save(); ctx.translate(field.x, field.y); ctx.scale(zoom, zoom); ctx.strokeStyle = '#7c9e52'; ctx.lineWidth = 3; for (let i = -18; i <= 18; i += 9) { ctx.beginPath(); ctx.moveTo(i, -10); ctx.lineTo(i + 8, 12); ctx.stroke(); } ctx.restore(); }
 }
 
 export function renderTown(
@@ -95,7 +99,7 @@ export function renderTown(
   for (const building of TOWN_BUILDINGS) {
     const anchor = { x: building.x + building.w / 2, y: building.y + building.h };
     const screen = project(camera, anchor, true);
-    items.push({ depth: anchor.x + anchor.y, draw: () => drawTownBuilding(ctx, screen.x, screen.y, zoom, building, now) });
+    items.push({ depth: anchor.x + anchor.y, draw: () => drawTownBuilding(ctx, screen.x, screen.y, zoom, building, now, building.id === 'county-pantry-kitchen' && scene.kitchenCompleted) });
   }
   for (const decor of TOWN_DECOR) {
     const screen = project(camera, decor, true);
@@ -132,6 +136,7 @@ export function renderTown(
       const screen = project(camera, building.door, true); drawTownLampGlow(ctx, screen.x, screen.y, zoom, night * .7);
     }
   }
+  if (scene.kitchenCompleted) { const kitchen = TOWN_BUILDINGS.find((building) => building.id === 'county-pantry-kitchen'); if (kitchen) { const p = project(camera, kitchen.door, true); ctx.save(); ctx.fillStyle = '#fff1ae'; ctx.font = `800 ${Math.max(10, 11 * zoom)}px Segoe UI`; ctx.textAlign = 'center'; ctx.fillText('SERVED', p.x, p.y - 74 * zoom); ctx.restore(); } }
   drawWeatherPrecipitation(ctx, camera, scene.weather, now);
   if (scene.interactionHint) drawTownInteractionHint(ctx, camera, zoom, scene.interactionHint);
 }

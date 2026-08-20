@@ -436,3 +436,10 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The tractor must physically drive its attached wagon to the barn receiving bay. Unload transfers the complete mixed load only when all weighted cargo fits the barn; failed capacity checks leave both inventories unchanged. Pickup cargo, trailer authority, idle vehicle handoff, farmhand, and manager logistics remain unchanged; workers still harvest direct to barn.
 - The internal County Row-Crop Field Kit ID/ownership/cost/gates remain stable but player-facing copy is County Row-Crop Implement Set: +20% faster establishment and +1 operated harvest item. Its north-acreage/first-freight/restored-tractor gate unlocks one $2,400 County wagon tier at 480 lots (4,800 lb).
 - Wagon attachment is automatic for operated harvest and visible while loaded; no manual hitching, combine, auger, header, tender, pickup redesign, worker logistics, or machinery/economy rebalance is authorized.
+
+## 2026-08-19 - Add one finite County Kitchen delivery without a quest system
+
+- County Market Street expands only the existing separate town scene: a larger convex public surface, four noninteractive homes/field cues, and County Pantry & Kitchen with Rosa Alvarez; no continuous map, interiors, schedules, or social simulation.
+- After the completed Pantry order, Rosa offers one persistent Garden Table Delivery: exactly 8 corn, 6 carrots, and 4 tomatoes from the present pickup for $115 once. It is atomic, pickup-only, and completes before payout.
+- Save v23 stores only Kitchen status. V22 migration deletes stray Kitchen data; malformed states fail closed, preserve all existing logistics/Freight data, and grant nothing.
+- This is not a generic contracts system: no repeatability, dates, deadlines, penalties, reputation, currency, crop/equipment additions, or Freight changes.

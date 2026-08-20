@@ -4,11 +4,11 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** Tractor Implements & Harvest Wagon V1 (local checkpoint; see Git history for hash)
+- **Head:** County Kitchen & Market Street V1 (local checkpoint; see Git history for hash)
 - **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
-- **Save:** v22 retains v21 yield provenance and adds a defensive persistent tractor harvest wagon. V21 operational tractors receive only an empty basic wagon; malformed/forged cargo normalizes to known crops, weighted capacity, and valid tier gates without a spill or upgrade.
-- **Verification:** 329 tests in 47 files passed; focused wagon/Farmbook regressions, strict typecheck, Vite production build, and `git diff --check` passed. Red Team Medium UI truthfulness/guidance findings were repaired and re-reviewed.
-- **Player-surface limit:** No browser/computer-control capability was available for the isolated QA-profile packaged pass. No package, shortcut, QA profile, or owner save was modified.
+- **Save:** v23 preserves v22 wagon/logistics state and adds only County Kitchen status. V22 migration deletes stray kitchen state; malformed state fails closed and cannot affect Freight.
+- **Verification:** 333 tests in 48 files passed; focused Kitchen/Town geometry regressions, strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Red Team Pantry-lock, frontage, and route-clearance findings were repaired.
+- **Player-surface limit:** No browser or packaged QA pass was run. No package, shortcut, QA profile, or owner save was modified.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
@@ -22,11 +22,12 @@
 - The owned old pickup has the same deterministic acceleration/turning presentation, a direction-aware upright silhouette, a 720 lb mixed seed/produce payload, persistent farm position, and transient operating state. The first completed Freight Board haul unlocks one visible $2,400 utility trailer that doubles real payload to 1,440 lb.
 - On the farm, an operated pickup or tractor can use WASD/arrows or click/right-click open ground to drive; clicking the other idle farm vehicle transfers control directly. Unsupported/blocked input cannot leak into camera panning. On foot, WASD/arrows pan and a standalone right-click moves only on open ground. Town pickups remain parked and non-operable.
 - Tractor field work accepts either an exact dragged subset or the existing whole-acreage click. Both begin at the clicked/drag anchor and use a deterministic local route while preserving the existing seed, storage, cancellation, and transaction authority.
-- A signed road gateway now leads to a separate walkable County Service Center with three distinct buildings, three animated service townspeople, two clock-aware ambient residents, and real seed, market, land-record, and context-safe equipment services.
+- A signed road gateway leads to a separate walkable County Market Street with four distinct service buildings, four animated service townspeople, two clock-aware ambient residents, and real seed, market, land-record, equipment, and Kitchen services.
 - Town actor motion, gestures, camera mode, and location remain transient. Saving in town preserves normal farm business state and reloads safely at the farm gateway.
 - Farm-side Seed and Market surfaces are cargo-management points: crops and seed bags move reversibly between the barn/farm inventory and the pickup, while ordinary buying and selling are no longer available at the farm.
 - Feed & Seed purchases, Grain Exchange sales, and the County Pantry delivery require the pickup at the County Service Center. On-foot visits remain useful for dialogue and inspection but fail closed for cargo transactions.
 - Mae Carter's finite County Pantry corn order now measures real pickup corn; only Eli Morgan can consume exactly 12 hauled units and issue the atomic one-time payout.
+- After Pantry completion, Rosa Alvarez offers one exact 180 lb Garden Table Delivery (8 corn, 6 carrots, 4 tomatoes) from pickup cargo for a one-time $115 payout. It adds no repeatability, date, reputation, or Freight interaction.
 - After that first delivery, Eli's County Freight Board posts one deterministic unlocked-crop haul per farm day. Accepted terms retain their exact quantity and 25% posted-rate premium across later market/day changes; exact pickup delivery pays once and a new route waits until a later farm day.
 - Fresh farms inherit the Old Red Tractor in a visible repair state. Its $1,950 restoration includes cultivator, row planter, and a persistent 2,400 lb basic harvest wagon; operated whole-section harvest loads the wagon and the tractor must drive it to the barn receiving bay for an atomic unload. The $2,400 County 4,800 lb wagon requires the Implement Set, north acreage, and completed freight; farmhands/managers remain direct-to-barn.
 - Farm crops remain ready for one active hour, then visibly wither and can be cleared without refund so field sections are never permanently blocked. Closed or hidden Farm sessions remain paused by save v20.
@@ -52,7 +53,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Tractor Implements & Harvest Wagon V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
+No additional feature package is currently active. County Kitchen & Market Street V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
 
 ## Known limitations
 

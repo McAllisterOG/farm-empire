@@ -4,13 +4,14 @@ import {
   FARM_TOWN_GATE, FARM_TOWN_RETURN, placePlayerAtTownReturn, townTravelBlockReason,
 } from '../src/core/townGateway';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
-import { TOWN_BUILDINGS, TOWN_NPCS, TOWN_SERVICE_IDS } from '../src/data/town.data';
+import { TOWN_BUILDINGS, TOWN_DECOR, TOWN_NPCS, TOWN_SERVICE_IDS } from '../src/data/town.data';
+import { TOWN_NEIGHBOR_ROUTE, TOWN_SHOPPER_ROUTE } from '../src/render/countyLife';
 import { serialize } from '../src/save/save';
 import {
   farmLandmarks, farmMainlandBounds, farmPlotAtWorldPoint, farmWorldPoint, pointInFarmBounds,
 } from '../src/render/farmLayout';
 import {
-  TOWN_BOUNDS, TOWN_EXIT, TOWN_INTERACTION_PRIORITY, TOWN_SPAWN, TOWN_WALK_POLYGON,
+  TOWN_BOUNDS, TOWN_EXIT, TOWN_INTERACTION_PRIORITY, TOWN_PICKUP_PARKING, TOWN_SPAWN, TOWN_WALK_POLYGON,
   cancelTownMovement, pointInTownBounds, pointInTownNpcScreenHitbox, pointInTownPickupScreenHitbox,
   pointInTownWalkSurface, townBuildingsOverlap, townInteractionAt, townSegmentCrossesBuilding,
 } from '../src/render/townLayout';
@@ -20,11 +21,11 @@ import { equipmentPanelAllowsOperation } from '../src/ui/panels/farmPanels';
 import { NOW } from './helpers';
 
 describe('Town Gateway layout and real services', () => {
-  it('contains exactly three non-overlapping buildings and three distinct service NPCs', () => {
-    expect(TOWN_BUILDINGS).toHaveLength(3);
-    expect(TOWN_NPCS).toHaveLength(3);
-    expect(new Set(TOWN_BUILDINGS.map((building) => building.id)).size).toBe(3);
-    expect(new Set(TOWN_NPCS.map((npc) => npc.id)).size).toBe(3);
+  it('contains four non-overlapping service buildings and four distinct service NPCs', () => {
+    expect(TOWN_BUILDINGS).toHaveLength(4);
+    expect(TOWN_NPCS).toHaveLength(4);
+    expect(new Set(TOWN_BUILDINGS.map((building) => building.id)).size).toBe(4);
+    expect(new Set(TOWN_NPCS.map((npc) => npc.id)).size).toBe(4);
     expect(new Set(TOWN_BUILDINGS.map((building) => building.service))).toEqual(new Set(TOWN_SERVICE_IDS));
     expect(new Set(TOWN_NPCS.map((npc) => npc.service))).toEqual(new Set(TOWN_SERVICE_IDS));
     for (let left = 0; left < TOWN_BUILDINGS.length; left++) for (let right = left + 1; right < TOWN_BUILDINGS.length; right++) {
@@ -33,10 +34,11 @@ describe('Town Gateway layout and real services', () => {
   });
 
   it('keeps every approach, NPC, spawn, and exit in bounds on one walkable surface', () => {
-    expect(TOWN_BOUNDS).toEqual({ minX: 2, minY: 2, maxX: 24, maxY: 18 });
+    expect(TOWN_BOUNDS).toEqual({ minX: 2, minY: 2, maxX: 30, maxY: 20 });
     for (const point of [
       ...TOWN_BUILDINGS.map((building) => building.door),
       ...TOWN_NPCS,
+      TOWN_PICKUP_PARKING,
       TOWN_SPAWN,
       TOWN_EXIT,
     ]) {
@@ -49,14 +51,9 @@ describe('Town Gateway layout and real services', () => {
       return (next.x - point.x) * (after.y - next.y) - (next.y - point.y) * (after.x - next.x);
     });
     expect(turns.every((turn) => turn > 0) || turns.every((turn) => turn < 0)).toBe(true);
-    const publicPoints = [
-      ...TOWN_WALK_POLYGON,
-      ...TOWN_NPCS,
-      ...TOWN_BUILDINGS.map((building) => building.door),
-      TOWN_SPAWN,
-      TOWN_EXIT,
-    ];
-    for (const start of publicPoints) for (const end of publicPoints) for (const building of TOWN_BUILDINGS) {
+    const publicPoints = [...TOWN_NPCS, ...TOWN_BUILDINGS.map((building) => building.door), TOWN_EXIT];
+    for (const end of publicPoints) for (const building of TOWN_BUILDINGS) {
+      const start = TOWN_SPAWN;
       const description = `${building.id}: ${start.x},${start.y} -> ${end.x},${end.y}`;
       expect(townSegmentCrossesBuilding(start, end, building), description).toBe(false);
     }
@@ -67,6 +64,22 @@ describe('Town Gateway layout and real services', () => {
       { x: centerX, y: control.y + control.h + 1 },
       control,
     )).toBe(true);
+  });
+
+  it('keeps pickup parking, service approaches, decor, and ambient plaza routes clear', () => {
+    for (const decor of TOWN_DECOR) for (const building of TOWN_BUILDINGS) {
+      expect(Math.hypot(decor.x - building.door.x, decor.y - building.door.y), `${decor.id} near ${building.id} door`).toBeGreaterThan(.9);
+      expect(decor.x >= building.x && decor.x <= building.x + building.w && decor.y >= building.y && decor.y <= building.y + building.h, decor.id).toBe(false);
+    }
+    for (const route of [TOWN_SHOPPER_ROUTE, TOWN_NEIGHBOR_ROUTE]) {
+      for (const point of route) expect(pointInTownWalkSurface(point), `${point.x},${point.y}`).toBe(true);
+      for (let index = 1; index < route.length; index++) for (const building of TOWN_BUILDINGS) {
+        expect(townSegmentCrossesBuilding(route[index - 1], route[index], building), building.id).toBe(false);
+      }
+    }
+    for (const end of [...TOWN_BUILDINGS.map((building) => building.door), ...TOWN_NPCS, TOWN_EXIT]) for (const building of TOWN_BUILDINGS) {
+      expect(townSegmentCrossesBuilding(TOWN_PICKUP_PARKING, end, building), `${building.id}: pickup approach`).toBe(false);
+    }
   });
 
   it('uses the required deterministic NPC, building, exit, then ground priority', () => {

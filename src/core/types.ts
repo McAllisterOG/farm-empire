@@ -439,6 +439,9 @@ export interface FarmTownContactState {
   status: FarmTownContactStatus;
 }
 
+export type FarmCountyKitchenStatus = 'unmet' | 'offered' | 'active' | 'completed';
+export interface FarmCountyKitchenState { status: FarmCountyKitchenStatus; }
+
 export interface FarmCountyFreightContract {
   id: string;
   kind: 'standard' | 'bulk';
@@ -509,6 +512,7 @@ export interface FarmBusinessState {
   handBasket: FarmHandBasketState;
   selectedCropId: string;
   townContact: FarmTownContactState;
+  countyKitchen: FarmCountyKitchenState;
   countyFreight: FarmCountyFreightState;
   workforce: FarmWorkforceState;
   roadsideStand: FarmRoadsideStandState;

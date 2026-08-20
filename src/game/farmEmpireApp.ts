@@ -29,6 +29,7 @@ import {
 } from '../core/farmManualAction';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
+import { acceptCountyKitchenDelivery, fulfillCountyKitchenDelivery, offerCountyKitchenDelivery } from '../core/farmCountyKitchen';
 import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
 import { hireFarmManager, hireFirstFarmhand, planFarmManagerDispatch, startFarmhandShift, updateFarmManagerPlan, type FarmhandWorkKind } from '../core/farmWorkforce';
 import { applyCurrentFarmRain, currentFarmWeather, farmWeatherForDay } from '../core/farmWeather';
@@ -47,7 +48,7 @@ import { hideActionMenu, isActionMenuOpen, showActionMenu } from '../ui/actionMe
 import { closePanel, isPanelOpen, openPanel } from '../ui/modal';
 import { floatText, toast } from '../ui/toast';
 import {
-  openCountyWorkOrder, openFarmEquipment, openFarmLand, openFarmMarket, openFarmSeedShop, type FarmPanelActions,
+  openCountyKitchen, openCountyWorkOrder, openFarmEquipment, openFarmLand, openFarmMarket, openFarmSeedShop, type FarmPanelActions,
 } from '../ui/panels/farmPanels';
 import { openFarmOffice } from '../ui/panels/farmOffice';
 import { openFarmWorkforce } from '../ui/panels/farmWorkforce';
@@ -293,6 +294,8 @@ export class FarmEmpireApp {
       buyLand: () => purchaseNeighborParcel(this.state),
       acceptCountyWorkOrder: () => acceptCountyWorkOrder(this.state),
       fulfillCountyWorkOrder: () => fulfillCountyWorkOrder(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' }),
+      acceptCountyKitchenDelivery: () => acceptCountyKitchenDelivery(this.state),
+      fulfillCountyKitchenDelivery: () => fulfillCountyKitchenDelivery(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' }),
       acceptCountyFreight: (offerId) => acceptCountyFreightOffer(this.state, offerId),
       fulfillCountyFreight: () => fulfillCountyFreightContract(this.state, { pickupPresent: this.pickupAtTown, source: 'pickup' }),
       issueCountyReliefSeed: () => issueCountyReliefSeed(this.state, this.gameNow()),
@@ -846,6 +849,7 @@ export class FarmEmpireApp {
       this.walkTownNear(interaction.npc.x, interaction.npc.y, () => {
         this.townGesture = { npcId: interaction.npc.id, until: this.gameNow() + 1_200 };
         if (interaction.npc.id === 'mae-carter') this.openCountyWorkOrder();
+        else if (interaction.npc.id === 'rosa-alvarez') this.openCountyKitchen();
         else this.openTownService(interaction.service, interaction.npc.name, interaction.npc.x, interaction.npc.y);
       });
     } else if (interaction.kind === 'building') {
@@ -860,6 +864,7 @@ export class FarmEmpireApp {
   }
 
   private openTownService(service: TownServiceId, title: string, x: number, y: number): void {
+    if (service === 'county-kitchen') { this.openCountyKitchen(); return; }
     if (service === 'seed-supplier') {
       openFarmSeedShop(this.state, this.panelActions());
       return;
@@ -919,6 +924,11 @@ export class FarmEmpireApp {
     if (this.mode !== 'town') return;
     if (this.pickupAtTown) { this.returnToFarm('pickup'); return; }
     this.walkTownNear(TOWN_EXIT.x, TOWN_EXIT.y, () => this.returnToFarm());
+  }
+
+  private openCountyKitchen(): void {
+    this.dispatch(offerCountyKitchenDelivery(this.state));
+    openCountyKitchen(this.state, this.panelActions());
   }
 
   private cancelTownWalk(): boolean {
@@ -2506,6 +2516,7 @@ export class FarmEmpireApp {
         gestureUntil: this.townGesture?.until ?? 0,
         pickup: this.pickupAtTown ? { ...TOWN_PICKUP_PARKING, trailerOwned: farm.equipment.countyUtilityTrailerOwned } : undefined,
         interactionHint: this.townHover ?? undefined,
+        kitchenCompleted: farm.countyKitchen.status === 'completed',
       };
       return scene;
     }

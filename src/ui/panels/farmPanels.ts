@@ -7,8 +7,9 @@ import { BARN_LOFT_EXPANSION as BARN_LOFT_DEF, COUNTY_GRAIN_SILO, COUNTY_HARVEST
 import { harvestWagonReadout } from '../../core/farmBusiness';
 import { farmParcelDef, farmParcelSectionCount } from '../../core/farmParcels';
 import { farmCropEconomics } from '../../core/farmCropEconomics';
-import { COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
+import { COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY, COUNTY_PANTRY_CORN_ORDER } from '../../data/townWorkOrders.data';
 import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact';
+import { countyKitchenProgress } from '../../core/farmCountyKitchen';
 import { countyFreightTemplate, COUNTY_FREIGHT_BULK_PREMIUM_BPS, COUNTY_FREIGHT_PREMIUM_BPS } from '../../data/countyFreight.data';
 import { countyFreightBoardState, countyFreightProgress } from '../../core/farmCountyFreight';
 import { maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, maxTownSeedPurchase, pickupCargoCapacity, pickupCargoRemaining, pickupCargoUsed, pickupCropUnits, pickupSeedUnits } from '../../core/farmPickup';
@@ -31,6 +32,8 @@ export interface FarmPanelActions {
   buyLand: () => ActionResult;
   acceptCountyWorkOrder: () => ActionResult;
   fulfillCountyWorkOrder: () => ActionResult;
+  acceptCountyKitchenDelivery: () => ActionResult;
+  fulfillCountyKitchenDelivery: () => ActionResult;
   acceptCountyFreight: (offerId: string) => ActionResult;
   fulfillCountyFreight: () => ActionResult;
   issueCountyReliefSeed: () => ActionResult;
@@ -405,6 +408,30 @@ export interface FarmEquipmentTownActions {
   onPurchaseWagon?: () => ActionResult;
   dispatch?: Dispatch;
   onClose: () => void;
+}
+
+export function openCountyKitchen(state: GameState, actions: FarmPanelActions): void {
+  openPanel({ title: 'Rosa Alvarez · County Pantry & Kitchen', body: (body) => renderCountyKitchen(body, state, actions) });
+}
+
+export interface CountyKitchenPanelState { locked: boolean; status: 'unmet' | 'offered' | 'active' | 'completed'; }
+/** Presentation guard shared by Rosa and the kitchen doorway; core retains the authority check. */
+export function countyKitchenPanelState(state: GameState): CountyKitchenPanelState {
+  const status = farmOf(state).countyKitchen.status;
+  return { locked: townContact(state).status !== 'completed', status };
+}
+
+function renderCountyKitchen(body: HTMLElement, state: GameState, actions: FarmPanelActions): void {
+  clearChildren(body); const farm = farmOf(state); const kitchen = farm.countyKitchen; const panel = countyKitchenPanelState(state); const cargo = COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.cargo;
+  const progress = countyKitchenProgress(state, { pickupPresent: actions.pickupPresent, source: 'pickup' });
+  const ready = actions.pickupPresent && progress.crop_corn >= cargo.crop_corn && progress.crop_carrots >= cargo.crop_carrots && progress.crop_tomatoes >= cargo.crop_tomatoes;
+  const line = `Corn ${Math.min(progress.crop_corn, cargo.crop_corn)}/${cargo.crop_corn} · Carrots ${Math.min(progress.crop_carrots, cargo.crop_carrots)}/${cargo.crop_carrots} · Tomatoes ${Math.min(progress.crop_tomatoes, cargo.crop_tomatoes)}/${cargo.crop_tomatoes}`;
+  const rerender = (): void => renderCountyKitchen(body, state, actions);
+  if (panel.locked) { body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-kitchen-locked' }, h('strong', {}, 'County Pantry first'), h('span', {}, 'Complete Mae and Eli’s County Pantry delivery before Rosa can post a Garden Table order.'))); return; }
+  if (kitchen.status === 'completed') { body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-kitchen-completed' }, h('strong', {}, 'Garden Table Delivery served'), h('span', {}, 'Rosa Alvarez: The table is full, and the kitchen is grateful.'))); return; }
+  body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-kitchen-delivery' }, h('strong', {}, 'Garden Table Delivery'), h('span', {}, 'Rosa needs one exact pickup load: 8 corn, 6 carrots, and 4 tomatoes (180 lb).'), h('span', { 'data-testid': 'county-kitchen-progress' }, line), h('span', {}, `One-time payout: ${formatMoney(COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.payoutCents)}.`), kitchen.status === 'active'
+    ? h('button', { class: 'btn btn-primary', 'data-testid': 'deliver-county-kitchen', ...(ready ? {} : { disabled: 'true' }), onclick: () => runAndRender(actions.fulfillCountyKitchenDelivery(), actions, rerender) }, 'Serve Garden Table')
+    : h('button', { class: 'btn btn-primary', 'data-testid': 'accept-county-kitchen', onclick: () => runAndRender(actions.acceptCountyKitchenDelivery(), actions, rerender) }, 'Accept Garden Table Delivery')));
 }
 
 export type FarmEquipmentActions = FarmEquipmentOnFarmActions | FarmEquipmentTownActions;
