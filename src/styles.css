@@ -72,7 +72,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 }
 .slot-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .slot-card.empty { border-style: dashed; opacity: 0.85; }
-.slot-main { flex: 1; text-align: left; cursor: pointer; border-radius: 8px; padding: 2px; transition: color .15s ease; }
+.slot-main { flex: 1; text-align: left; cursor: pointer; border: 0; background: transparent; color: inherit; font: inherit; border-radius: 8px; padding: 2px; transition: color .15s ease; }
 .slot-main:hover { color: #2f6d3d; }
 .slot-name { font-size: 17px; font-weight: 700; }
 .slot-sub { font-size: 12px; color: #9a8a78; margin-top: 3px; }
@@ -379,6 +379,11 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 }
 .dialog-input:focus { border-color: var(--sea-deep); }
 .off-line { padding: 4px 0; font-size: 14px; text-align: left; }
+
+.runtime-failure { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; background: rgba(42, 60, 80, .65); }
+.runtime-failure-box { width: min(420px, 100%); padding: 24px; border: 3px solid #f4e3bd; border-radius: 16px; background: var(--paper); box-shadow: var(--shadow); text-align: center; }
+.runtime-failure-box h1 { margin-bottom: 10px; font-size: 20px; color: var(--coral); }
+.runtime-failure-box p { margin-bottom: 16px; line-height: 1.45; }
 
 /* ---------------- 小游戏 ---------------- */
 
@@ -705,6 +710,11 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 }
 
 @media (max-width: 560px) {
+  #title-screen { align-items: flex-start; padding: 14px 0; }
+  .title-box { padding: 24px 18px; }
+  .farm-title-eyebrow { letter-spacing: 1.2px; }
+  .farm-title-logo { font-size: clamp(32px, 10vw, 44px); letter-spacing: clamp(1px, 1.2vw, 3px); }
+  .title-tagline { font-size: 12px; letter-spacing: 1px; }
   .farm-help { top: 126px; font-size: 11px; }
   .first-delivery-chip { top: 178px; font-size: 11px; }
   .first-morning-card { top: 228px; width: calc(100vw - 20px); font-size: 11px; }

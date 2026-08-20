@@ -928,6 +928,7 @@ export class FarmEmpireApp {
       tractorJobActive: !!this.tractorJob,
     });
     if (blocked) { toast(blocked, 'bad'); return; }
+    hideActionMenu(); if (isPanelOpen()) closePanel();
     const returnPoint = placePlayerAtTownReturn(this.state);
     this.playerActor.x = returnPoint.x; this.playerActor.y = returnPoint.y; this.playerActor.walking = false;
     this.walkTarget = null; this.hover = null; this.townHover = null; this.cancelScoutApproach(); this.cancelScoutFetch(false);
@@ -962,6 +963,7 @@ export class FarmEmpireApp {
   private returnToFarm(arrival: 'gate' | 'pickup' = 'gate'): void {
     if (this.mode !== 'town') return;
     hideActionMenu(); if (isPanelOpen()) closePanel();
+    this.hover = null; this.townHover = null; this.fieldDragSelection = [];
     this.townTarget = null; this.townActor.walking = false; this.townGesture = null; this.mode = 'farm';
     const drovePickupHome = arrival === 'pickup' && this.pickupAtTown;
     const home = drovePickupHome ? pickupHomeArrival() : null;

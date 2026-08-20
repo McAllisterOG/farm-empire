@@ -469,3 +469,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - The existing operated Implement Set 20% establishment reduction and rotation bonus add to a natural 30% maximum. One manual or rain establishment resets the crop clock while retaining the pinned rotation bonus. Direct, basket, tractor-wagon, farmhand, and manager harvest authorities share the history write; clear/wither never do.
 - Save v26 migrates v25 without granting history or a bonus. Only canonical family/rotation/establishment timing values survive normalization; malformed timing stays unready rather than becoming ready/withered. Yield provenance, cash, cargo, plots, workforce, and logistics remain intact. This is defensive corruption handling, not a tamper-resistance feature.
 - Field/Farmbook/Knowledge copy explains that real rotations can spread nutrient demand and interrupt pest cycles, while the game uses a concise timing simplification. No new crop, item, action, yield, price, storage, penalty, offline progression, asset, or dependency is introduced.
+
+## 2026-08-19 - Harden public demo accessibility and recovery without changing game authority
+
+**Status:** Approved and complete
+
+- Preserve gameplay, economy, crop timing/yields, map/art scope, vehicle physics/progression, and save v26 exactly while hardening only interaction accessibility and bounded failure recovery.
+- Title slots are semantic labelled buttons with independent Delete actions. Panels, dialogs, and action menus receive semantics, initial focus, Escape, focus containment, and safe restoration; transitions clear stale UI state.
+- Renderer failures use one Reload/Return-to-Title surface. Electron observes failed loads, renderer loss, unresponsive windows, and actionable console errors with a re-entrant-safe native recovery prompt. Isolation, sandbox, disabled Node integration, navigation, and external-link policy are unchanged.
+- Red Team repairs made the Electron prompt gate reusable after every dialog outcome and completed renderer recovery focus lifecycle, including Escape-to-title, Tab/Shift+Tab containment, listener cleanup, and guarded focus restoration.

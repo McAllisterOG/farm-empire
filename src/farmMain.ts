@@ -7,6 +7,7 @@ import { h, clearChildren } from './ui/dom';
 import { initToast, toast } from './ui/toast';
 import { closePanel, confirmDialog, initModal, promptDialog } from './ui/modal';
 import { hideActionMenu, initActionMenu } from './ui/actionMenu';
+import { installRuntimeFailureCapture, setRuntimeReturnToTitle } from './ui/runtimeFailure';
 
 let currentApp: FarmEmpireApp | null = null;
 
@@ -43,8 +44,9 @@ function renderTitle(root: HTMLElement): void {
     if (info) {
       const saved = new Date(info.savedAt);
       list.append(h('div', { class: 'slot-card' },
-        h('div', {
-          class: 'slot-main', 'data-testid': `load-slot-${slot}`,
+        h('button', {
+          class: 'slot-main', type: 'button', 'data-testid': `load-slot-${slot}`,
+          'aria-label': `Load ${info.name}`,
           onclick: () => {
             const state = loadFromSlot(slot, Date.now());
             if (state) startGame(state, slot);
@@ -54,7 +56,8 @@ function renderTitle(root: HTMLElement): void {
         h('div', { class: 'slot-sub' }, `$${info.coins.toLocaleString()} cash · saved ${saved.toLocaleString()}`),
         ),
         h('button', {
-          class: 'btn btn-sm', 'data-testid': `delete-slot-${slot}`,
+          class: 'btn btn-sm', type: 'button', 'data-testid': `delete-slot-${slot}`,
+          'aria-label': `Delete ${info.name}`,
           onclick: () => confirmDialog('Delete this Farm Empire save?', () => {
             deleteSlot(slot);
             renderTitle(root);
@@ -63,8 +66,9 @@ function renderTitle(root: HTMLElement): void {
       ));
     } else {
       list.append(h('div', { class: 'slot-card empty' },
-        h('div', {
-          class: 'slot-main', 'data-testid': `new-game-slot-${slot}`,
+        h('button', {
+          class: 'slot-main', type: 'button', 'data-testid': `new-game-slot-${slot}`,
+          'aria-label': `Start a new farm in slot ${slot + 1}`,
           onclick: () => promptDialog('Name your farming business', 'McAllister Farm', (name) => {
             const state = newGameInSlot(name.trim() || 'McAllister Farm', slot, Date.now());
             startGame(state, slot);
@@ -91,6 +95,8 @@ function renderTitle(root: HTMLElement): void {
 }
 
 function boot(): void {
+  installRuntimeFailureCapture();
+  setRuntimeReturnToTitle(showTitle);
   setLang('en');
   initToast();
   initModal();

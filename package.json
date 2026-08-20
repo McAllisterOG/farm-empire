@@ -40,6 +40,7 @@
       "dist/**/*",
       "desktop/main.mjs",
       "desktop/policy.mjs",
+      "desktop/recoveryGate.mjs",
       "desktop/icon.svg",
       "desktop/icon.png",
       "desktop/icon.ico",

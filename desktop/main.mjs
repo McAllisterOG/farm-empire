@@ -1,7 +1,8 @@
-import { app, BrowserWindow, Menu, shell } from 'electron';
+import { app, BrowserWindow, Menu, shell, dialog } from 'electron';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { APP_ID, GITHUB_ATTRIBUTION_URL, isAllowedExternalUrl, isDevUrlEnabled, resolveUserDataPath } from './policy.mjs';
+import { createRecoveryGate } from './recoveryGate.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isExplicitDev = isDevUrlEnabled({
@@ -51,6 +52,41 @@ if (!app.requestSingleInstanceLock()) {
     });
 
     mainWindow.once('ready-to-show', () => mainWindow.show());
+    const recoveryGate = createRecoveryGate();
+    const showRecovery = async (reason) => {
+      if (!recoveryGate.tryOpen()) return;
+      console.error(`[Farm Empire] desktop recovery: ${reason}`);
+      if (!mainWindow || mainWindow.isDestroyed()) { recoveryGate.release(); return; }
+      let response = 1;
+      try {
+        ({ response } = await dialog.showMessageBox(mainWindow, {
+          type: 'error',
+          title: 'Farm Empire needs to recover',
+          message: 'Farm Empire encountered a desktop runtime problem. Your last saved farm is safe.',
+          detail: 'You can reload the game or close it and restart.',
+          buttons: ['Reload', 'Close'],
+          defaultId: 0,
+          cancelId: 1,
+          noLink: true,
+        }));
+      } catch (error) {
+        console.error('[Farm Empire] recovery dialog failed', error);
+      } finally {
+        recoveryGate.release();
+      }
+      if (response === 0 && !mainWindow.isDestroyed()) mainWindow.webContents.reload();
+      else if (!mainWindow.isDestroyed()) mainWindow.close();
+    };
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (isMainFrame) void showRecovery(`load failed (${errorCode}): ${errorDescription} at ${validatedURL}`);
+    });
+    mainWindow.webContents.on('render-process-gone', (_event, details) => {
+      void showRecovery(`renderer process gone: ${details.reason}`);
+    });
+    mainWindow.on('unresponsive', () => { void showRecovery('window unresponsive'); });
+    mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+      if (level >= 2) console.error(`[Farm Empire renderer] ${sourceId}:${line} ${message}`);
+    });
     mainWindow.webContents.setWindowOpenHandler(({ url }) => {
       if (isAllowedExternalUrl(url)) void shell.openExternal(GITHUB_ATTRIBUTION_URL);
       return { action: 'deny' };

@@ -4,11 +4,13 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** Crop Rotation & Field Notes V1 (local checkpoint; see Git history for hash)
+- **Head:** Demo Polish & Stability V1 (local checkpoint; see Git history for hash)
 - **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
 - **Save:** v26 adds valid `lastHarvestFamily` and pinned `rotationBonusMs`. Grain is corn/wheat, Legume soy, Root potato/carrot, and Garden tomato/cabbage/pumpkin. A different family after successful harvest saves 10% of base growth time; first and same-family plantings have no penalty. Existing v25 crops/history receive no bonus.
 - **Timing safety:** The existing Implement Set 20% establishment reduction and the rotation 10% reduction are additive, capped at 30%. Manual/rain establishment resets the clock once while retaining the pinned bonus. Direct, basket, tractor-wagon, farmhand, and manager harvests all record family; wither/clear do not. Corrupt crop timing fields fail closed to unready/growing without altering yield provenance, cargo, or business state; tamper resistance is not a feature goal.
-- **Verification:** 349 tests in 52 files passed; focused rotation regressions, strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Browser/player-surface verification was not run.
+- **Demo stability:** Title slots are native labelled buttons with separate Delete actions. Panels, dialogs, and Canvas action menus use dialog/menu semantics, initial focus, Escape closure, tab containment, and connected-trigger focus restoration; title and farm/town transitions clear stale overlays and hints. Compact title styling prevents narrow-screen overflow.
+- **Runtime/Desktop:** One renderer-owned recovery surface catches uncaught errors/rejections and offers Reload or Return to Title. Electron logs only actionable renderer console diagnostics and handles failed loads, renderer loss, and unresponsive windows with a guarded Reload/Close prompt. `contextIsolation`, sandbox, disabled Node integration, and navigation/external-link policy are unchanged.
+- **Verification:** 356 tests in 53 files passed; strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Red Team recovery-gate and recovery-focus findings were repaired and accepted. Browser/player-surface verification was not run.
 - **Player-surface limit:** No browser or packaged QA pass was run. No package, shortcut, QA profile, or owner save was modified.
 
 ## Current presentation
@@ -55,7 +57,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Crop Rotation & Field Notes V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
+No additional feature package is currently active. Demo Polish & Stability V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
 
 ## Known limitations
 

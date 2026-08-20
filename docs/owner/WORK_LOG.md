@@ -619,3 +619,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Safety/presentation:** V25 migration grants no history or bonus. Normalization rejects malformed family, rotation, establishment, and planting-time values without changing V1/V2 yield provenance or business/logistics state; invalid time remains unready. Field menus, Farmbook, weather guidance, Knowledge, and a subtle leaf marker explain the game-scale rotation model.
 - **Verification:** 349 tests in 52 files passed, including focused timing/migration/corruption/harvest-route coverage; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed.
 - **Limit:** Browser/player-surface QA was not run. Tamper resistance, soil nutrients, pest systems, penalties, output/economy changes, offline progression, packaging, shortcuts, and push remain out of scope.
+
+## Demo Polish & Stability V1 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Result:** Replaced title-slot clickable divs with labelled buttons; added modal/dialog/action-menu semantics and keyboard focus lifecycle; cleared stale scene UI; added compact-title responsive protection; and added bounded renderer/Electron recovery and diagnostics without changing gameplay, saves, or Electron security policy.
+- **Review repair:** Electron recovery now suppresses only concurrent native prompts and reopens for later independent failures. The renderer recovery alertdialog has initial focus, Tab/Shift+Tab containment, Escape-to-title, listener cleanup, and safe restoration.
+- **Verification:** 356 tests in 53 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed.
+- **Limit:** Browser/player-surface and packaged QA remain pending. No package, shortcut, install, owner save, or push was modified.

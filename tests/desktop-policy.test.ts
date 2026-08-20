@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isDevUrlEnabled, resolveUserDataPath } from '../desktop/policy.mjs';
 import { isFarmEmpireHtml } from '../desktop/devPolicy.mjs';
+import { createRecoveryGate } from '../desktop/recoveryGate.mjs';
 
 const policy = readFileSync(resolve('desktop/policy.mjs'), 'utf8');
 const main = readFileSync(resolve('desktop/main.mjs'), 'utf8');
@@ -30,6 +31,26 @@ describe('Windows desktop release boundary', () => {
     expect(isDevUrlEnabled({ isPackaged: false, devFlag: '1', devUrl: 'http://127.0.0.1:5173/' })).toBe(true);
     expect(isDevUrlEnabled({ isPackaged: true, devFlag: '1', devUrl: 'http://127.0.0.1:5173/' })).toBe(false);
     expect(isDevUrlEnabled({ isPackaged: false, devFlag: '0', devUrl: 'http://127.0.0.1:5173/' })).toBe(false);
+  });
+
+  it('keeps failure diagnostics bounded and offers desktop recovery without relaxing policy', () => {
+    expect(main).toContain("'did-fail-load'");
+    expect(main).toContain("'render-process-gone'");
+    expect(main).toContain("'unresponsive'");
+    expect(main).toContain("'console-message'");
+    expect(main).toContain("buttons: ['Reload', 'Close']");
+    expect(main).toContain('if (level >= 2)');
+    expect(main).toContain('createRecoveryGate');
+  });
+
+  it('suppresses only concurrent recovery prompts and releases for later independent failures', () => {
+    const gate = createRecoveryGate();
+    expect(gate.tryOpen()).toBe(true);
+    expect(gate.tryOpen()).toBe(false);
+    expect(gate.isOpen()).toBe(true);
+    gate.release();
+    expect(gate.isOpen()).toBe(false);
+    expect(gate.tryOpen()).toBe(true);
   });
 
   it('uses an explicit, absolute QA profile only when the full opt-in pair is supplied', () => {
