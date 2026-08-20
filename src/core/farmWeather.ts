@@ -19,17 +19,17 @@ const WEATHER_COPY: Readonly<Record<FarmWeatherKind, Omit<FarmWeather, 'kind'>>>
   clear: {
     label: 'Clear skies',
     shortForecast: 'Clear',
-    fieldNote: 'Good working weather. New plantings still need establishment water.',
+    fieldNote: 'Good working weather. New plantings need one establishment watering; rotations are a game timing simplification.',
   },
   cloudy: {
     label: 'Cloudy',
     shortForecast: 'Cloudy',
-    fieldNote: 'Cool, overcast fieldwork. New plantings still need establishment water.',
+    fieldNote: 'Cool, overcast fieldwork. New plantings need one establishment watering; rotations are a game timing simplification.',
   },
   rain: {
     label: 'Steady rain',
     shortForecast: 'Rain',
-    fieldNote: 'Rain establishes any new planting that is waiting for its first water.',
+    fieldNote: 'Rain establishes seedlings planted while rain is active; otherwise give one first watering. Rotation is a game timing simplification.',
   },
 };
 

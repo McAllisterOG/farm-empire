@@ -26,7 +26,7 @@ describe('Farm desktop session pause', () => {
     const before = farmCropStage(state.plots[0].crop, SAVED_AT);
     const loaded = deserialize(serialize(state, SAVED_AT), NEXT_DAY);
 
-    expect(SAVE_VERSION).toBe(25);
+    expect(SAVE_VERSION).toBe(26);
     expect(farmCropStage(loaded.plots[0].crop, NEXT_DAY)).toBe(before);
     expect(loaded.plots[0].crop?.plantedAt).toBe(NEXT_DAY - 20_000);
     expect(farmOf(loaded).clock.lastRealAt).toBe(NEXT_DAY);
@@ -38,7 +38,7 @@ describe('Farm desktop session pause', () => {
     legacy.version = 19;
     const loaded = deserialize(JSON.stringify(legacy), NEXT_DAY);
 
-    expect(loaded.version).toBe(25);
+    expect(loaded.version).toBe(26);
     expect(farmCropStage(loaded.plots[0].crop, NEXT_DAY)).toBe('ready');
 
     const savedAgain = serialize(loaded, NEXT_DAY);

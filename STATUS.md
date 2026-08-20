@@ -4,10 +4,11 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** Farmstead Office & Crew Quarters V1 (local checkpoint; see Git history for hash)
+- **Head:** Crop Rotation & Field Notes V1 (local checkpoint; see Git history for hash)
 - **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
-- **Save:** v25 adds fail-closed `farmstead.officeQuartersOwned`. V24 migration grants it only for a valid existing Eliot hire; malformed/inconsistent property and Eliot state close without disturbing valid business data.
-- **Verification:** 342 tests in 51 files passed; focused Farmstead regressions, strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Red Team accepted without High/Medium findings.
+- **Save:** v26 adds valid `lastHarvestFamily` and pinned `rotationBonusMs`. Grain is corn/wheat, Legume soy, Root potato/carrot, and Garden tomato/cabbage/pumpkin. A different family after successful harvest saves 10% of base growth time; first and same-family plantings have no penalty. Existing v25 crops/history receive no bonus.
+- **Timing safety:** The existing Implement Set 20% establishment reduction and the rotation 10% reduction are additive, capped at 30%. Manual/rain establishment resets the clock once while retaining the pinned bonus. Direct, basket, tractor-wagon, farmhand, and manager harvests all record family; wither/clear do not. Corrupt crop timing fields fail closed to unready/growing without altering yield provenance, cargo, or business state; tamper resistance is not a feature goal.
+- **Verification:** 349 tests in 52 files passed; focused rotation regressions, strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Browser/player-surface verification was not run.
 - **Player-surface limit:** No browser or packaged QA pass was run. No package, shortcut, QA profile, or owner save was modified.
 
 ## Current presentation
@@ -35,6 +36,7 @@
 - Manual harvest carries a visible 24-unit saved basket until atomically unloaded to its chosen barn or present pickup destination; basket contents count as assets for County relief and survive reload.
 - The neighboring commercial parcel costs $4,250 plus working seed capital; ownership unlocks the one-time $1,800 Barn Loft Expansion from 480 to 720 storage and visibly adds a lean-to to the barn. A valid County Grain Silo raises combined storage to 1,200.
 - The crop catalog now contains corn, wheat, soybeans, potatoes, carrots, tomatoes, cabbage, and pumpkins. New crops start with zero seeds and unlock from the existing County-order, neighboring-parcel, and Barn Loft milestones without new saved license state.
+- After a successful harvest, each field remembers its crop family. Planting a different family applies the visible leaf-marked 10% growth-time rotation boost; this is a concise game simplification of rotation’s nutrient-demand and pest-cycle benefits, not a soil simulation.
 - Carrots are a low-capital quick turn; tomatoes trade barn throughput for margin; cabbage is value-dense; pumpkins are the slowest, highest-gross, and consume three barn units per harvested item.
 - The public-demo pass improves HUD/modal hierarchy, controls, feedback, transitions, and compact layouts without changing game transactions.
 - Farm Empire now runs from `Farm Empire.lnk` on the real Windows Desktop without a terminal, browser tab, development server, or internet. The packaged shell loads only bundled files, keeps Node unavailable to game content, and stores saves under the stable `%APPDATA%\Farm Empire` profile.
@@ -53,7 +55,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. Workforce & Manager V2 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
+No additional feature package is currently active. Crop Rotation & Field Notes V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
 
 ## Known limitations
 

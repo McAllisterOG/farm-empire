@@ -147,7 +147,7 @@ describe('County crop catalog', () => {
     raw.farm.market.quotes.crop_corn = { currentCents: 999, previousCents: 777 };
     raw.farm.market.activeEvents = [{ id: 'strong-corn-demand', remainingDays: 2 }];
     const loaded = deserialize(JSON.stringify(raw), NOW + 1);
-    expect(loaded.version).toBe(25);
+    expect(loaded.version).toBe(26);
     expect(loaded.plots[0].crop).toMatchObject({ harvestYieldItems: 8, harvestBalanceVersion: 1 }); expect(loaded.plots[1].crop).toMatchObject({ harvestYieldItems: 8, harvestBalanceVersion: 1 });
     expect(farmOf(loaded).storage.crop_wheat).toBe(5); expect(farmOf(loaded).pickup.cargo.crops.crop_potato).toBe(3); expect(farmOf(loaded).handBasket.crops.crop_carrot).toBe(2);
     expect(farmOf(loaded).market.quotes.crop_corn).toEqual({ currentCents: 410, previousCents: 410 });

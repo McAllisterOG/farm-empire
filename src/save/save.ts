@@ -226,6 +226,18 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (farm) farm.farmstead = { officeQuartersOwned: workforce?.eliotHired === true && workforce?.farmhandHired === true && manager?.hired === true && parcels?.northOwned === true && town?.status === 'completed' };
     raw.version = 25;
   },
+  25: (raw) => {
+    // Rotation history is new in v26. Existing fields and crops earn no bonus.
+    const plots = Array.isArray(raw.plots) ? raw.plots : [];
+    for (const plot of plots) {
+      if (!plot || typeof plot !== 'object' || Array.isArray(plot)) continue;
+      const record = plot as Record<string, unknown>;
+      delete record.lastHarvestFamily;
+      const crop = record.crop;
+      if (crop && typeof crop === 'object' && !Array.isArray(crop)) (crop as Record<string, unknown>).rotationBonusMs = 0;
+    }
+    raw.version = 26;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

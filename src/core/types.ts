@@ -69,6 +69,8 @@ export interface PlantedCrop {
   harvestYieldItems?: number;
   /** Explicit balance provenance: v1 only appears through the v20→v21 migration. */
   harvestBalanceVersion?: 1 | 2;
+  /** Pinned at planting: a valid family change saves 10% of this crop's base growth. */
+  rotationBonusMs?: number;
 }
 
 export type CropStage = 'seedling' | 'growing' | 'mature' | 'ready' | 'withered';
@@ -78,6 +80,8 @@ export interface FarmPlot {
   x: number;
   y: number;
   crop: PlantedCrop | null;
+  /** Last successfully harvested Farm Empire crop family; clearing/wither never changes it. */
+  lastHarvestFamily?: FarmCropFamily;
 }
 
 // ---------------------------------------------------------------- 动物
@@ -408,7 +412,10 @@ export interface FarmCropDef {
   storageUnitsPerItem: number;
   basePriceCents: number;
   color: string;
+  family: FarmCropFamily;
 }
+
+export type FarmCropFamily = 'grain' | 'legume' | 'root' | 'garden';
 
 export interface FarmMarketEventDef {
   id: string;

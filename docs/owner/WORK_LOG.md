@@ -610,3 +610,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Boundaries:** No third worker or output, wage, dispatch, capacity, cargo, automation, or logistics change.
 - **Verification:** Focused Farmstead tests plus 342 tests in 51 files passed; strict typecheck, Vite production, desktop-relative build, and `git diff --check` passed. Red Team accepted without High/Medium findings.
 - **Limit:** Browser/player-surface verification was not run; no package, shortcut, push, or owner save was modified.
+
+## Crop Rotation & Field Notes V1 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Result:** Save v26 adds four data-defined crop families and per-field successful-harvest history. Cross-family planting pins a 10% growth-time reduction; first/repeat families have no penalty. The existing Implement Set 20% establishment reduction remains additive to a 30% maximum. Manual/rain establishment is one-time and retains rotation; direct, basket, tractor-wagon, farmhand, and manager harvests share the write authority, while clear/wither preserve history.
+- **Safety/presentation:** V25 migration grants no history or bonus. Normalization rejects malformed family, rotation, establishment, and planting-time values without changing V1/V2 yield provenance or business/logistics state; invalid time remains unready. Field menus, Farmbook, weather guidance, Knowledge, and a subtle leaf marker explain the game-scale rotation model.
+- **Verification:** 349 tests in 52 files passed, including focused timing/migration/corruption/harvest-route coverage; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed.
+- **Limit:** Browser/player-surface QA was not run. Tamper resistance, soil nutrients, pest systems, penalties, output/economy changes, offline progression, packaging, shortcuts, and push remain out of scope.

@@ -460,3 +460,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Farm Services sells one immutable $1,600 Farmstead Office & Crew Quarters property after completed County Pantry contact, north acreage, Mara's hire, and the manager contract. The exact one-time transaction persists only literal ownership and fails without mutation when gated, short of cash, or repeated.
 - Eliot requires owned quarters in addition to his existing prerequisites. Save v25 normalizes ownership and Eliot fail-closed; v24 grants quarters only when the source has a valid existing Eliot hire.
 - The property adds a `crew-quarters` farmhouse presentation tier with an attached office/quarters wing and retains one authoritative farmhouse interaction. It preserves the existing two-worker crew, worker anchors, hit order, all output/wage/dispatch/capacity/cargo/automation rules, and adds no third worker or buffs.
+
+## 2026-08-19 - Add bounded crop rotation field notes
+
+**Status:** Approved and complete
+
+- Fields remember only the last successfully harvested family: Grain (corn/wheat), Legume (soy), Root (potato/carrot), or Garden (tomato/cabbage/pumpkin). Any different next family pins a canonical 10% base-growth reduction; first and same-family plantings have no penalty.
+- The existing operated Implement Set 20% establishment reduction and rotation bonus add to a natural 30% maximum. One manual or rain establishment resets the crop clock while retaining the pinned rotation bonus. Direct, basket, tractor-wagon, farmhand, and manager harvest authorities share the history write; clear/wither never do.
+- Save v26 migrates v25 without granting history or a bonus. Only canonical family/rotation/establishment timing values survive normalization; malformed timing stays unready rather than becoming ready/withered. Yield provenance, cash, cargo, plots, workforce, and logistics remain intact. This is defensive corruption handling, not a tamper-resistance feature.
+- Field/Farmbook/Knowledge copy explains that real rotations can spread nutrient demand and interrupt pest cycles, while the game uses a concise timing simplification. No new crop, item, action, yield, price, storage, penalty, offline progression, asset, or dependency is introduced.

@@ -14,6 +14,7 @@ import {
 } from './farmParcels';
 import { recordFarmStat } from './farmKnowledge';
 import { formatFarmCargoWeight } from './farmCargoScale';
+import { farmGrowthReadyAt, INVALID_FARM_READY_AT, normalizeFarmRotation, recordFarmHarvestFamily, rotationBonusFor } from './farmRotation';
 
 export { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from './farmParcels';
 export type { FarmParcelId } from './farmParcels';
@@ -516,6 +517,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
       : plot.crop ? 'tilled' : 'rough';
     state.farm.fieldConditions[String(plot.uid)] = { soil: plot.crop ? 'tilled' : soil };
   }
+  normalizeFarmRotation(state);
   syncCashMirror(state);
   return state.farm;
 }
@@ -726,14 +728,15 @@ export function plantFarmCrop(state: GameState, plotUid: number, cropId: string,
   if (context === 'manual' && condition.soil !== 'tilled') return fail('Prepare this field section before planting.');
   const speedBps = context === 'operatedTractor' && farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
       ? COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps : 0;
-  const effectiveGrowMs = Math.round(farmDef.growMs * (10_000 - speedBps) / 10_000);
-  const preworkedMs = Math.max(0, farmDef.growMs - effectiveGrowMs);
+  const preworkedMs = Math.round(farmDef.growMs * speedBps / 10_000);
+  const rotationBonusMs = rotationBonusFor(plot.lastHarvestFamily, cropId);
   farm.seeds[cropId] -= 1;
   farm.fieldConditions[String(plotUid)] = { soil: 'tilled' };
   plot.crop = {
     defId: cropId,
     plantedAt: now,
     wateredBonusMs: preworkedMs,
+    rotationBonusMs,
     lastWateredAt: context === 'operatedTractor' ? now : 0,
     awaitingWater: context === 'manual',
     harvestYieldItems: farmDef.harvestYield,
@@ -741,7 +744,7 @@ export function plantFarmCrop(state: GameState, plotUid: number, cropId: string,
   };
   recordFarmStat(state, 'plantings');
   if (context === 'operatedTractor') recordFarmStat(state, 'farmTractorSections');
-  return { ok: true, events: [{ type: 'plant', target: cropId, amount: 1, data: { established: context === 'operatedTractor' } }] };
+  return { ok: true, events: [{ type: 'plant', target: cropId, amount: 1, data: { established: context === 'operatedTractor', rotationBonusMs } }] };
 }
 
 export function harvestFarmCrop(state: GameState, plotUid: number, now: number, context: FarmWorkContext = 'manual'): ActionResult {
@@ -762,6 +765,7 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
     const open = harvestWagonCapacity(state) - harvestWagonUsed(state);
     if (needed > open) return fail(`Harvest wagon full: ${needed * 10} lb required; ${Math.max(0, open) * 10} lb open. Drive to the barn receiving bay to unload.`);
     wagon.crops[def.id] = (wagon.crops[def.id] ?? 0) + amount;
+    recordFarmHarvestFamily(plot);
     plot.crop = null;
     farm.fieldConditions[String(plotUid)] = { soil: 'stubble' };
     recordFarmStat(state, 'harvests'); recordFarmStat(state, 'farmHarvestUnits', amount); recordFarmStat(state, 'farmTractorSections');
@@ -771,6 +775,7 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
     return fail(`Barn full: ${needed} handling lots (${needed * 10} lb) of open storage are required. Sell crops before harvesting.`);
   }
   farm.storage[def.id] = (farm.storage[def.id] ?? 0) + amount;
+  recordFarmHarvestFamily(plot);
   plot.crop = null;
   farm.fieldConditions[String(plotUid)] = { soil: 'stubble' };
   recordFarmStat(state, 'harvests');
@@ -849,7 +854,8 @@ export function farmCropStage(crop: FarmPlot['crop'], now: number): FarmCropStag
   if (!crop) return 'empty';
   if (crop.awaitingWater === true) return 'needs-water';
   const def = farmCropDef(crop.defId);
-  const readyAt = crop.plantedAt + def.growMs - crop.wateredBonusMs;
+  const readyAt = farmGrowthReadyAt(crop);
+  if (readyAt === INVALID_FARM_READY_AT) return 'growing';
   if (now < readyAt) return 'growing';
   return now >= readyAt + def.witherMs ? 'withered' : 'ready';
 }

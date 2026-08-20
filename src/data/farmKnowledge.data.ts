@@ -22,8 +22,8 @@ export const FARMER_KNOWLEDGE_LEVELS: readonly FarmerKnowledgeLevelDef[] = [
     level: 2,
     name: 'Field Hand',
     minPoints: 12,
-    fieldNote: 'Crop rotation can interrupt pest cycles and spread nutrient demand.',
-    sourceLabel: 'USDA crop-rotation guidance',
+    fieldNote: 'Crop rotation can interrupt pest cycles and spread nutrient demand; this farm models it as a simple timing boost.',
+    sourceLabel: 'USDA crop-rotation guidance · game simplification',
   },
   {
     level: 3,
@@ -47,4 +47,3 @@ export const FARMER_KNOWLEDGE_LEVELS: readonly FarmerKnowledgeLevelDef[] = [
     sourceLabel: 'Farm business principle',
   },
 ] as const;
-

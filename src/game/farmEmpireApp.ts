@@ -20,6 +20,7 @@ import { isoX, isoY, TILE_H } from '../render/iso';
 import { farmhousePresentationTier, farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
 import { advanceFarmCompanionFetch, canAdvanceFarmCompanionFetch, updateFarmCompanion, type FarmCompanionFetchState, type FarmCompanionState } from '../core/farmCompanion';
 import { recordFarmStat } from '../core/farmKnowledge';
+import { farmGrowthReadyAt, rotationPreview } from '../core/farmRotation';
 import { firstFarmMorningGuide, shouldPresentStarterGuideTarget } from '../core/firstFarmMorning';
 import { FarmSoundscape, type FarmAudioSettings } from '../audio/farmSoundscape';
 import {
@@ -1443,8 +1444,9 @@ export class FarmEmpireApp {
       }
       const def = farmCropDef(farm.selectedCropId);
       const count = farm.seeds[def.id] ?? 0;
+      const rotation = rotationPreview(plot, def.id);
       this.showManualScopeMenu(
-        sx, sy, `Prepared soil · ${def.name} · ${count} seed${count === 1 ? '' : 's'}`,
+        sx, sy, `Prepared soil · ${def.name} · ${count} seed${count === 1 ? '' : 's'} · ${rotation.bonusMs ? 'Rotation +10%' : rotation.lastHarvestFamily ? 'Same family' : 'First crop'}`,
         'plant', plotUid, def.id, [{
           label: count > 0 ? 'More seeds are sold in town' : 'No seeds · see the Farmbook route',
           disabled: count > 0,
@@ -1468,7 +1470,7 @@ export class FarmEmpireApp {
       this.showManualScopeMenu(sx, sy, `${def.name} · Ready`, 'harvest', plotUid, undefined, undefined, 'fx:ready');
     } else {
       showActionMenu(sx, sy, `${def.name} · ${stage}`, [{
-        label: `Growing · ${Math.max(1, Math.ceil((plot.crop.plantedAt + def.growMs - plot.crop.wateredBonusMs - now) / 1000))}s remaining`,
+        label: `Growing · ${Math.max(1, Math.ceil((farmGrowthReadyAt(plot.crop) - now) / 1000))}s remaining${plot.crop.rotationBonusMs ? ' · rotation boost' : ''}`,
         disabled: true,
         onClick: () => {},
       }]);

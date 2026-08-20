@@ -8,6 +8,7 @@ import { pickupCargoRemaining } from './farmPickup';
 import { recordFarmStat } from './farmKnowledge';
 import { HAND_BASKET_CAPACITY } from './farmHarvestBasketData';
 import { formatFarmCargoWeight } from './farmCargoScale';
+import { recordFarmHarvestFamily } from './farmRotation';
 
 export { HAND_BASKET_CAPACITY } from './farmHarvestBasketData';
 
@@ -76,6 +77,7 @@ export function harvestFarmCropToBasket(state: GameState, plotUid: number, now: 
   const plot = state.plots.find((candidate) => candidate.uid === plotUid)!;
   const farm = farmOf(state);
   farm.handBasket.crops[readiness.cropId] = handBasketCropUnits(state, readiness.cropId) + readiness.amount;
+  recordFarmHarvestFamily(plot);
   plot.crop = null;
   farm.fieldConditions[String(plotUid)] = { soil: 'stubble' };
   recordFarmStat(state, 'harvests');

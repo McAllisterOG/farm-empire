@@ -53,10 +53,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 47. **County Kitchen & Market Street V1** - save-v23 expands the separate County scene with a safe public Market Street, four presentation-only homes, County Pantry & Kitchen/Rosa Alvarez, and one finite exact pickup Garden Table Delivery after the Pantry order.
 48. **Workforce & Manager V2** - save-v24 two reviewed worker slots, Mara Bell and Eliot Reyes, explicit daily approval, visible Farm-mode dispatch, runtime-only claims, and direct-barn worker harvests.
 49. **Farmstead Office & Crew Quarters V1** - a $1,600, Farm Services-gated office/quarters property, save-v25 ownership, Eliot housing gate, and a single-interaction crew-quarters visual tier without worker buffs or a third worker.
+50. **Crop Rotation & Field Notes V1** - save-v26 field-family history, a cross-family 10% growth-time reduction, field/Farmbook learning copy, and defensive crop-timing normalization without yield, economy, or logistics changes.
 
 ## Current authorization
 
-No additional feature package is currently active. Farmstead Office & Crew Quarters V1 is complete; the next package should respond to the owner's next playtest rather than broaden scope speculatively.
+No additional feature package is currently active. Crop Rotation & Field Notes V1 is complete; the next package should respond to the owner's next playtest rather than broaden scope speculatively.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.

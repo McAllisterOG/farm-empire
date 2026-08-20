@@ -815,6 +815,11 @@ function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: F
     ctx.fillStyle = '#75b9d0'; ctx.strokeStyle = '#315c68'; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(0, -10); ctx.bezierCurveTo(-7, -2, -8, 3, 0, 7); ctx.bezierCurveTo(8, 3, 7, -2, 0, -10); ctx.fill(); ctx.stroke(); ctx.restore();
   }
+  if ((plot.crop?.rotationBonusMs ?? 0) > 0) {
+    ctx.save(); ctx.translate(sx + 17 * zoom, sy - 44 * zoom); ctx.scale(zoom, zoom);
+    ctx.fillStyle = '#a9d66b'; ctx.strokeStyle = '#426b36'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(0, 0, 4, 8, -.55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
 }
 
 const FARM_CROP_SPRITE_SIZE = 112;

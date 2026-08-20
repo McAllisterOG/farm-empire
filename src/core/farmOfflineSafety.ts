@@ -1,6 +1,7 @@
 import type { GameState } from './types';
 import { farmCropDefOrNull } from './registry';
 import { farmOf } from './farmBusiness';
+import { farmGrowthReadyAt } from './farmRotation';
 
 export interface FarmSessionResumeResult {
   awayMs: number;
@@ -34,9 +35,9 @@ export function resumeFarmSession(
     crop.plantedAt += awayMs;
     if (Number.isFinite(crop.lastWateredAt) && crop.lastWateredAt > 0) crop.lastWateredAt += awayMs;
 
-    const readyAt = crop.plantedAt + def.growMs - crop.wateredBonusMs;
+    const readyAt = farmGrowthReadyAt(crop);
     if (rescueLegacyWithered && crop.awaitingWater !== true && safeNow >= readyAt + def.witherMs) {
-      crop.plantedAt = safeNow - def.growMs + crop.wateredBonusMs;
+      crop.plantedAt = safeNow - def.growMs + crop.wateredBonusMs + (crop.rotationBonusMs ?? 0);
       if (crop.lastWateredAt > safeNow) crop.lastWateredAt = safeNow;
       rescuedWithered += 1;
     }
