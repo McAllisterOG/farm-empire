@@ -15,7 +15,7 @@ function farm() {
 describe('County Utility Trailer', () => {
   it('starts closed at 72 units and unlocks only after a completed freight haul', () => {
     const state = farm(); const business = farmOf(state);
-    expect(SAVE_VERSION).toBe(23);
+    expect(SAVE_VERSION).toBe(24);
     expect(business.equipment.countyUtilityTrailerOwned).toBe(false);
     expect(pickupCargoCapacity(state)).toBe(COUNTY_UTILITY_TRAILER.fromCapacity);
     const before = JSON.stringify(business);

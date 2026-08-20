@@ -26,6 +26,7 @@ export interface FarmInteractionRuntime {
   tractor: FarmPoint;
   scout: FarmPoint;
   farmhand?: FarmPoint;
+  farmhands?: { point: FarmPoint; label: string }[];
   now: number;
 }
 
@@ -50,6 +51,7 @@ export function farmInteractionAtWorldPoint(
   if (near(logical, runtime.pickup, 1.05)) return { kind: 'pickup', label: 'Old Pickup', point: { ...runtime.pickup } };
   if (near(logical, runtime.tractor, 1.0)) return { kind: 'tractor', label: 'Old Tractor', point: { ...runtime.tractor } };
   if (runtime.farmhand && near(logical, runtime.farmhand, .8)) return { kind: 'farmhand', label: 'Mara Bell · County Farmhand', point: { ...runtime.farmhand } };
+  for (const worker of runtime.farmhands ?? []) if (near(logical, worker.point, .8)) return { kind: 'farmhand', label: worker.label, point: { ...worker.point } };
   const landmarks = farmLandmarks();
   const farmhouseTier = farmhousePresentationTier(farm.parcels.northOwned);
   if (near(logical, landmarks.farmhouse, farmhouseInteractionRadius(farmhouseTier))) {

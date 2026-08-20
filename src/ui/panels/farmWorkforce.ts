@@ -1,15 +1,16 @@
 import type { ActionResult, GameState } from '../../core/types';
 import { farmOf, formatMoney, isFarmCropUnlocked } from '../../core/farmBusiness';
-import { farmManagerUnlocked, farmhandUnlocked, planFarmManagerDispatch, planFarmhandWork, type FarmhandWorkKind } from '../../core/farmWorkforce';
+import { eliotUnlocked, farmManagerUnlocked, farmhandUnlocked, planFarmhandWork, reviewWorkforceDispatch, type FarmhandWorkKind } from '../../core/farmWorkforce';
 import { farmParcelDef, type FarmParcelId } from '../../core/farmParcels';
 import { allFarmCrops, farmCropDef } from '../../core/registry';
-import { FIRST_FARMHAND } from '../../data/farmWorkforce.data';
+import { ELIOT_REYES, FIRST_FARMHAND } from '../../data/farmWorkforce.data';
 import { clearChildren, h } from '../dom';
 import { closePanel, openPanel } from '../modal';
 
 type Dispatch = (result: ActionResult) => void;
 
 export interface FarmhandJobView {
+  workerId: 'mara-bell' | 'eliot-reyes';
   parcelId: FarmParcelId;
   kind: FarmhandWorkKind;
   completed: number;
@@ -22,11 +23,14 @@ export interface FarmWorkforceActions {
   dispatch: Dispatch;
   hire?: () => ActionResult;
   hireManager?: () => ActionResult;
+  hireEliot?: () => ActionResult;
+  updateSlot?: (input: { workerId: 'mara-bell' | 'eliot-reyes'; enabled: boolean; parcelId: FarmParcelId; cropId: string; autoDispatch: boolean }) => ActionResult;
+  approveDispatch?: () => ActionResult;
   updateManager?: (input: { enabled: boolean; parcelId: FarmParcelId; cropId: string }) => ActionResult;
   dispatchManager?: () => ActionResult;
   startWork?: (parcelId: FarmParcelId, kind: FarmhandWorkKind) => ActionResult;
-  cancelWork?: () => void;
-  activeJob?: FarmhandJobView | null;
+  cancelWork?: (workerId: 'mara-bell' | 'eliot-reyes') => void;
+  activeJobs?: FarmhandJobView[];
   now: number;
   onClose: () => void;
 }
@@ -93,39 +97,47 @@ function renderFarmWorkforce(body: HTMLElement, state: GameState, actions: FarmW
       h('div', { class: 'equipment-mode' }, manager.hired ? 'Contract owned · configure and review at the farm' : farmManagerUnlocked(state) ? 'Ready at this desk' : 'Locked · hire Mara first'),
       ...(!manager.hired && farmManagerUnlocked(state) ? [h('button', { class: 'btn btn-primary', 'data-testid': 'hire-farm-manager', onclick: () => { const result = actions.hireManager?.(); if (result) { actions.dispatch(result); if (result.ok) renderFarmWorkforce(body, state, actions); } } }, 'Add contract · $2,400')] : []),
     ));
+    body.append(h('div', { class: 'equipment-card', 'data-testid': 'eliot-hire-card' },
+      h('div', { class: 'farm-card-title' }, `${ELIOT_REYES.name} · ${ELIOT_REYES.role}`),
+      h('p', {}, '$2,100 one-time; $100 only on a farm day when a real reviewed assignment starts. Field work only: prepare, rework, plant, water, harvest.'),
+      h('div', { class: 'equipment-mode' }, farm.workforce.eliotHired ? 'Hired · configure at the farm' : eliotUnlocked(state) ? 'Ready after the manager contract' : 'Locked · manager, Mara, County contact, and north acreage required'),
+      ...(!farm.workforce.eliotHired && eliotUnlocked(state) ? [h('button', { class: 'btn btn-primary', 'data-testid': 'hire-eliot-reyes', onclick: () => { const result = actions.hireEliot?.(); if (result) { actions.dispatch(result); if (result.ok) renderFarmWorkforce(body, state, actions); } } }, 'Hire Eliot · $2,100')] : []),
+    ));
     return;
   }
 
   const manager = farm.workforce.manager;
   if (manager.hired) {
-    const preview = planFarmManagerDispatch(state, actions.now);
-    const parcelSelect = h('select', { 'data-testid': 'manager-parcel' },
-      h('option', { value: 'starter', ...(manager.parcelId === 'starter' ? { selected: 'true' } : {}) }, 'Starter acreage'),
-      ...(farm.parcels.northOwned ? [h('option', { value: 'north', ...(manager.parcelId === 'north' ? { selected: 'true' } : {}) }, 'North acreage')] : []),
-    ) as HTMLSelectElement;
-    const cropSelect = h('select', { 'data-testid': 'manager-crop' }, ...allFarmCrops().filter((crop) => isFarmCropUnlocked(state, crop.id))
-      .map((crop) => h('option', { value: crop.id, ...(crop.id === manager.cropId ? { selected: 'true' } : {}) }, crop.name))) as HTMLSelectElement;
+    const reviews = reviewWorkforceDispatch(state, actions.now);
     body.append(h('div', { class: 'equipment-card', 'data-testid': 'farm-manager-plan' },
-      h('div', { class: 'farm-card-title' }, `Manager · ${manager.enabled ? 'standing plan active' : 'paused'}`),
-      h('div', { class: 'farmbook-actions farmhand-actions' }, parcelSelect, cropSelect),
-      h('p', { class: 'panel-note' }, preview.eligibleCount ? `Day ${farm.clock.day} preview · ${WORK_LABELS[preview.kind]} · ${preview.eligibleCount} eligible sections.` : `Day ${farm.clock.day} · ${preview.reason}`),
-      h('div', { class: 'farmbook-actions farmhand-actions' },
-        h('button', { class: 'btn btn-sm', 'data-testid': 'update-manager-plan', onclick: () => { const result = actions.updateManager?.({ enabled: manager.enabled, parcelId: parcelSelect.value as FarmParcelId, cropId: cropSelect.value }); if (result) { actions.dispatch(result); renderFarmWorkforce(body, state, actions); } } }, 'Update plan'),
-        h('button', { class: 'btn btn-sm', 'data-testid': 'toggle-manager-plan', onclick: () => { const result = actions.updateManager?.({ enabled: !manager.enabled, parcelId: manager.parcelId, cropId: manager.cropId }); if (result) { actions.dispatch(result); renderFarmWorkforce(body, state, actions); } } }, manager.enabled ? 'Pause plan' : 'Enable plan'),
-        h('button', { class: 'btn btn-primary btn-sm', 'data-testid': 'dispatch-farm-manager', ...(preview.eligibleCount && manager.lastReviewedDay !== farm.clock.day && !actions.activeJob ? {} : { disabled: 'true' }), onclick: () => { const result = actions.dispatchManager?.(); if (result) { actions.dispatch(result); if (result.ok) closePanel(); else renderFarmWorkforce(body, state, actions); } } }, manager.lastReviewedDay === farm.clock.day ? `Reviewed Day ${farm.clock.day}` : `Dispatch Mara for Day ${farm.clock.day}`),
-      ),
-      h('small', {}, 'The manager never buys supplies, moves cargo, or works while you are away.'),
+      h('div', { class: 'farm-card-title' }, 'Manager review · two worker slots'),
+      ...reviews.map((review) => {
+        const slot = farm.workforce.slots[review.slotIndex];
+        const parcelSelect = h('select', {}, h('option', { value: 'starter', ...(slot.parcelId === 'starter' ? { selected: 'true' } : {}) }, 'Starter acreage'), ...(farm.parcels.northOwned ? [h('option', { value: 'north', ...(slot.parcelId === 'north' ? { selected: 'true' } : {}) }, 'North acreage')] : [])) as HTMLSelectElement;
+        const cropSelect = h('select', {}, ...allFarmCrops().filter((crop) => isFarmCropUnlocked(state, crop.id)).map((crop) => h('option', { value: crop.id, ...(crop.id === slot.cropId ? { selected: 'true' } : {}) }, crop.name))) as HTMLSelectElement;
+        return h('div', { class: 'panel-note', 'data-testid': `worker-slot-${review.workerId}` },
+          h('strong', {}, `${review.workerName} · ${slot.enabled ? 'enabled' : 'paused'}`),
+          h('div', { class: 'farmbook-actions farmhand-actions' }, parcelSelect, cropSelect),
+          h('span', {}, review.eligibleCount ? `${WORK_LABELS[review.kind]} · ${review.eligibleCount} sections · seed/barn claim checked when approved work starts · max today ${formatMoney(review.maximumTodayWageCents)}` : review.reason ?? 'No candidate action.'),
+          h('button', { class: 'btn btn-sm', onclick: () => { const result = actions.updateSlot?.({ ...slot, enabled: slot.enabled, parcelId: parcelSelect.value as FarmParcelId, cropId: cropSelect.value }); if (result) { actions.dispatch(result); renderFarmWorkforce(body, state, actions); } } }, 'Update slot'),
+          h('button', { class: 'btn btn-sm', onclick: () => { const result = actions.updateSlot?.({ ...slot, enabled: !slot.enabled }); if (result) { actions.dispatch(result); renderFarmWorkforce(body, state, actions); } } }, slot.enabled ? 'Pause slot' : 'Enable slot'),
+        );
+      }),
+      h('button', { class: 'btn btn-primary btn-sm', 'data-testid': 'approve-today-dispatch', ...(farm.workforce.dispatchApprovedDay === farm.clock.day ? { disabled: 'true' } : {}), onclick: () => { const result = actions.approveDispatch?.(); if (result) { actions.dispatch(result); if (result.ok) closePanel(); else renderFarmWorkforce(body, state, actions); } } }, farm.workforce.dispatchApprovedDay === farm.clock.day ? `Approved Day ${farm.clock.day}` : 'Approve today’s dispatch'),
+      h('small', {}, 'Approval charges nothing. Active visible farm time may start eligible slots in order; workers never buy, sell, clear, or move cargo.'),
     ));
   }
 
-  const active = actions.activeJob;
-  if (active) {
-    const parcel = farmParcelDef(active.parcelId);
-    body.append(h('div', { class: 'equipment-card', 'data-testid': 'farmhand-active-job' },
-      h('div', { class: 'farm-card-title' }, `${WORK_LABELS[active.kind]} · ${parcel.name}`),
-      h('p', {}, `${active.completed} / ${active.total} complete${active.skipped ? ` · ${active.skipped} skipped` : ''}. Completed sections remain committed; the section in progress changes only after its action finishes.`),
-      h('button', { class: 'btn', 'data-testid': 'cancel-farmhand-job', onclick: () => { actions.cancelWork?.(); closePanel(); } }, 'Stop assignment'),
-    ));
+  const active = actions.activeJobs ?? [];
+  if (active.length) {
+    body.append(...active.map((job) => {
+      const parcel = farmParcelDef(job.parcelId); const name = job.workerId === 'mara-bell' ? FIRST_FARMHAND.name : ELIOT_REYES.name;
+      return h('div', { class: 'equipment-card', 'data-testid': `worker-active-${job.workerId}` },
+        h('div', { class: 'farm-card-title' }, `${name} · ${WORK_LABELS[job.kind]} · ${parcel.name}`),
+        h('p', {}, `${job.completed} / ${job.total} complete${job.skipped ? ` · ${job.skipped} skipped` : ''}. Completed sections remain committed; unconsumed claims release if stopped.`),
+        h('button', { class: 'btn', 'data-testid': `cancel-worker-${job.workerId}`, onclick: () => { actions.cancelWork?.(job.workerId); renderFarmWorkforce(body, state, actions); } }, `Stop ${name}`),
+      );
+    }));
     return;
   }
 

@@ -4,10 +4,10 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** County Kitchen & Market Street V1 (local checkpoint; see Git history for hash)
+- **Head:** Workforce & Manager V2 (local checkpoint; see Git history for hash)
 - **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
-- **Save:** v23 preserves v22 wagon/logistics state and adds only County Kitchen status. V22 migration deletes stray kitchen state; malformed state fails closed and cannot affect Freight.
-- **Verification:** 333 tests in 48 files passed; focused Kitchen/Town geometry regressions, strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Red Team Pantry-lock, frontage, and route-clearance findings were repaired.
+- **Save:** v24 preserves v23 Kitchen/logistics state and adds a normalized Workforce V2 record. V23 migration grants no Eliot, approval, claim, wage, or dispatch token; corrupt roster, slots, gates, and day values fail closed.
+- **Verification:** 338 tests in 50 files passed; focused workforce/reservation regressions, strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Red Team runtime, pause, and idempotence repairs were completed.
 - **Player-surface limit:** No browser or packaged QA pass was run. No package, shortcut, QA profile, or owner save was modified.
 
 ## Current presentation
@@ -45,7 +45,7 @@
 - The County now has deterministic clear, cloudy, and rainy farm days. A three-day Farmbook forecast supports planning; steady rain automatically supplies only the existing one-time establishment watering, while farm and town share wet lighting, visible rain, and a rain-shaped procedural ambience.
 - Hovering focal objects now identifies what will open, and authoritative hit priority routes pickup, tractor, Scout, farmhouse, pump, barn, doghouse, gateway, acreage, fields, full townsperson silhouettes, and the parked County pickup to their correct interaction.
 - The Farmbook consolidates the nine-step prepare, plant, water, harvest, load, town, trade, restore, and expand loop plus the live business snapshot and core routes without filling the world with buttons.
-- After County trust and neighboring-acreage ownership, Farm Services hires Mara Bell. Workforce in the Farmbook or talking with Mara assigns one whole acreage at a time; her first assignment each farm day costs $120, later same-day assignments are covered, and the owner can continue working elsewhere or visit town.
+- After County trust and neighboring-acreage ownership, Farm Services hires Mara Bell as a $1,800 Field Generalist; her first real assignment each farm day costs $120. A Mara-gated $2,400 manager adds two reviewed slots and a cost-free explicit daily approval. Eliot Reyes is a $2,100 Field Crew Hand unlocked by that manager; his first real assignment costs $100. Workers prepare/rework/plant/water/harvest only, harvest direct to barn, use runtime-only seed/barn claims, and start only while the visible app is in Farm mode—never offline, hidden, on load, or in County.
 - After County trust, Farm Services can build a $650 roadside produce stand. It fills one small barn-sourced local request per farm day at 90% of the posted County quote; while that order is open during business hours, a basket-carrying visitor walks the safe roadside shoulder to browse. The Grain Exchange and Freight Board remain the better-paying logistics routes.
 - Farmer Knowledge V1 derives five presentation-only ranks and short evidence-sourced field notes from real planting, harvesting, hauling, selling, expansion, and County milestones; it adds no hidden yield or cash modifier and no save field.
 - The homestead now has a larger farmhouse, pond, reeds, garden rows, flowers, destination pulses, and clearer field outlines; the County Service Center has larger edge homes, tighter framing, named hover cues, and a dedicated correctly scaled pickup bay away from the return sign.
@@ -53,7 +53,7 @@
 
 ## Immediate authorized work
 
-No additional feature package is currently active. County Kitchen & Market Street V1 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
+No additional feature package is currently active. Workforce & Manager V2 is complete. The next finite package should be selected from the next owner playtest rather than broadened speculatively.
 
 ## Known limitations
 

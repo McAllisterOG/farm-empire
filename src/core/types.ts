@@ -460,6 +460,11 @@ export interface FarmWorkforceState {
   farmhandHired: boolean;
   lastShiftPaidDay: number;
   manager: FarmManagerState;
+  eliotHired: boolean;
+  eliotLastShiftPaidDay: number;
+  dispatchApprovedDay: number;
+  workerLastDispatchedDay: Record<FarmWorkerId, number>;
+  slots: FarmWorkerPlanSlot[];
 }
 
 export interface FarmManagerState {
@@ -468,6 +473,17 @@ export interface FarmManagerState {
   parcelId: 'starter' | 'north';
   cropId: string;
   lastReviewedDay: number;
+}
+
+export type FarmWorkerId = 'mara-bell' | 'eliot-reyes';
+
+/** A reviewed preference only. Runtime assignments and resource claims never save. */
+export interface FarmWorkerPlanSlot {
+  workerId: FarmWorkerId;
+  enabled: boolean;
+  parcelId: 'starter' | 'north';
+  cropId: string;
+  autoDispatch: boolean;
 }
 
 export interface FarmRoadsideStandState {

@@ -443,3 +443,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - After the completed Pantry order, Rosa offers one persistent Garden Table Delivery: exactly 8 corn, 6 carrots, and 4 tomatoes from the present pickup for $115 once. It is atomic, pickup-only, and completes before payout.
 - Save v23 stores only Kitchen status. V22 migration deletes stray Kitchen data; malformed states fail closed, preserve all existing logistics/Freight data, and grant nothing.
 - This is not a generic contracts system: no repeatability, dates, deadlines, penalties, reputation, currency, crop/equipment additions, or Freight changes.
+
+## 2026-08-19 - Make Workforce & Manager V2 an explicit reviewed dispatch system
+
+**Status:** Approved and complete
+
+- Mara remains exactly a $1,800 Field Generalist with a $120 wage only when her first real assignment begins that farm day. Eliot Reyes is a manager- and north-acreage-gated $2,100 Field Crew Hand with a $100 first-real-assignment wage; he may prepare, rework, plant, water, and harvest only.
+- The $2,400 manager remains one-time and wage-free. It owns two saved reviewed slots (Mara then Eliot) and one cost-free daily approval. Viable slots start in deterministic order only during visible Farm-mode updates; no load, hidden/offline, County, or approval action starts work.
+- Worker jobs, movement, and claims are runtime-only. A shared deterministic ledger reserves plots, planting seed, and direct-barn harvest space, releases only unconsumed claims, and prevents player/tractor conflicts. Worker harvest bypasses wagon/pickup cargo authority; tractor harvest remains wagon-only and pickup remains commerce-only.
+- Save v24 persists only defensive roster/slot/approval/dispatched-day state. V23 migration grants no Eliot, approval, claim, wage, or job; malformed values fail closed. Per-worker consumed-day tokens prevent same-day chaining across cancel, finish, reload, and manual/manager entry points.

@@ -1,4 +1,4 @@
-import type { ActionResult, FarmHarvestDestination, GameState } from '../core/types';
+import type { ActionResult, FarmHarvestDestination, FarmWorkerId, GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
 import {
   FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
@@ -31,12 +31,12 @@ import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type Tra
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../core/farmTownContact';
 import { acceptCountyKitchenDelivery, fulfillCountyKitchenDelivery, offerCountyKitchenDelivery } from '../core/farmCountyKitchen';
 import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
-import { hireFarmManager, hireFirstFarmhand, planFarmManagerDispatch, startFarmhandShift, updateFarmManagerPlan, type FarmhandWorkKind } from '../core/farmWorkforce';
+import { approveWorkforceDispatch, hireEliotReyes, hireFarmManager, hireFirstFarmhand, planFarmManagerDispatch, planFarmhandWork, reviewWorkforceDispatch, startWorkerShift, updateFarmManagerPlan, updateWorkerPlanSlot, workerDefinition, workerDispatchAvailable, type FarmhandWorkKind } from '../core/farmWorkforce';
 import { applyCurrentFarmRain, currentFarmWeather, farmWeatherForDay } from '../core/farmWeather';
 import { fulfillRoadsideStandOrder, purchaseRoadsideStand, roadsideStandOrder, roadsideStandView } from '../core/farmRoadsideStand';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import { TOWN_NPCS, type TownNpcDef, type TownServiceId } from '../data/town.data';
-import { FIRST_FARMHAND } from '../data/farmWorkforce.data';
+import { ELIOT_REYES, FIRST_FARMHAND } from '../data/farmWorkforce.data';
 import type { FarmFacing } from '../render/farmSprites';
 import { farmInteractionAtWorldPoint, farmScoutHitAtWorldPoint, type FarmInteractionTarget } from '../render/farmInteractions';
 import {
@@ -59,6 +59,7 @@ import { shouldTriggerFarmHarvestFeedback } from './farmHarvestFeedback';
 import { resumeFarmSession } from '../core/farmOfflineSafety';
 import { shouldRenderFarmFrame } from '../render/renderResolution';
 import { formatFarmCargoWeight } from '../core/farmCargoScale';
+import { FarmWorkforceReservationLedger } from '../core/farmWorkforceReservations';
 
 const AUTOSAVE_MS = 15_000;
 const FIELD_ACTION_PAUSE_MS = 260;
@@ -115,6 +116,7 @@ interface HarvestFeedback { x: number; y: number; cropId: string; startedAt: num
 const HUD_REFRESH_MS = 100;
 
 interface FarmhandJob {
+  workerId: FarmWorkerId;
   kind: FarmhandWorkKind;
   parcelId: FarmParcelId;
   cropId?: string;
@@ -124,6 +126,9 @@ interface FarmhandJob {
   skipped: number;
   lastFailure?: string;
 }
+
+interface WorkerRuntime { actor: SceneActor; facing: FarmFacing; target: { x: number; y: number; plotUid?: number } | null; action: RunningManualFieldAction | null; job: FarmhandJob | null; }
+
 
 type FarmEmpireMode = 'farm' | 'town';
 
@@ -169,10 +174,13 @@ export class FarmEmpireApp {
   private harvestFeedback: HarvestFeedback | null = null;
   private fieldDragSelection: number[] = [];
   private farmhandActor: SceneActor;
+  private eliotActor: SceneActor;
   private farmhandFacing: FarmFacing = 'south';
   private farmhandTarget: { x: number; y: number; plotUid?: number } | null = null;
   private farmhandAction: RunningManualFieldAction | null = null;
   private farmhandJob: FarmhandJob | null = null;
+  private workerRuntime: Record<FarmWorkerId, WorkerRuntime>;
+  private workerReservations = new FarmWorkforceReservationLedger();
   private equipmentPanelOpen = false;
   private running = true;
   private raf = 0;
@@ -212,6 +220,11 @@ export class FarmEmpireApp {
     const scoutHome = farmLandmarks().scoutHome;
     const farmhandHome = farmLandmarks().farmhandHome;
     this.farmhandActor = { avatar: FIRST_FARMHAND.avatar, ...farmhandHome, walking: false, name: FIRST_FARMHAND.name, variant: 'farmhand' };
+    this.eliotActor = { avatar: ELIOT_REYES.avatar, ...farmLandmarks().crewHandHome, walking: false, name: ELIOT_REYES.name, variant: 'farmhand' };
+    this.workerRuntime = {
+      'mara-bell': { actor: this.farmhandActor, facing: 'south', target: null, action: null, job: null },
+      'eliot-reyes': { actor: this.eliotActor, facing: 'south', target: null, action: null, job: null },
+    };
     this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
@@ -421,6 +434,7 @@ export class FarmEmpireApp {
       pickup: farm.pickup,
       tractor: farm.equipment.tractor,
       farmhand: farm.workforce.farmhandHired ? this.farmhandActor : undefined,
+      farmhands: farm.workforce.eliotHired ? [{ point: this.eliotActor, label: `${ELIOT_REYES.name} · ${ELIOT_REYES.role}` }] : undefined,
       scout: this.scout,
       now: this.gameNow(),
     });
@@ -656,6 +670,8 @@ export class FarmEmpireApp {
       } else if (isActionMenuOpen()) hideActionMenu();
       else if (isPanelOpen()) closePanel();
       else if (this.farmhandJob) this.cancelFarmhandJob();
+      else if (this.workerRuntime['mara-bell'].job) this.cancelWorkerJob('mara-bell');
+      else if (this.workerRuntime['eliot-reyes'].job) this.cancelWorkerJob('eliot-reyes');
     };
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
@@ -708,6 +724,7 @@ export class FarmEmpireApp {
       pickup: farm.pickup,
       tractor: farm.equipment.tractor,
       farmhand: farm.workforce.farmhandHired ? this.farmhandActor : undefined,
+      farmhands: farm.workforce.eliotHired ? [{ point: this.eliotActor, label: `${ELIOT_REYES.name} · ${ELIOT_REYES.role}` }] : undefined,
       scout: this.scout,
       now: this.gameNow(),
     });
@@ -1213,23 +1230,23 @@ export class FarmEmpireApp {
   }
 
   private openWorkforcePanel(context: 'farm' | 'town' = this.mode): void {
-    const job = this.farmhandJob;
+    const jobs = (['mara-bell', 'eliot-reyes'] as const).flatMap((workerId) => {
+      const job = this.workerRuntime[workerId].job ?? (workerId === 'mara-bell' ? this.farmhandJob : null);
+      return job ? [{ workerId, parcelId: job.parcelId, kind: job.kind, completed: job.completed, skipped: job.skipped, total: job.targetPlotUids.length }] : [];
+    });
     openFarmWorkforce(this.state, {
       context,
       now: this.gameNow(),
-      activeJob: job ? {
-        parcelId: job.parcelId,
-        kind: job.kind,
-        completed: job.completed,
-        skipped: job.skipped,
-        total: job.targetPlotUids.length,
-      } : null,
+      activeJobs: jobs,
       hire: context === 'town' ? () => hireFirstFarmhand(this.state) : undefined,
       hireManager: context === 'town' ? () => hireFarmManager(this.state) : undefined,
+      hireEliot: context === 'town' ? () => hireEliotReyes(this.state) : undefined,
       updateManager: context === 'farm' ? (input) => { const result = updateFarmManagerPlan(this.state, input); if (result.ok) this.save(); return result; } : undefined,
+      updateSlot: context === 'farm' ? (input) => { const result = updateWorkerPlanSlot(this.state, input); if (result.ok) this.save(); return result; } : undefined,
+      approveDispatch: context === 'farm' ? () => { const result = approveWorkforceDispatch(this.state); if (result.ok) this.save(); return result; } : undefined,
       dispatchManager: context === 'farm' ? () => this.dispatchFarmManager() : undefined,
       startWork: context === 'farm' ? (parcelId, kind) => this.startFarmhandJob(parcelId, kind) : undefined,
-      cancelWork: context === 'farm' ? () => this.cancelFarmhandJob() : undefined,
+      cancelWork: context === 'farm' ? (workerId) => workerId === 'mara-bell' && this.farmhandJob ? this.cancelFarmhandJob() : this.cancelWorkerJob(workerId) : undefined,
       dispatch: this.dispatch,
       onClose: () => {},
     });
@@ -1518,7 +1535,12 @@ export class FarmEmpireApp {
   private applyTractorJobStep(plotUid: number): void {
     const job = this.tractorJob;
     if (!job || job.targetPlotUids[job.nextIndex] !== plotUid) return;
-    const result = job.kind === 'plant'
+    const heldSeed = job.kind === 'plant' ? this.workerReservations.heldSeeds(String(job.cropId)) : 0;
+    const result = this.workerReservations.isClaimed(plotUid)
+      ? { ok: false, reason: 'This field section is reserved for an approved worker assignment.' }
+      : job.kind === 'plant' && (farmOf(this.state).seeds[String(job.cropId)] ?? 0) <= heldSeed
+      ? { ok: false, reason: 'Seed stock is reserved for an approved worker assignment.' }
+      : job.kind === 'plant'
       ? plantFarmCrop(this.state, plotUid, String(job.cropId), this.gameNow(), 'operatedTractor')
       : harvestFarmCrop(this.state, plotUid, this.gameNow(), 'operatedTractor');
     if (result.ok) {
@@ -1843,7 +1865,10 @@ export class FarmEmpireApp {
     plotUid: number,
     cropId?: string,
     harvestToBasket = true,
+    workerId?: FarmWorkerId,
   ): ActionResult {
+    if (!workerId && this.workerReservations.isClaimed(plotUid)) return { ok: false, reason: 'This field section is reserved for an approved worker assignment.' };
+    if (!workerId && kind === 'plant' && (farmOf(this.state).seeds[String(cropId)] ?? 0) <= this.workerReservations.heldSeeds(String(cropId))) return { ok: false, reason: 'Seed stock is reserved for an approved worker assignment.' };
     if (kind === 'prepare' || kind === 'rework') return tillFarmField(this.state, plotUid);
     if (kind === 'plant') return plantFarmCrop(this.state, plotUid, String(cropId), this.gameNow(), 'manual');
     if (kind === 'water') return waterFarmCrop(this.state, plotUid, this.gameNow());
@@ -1862,23 +1887,25 @@ export class FarmEmpireApp {
   }
 
   private startFarmhandJob(parcelId: FarmParcelId, kind: FarmhandWorkKind, cropId = farmOf(this.state).selectedCropId): ActionResult {
-    if (this.farmhandJob) return { ok: false, reason: `${FIRST_FARMHAND.name} already has an acreage assignment.` };
-    const start = startFarmhandShift(this.state, parcelId, kind, this.gameNow(), cropId);
-    if (!start.result.ok || !start.plan) return start.result;
+    if (kind === 'clear') return { ok: false, reason: 'Workers do not clear withered crops.' };
+    if (this.farmhandJob || this.workerRuntime['mara-bell'].job) return { ok: false, reason: `${FIRST_FARMHAND.name} already has an acreage assignment.` };
     this.cancelScoutFetch(false);
-    this.farmhandJob = {
-      kind,
-      parcelId,
-      cropId: start.plan.cropId,
-      targetPlotUids: start.plan.targetPlotUids,
-      nextIndex: 0,
-      completed: 0,
-      skipped: 0,
-    };
-    this.farmhandAction = null;
-    this.farmhandTarget = null;
-    this.beginFarmhandJobStep();
-    this.hud.update(this.state, this.tractorHudRuntime());
+    return this.startWorkerRuntimeJob('mara-bell', parcelId, kind, cropId);
+  }
+
+  private startWorkerRuntimeJob(workerId: FarmWorkerId, parcelId: FarmParcelId, kind: Exclude<FarmhandWorkKind, 'clear'>, cropId: string): ActionResult {
+    const runtime = this.workerRuntime[workerId];
+    if (runtime.job) return { ok: false, reason: `${workerDefinition(workerId).name} already has an acreage assignment.` };
+    if (!workerDispatchAvailable(this.state, workerId)) return { ok: false, reason: `${workerDefinition(workerId).name} has already started a Day ${farmOf(this.state).clock.day} assignment.` };
+    const preview = planFarmhandWork(this.state, parcelId, kind, this.gameNow(), cropId);
+    const reserved = this.workerReservations.reserve(this.state, { workerId, kind, cropId: preview.cropId, targetPlotUids: preview.targetPlotUids });
+    if (!reserved.targetPlotUids.length) { this.workerReservations.release(workerId); return { ok: false, reason: 'No unclaimed eligible field resources are ready for that assignment.' }; }
+    const start = startWorkerShift(this.state, workerId, parcelId, kind, this.gameNow(), cropId);
+    if (!start.result.ok || !start.plan) { this.workerReservations.release(workerId); return start.result; }
+    farmOf(this.state).workforce.workerLastDispatchedDay[workerId] = farmOf(this.state).clock.day;
+    runtime.job = { ...reserved, parcelId, nextIndex: 0, completed: 0, skipped: 0 }; runtime.action = null; runtime.target = null;
+    this.beginWorkerJobStep(workerId); this.hud.update(this.state, this.tractorHudRuntime());
+    this.save();
     return start.result;
   }
 
@@ -1886,6 +1913,7 @@ export class FarmEmpireApp {
   private dispatchFarmManager(): ActionResult {
     const farm = farmOf(this.state);
     if (this.farmhandJob) return { ok: false, reason: `${FIRST_FARMHAND.name} already has an acreage assignment.` };
+    if (farm.workforce.dispatchApprovedDay !== farm.clock.day) return { ok: false, reason: 'Approve today’s dispatch from Workforce first.' };
     if (!farm.workforce.manager.hired || !farm.workforce.manager.enabled) return { ok: false, reason: 'Enable the manager acreage plan first.' };
     if (farm.workforce.manager.lastReviewedDay === farm.clock.day) return { ok: false, reason: `Manager dispatch was already reviewed on Day ${farm.clock.day}.` };
     const preview = planFarmManagerDispatch(this.state, this.gameNow());
@@ -1897,92 +1925,67 @@ export class FarmEmpireApp {
     return result;
   }
 
-  private beginFarmhandJobStep(): void {
-    const job = this.farmhandJob;
-    if (!job || this.farmhandAction || this.farmhandTarget) return;
+  private beginWorkerJobStep(workerId: FarmWorkerId): void {
+    const runtime = this.workerRuntime[workerId]; const job = runtime.job;
+    if (!job || runtime.action || runtime.target) return;
     while (job.nextIndex < job.targetPlotUids.length) {
-      const plotUid = job.targetPlotUids[job.nextIndex];
-      const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
-      if (!plot) {
-        job.skipped += 1;
-        job.lastFailure = 'A planned field section was unavailable.';
-        job.nextIndex += 1;
-        continue;
-      }
-      this.farmhandTarget = { x: plot.x + .62, y: plot.y + .18, plotUid };
-      return;
+      const plotUid = job.targetPlotUids[job.nextIndex]; const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
+      if (!plot) { job.skipped += 1; job.lastFailure = 'A planned field section was unavailable.'; job.nextIndex += 1; continue; }
+      runtime.target = { x: plot.x + .62, y: plot.y + .18, plotUid }; return;
     }
-    this.finishFarmhandJob();
-  }
-
-  private startFarmhandAction(plotUid: number): void {
-    const job = this.farmhandJob;
-    const plot = this.state.plots.find((candidate) => candidate.uid === plotUid);
-    if (!job || !plot) return;
-    const dx = plot.x - this.farmhandActor.x; const dy = plot.y - this.farmhandActor.y;
-    this.farmhandFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
-    this.farmhandAction = {
-      ...createManualFieldAction(job.kind, plotUid, plot, this.gameNow()),
-      apply: () => this.applyManualFieldAction(job.kind, plotUid, job.cropId, false),
-    };
+    this.finishWorkerJob(workerId);
   }
 
   private updateFarmhand(now: number, dt: number): void {
-    const action = this.farmhandAction;
-    if (action) {
-      if (!manualFieldActionComplete(action, now)) return;
-      this.farmhandAction = null;
-      const result = action.apply();
-      const job = this.farmhandJob;
-      if (!job) return;
-      if (result.ok) job.completed += 1;
-      else {
-        job.skipped += 1;
-        job.lastFailure = result.reason || 'A field section changed before Mara reached it.';
+    // Dispatch is only considered from a visible running app update. Loading,
+    // hidden/offline time and approving the review card never start or charge a shift.
+    const workforce = farmOf(this.state).workforce;
+    if (this.mode === 'farm' && workforce.dispatchApprovedDay === farmOf(this.state).clock.day && workforce.manager.hired) {
+      for (const review of reviewWorkforceDispatch(this.state, now)) {
+        if (review.eligibleCount && !this.workerRuntime[review.workerId].job && workerDispatchAvailable(this.state, review.workerId)) {
+          const result = this.startWorkerRuntimeJob(review.workerId, review.parcelId, review.kind as Exclude<FarmhandWorkKind, 'clear'>, review.cropId ?? farmOf(this.state).selectedCropId);
+          if (result.ok) workforce.manager.lastReviewedDay = farmOf(this.state).clock.day;
+        }
       }
-      job.nextIndex += 1;
-      this.beginFarmhandJobStep();
-      return;
     }
-    const target = this.farmhandTarget;
-    if (target) {
-      const dx = target.x - this.farmhandActor.x; const dy = target.y - this.farmhandActor.y;
-      const distance = Math.hypot(dx, dy); const step = 4.8 / 1_000 * dt;
-      if (distance <= step) {
-        this.farmhandActor.x = target.x; this.farmhandActor.y = target.y;
-        this.farmhandActor.walking = false; this.farmhandTarget = null;
-        if (target.plotUid !== undefined) this.startFarmhandAction(target.plotUid);
-      } else {
-        this.farmhandActor.x += dx / distance * step; this.farmhandActor.y += dy / distance * step;
-        this.farmhandActor.walking = true;
-        this.farmhandFacing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north');
-      }
-      return;
-    }
-    if (this.farmhandJob) this.beginFarmhandJobStep();
+    // V2 has one Mara authority: the generic worker runtime below. Legacy
+    // fields remain inert compatibility placeholders and never advance work.
+    this.updateWorkerRuntime('mara-bell', now, dt);
   }
 
-  private finishFarmhandJob(): void {
-    const job = this.farmhandJob;
+  private updateWorkerRuntime(workerId: FarmWorkerId, now: number, dt: number): void {
+    if (this.mode !== 'farm') return;
+    const runtime = this.workerRuntime[workerId]; const job = runtime.job;
     if (!job) return;
-    const parcel = farmParcelDef(job.parcelId);
-    this.farmhandJob = null; this.farmhandAction = null;
-    const home = farmLandmarks().farmhandHome;
-    this.farmhandTarget = { ...home };
-    toast(`${FIRST_FARMHAND.name} finished ${parcel.name}: ${job.completed} completed${job.skipped ? `, ${job.skipped} skipped` : ''}.${job.skipped && job.lastFailure ? ` ${job.lastFailure}` : ''}`, job.completed > 0 ? 'good' : 'bad');
-    if (job.completed > 0) this.save();
+    if (runtime.action) {
+      if (!manualFieldActionComplete(runtime.action, now)) return;
+      const action = runtime.action; runtime.action = null; const result = action.apply();
+      if (result.ok) { job.completed += 1; this.workerReservations.consume(this.state, workerId, job.kind, action.plotUid, job.cropId); }
+      else { job.skipped += 1; job.lastFailure = result.reason || 'A field section changed before the worker reached it.'; }
+      job.nextIndex += 1; this.beginWorkerJobStep(workerId); return;
+    }
+    if (runtime.target) {
+      const dx = runtime.target.x - runtime.actor.x; const dy = runtime.target.y - runtime.actor.y; const distance = Math.hypot(dx, dy); const step = 4.8 / 1_000 * dt;
+      if (distance <= step) { const target = runtime.target; runtime.actor.x = target.x; runtime.actor.y = target.y; runtime.actor.walking = false; runtime.target = null; const plot = this.state.plots.find((candidate) => candidate.uid === target.plotUid); if (plot && target.plotUid !== undefined) runtime.action = { ...createManualFieldAction(job.kind, target.plotUid, plot, now), apply: () => this.applyManualFieldAction(job.kind, target.plotUid!, job.cropId, false, workerId) }; }
+      else { runtime.actor.x += dx / distance * step; runtime.actor.y += dy / distance * step; runtime.actor.walking = true; runtime.facing = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'east' : 'west') : (dy > 0 ? 'south' : 'north'); }
+    }
+  }
+
+  private finishWorkerJob(workerId: FarmWorkerId): void {
+    const runtime = this.workerRuntime[workerId]; const job = runtime.job; if (!job) return;
+    runtime.job = null; runtime.action = null; runtime.target = { ...(workerId === 'mara-bell' ? farmLandmarks().farmhandHome : farmLandmarks().crewHandHome) }; this.workerReservations.release(workerId);
+    toast(`${workerDefinition(workerId).name} finished ${farmParcelDef(job.parcelId).name}: ${job.completed} completed${job.skipped ? `, ${job.skipped} skipped` : ''}.`, job.completed > 0 ? 'good' : 'bad'); if (job.completed > 0) this.save();
+  }
+
+  private cancelWorkerJob(workerId: FarmWorkerId): void {
+    const runtime = this.workerRuntime[workerId]; const job = runtime.job; if (!job) return;
+    runtime.job = null; runtime.action = null; runtime.target = { ...(workerId === 'mara-bell' ? farmLandmarks().farmhandHome : farmLandmarks().crewHandHome) }; this.workerReservations.release(workerId);
+    toast(`${workerDefinition(workerId).name}'s assignment stopped: ${job.completed} completed; today's shift remains paid.`, 'good'); this.save();
   }
 
   private cancelFarmhandJob(): void {
-    const job = this.farmhandJob;
-    if (!job) return;
-    const untouched = Math.max(0, job.targetPlotUids.length - job.completed - job.skipped);
-    this.farmhandJob = null; this.farmhandAction = null;
-    const home = farmLandmarks().farmhandHome;
-    this.farmhandTarget = { ...home };
-    toast(`${FIRST_FARMHAND.name}'s assignment stopped: ${job.completed} completed, ${job.skipped} skipped, ${untouched} not attempted. Today's shift remains paid.`, 'good');
-    if (job.completed > 0) this.save();
-    this.hud.update(this.state, this.tractorHudRuntime());
+    this.farmhandJob = null; this.farmhandAction = null; this.farmhandTarget = null;
+    this.cancelWorkerJob('mara-bell'); this.hud.update(this.state, this.tractorHudRuntime());
   }
 
   private toggleHarvestDestination(): void {
@@ -2228,6 +2231,7 @@ export class FarmEmpireApp {
     advanceFarmClock(this.state, now);
     this.updateManualFieldAction(now);
     this.updateFarmhand(now, Math.max(0, Math.min(5_000, Math.floor(ms))));
+    this.updateWorkerRuntime('eliot-reyes', now, Math.max(0, Math.min(5_000, Math.floor(ms))));
     this.renderer.render(this.buildScene(), now);
     this.updateDevTools();
     this.hud.update(this.state, this.tractorHudRuntime());
@@ -2271,6 +2275,10 @@ export class FarmEmpireApp {
           total: this.farmhandJob.targetPlotUids.length,
           nextIndex: this.farmhandJob.nextIndex,
         } : null,
+        workers: (['mara-bell', 'eliot-reyes'] as const).map((workerId) => {
+          const runtime = this.workerRuntime[workerId];
+          return { workerId, x: runtime.actor.x, y: runtime.actor.y, job: runtime.job ? { kind: runtime.job.kind, parcelId: runtime.job.parcelId, completed: runtime.job.completed, total: runtime.job.targetPlotUids.length } : null };
+        }),
       },
       countyFreight: (() => {
         const board = countyFreightBoardState(this.state);
@@ -2396,6 +2404,7 @@ export class FarmEmpireApp {
       toast(`Steady rain established ${rainResult.wateredPlotUids.length} field section${rainResult.wateredPlotUids.length === 1 ? '' : 's'}.`, 'good');
     }
     this.updateFarmhand(now, dt);
+    this.updateWorkerRuntime('eliot-reyes', now, dt);
     if (this.mode === 'farm') this.updateManualFieldAction(now);
 
     if (this.mode === 'farm' && this.tractorTarget) {
@@ -2535,6 +2544,7 @@ export class FarmEmpireApp {
         facing: this.farmhandFacing,
         variant: 'farmhand' as const,
       }] : []),
+      ...(farm.workforce.eliotHired ? [{ ...this.eliotActor, name: this.workerRuntime['eliot-reyes'].action ? undefined : ELIOT_REYES.name, facing: this.workerRuntime['eliot-reyes'].facing, variant: 'farmhand' as const }] : []),
     ];
     scene.farm = {
       lockedTiles: farm.parcels.northOwned ? [] : NEIGHBOR_FIELD_TILES,

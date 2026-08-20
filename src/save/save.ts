@@ -203,6 +203,18 @@ const MIGRATIONS: Record<number, Migrator> = {
     if (farm) delete farm.countyKitchen;
     raw.version = 23;
   },
+  23: (raw) => {
+    // Workforce V2 never grants Eliot, an approved dispatch, resource claims,
+    // or a new paid day. Preserve the old manager preference only as Mara slot 1.
+    const farm = raw.farm && typeof raw.farm === 'object' && !Array.isArray(raw.farm) ? raw.farm as Record<string, unknown> : null;
+    const workforce = farm?.workforce && typeof farm.workforce === 'object' && !Array.isArray(farm.workforce) ? farm.workforce as Record<string, unknown> : null;
+    const manager = workforce?.manager && typeof workforce.manager === 'object' && !Array.isArray(workforce.manager) ? workforce.manager as Record<string, unknown> : null;
+    if (workforce) {
+      workforce.eliotHired = false; workforce.eliotLastShiftPaidDay = 0; workforce.dispatchApprovedDay = 0; workforce.workerLastDispatchedDay = { 'mara-bell': 0, 'eliot-reyes': 0 };
+      workforce.slots = [{ workerId: 'mara-bell', enabled: manager?.enabled === true, parcelId: manager?.parcelId === 'north' ? 'north' : 'starter', cropId: typeof manager?.cropId === 'string' ? manager.cropId : 'crop_corn', autoDispatch: true }, { workerId: 'eliot-reyes', enabled: false, parcelId: 'starter', cropId: 'crop_corn', autoDispatch: true }];
+    }
+    raw.version = 24;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>): GameState {

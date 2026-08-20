@@ -158,7 +158,7 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
     townContact: { status: 'unmet' },
     countyKitchen: { status: 'unmet' },
     countyFreight: { active: null, lastCompletedDay: 0 },
-    workforce: { farmhandHired: false, lastShiftPaidDay: 0, manager: { hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 } },
+    workforce: { farmhandHired: false, lastShiftPaidDay: 0, eliotHired: false, eliotLastShiftPaidDay: 0, dispatchApprovedDay: 0, workerLastDispatchedDay: { 'mara-bell': 0, 'eliot-reyes': 0 }, slots: [{ workerId: 'mara-bell', enabled: false, parcelId: 'starter', cropId: 'crop_corn', autoDispatch: true }, { workerId: 'eliot-reyes', enabled: false, parcelId: 'starter', cropId: 'crop_corn', autoDispatch: true }], manager: { hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 } },
     roadsideStand: { owned: false, lastCompletedDay: 0 },
     clock: { day: 1, minute: 8 * 60, lastRealAt: now },
     market: { quotes, activeEvents: [], lastUpdatedDay: 1 },
@@ -362,6 +362,15 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   const managerParcelId = rawManager.parcelId === 'north' && northOwned ? 'north' : 'starter';
   const managerCropId = validCropIds.has(String(rawManager.cropId)) && isFarmCropUnlocked(state, String(rawManager.cropId))
     ? String(rawManager.cropId) : 'crop_corn';
+  const eliotHired = rawWorkforce.eliotHired === true && townStatus === 'completed' && northOwned && managerHired;
+  const rawSlots = Array.isArray(rawWorkforce.slots) ? rawWorkforce.slots : [];
+  const slotFor = (workerId: 'mara-bell' | 'eliot-reyes', fallback: { enabled: boolean; parcelId: 'starter' | 'north'; cropId: string; autoDispatch: boolean }) => {
+    const candidate = objectRecord(rawSlots.find((entry) => objectRecord(entry).workerId === workerId));
+    const available = workerId === 'mara-bell' ? farmhandHired : eliotHired;
+    const parcelId = candidate?.parcelId === 'north' && northOwned ? 'north' : candidate?.parcelId === 'starter' ? 'starter' : fallback.parcelId;
+    const cropId = validCropIds.has(String(candidate?.cropId)) && isFarmCropUnlocked(state, String(candidate?.cropId)) ? String(candidate?.cropId) : fallback.cropId;
+    return { workerId, enabled: available && candidate?.enabled === true, parcelId, cropId, autoDispatch: candidate?.autoDispatch !== false };
+  };
   const roadsideStandOwned = rawRoadsideStand.owned === true && townStatus === 'completed';
   const rawActiveFreight = objectRecord(rawCountyFreight.active);
   const freightCropId = String(rawActiveFreight.cropId ?? '');
@@ -433,6 +442,17 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
         && Number(rawWorkforce.lastShiftPaidDay) <= clockDay
         ? Number(rawWorkforce.lastShiftPaidDay)
         : 0,
+      eliotHired,
+      eliotLastShiftPaidDay: eliotHired && Number.isInteger(rawWorkforce.eliotLastShiftPaidDay) && Number(rawWorkforce.eliotLastShiftPaidDay) >= 1 && Number(rawWorkforce.eliotLastShiftPaidDay) <= clockDay ? Number(rawWorkforce.eliotLastShiftPaidDay) : 0,
+      dispatchApprovedDay: managerHired && Number.isInteger(rawWorkforce.dispatchApprovedDay) && Number(rawWorkforce.dispatchApprovedDay) >= 1 && Number(rawWorkforce.dispatchApprovedDay) <= clockDay ? Number(rawWorkforce.dispatchApprovedDay) : 0,
+      workerLastDispatchedDay: {
+        'mara-bell': farmhandHired && Number.isInteger(objectRecord(rawWorkforce.workerLastDispatchedDay)?.['mara-bell']) && Number(objectRecord(rawWorkforce.workerLastDispatchedDay)?.['mara-bell']) >= 1 && Number(objectRecord(rawWorkforce.workerLastDispatchedDay)?.['mara-bell']) <= clockDay ? Number(objectRecord(rawWorkforce.workerLastDispatchedDay)?.['mara-bell']) : 0,
+        'eliot-reyes': eliotHired && Number.isInteger(objectRecord(rawWorkforce.workerLastDispatchedDay)?.['eliot-reyes']) && Number(objectRecord(rawWorkforce.workerLastDispatchedDay)?.['eliot-reyes']) >= 1 && Number(objectRecord(rawWorkforce.workerLastDispatchedDay)?.['eliot-reyes']) <= clockDay ? Number(objectRecord(rawWorkforce.workerLastDispatchedDay)?.['eliot-reyes']) : 0,
+      },
+      slots: [
+        slotFor('mara-bell', { enabled: managerHired && rawManager.enabled === true, parcelId: managerParcelId, cropId: managerCropId, autoDispatch: true }),
+        slotFor('eliot-reyes', { enabled: false, parcelId: 'starter', cropId: 'crop_corn', autoDispatch: true }),
+      ],
       manager: {
         hired: managerHired,
         enabled: managerHired && rawManager.enabled === true,

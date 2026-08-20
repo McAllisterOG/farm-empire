@@ -593,3 +593,11 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review repair:** Rosa is visibly Pantry-first locked before contact completion; seed sacks moved away from Feed & Seed frontage; production town routes, pickup approaches, decor/door clearance, and service geometry are regression-tested.
 - **Verification:** 333/333 tests in 48 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed.
 - **Known limitation:** No browser or packaged QA flow was run; no package, shortcut, owner save, or push was changed.
+# Workforce & Manager V2 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Scope:** Save v24 reviewed two-worker dispatch: Mara Bell and Eliot Reyes, manager approval, runtime claims, direct-barn worker harvest, and safe no-offline behavior.
+- **Result:** Mara ($1,800/$120) and manager-gated Eliot ($2,100/$100) use two reviewed slots under a one-time $2,400 manager. Approval charges nothing; visible Farm-mode updates may start one real job per worker/day in deterministic order. Shared seed/barn/plot claims protect worker, player, and tractor authority; jobs remain transient and save-safe.
+- **Verification:** 338 tests in 50 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Red Team repairs removed dual Mara execution, paused jobs outside Farm mode, persisted dispatch-consumption tokens, and made start/cancel persistence atomic.
+- **Limit:** Browser/player-surface verification was not run; no package, shortcut, push, or owner save was modified.

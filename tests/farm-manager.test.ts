@@ -37,7 +37,7 @@ describe('Farm Manager V1', () => {
     const state = readyManager() as unknown as Record<string, any>;
     state.version = 18; state.farm.workforce.manager = { hired: true, enabled: true, parcelId: 'north', cropId: 'crop_wheat', lastReviewedDay: 1 };
     const migrated = deserialize(JSON.stringify(state), NOW);
-    expect(SAVE_VERSION).toBe(23); expect(farmOf(migrated).workforce.manager).toEqual({ hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 });
+    expect(SAVE_VERSION).toBe(24); expect(farmOf(migrated).workforce.manager).toEqual({ hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 });
     const malformed = readyManager() as unknown as Record<string, any>;
     malformed.farm.townContact.status = 'unmet'; malformed.farm.workforce.manager = { hired: true, enabled: true, parcelId: 'bad', cropId: 'bad', lastReviewedDay: 999 };
     expect(farmOf(deserialize(JSON.stringify(malformed), NOW)).workforce.manager).toEqual({ hired: false, enabled: false, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 });
