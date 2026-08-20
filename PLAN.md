@@ -58,7 +58,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Current authorization
 
-No additional feature package is currently active. Demo Polish & Stability V1 is complete; the next package should respond to the owner's next playtest rather than broaden scope speculatively.
+**Final Public Demo Acceptance & Release V1 is active.** Source snapshot `a177587`, all automated checks, production-browser readback, and fresh portable/installer artifacts are complete. Native disposable-profile launch, recovery diagnostics, and exact Desktop shortcut replacement/readback remain approval-gated. Stop after that release proof; the next feature package should respond to the owner's next playtest rather than broaden scope speculatively.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
@@ -68,6 +68,6 @@ No additional feature package is currently active. Demo Polish & Stability V1 is
 - **Town and county buildout:** Market Street now has four noninteractive homes, distant fields, two ambient plaza routes, four functional services, and one finite Rosa delivery. Further houses, roads, services, or story require a bounded package; the County remains a separate scene, not an assumed continuous-map rewrite.
 - **Equipment progression timing:** manual fieldwork now scales from a section to three rows; restored tractors include fixed cultivator, planter, and harvest-wagon logistics. Any later machinery tier must follow a coherent manual-to-mechanized progression plan; no combine, auger, header, tender, manual hitching, worker logistics, or dealership system is implied.
 - **Further contract depth:** Freight Board V1 now supports one persistent premium haul at a time. Multiple simultaneous jobs, deadlines, penalties, negotiation, reputation, contract chains, and special cargo still require deliberate logistics, economy, and save design.
-- Extend the new single-farmhand foundation only after playtesting: multiple workers, schedules, worker skills, managers, payroll depth, housing, and passive operation remain separate decisions.
-- **Long-session validation:** Preserve the production-authority progression regression as new systems are added. A later player-surface pass should cover the long County/equipment/workforce chain with the isolated QA profile before broadening progression.
+- Extend the current Mara/Eliot reviewed-crew foundation only after playtesting: additional workers, schedules, worker skills, deeper management, payroll depth, and passive operation remain separate decisions.
+- **Long-session validation:** Preserve the production-authority progression regression as new systems are added. The remaining packaged player-surface pass must use the isolated QA profile and must not open or alter the owner save.
 - Further environment art and ambient farm life after the current benchmark presentation is reviewed in play.
