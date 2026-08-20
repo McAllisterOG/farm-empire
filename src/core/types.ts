@@ -65,6 +65,10 @@ export interface PlantedCrop {
   lastHarvestAt?: number;
   /** Farm Empire manual planting waits for one initial watering before growth. */
   awaitingWater?: boolean;
+  /** Farm Empire harvest output pinned at planting so balance updates never change a growing crop. */
+  harvestYieldItems?: number;
+  /** Explicit balance provenance: v1 only appears through the v20→v21 migration. */
+  harvestBalanceVersion?: 1 | 2;
 }
 
 export type CropStage = 'seedling' | 'growing' | 'mature' | 'ready' | 'withered';

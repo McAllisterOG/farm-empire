@@ -1,6 +1,6 @@
 import { FIRST_FARMHAND, FIRST_FARM_MANAGER } from '../data/farmWorkforce.data';
 import {
-  farmCropStage, farmFieldCondition, farmOf, isFarmCropUnlocked, isFarmCropWithered,
+  farmCropStage, farmFieldCondition, farmOf, isFarmCropUnlocked, isFarmCropWithered, pinnedFarmHarvestYield,
   serpentineFieldTiles, storageRemaining, syncCashMirror,
 } from './farmBusiness';
 import { recordFarmStat } from './farmKnowledge';
@@ -118,7 +118,7 @@ export function planFarmhandWork(
     } else if (kind === 'water' && farmCropStage(plot.crop, now) === 'needs-water') targets.push(plot.uid);
     else if (kind === 'harvest' && farmCropStage(plot.crop, now) === 'ready' && plot.crop) {
       const def = farmCropDef(plot.crop.defId);
-      const requiredStorage = def.harvestYield * def.storageUnitsPerItem;
+      const requiredStorage = pinnedFarmHarvestYield(plot.crop) * def.storageUnitsPerItem;
       if (requiredStorage <= availableStorage) {
         targets.push(plot.uid); availableStorage -= requiredStorage;
       }

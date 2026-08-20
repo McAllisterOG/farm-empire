@@ -39,7 +39,7 @@ describe('manual harvest basket', () => {
     const result = harvestFarmCropToBasket(state, plot.uid, NOW);
     expect(result.ok).toBe(true);
     expect(farmOf(state).handBasket.crops.crop_corn).toBe(farmCropDef('crop_corn').harvestYield);
-    expect(handBasketUsed(state)).toBe(8);
+    expect(handBasketUsed(state)).toBe(10);
     expect(storageUsed(state)).toBe(0);
     expect(plot.crop).toBeNull();
     expect(farmOf(state).fieldConditions[String(plot.uid)].soil).toBe('stubble');

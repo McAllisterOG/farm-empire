@@ -1095,8 +1095,8 @@ export class FarmEmpireApp {
       body: (body) => body.append(
         h('div', { class: 'equipment-card', 'data-testid': 'pickup-panel' },
           h('div', { class: 'pickup-panel-illustration' }, 'OLD PICKUP'),
-          h('div', { class: 'farm-card-title' }, `Cargo · ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)}`),
-          h('div', { class: 'farm-panel-summary' }, `Cargo: ${pickupCargoUsed(this.state)} / ${pickupCargoCapacity(this.state)} units · ${atPad ? 'Parked at the barn cargo pad.' : 'Drive to the barn cargo pad to manage cargo.'}`),
+          h('div', { class: 'farm-card-title' }, `Cargo · ${formatFarmCargoWeight(pickupCargoUsed(this.state))} / ${formatFarmCargoWeight(pickupCargoCapacity(this.state))}`),
+          h('div', { class: 'farm-panel-summary' }, `Cargo: ${formatFarmCargoWeight(pickupCargoUsed(this.state))} / ${formatFarmCargoWeight(pickupCargoCapacity(this.state))} · ${atPad ? 'Parked at the barn cargo pad.' : 'Drive to the barn cargo pad to manage cargo.'}`),
           ...(!atPad ? [h('button', { class: 'btn btn-primary', 'data-testid': 'drive-pickup-to-cargo-pad', onclick: () => this.drivePickupToCargoPad() }, 'Drive to Barn Cargo Pad')] : []),
           h('button', { class: `btn ${atPad ? 'btn-primary' : ''}`, 'data-testid': this.operatingPickup ? 'exit-pickup' : 'operate-pickup', onclick: () => { closePanel(); this.togglePickupOperating(); } }, this.operatingPickup ? 'Exit Pickup' : 'Operate Pickup'),
           ...(atPad ? [

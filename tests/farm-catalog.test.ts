@@ -8,6 +8,8 @@ import {
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { deserialize, serialize } from '../src/save/save';
 import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
+import { harvestFarmCropToBasket } from '../src/core/farmHarvestBasket';
+import { planFarmManagerDispatch, planFarmhandWork } from '../src/core/farmWorkforce';
 
 const NOW = 1_784_394_000_000;
 const NEW_CROPS = ['crop_carrot', 'crop_tomato', 'crop_cabbage', 'crop_pumpkin'];
@@ -101,6 +103,16 @@ describe('County crop catalog', () => {
   });
 
   it('keeps roles positive and meaningfully differentiated', () => {
+    expect(allFarmCrops().map(({ id, seedPriceCents, growMs, harvestYield, storageUnitsPerItem, basePriceCents }) => ({ id, seedPriceCents, growMs, harvestYield, storageUnitsPerItem, basePriceCents }))).toEqual([
+      { id: 'crop_corn', seedPriceCents: 1_400, growMs: 70_000, harvestYield: 10, storageUnitsPerItem: 1, basePriceCents: 410 },
+      { id: 'crop_wheat', seedPriceCents: 1_000, growMs: 55_000, harvestYield: 8, storageUnitsPerItem: 1, basePriceCents: 340 },
+      { id: 'crop_soybean', seedPriceCents: 1_700, growMs: 85_000, harvestYield: 9, storageUnitsPerItem: 1, basePriceCents: 500 },
+      { id: 'crop_potato', seedPriceCents: 1_900, growMs: 75_000, harvestYield: 11, storageUnitsPerItem: 1, basePriceCents: 400 },
+      { id: 'crop_carrot', seedPriceCents: 900, growMs: 40_000, harvestYield: 8, storageUnitsPerItem: 1, basePriceCents: 380 },
+      { id: 'crop_tomato', seedPriceCents: 2_400, growMs: 100_000, harvestYield: 16, storageUnitsPerItem: 1, basePriceCents: 470 },
+      { id: 'crop_cabbage', seedPriceCents: 2_600, growMs: 140_000, harvestYield: 10, storageUnitsPerItem: 1, basePriceCents: 720 },
+      { id: 'crop_pumpkin', seedPriceCents: 3_200, growMs: 180_000, harvestYield: 8, storageUnitsPerItem: 3, basePriceCents: 1_350 },
+    ]);
     const defs = allFarmCrops();
     for (const def of defs) {
       expect(def.seedPriceCents).toBeGreaterThan(0); expect(def.basePriceCents).toBeGreaterThan(0);
@@ -112,7 +124,7 @@ describe('County crop catalog', () => {
     expect(carrot.growMs).toBeLessThan(wheat.growMs);
     expect(carrot.seedPriceCents).toBeLessThan(wheat.seedPriceCents);
     expect(carrot.harvestYield * carrot.basePriceCents - carrot.seedPriceCents)
-      .toBeLessThan(wheat.harvestYield * wheat.basePriceCents - wheat.seedPriceCents);
+      .toBeGreaterThan(wheat.harvestYield * wheat.basePriceCents - wheat.seedPriceCents);
     expect(farmCropDef('crop_tomato').harvestYield).toBeGreaterThan(farmCropDef('crop_corn').harvestYield);
     const cabbage = farmCropDef('crop_cabbage'); const tomato = farmCropDef('crop_tomato');
     const cabbageValuePerBarnUnit = cabbage.harvestYield * cabbage.basePriceCents / (cabbage.harvestYield * cabbage.storageUnitsPerItem);
@@ -121,6 +133,110 @@ describe('County crop catalog', () => {
     expect(farmCropDef('crop_pumpkin').storageUnitsPerItem).toBeGreaterThan(1);
     expect(farmCropDef('crop_pumpkin').harvestYield * farmCropDef('crop_pumpkin').basePriceCents)
       .toBeGreaterThan(farmCropDef('crop_cabbage').harvestYield * farmCropDef('crop_cabbage').basePriceCents);
+  });
+
+  it('migrates v20 growing crops with V1 harvest snapshots and resets market quotes/events', () => {
+    const state = makeFarm(); const farm = farmOf(state);
+    const corn = state.plots[0]; const pumpkin = state.plots[1];
+    farm.seeds.crop_pumpkin = 1; farm.storage.crop_wheat = 5; farm.pickup.cargo.crops.crop_potato = 3; farm.handBasket.crops.crop_carrot = 2;
+    expect(tillFarmField(state, corn.uid).ok).toBe(true); expect(plantFarmCrop(state, corn.uid, 'crop_corn', NOW).ok).toBe(true);
+    farm.parcels.northOwned = true; farm.equipment.barnLoftExpansionOwned = true;
+    expect(tillFarmField(state, pumpkin.uid).ok).toBe(true); expect(plantFarmCrop(state, pumpkin.uid, 'crop_pumpkin', NOW).ok).toBe(true);
+    const raw = JSON.parse(serialize(state, NOW)) as Record<string, any>;
+    raw.version = 20; delete raw.plots[0].crop.harvestYieldItems; delete raw.plots[1].crop.harvestYieldItems;
+    raw.farm.market.quotes.crop_corn = { currentCents: 999, previousCents: 777 };
+    raw.farm.market.activeEvents = [{ id: 'strong-corn-demand', remainingDays: 2 }];
+    const loaded = deserialize(JSON.stringify(raw), NOW + 1);
+    expect(loaded.version).toBe(21);
+    expect(loaded.plots[0].crop).toMatchObject({ harvestYieldItems: 8, harvestBalanceVersion: 1 }); expect(loaded.plots[1].crop).toMatchObject({ harvestYieldItems: 8, harvestBalanceVersion: 1 });
+    expect(farmOf(loaded).storage.crop_wheat).toBe(5); expect(farmOf(loaded).pickup.cargo.crops.crop_potato).toBe(3); expect(farmOf(loaded).handBasket.crops.crop_carrot).toBe(2);
+    expect(farmOf(loaded).market.quotes.crop_corn).toEqual({ currentCents: 410, previousCents: 410 });
+    expect(farmOf(loaded).market.activeEvents).toEqual([]);
+    expect(waterFarmCrop(loaded, loaded.plots[0].uid, NOW + 1).ok).toBe(true);
+    expect(harvestFarmCrop(loaded, loaded.plots[0].uid, NOW + farmCropDef('crop_corn').growMs + 2).ok).toBe(true);
+    expect(farmOf(loaded).storage.crop_corn).toBe(8);
+    const repeated = deserialize(serialize(loaded, NOW + 3), NOW + 4);
+    expect(farmOf(repeated).storage).toEqual(farmOf(loaded).storage);
+    const current = makeFarm(); const currentPlot = current.plots[0];
+    expect(tillFarmField(current, currentPlot.uid).ok).toBe(true); expect(plantFarmCrop(current, currentPlot.uid, 'crop_corn', NOW).ok).toBe(true);
+    delete currentPlot.crop!.harvestYieldItems;
+    expect(waterFarmCrop(current, currentPlot.uid, NOW + 1).ok).toBe(true);
+    expect(harvestFarmCrop(current, currentPlot.uid, NOW + farmCropDef('crop_corn').growMs + 2).ok).toBe(true);
+    expect(farmOf(current).storage.crop_corn).toBe(10);
+  });
+
+  it('normalizes forged v21 harvest snapshots before every shared harvest/capacity authority', () => {
+    const state = makeFarm(); const farm = farmOf(state);
+    farm.seeds.crop_corn = 4; farm.storage.crop_wheat = 449;
+    farm.townContact.status = 'completed'; farm.parcels.northOwned = true;
+    farm.workforce.farmhandHired = true;
+    farm.workforce.manager = { hired: true, enabled: true, parcelId: 'starter', cropId: 'crop_corn', lastReviewedDay: 0 };
+    farm.equipment.tractor.status = 'operational'; farm.equipment.countyRowCropFieldKitOwned = true;
+    for (const plot of state.plots.slice(0, 4)) {
+      expect(tillFarmField(state, plot.uid).ok).toBe(true); expect(plantFarmCrop(state, plot.uid, 'crop_corn', NOW).ok).toBe(true);
+      expect(waterFarmCrop(state, plot.uid, NOW + 1).ok).toBe(true); plot.crop!.plantedAt = NOW - farmCropDef('crop_corn').growMs - 1;
+    }
+    const raw = JSON.parse(serialize(state, NOW)) as Record<string, any>;
+    raw.plots[0].crop.harvestYieldItems = 999_999;
+    raw.plots[1].crop.harvestYieldItems = 9;
+    raw.plots[2].crop.harvestYieldItems = '10';
+    raw.plots[3].crop.harvestYieldItems = -1;
+    raw.plots[0].crop.harvestBalanceVersion = 1;
+    raw.plots[1].crop.harvestBalanceVersion = 3;
+    delete raw.plots[2].crop.harvestBalanceVersion;
+    raw.plots[3].crop.harvestBalanceVersion = 1;
+    const loaded = deserialize(JSON.stringify(raw), NOW + 2); const loadedFarm = farmOf(loaded);
+    expect(loaded.plots.slice(0, 4).map((plot) => plot.crop?.harvestYieldItems)).toEqual([10, 10, 10, 10]);
+    expect(loaded.plots.slice(0, 4).map((plot) => plot.crop?.harvestBalanceVersion)).toEqual([2, 2, 2, 2]);
+    expect(planFarmhandWork(loaded, 'starter', 'harvest', NOW + 2).targetPlotUids).toHaveLength(3);
+    expect(planFarmManagerDispatch(loaded, NOW + 2)).toMatchObject({ kind: 'harvest', eligibleCount: 3 });
+    expect(harvestFarmCrop(loaded, loaded.plots[0].uid, NOW + 2, 'manual').ok).toBe(true);
+    expect(harvestFarmCropToBasket(loaded, loaded.plots[1].uid, NOW + 2).ok).toBe(true);
+    expect(harvestFarmCrop(loaded, loaded.plots[2].uid, NOW + 2, 'operatedTractor').ok).toBe(true);
+    expect(loadedFarm.storage.crop_corn).toBe(21);
+    expect(loadedFarm.handBasket.crops.crop_corn).toBe(10);
+  });
+
+  it('preserves provenance-backed v1 tomatoes through v21 reloads and every harvest authority', () => {
+    const state = makeFarm(); const farm = farmOf(state);
+    farm.townContact.status = 'completed'; farm.parcels.northOwned = true; farm.seeds.crop_tomato = 4;
+    farm.workforce.farmhandHired = true;
+    farm.workforce.manager = { hired: true, enabled: true, parcelId: 'starter', cropId: 'crop_tomato', lastReviewedDay: 0 };
+    farm.equipment.tractor.status = 'operational'; farm.equipment.countyRowCropFieldKitOwned = true;
+    for (const plot of state.plots.slice(0, 4)) {
+      expect(tillFarmField(state, plot.uid).ok).toBe(true); expect(plantFarmCrop(state, plot.uid, 'crop_tomato', NOW).ok).toBe(true);
+      expect(waterFarmCrop(state, plot.uid, NOW + 1).ok).toBe(true); plot.crop!.plantedAt = NOW - farmCropDef('crop_tomato').growMs - 1;
+    }
+    const raw = JSON.parse(serialize(state, NOW)) as Record<string, any>;
+    raw.version = 20;
+    const migrated = deserialize(JSON.stringify(raw), NOW + 2);
+    const reloaded = deserialize(serialize(migrated, NOW + 3), NOW + 4); const reloadedFarm = farmOf(reloaded);
+    expect(reloaded.plots.slice(0, 4).map((plot) => plot.crop && ({ yield: plot.crop.harvestYieldItems, version: plot.crop.harvestBalanceVersion }))).toEqual([
+      { yield: 18, version: 1 }, { yield: 18, version: 1 }, { yield: 18, version: 1 }, { yield: 18, version: 1 },
+    ]);
+    reloadedFarm.storage.crop_wheat = 426;
+    expect(planFarmhandWork(reloaded, 'starter', 'harvest', NOW + 4).targetPlotUids).toHaveLength(3);
+    expect(planFarmManagerDispatch(reloaded, NOW + 4)).toMatchObject({ kind: 'harvest', eligibleCount: 3 });
+    expect(harvestFarmCrop(reloaded, reloaded.plots[0].uid, NOW + 4, 'manual').ok).toBe(true);
+    expect(harvestFarmCropToBasket(reloaded, reloaded.plots[1].uid, NOW + 4).ok).toBe(true);
+    expect(harvestFarmCrop(reloaded, reloaded.plots[2].uid, NOW + 4, 'operatedTractor').ok).toBe(true);
+    expect(reloadedFarm.storage.crop_tomato).toBe(37);
+    expect(reloadedFarm.handBasket.crops.crop_tomato).toBe(18);
+  });
+
+  it('rejects forged v21 tomato v1 yields without matching legacy provenance', () => {
+    const state = makeUnlockedFarm('crop_tomato'); const farm = farmOf(state); farm.seeds.crop_tomato = 3;
+    for (const plot of state.plots.slice(0, 3)) {
+      expect(tillFarmField(state, plot.uid).ok).toBe(true); expect(plantFarmCrop(state, plot.uid, 'crop_tomato', NOW).ok).toBe(true);
+    }
+    const raw = JSON.parse(serialize(state, NOW)) as Record<string, any>;
+    raw.plots[0].crop.harvestYieldItems = 18; raw.plots[0].crop.harvestBalanceVersion = 2;
+    raw.plots[1].crop.harvestYieldItems = 18; delete raw.plots[1].crop.harvestBalanceVersion;
+    raw.plots[2].crop.harvestYieldItems = 18; raw.plots[2].crop.harvestBalanceVersion = 9;
+    const loaded = deserialize(JSON.stringify(raw), NOW + 1);
+    expect(loaded.plots.slice(0, 3).map((plot) => plot.crop && ({ yield: plot.crop.harvestYieldItems, version: plot.crop.harvestBalanceVersion }))).toEqual([
+      { yield: 16, version: 2 }, { yield: 16, version: 2 }, { yield: 16, version: 2 },
+    ]);
   });
 
   it('derives unlocks after save/reload without storing progression fields', () => {

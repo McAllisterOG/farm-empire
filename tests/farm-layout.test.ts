@@ -115,6 +115,6 @@ describe('literal v4 Farm Empire save compatibility', () => {
     expect(loaded.placements).toEqual(state.placements);
     expect(loaded.player.px).toBe(8.375); expect(loaded.player.py).toBe(10.625);
     expect(loaded.farm!.equipment.tractor.x).toBe(9.125); expect(loaded.farm!.equipment.tractor.y).toBe(11.75);
-    expect(loaded.farm!.storage.crop_corn).toBe(19); expect(loaded.farm!.market.quotes.crop_corn.currentCents).toBe(321); expect(loaded.farm!.parcels.northOwned).toBe(true);
+    expect(loaded.farm!.storage.crop_corn).toBe(19); expect(loaded.farm!.market.quotes.crop_corn.currentCents).toBe(410); expect(loaded.farm!.parcels.northOwned).toBe(true);
   });
 });

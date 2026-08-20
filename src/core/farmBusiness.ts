@@ -23,6 +23,34 @@ export const FIRST_PARCEL_PRICE_CENTS = 425_000;
 export const GAME_MINUTES_PER_REAL_SECOND = 8;
 export const FARM_MARKET_MAX_MULTIPLIER = 1.55;
 
+/** V20's last shipped Farm Empire yields; only these legacy snapshots remain valid in v21. */
+export const FARM_V1_HARVEST_YIELD_ITEMS = Object.freeze({
+  crop_corn: 8, crop_wheat: 7, crop_soybean: 9, crop_potato: 10,
+  crop_carrot: 6, crop_tomato: 18, crop_cabbage: 8, crop_pumpkin: 8,
+} as const);
+
+export interface CanonicalFarmHarvestBalance {
+  harvestYieldItems: number;
+  harvestBalanceVersion: 1 | 2;
+}
+
+/** Accept only a provenance-matched current V2 yield or explicit V1 migration snapshot. */
+export function canonicalFarmHarvestBalance(crop: FarmPlot['crop']): CanonicalFarmHarvestBalance {
+  if (!crop) return { harvestYieldItems: 0, harvestBalanceVersion: 2 };
+  const def = farmCropDefOrNull(crop.defId);
+  if (!def) return { harvestYieldItems: 0, harvestBalanceVersion: 2 };
+  const pinned = crop.harvestYieldItems;
+  const legacy = FARM_V1_HARVEST_YIELD_ITEMS[def.id as keyof typeof FARM_V1_HARVEST_YIELD_ITEMS];
+  if (crop.harvestBalanceVersion === 1 && pinned === legacy) return { harvestYieldItems: legacy, harvestBalanceVersion: 1 };
+  if (crop.harvestBalanceVersion === 2 && pinned === def.harvestYield) return { harvestYieldItems: def.harvestYield, harvestBalanceVersion: 2 };
+  return { harvestYieldItems: def.harvestYield, harvestBalanceVersion: 2 };
+}
+
+/** Safe read for every harvest and capacity authority. */
+export function pinnedFarmHarvestYield(crop: FarmPlot['crop']): number {
+  return canonicalFarmHarvestBalance(crop).harvestYieldItems;
+}
+
 function maxFreightPayoutCents(requiredUnits: number, basePriceCents: number, premiumBps: number): number {
   const maxQuote = Math.round(basePriceCents * FARM_MARKET_MAX_MULTIPLIER);
   return Math.max(1, Math.round(requiredUnits * maxQuote * (10_000 + premiumBps) / 10_000));
@@ -415,6 +443,7 @@ export function normalizeFarmBusinessState(state: GameState, now: number): FarmB
   if (!isFarmCropUnlocked(state, state.farm.selectedCropId)) state.farm.selectedCropId = 'crop_corn';
   ensureOwnedFarmParcelPlots(state, state.farm.parcels);
   for (const plot of state.plots) {
+    if (plot.crop) Object.assign(plot.crop, canonicalFarmHarvestBalance(plot.crop));
     const rawCondition = objectRecord(rawFieldConditions[String(plot.uid)]);
     const soil = rawCondition.soil === 'rough' || rawCondition.soil === 'tilled' || rawCondition.soil === 'stubble'
       ? rawCondition.soil
@@ -601,7 +630,7 @@ export function planParcelWork(
     if (!def) continue;
     const bonus = farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
       ? COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits : 0;
-    const needed = (def.harvestYield + bonus) * def.storageUnitsPerItem;
+    const needed = (pinnedFarmHarvestYield(plot.crop) + bonus) * def.storageUnitsPerItem;
     if (needed > freeCapacity) continue;
     harvestPlotUids.push(plot.uid);
     freeCapacity -= needed;
@@ -639,6 +668,8 @@ export function plantFarmCrop(state: GameState, plotUid: number, cropId: string,
     wateredBonusMs: preworkedMs,
     lastWateredAt: context === 'operatedTractor' ? now : 0,
     awaitingWater: context === 'manual',
+    harvestYieldItems: farmDef.harvestYield,
+    harvestBalanceVersion: 2,
   };
   recordFarmStat(state, 'plantings');
   if (context === 'operatedTractor') recordFarmStat(state, 'farmTractorSections');
@@ -656,10 +687,10 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
   if (!def) return fail('Unknown crop.');
   const bonus = context === 'operatedTractor' && farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
       ? COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits : 0;
-  const amount = def.harvestYield + bonus;
+  const amount = pinnedFarmHarvestYield(plot.crop) + bonus;
   const needed = amount * def.storageUnitsPerItem;
   if (storageRemaining(state) < needed) {
-    return fail(`Barn full: ${needed} free capacity is required. Sell crops before harvesting.`);
+    return fail(`Barn full: ${needed} handling lots (${needed * 10} lb) of open storage are required. Sell crops before harvesting.`);
   }
   farm.storage[def.id] = (farm.storage[def.id] ?? 0) + amount;
   plot.crop = null;
@@ -799,7 +830,7 @@ export function sellStoredCrop(state: GameState, cropId: string, count: number):
   const def = farmCropDefOrNull(cropId);
   if (!def) return fail('Unknown crop.');
   const owned = farm.storage[cropId] ?? 0;
-  if (count > owned) return fail(`Only ${owned} ${def.name} unit${owned === 1 ? '' : 's'} are stored.`);
+  if (count > owned) return fail(`Only ${owned} ${def.name} item${owned === 1 ? '' : 's'} are stored.`);
   const quote = farm.market.quotes[cropId];
   const totalCents = quote.currentCents * count;
   farm.storage[cropId] = owned - count;

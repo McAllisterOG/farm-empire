@@ -68,7 +68,7 @@ export function acceptCountyFreightOffer(state: GameState, expectedOfferId?: str
   if (!offer) return fail('That Freight Board offer has expired. Review today\'s new routes before accepting.');
   farm.countyFreight.active = { ...offer };
   const crop = farmCropDef(offer.cropId);
-  return { ok: true, events: [{ type: 'toast', target: `${crop.name} ${offer.kind === 'bulk' ? 'commercial bulk ' : ''}freight contract accepted. Load ${offer.requiredUnits} units into the pickup.` }] };
+  return { ok: true, events: [{ type: 'toast', target: `${crop.name} ${offer.kind === 'bulk' ? 'commercial bulk ' : ''}freight contract accepted. Load ${offer.requiredUnits} items into the pickup.` }] };
 }
 
 export function countyFreightProgress(state: GameState, context?: CountyFreightContext): { loadedUnits: number; requiredUnits: number } {
@@ -84,7 +84,7 @@ export function fulfillCountyFreightContract(state: GameState, context?: CountyF
   if (active.kind === 'bulk' && !farm.equipment.countyUtilityTrailerOwned) return fail('Attach the County Utility Trailer before delivering this commercial bulk load.');
   if (!context || context.source !== 'pickup' || context.pickupPresent !== true) return fail('Bring the old pickup to the County Grain Exchange before delivery.');
   const loaded = pickupCropUnits(state, active.cropId); const crop = farmCropDef(active.cropId);
-  if (loaded < active.requiredUnits) return fail(`Load ${active.requiredUnits} ${crop.name} units into the pickup before delivery.`);
+  if (loaded < active.requiredUnits) return fail(`Load ${active.requiredUnits} ${crop.name} items into the pickup before delivery.`);
   const firstFreightDelivery = farm.countyFreight.lastCompletedDay < 1;
   farm.pickup.cargo.crops[active.cropId] = loaded - active.requiredUnits;
   farm.countyFreight.active = null; farm.countyFreight.lastCompletedDay = farm.clock.day; farm.cashCents += active.payoutCents;

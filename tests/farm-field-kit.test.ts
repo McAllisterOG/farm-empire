@@ -20,7 +20,7 @@ function farm() {
 describe('County Row-Crop Field Kit', () => {
   it('starts unowned and stays locked until the County Pantry order is complete', () => {
     const state = farm();
-    expect(SAVE_VERSION).toBe(20);
+    expect(SAVE_VERSION).toBe(21);
     expect(farmOf(state).equipment.countyRowCropFieldKitOwned).toBe(false);
     const before = farmOf(state).cashCents;
     expect(purchaseCountyRowCropFieldKit(state).ok).toBe(false);
@@ -57,7 +57,7 @@ describe('County Row-Crop Field Kit', () => {
     expect(plot.crop!.wateredBonusMs).toBe(Math.round(farmCropDef('crop_corn').growMs * .2));
     plot.crop!.plantedAt = NOW - cropDef('crop_corn').growMs - 1;
     expect(harvestFarmCrop(state, plot.uid, NOW, 'manual').ok).toBe(true);
-    expect(f.storage.crop_corn).toBe(8);
+    expect(f.storage.crop_corn).toBe(10);
   });
 
   it('gives operated harvest base yield without the kit, kit yield with it, and base yield on foot', () => {
@@ -91,7 +91,7 @@ describe('County Row-Crop Field Kit', () => {
     expect(farmOf(migrated).cashCents).toBe(321_654);
     expect(farmOf(migrated).storage.crop_corn).toBe(7);
     expect(farmOf(migrated).parcels.northOwned).toBe(true);
-    expect(farmOf(migrated).market.quotes.crop_corn.currentCents).toBe(777);
+    expect(farmOf(migrated).market.quotes.crop_corn.currentCents).toBe(410);
     expect(farmOf(migrated).townContact.status).toBe('completed');
     expect(farmOf(migrated).equipment.tractor.x).toBe(12.25);
     expect(farmOf(migrated).equipment.tractor.y).toBe(4.75);

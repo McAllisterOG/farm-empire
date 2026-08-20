@@ -11,12 +11,12 @@ describe('Farm crop economics', () => {
     expect(farmCropEconomics(farmCropDef('crop_corn'), { sectionCount: 36, includeOperatedFieldKitYield: true })).toEqual({
       sectionCount: 36,
       seedCostCents: 50_400,
-      harvestItems: 288,
-      grossBaseValueCents: 89_280,
-      netBaseValueCents: 38_880,
-      totalStorageUnits: 288,
-      operatedFieldKitHarvestItems: 324,
-      operatedFieldKitStorageUnits: 324,
+      harvestItems: 360,
+      grossBaseValueCents: 147_600,
+      netBaseValueCents: 97_200,
+      totalStorageUnits: 360,
+      operatedFieldKitHarvestItems: 396,
+      operatedFieldKitStorageUnits: 396,
     });
   });
 
@@ -30,8 +30,8 @@ describe('Farm crop economics', () => {
 
     expect(farmCropEconomics(def, withoutKit).operatedFieldKitHarvestItems).toBeUndefined();
     expect(farmCropEconomics(def, withKit)).toMatchObject({
-      operatedFieldKitHarvestItems: 324,
-      operatedFieldKitStorageUnits: 324,
+      operatedFieldKitHarvestItems: 396,
+      operatedFieldKitStorageUnits: 396,
     });
     expect(def).toEqual(definitionBefore);
     expect(withoutKit).toEqual(withoutKitBefore);
@@ -52,7 +52,24 @@ describe('Farm crop economics', () => {
     expect(cabbage.netBaseValueCents / cabbage.totalStorageUnits).toBeGreaterThan(tomato.netBaseValueCents / tomato.totalStorageUnits);
   });
 
-  it('sizes the 1,200-unit silo for full 96-section operated grain harvests, not bulky load-outs', () => {
+  it('keeps exact 10-lb handling-lot mass roles within authoritative storage tiers', () => {
+    expect(COUNTY_GRAIN_SILO).toMatchObject({ fromCapacity: 720, toCapacity: 1_200 });
+    const starter = { sectionCount: farmParcelSectionCount('starter'), includeOperatedFieldKitYield: true };
+    const north = { sectionCount: farmParcelSectionCount('north'), includeOperatedFieldKitYield: true };
+    expect(farmCropEconomics(farmCropDef('crop_pumpkin'), { sectionCount: 1 }).totalStorageUnits).toBe(24);
+    expect(farmCropEconomics(farmCropDef('crop_pumpkin'), { sectionCount: 1 }).harvestItems).toBe(8);
+    expect(farmCropEconomics(farmCropDef('crop_corn'), starter).operatedFieldKitStorageUnits).toBe(396);
+    expect(farmCropEconomics(farmCropDef('crop_tomato'), starter).operatedFieldKitStorageUnits).toBe(612);
+    expect(farmCropEconomics(farmCropDef('crop_pumpkin'), starter).operatedFieldKitStorageUnits).toBe(972);
+    for (const cropId of ['crop_corn', 'crop_wheat', 'crop_soybean', 'crop_potato', 'crop_carrot', 'crop_cabbage']) {
+      expect(farmCropEconomics(farmCropDef(cropId), north).operatedFieldKitStorageUnits).toBeLessThanOrEqual(COUNTY_GRAIN_SILO.toCapacity);
+    }
+    for (const cropId of ['crop_tomato', 'crop_pumpkin']) {
+      expect(farmCropEconomics(farmCropDef(cropId), north).operatedFieldKitStorageUnits).toBeGreaterThan(COUNTY_GRAIN_SILO.toCapacity);
+    }
+  });
+
+  it('sizes the 1,200-lot silo for full 96-section operated field crops, not bulky load-outs', () => {
     const options = { sectionCount: farmParcelSectionCount('north'), includeOperatedFieldKitYield: true };
     for (const cropId of ['crop_corn', 'crop_soybean', 'crop_cabbage']) {
       expect(farmCropEconomics(farmCropDef(cropId), options).operatedFieldKitStorageUnits).toBeLessThanOrEqual(COUNTY_GRAIN_SILO.toCapacity);
@@ -70,6 +87,6 @@ describe('Farm crop economics', () => {
       { cropId: 'crop_carrot', requiredUnits: 18 }, { cropId: 'crop_tomato', requiredUnits: 36 },
       { cropId: 'crop_cabbage', requiredUnits: 16 }, { cropId: 'crop_pumpkin', requiredUnits: 8 },
     ]);
-    expect(COUNTY_FREIGHT_TEMPLATES.every((template) => template.requiredUnits <= COUNTY_UTILITY_TRAILER.fromCapacity)).toBe(true);
+    expect(COUNTY_FREIGHT_TEMPLATES.every((template) => template.requiredUnits * farmCropDef(template.cropId).storageUnitsPerItem <= COUNTY_UTILITY_TRAILER.fromCapacity)).toBe(true);
   });
 });

@@ -4,16 +4,16 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** Long-Session Progression Assurance V1 (local checkpoint; see Git history for hash)
-- **Product state:** The existing fresh-farm-to-commercial-services route is now protected by an authoritative long-session regression: manual crop/basket/pickup County delivery, repeated seed-to-market earning, land/equipment/storage/workforce/manager/stand progression, freight, save reload, offline pause, and dense-frame bounds.
-- **Boundaries:** No production, schema, economy, save, cargo-unit, art, or package change. The test earns cash only through public seed purchase, field production, harvest, and market-sale transactions; delivery and stand crops are likewise physically produced and moved through their real authority.
-- **Verification:** 320 tests in 46 files passed; strict typecheck, Vite production build, and `git diff --check` passed. The regression also proves weighted barn/pickup bounds, failed/repeat transaction non-mutation, and exact logical cash/inventory/progression preservation across reload.
+- **Head:** Economy & Physical Scale V2 (local checkpoint; see Git history for hash)
+- **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
+- **Save:** v21 pins each growing crop to a provenance-backed V1 migration or V2 planted yield. v20 migration preserves crop/seed/cargo/basket/ownership counts, resets quotes to V2 bases, clears active events, and rejects malformed harvest snapshots to current V2 output.
+- **Verification:** 325 tests in 46 files passed; focused economy/save regressions, strict typecheck, Vite production build, and `git diff --check` passed. Tests cover exact economics, capacity/mass, Pantry feasibility, premiums, long-session payback, and forged-save safety across every harvest authority.
 - **Player-surface limit:** No browser/computer-control capability was available for the isolated QA-profile packaged pass. No package, shortcut, QA profile, or owner save was modified.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
 - The starter acreage is a data-defined 6x6 block (36 sections); the neighboring acreage is an 8x12 commercial tract (96 sections), 2.67 times the starter's working area.
-- Existing plot IDs and planted crops remain compatible. Save schema v20 pauses Farm Empire crops/clock outside active sessions and gives pre-v20 farms one migration rescue; v19 manager, v18 bulk-freight, v17 hand-basket, v16 grain-silo, v15 roadside-stand, v14 workforce, v13 trailer, v12 freight, v11 tractor restoration, v10 soil, and v9 acreage state remain intact.
+- Existing plot IDs and planted crops remain compatible. Save schema v21 retains v20 session pause/recovery and adds only per-growing-crop harvest-balance provenance; earlier v19 manager, v18 bulk-freight, v17 hand-basket, v16 grain-silo, v15 roadside-stand, v14 workforce, v13 trailer, v12 freight, v11 tractor restoration, v10 soil, and v9 acreage state remain intact.
 - The Farm Empire renderer is isolated from the preserved legacy Paradise Isle renderer.
 - Farm-only crops use immutable runtime presentation data and deterministic Canvas painting; 16 cached ground variants plus textured, edged field sections improve readability without persistent visual state.
 - A larger four-facing farmer, runtime-only farm dog Scout, and enlarged farm-only barn, tractor, and doghouse establish the current focal-art quality bar.
@@ -68,7 +68,7 @@ No additional feature package is currently active. Long-Session Progression Assu
 - Multi-section manual work intentionally automates walking and repeated short actions; it does not add pathfinding, stamina, tool durability, worker assignment, or a character-skill modifier.
 - Audio is an original procedural V1: quiet filtered wind and a restrained rain mix replace the removed recurring wildlife notes; no recorded soundtrack, voice acting, spatial occlusion, or accessibility captions for environmental cues are included yet.
 - The farmhouse has one land-derived visual tier but no separately purchased renovations, rooms, or functional bonuses. Tractor timing now has one finite first-restoration step, but later machinery tiers remain undesigned.
-- Starting cash remains $5,000; no economy values were changed during this repair, pending an evidence-based proportional economy study.
+- Starting cash remains $5,000. V2 intentionally changes only the approved crop economics/physical handling abstraction; real-acreage, spoilage, quality, fractional pounds, additional crops/assets/land, and live commodity data remain absent.
 - Crops retain the 15-minute post-maturity window during active play, but crop aging and the Farm business clock now pause whenever the desktop app is closed, minimized, or hidden.
 - The branch has not been pushed; external GitHub authorization is still required.
 - Windows artifacts are local x64 builds and unsigned, so SmartScreen may warn. The executable retains Electron file metadata because this account cannot run the normal resource-edit helper; the supported Desktop shortcut and game window use the verified Farm Empire ICO explicitly.

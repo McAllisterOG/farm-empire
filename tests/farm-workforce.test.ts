@@ -30,7 +30,7 @@ describe('First Farmhand workforce', () => {
   it('requires both County trust and neighboring acreage, then hires once at the exact price', () => {
     const state = createFarmGame('Workforce Test', 1_414, NOW);
     const farm = farmOf(state);
-    expect(SAVE_VERSION).toBe(20);
+    expect(SAVE_VERSION).toBe(21);
     expect(farmhandUnlocked(state)).toBe(false);
     expect(hireFirstFarmhand(state).ok).toBe(false);
     farm.townContact.status = 'completed';
@@ -85,7 +85,7 @@ describe('First Farmhand workforce', () => {
       const plot = state.plots.find((candidate) => candidate.x === tile.x && candidate.y === tile.y)!;
       plot.crop = { defId: 'crop_corn', plantedAt: NOW - 80_000, wateredBonusMs: 0, lastWateredAt: NOW - 80_000, awaitingWater: false };
     }
-    farm.storage.crop_corn = farm.storageCapacity - 17;
+    farm.storage.crop_corn = farm.storageCapacity - 21;
     expect(planFarmhandWork(state, 'starter', 'harvest', NOW).targetPlotUids).toHaveLength(2);
   });
 

@@ -69,7 +69,7 @@ describe('Long-session progression assurance', () => {
 
     offerCountyWorkOrder(state); expectOk(acceptCountyWorkOrder(state)); establishCorn(state, 0, NOW); establishCorn(state, 1, NOW + 100_000);
     const cashBeforeOrder = farm.cashCents; expectOk(fulfillCountyWorkOrder(state, { source: 'pickup', pickupPresent: true }));
-    expect(townContact(state).status).toBe('completed'); expect(farm.pickup.cargo.crops.crop_corn).toBe(4); expect(farm.cashCents).toBe(cashBeforeOrder + COUNTY_PANTRY_CORN_ORDER.payoutCents);
+    expect(townContact(state).status).toBe('completed'); expect(farm.pickup.cargo.crops.crop_corn).toBe(8); expect(farm.cashCents).toBe(cashBeforeOrder + COUNTY_PANTRY_CORN_ORDER.payoutCents);
     before = snapshot(state); expect(fulfillCountyWorkOrder(state, { source: 'pickup', pickupPresent: true }).ok).toBe(false); expectUnchanged(state, before);
 
     expectOk(unloadPickupCropToBarn(state, 'crop_corn', 4)); afford(state, 425_000); expectOk(purchaseNeighborParcel(state));

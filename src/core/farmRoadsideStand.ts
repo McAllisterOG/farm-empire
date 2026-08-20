@@ -78,7 +78,7 @@ export function fulfillRoadsideStandOrder(state: GameState, expectedOrderId?: st
   if (expectedOrderId && expectedOrderId !== order.id) return fail('That local request has expired. Review today\'s new stand order.');
   const stored = Math.max(0, Math.floor(farm.storage[order.cropId] ?? 0));
   const crop = farmCropDef(order.cropId);
-  if (stored < order.requiredUnits) return fail(`Store ${order.requiredUnits} ${crop.name} units in the barn before filling this order.`);
+  if (stored < order.requiredUnits) return fail(`Store ${order.requiredUnits} ${crop.name} items in the barn before filling this order.`);
 
   farm.storage[order.cropId] = stored - order.requiredUnits;
   farm.roadsideStand.lastCompletedDay = farm.clock.day;

@@ -28,15 +28,15 @@ describe('Farm Empire first-loop reliability', () => {
     offerCountyWorkOrder(state); expect(acceptCountyWorkOrder(state).ok).toBe(true);
 
     establishAndHarvest(state, 0, 'crop_corn', NOW);
-    expect(handBasketUsed(state)).toBe(8);
+    expect(handBasketUsed(state)).toBe(10);
     expect(unloadHandBasket(state, 'pickup', true).ok).toBe(true);
     establishAndHarvest(state, 1, 'crop_corn', NOW + 100_000);
     expect(unloadHandBasket(state, 'pickup', true).ok).toBe(true);
-    expect(countyPickupWorkOrderProgress(state, true)).toEqual({ storedUnits: 16, requiredUnits: 12 });
+    expect(countyPickupWorkOrderProgress(state, true)).toEqual({ storedUnits: 20, requiredUnits: 12 });
 
     expect(fulfillCountyWorkOrder(state, { source: 'pickup', pickupPresent: true }).ok).toBe(true);
     expect(townContact(state).status).toBe('completed');
-    expect(pickupCropUnits(state, 'crop_corn')).toBe(4);
+    expect(pickupCropUnits(state, 'crop_corn')).toBe(8);
     expect(farm.cashCents).toBe(openingCash + COUNTY_PANTRY_CORN_ORDER.payoutCents);
     expect(fulfillCountyWorkOrder(state, { source: 'pickup', pickupPresent: true }).ok).toBe(false);
     expect(farm.cashCents).toBe(openingCash + COUNTY_PANTRY_CORN_ORDER.payoutCents);

@@ -5,7 +5,7 @@
 import type { GameState } from '../core/types';
 import { SAVE_VERSION, createFarmGame, emptyStats } from '../core/state';
 import { initNeighbors } from '../core/social';
-import { normalizeFarmBusinessState } from '../core/farmBusiness';
+import { FARM_V1_HARVEST_YIELD_ITEMS, normalizeFarmBusinessState } from '../core/farmBusiness';
 import { PICKUP_START } from '../core/farmPickupData';
 import { FARM_TOWN_RETURN, LEGACY_FARM_TOWN_GATE, LEGACY_FARM_TOWN_RETURN } from '../core/townGateway';
 import { resumeFarmSession } from '../core/farmOfflineSafety';
@@ -170,6 +170,24 @@ const MIGRATIONS: Record<number, Migrator> = {
     // closed. No new persisted field is required; deserialize performs the
     // one-time legacy crop rescue using the source version.
     raw.version = 20;
+  },
+  20: (raw) => {
+    const plots = Array.isArray(raw.plots) ? raw.plots : [];
+    for (const plot of plots) {
+      if (!plot || typeof plot !== 'object' || Array.isArray(plot)) continue;
+      const crop = (plot as Record<string, unknown>).crop;
+      if (!crop || typeof crop !== 'object' || Array.isArray(crop)) continue;
+      const record = crop as Record<string, unknown>;
+      const yieldItems = FARM_V1_HARVEST_YIELD_ITEMS[String(record.defId) as keyof typeof FARM_V1_HARVEST_YIELD_ITEMS];
+      if (yieldItems !== undefined) {
+        record.harvestYieldItems = yieldItems;
+        record.harvestBalanceVersion = 1;
+      }
+    }
+    const farm = raw.farm && typeof raw.farm === 'object' && !Array.isArray(raw.farm) ? raw.farm as Record<string, unknown> : null;
+    const market = farm?.market && typeof farm.market === 'object' && !Array.isArray(farm.market) ? farm.market as Record<string, unknown> : null;
+    if (market) { market.quotes = {}; market.activeEvents = []; }
+    raw.version = 21;
   },
 };
 

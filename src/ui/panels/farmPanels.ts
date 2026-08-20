@@ -448,11 +448,11 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
         }, `Restore for ${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)}`)] : []),
       ),
       h('p', {}, kitOwned
-        ? `Installed effect: +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% operated tractor crop cycles and +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} operated tractor harvest unit.`
+        ? `Installed effect: +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% operated tractor crop cycles and +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} harvested item.`
         : 'Base crop time and yield apply until the County Row-Crop Field Kit is installed.'),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-field-kit' },
         h('div', { class: 'farm-card-title' }, COUNTY_ROW_CROP_FIELD_KIT.name),
-        h('p', {}, `One-time upgrade · ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)} · +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% operated tractor crop speed · +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} operated tractor harvest unit`),
+        h('p', {}, `One-time upgrade · ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)} · +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% operated tractor crop speed · +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} harvested item`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-field-kit-status' }, kitOwned
           ? 'Owned · installed'
           : kitUnlocked ? 'Unlocked at the County Equipment Desk' : countyComplete ? 'Locked · restore the tractor first' : 'Locked · complete the County Pantry order'),

@@ -564,3 +564,14 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review:** Red Team identified fixture-funded cash/cargo and insufficient reload/invariant detail. The repair removed all direct cash/storage/cargo writes, added public-authority earning helpers and exact logical reload snapshots, and re-review accepted the result.
 - **Verification:** 320/320 tests in 46 files passed; strict typecheck, Vite production build, and `git diff --check` passed.
 - **Known limitation:** No browser/computer-control capability was available for the isolated QA-profile packaged player-surface pass. No package, shortcut, QA profile, owner save, or push was changed.
+
+## Economy & Physical Scale V2 - complete
+
+- **Date:** 2026-08-19
+- **Branch:** `codex/first-town-contact`
+- **Scope:** Recalibrate Farm Empire's approved game-scale crop economics and physical handling without changing $5,000 starting cash, existing assets/unlocks, freight premiums/templates, land, Paradise Isle, or adding literal-acre/live-market systems.
+- **Result:** One authoritative handling lot is 10 lb: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). V2 crop authority is corn 1400/70s/10/1/$4.10; wheat 1000/55s/8/1/$3.40; soy 1700/85s/9/1/$5.00; potatoes 1900/75s/11/1/$4.00; carrots 900/40s/8/1/$3.80; tomatoes 2400/100s/16/1/$4.70; cabbage 2600/140s/10/1/$7.20; pumpkins 3200/180s/8/3/$13.50.
+- **Save/review:** v21 pins growing-crop output with explicit V1/V2 balance provenance. v20 migration preserves existing counts/ownership, snapshots V1 crops, resets V2 base quotes, and clears events; malformed or forged snapshots fail safely to V2. Red Team identified unbounded/misattributed snapshots and stale events; the bounded repairs added central provenance validation plus direct, basket, tractor, farmhand, and manager regressions.
+- **Research anchors:** The calibration remains explicitly game-scale. Future literal/proportional work requires separately authorized primary agricultural sources; no live commodity feed, acreage valuation, fractional pounds, spoilage, or quality system was introduced.
+- **Verification:** 325/325 tests in 46 files passed; focused economy/save tests, strict typecheck, Vite production build, and `git diff --check` passed.
+- **Known limitation:** No browser/computer-control capability was available for the isolated QA-profile player-surface pass. No package, shortcut, QA profile, owner save, or push was changed.

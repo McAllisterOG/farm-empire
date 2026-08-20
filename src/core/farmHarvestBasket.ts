@@ -2,7 +2,7 @@ import type { ActionResult, FarmHarvestDestination, GameState } from './types';
 import { fail } from './types';
 import { farmCropDefOrNull } from './registry';
 import {
-  farmCropStage, farmOf, isFarmCropWithered, isOwnedFieldTile, storageRemaining,
+  farmCropStage, farmOf, isFarmCropWithered, isOwnedFieldTile, pinnedFarmHarvestYield, storageRemaining,
 } from './farmBusiness';
 import { pickupCargoRemaining } from './farmPickup';
 import { recordFarmStat } from './farmKnowledge';
@@ -60,7 +60,7 @@ export function inspectBasketHarvest(state: GameState, plotUid: number, now: num
   if (farmCropStage(plot.crop, now) !== 'ready') return { ok: false, reason: 'This crop is still growing.' };
   const def = farmCropDefOrNull(plot.crop.defId);
   if (!def) return { ok: false, reason: 'Unknown crop.' };
-  const amount = def.harvestYield;
+  const amount = pinnedFarmHarvestYield(plot.crop);
   return { ok: true, cropId: def.id, amount, capacityUnits: amount * def.storageUnitsPerItem };
 }
 

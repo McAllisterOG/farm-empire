@@ -418,3 +418,11 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Ready crops remain harvestable for one active hour. Save v20 still pauses crop age outside active visible sessions, so the wider window protects active play without creating offline spoilage or repeated crop recovery.
 - Cache a finite six-variant set of procedural crop silhouettes per crop/stage and pace Farm Canvas presentation at a stable 30 FPS. Keep gameplay updates, timers, input, transactions, audio, and immediate HUD feedback independent of the presentation gate.
 - Operated tractor field jobs may show a runtime-only planter or harvest wagon derived from the active job kind. The attachment adds no inventory, hitching transaction, capacity, bonus, persistence, or separate control.
+
+## 2026-08-19 - Make Economy & Physical Scale V2 authoritative
+
+**Status:** Approved and complete
+
+- Farm economy capacity is integer **10-lb handling lots**: basket 24, pickup 72, trailer 144, barn 480, loft 720, silo 1,200 (240/720/1,440/4,800/7,200/12,000 lb). This is a game abstraction, not real acreage or farm pricing. Starting cash remains $5,000; assets, unlocks, freight premiums/templates, and Paradise Isle remain unchanged.
+- The approved V2 crop table is authoritative for seed cost, grow time, yield, weight, and base sale price: corn 1400/70000/10/1/410; wheat 1000/55000/8/1/340; soy 1700/85000/9/1/500; potatoes 1900/75000/11/1/400; carrots 900/40000/8/1/380; tomatoes 2400/100000/16/1/470; cabbage 2600/140000/10/1/720; pumpkins 3200/180000/8/3/1350.
+- Save v21 pins output at planting with a yield plus explicit balance provenance. v20 migration marks extant crops V1 and assigns their canonical V1 yield; fresh plants are V2. Only provenance-matched V1/V2 snapshots are accepted. Missing, forged, mismatched, or malformed snapshots normalize to current V2. Migration preserves inventory/seeds/cargo/basket/ownership, resets market quotes to V2 base, and clears active events.
