@@ -4,7 +4,7 @@
 
 - **Date:** 2026-08-19
 - **Branch:** `codex/first-town-contact`
-- **Head:** Final Public Demo Acceptance & Release V1 source snapshot `a177587` (native package/shortcut acceptance pending)
+- **Head:** Final Public Demo Acceptance & Release V1 source snapshot `a177587`; native package and Desktop shortcut acceptance complete
 - **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
 - **Save:** v26 adds valid `lastHarvestFamily` and pinned `rotationBonusMs`. Grain is corn/wheat, Legume soy, Root potato/carrot, and Garden tomato/cabbage/pumpkin. A different family after successful harvest saves 10% of base growth time; first and same-family plantings have no penalty. Existing v25 crops/history receive no bonus.
 - **Timing safety:** The existing Implement Set 20% establishment reduction and the rotation 10% reduction are additive, capped at 30%. Manual/rain establishment resets the clock once while retaining the pinned bonus. Direct, basket, tractor-wagon, farmhand, and manager harvests all record family; wither/clear do not. Corrupt crop timing fields fail closed to unready/growing without altering yield provenance, cargo, or business state; tamper resistance is not a feature goal.
@@ -12,7 +12,7 @@
 - **Runtime/Desktop:** One renderer-owned recovery surface catches uncaught errors/rejections and offers Reload or Return to Title. Electron logs only actionable renderer console diagnostics and handles failed loads, renderer loss, and unresponsive windows with a guarded Reload/Close prompt. `contextIsolation`, sandbox, disabled Node integration, and navigation/external-link policy are unchanged.
 - **Verification:** 356 tests in 53 files passed; strict typecheck, Vite production and desktop-relative builds, and `git diff --check` passed. Red Team recovery-gate and recovery-focus findings were repaired and accepted. The rebuilt production bundle passed a real browser readback at 1280x720: semantic title controls and attribution rendered, a fresh farm showed the current eight-crop/pound-capacity HUD and first-morning surface, and no stale overlay remained. Local preview listeners were stopped afterward.
 - **Release artifacts:** Source snapshot `a177587` is packed in `release/public-demo-a177587`. SHA-256: unpacked `app.asar` `3485417A212ED0E6BA4AA442148CB5FE4675DA9671DDBFDB3A1337888A9899C6`; portable EXE `22CFD8C980EA8EB6CEAE396C0D074A478256CA20D59027404A8BE89C18898253`; installer `34563DAEB903FF4A60A0E24CB1303654ADF068CFBD104E754FEC0BC4714F0DE8`. Archive readback includes the current `index-UapXaRX5.js`, `desktop/recoveryGate.mjs`, `dist/index.html`, and `package.json`.
-- **Player-surface limit:** The refreshed native package has not been launched with the disposable QA profile, and the real Desktop shortcut has not been replaced/read back; those external actions require explicit owner approval. No owner save or Desktop shortcut was modified.
+- **Native acceptance:** The exact `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` now targets `release/public-demo-a177587/win-unpacked/Farm Empire.exe`, with matching working directory and verified Farm Empire ICO. Launching through that shortcut under disposable QA profile `.qa-profile-public-demo-a177587` showed the title screen, fresh farm, first-morning surface, 4,800 lb barn / 720 lb pickup HUD, hamburger menu, sound controls, Farmbook, Save, Recenter, How to Play, Save & Return, and clean Resume. The isolated app processes were closed and the QA profile removed; the owner `%APPDATA%\Farm Empire` profile was not opened or modified.
 
 ## Current presentation
 - A saved logical plot presents as one large 2.75-world-tile field section.
@@ -58,7 +58,7 @@
 
 ## Immediate authorized work
 
-Final Public Demo Acceptance & Release V1 is active. Source, automated checks, production-browser readback, and fresh x64 artifacts are complete. The remaining bounded step is native launch/recovery/QA-profile acceptance plus exact Desktop shortcut replacement/readback after explicit owner approval. No additional feature system should be broadened before the next owner playtest.
+Final Public Demo Acceptance & Release V1 is complete. Source, automated checks, production-browser readback, fresh x64 artifacts, native disposable-profile smoke acceptance, and exact Desktop shortcut replacement/readback are complete. Stop this release checkpoint; the next feature package should respond to the owner's next playtest rather than broaden scope speculatively.
 
 ## Known limitations
 

@@ -58,7 +58,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Current authorization
 
-**Final Public Demo Acceptance & Release V1 is active.** Source snapshot `a177587`, all automated checks, production-browser readback, and fresh portable/installer artifacts are complete. Native disposable-profile launch, recovery diagnostics, and exact Desktop shortcut replacement/readback remain approval-gated. Stop after that release proof; the next feature package should respond to the owner's next playtest rather than broaden scope speculatively.
+**Final Public Demo Acceptance & Release V1 is complete.** Source snapshot `a177587`, all automated checks, production-browser readback, fresh portable/installer artifacts, native disposable-profile smoke acceptance, and exact Desktop shortcut replacement/readback are complete. Stop after this release proof; the next feature package should respond to the owner's next playtest rather than broaden scope speculatively.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.

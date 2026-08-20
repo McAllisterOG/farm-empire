@@ -628,3 +628,11 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Review repair:** Electron recovery now suppresses only concurrent native prompts and reopens for later independent failures. The renderer recovery alertdialog has initial focus, Tab/Shift+Tab containment, Escape-to-title, listener cleanup, and safe restoration.
 - **Verification:** 356 tests in 53 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed.
 - **Limit:** Browser/player-surface and packaged QA remain pending. No package, shortcut, install, owner save, or push was modified.
+
+## Final Public Demo Acceptance & Release V1 - complete
+
+- **Date:** 2026-08-20
+- **Scope/result:** Replaced `C:\Users\Admin\OneDrive\Desktop\Farm Empire.lnk` with the verified `release/public-demo-a177587` unpacked executable, matching working directory, and external Farm Empire ICO. The shortcut was launched with the absolute-path-only disposable QA profile `.qa-profile-public-demo-a177587`.
+- **Native evidence:** One packaged `Farm Empire` window showed the clean title screen, fresh-farm creation/name prompt, first-morning welcome, current 4,800 lb barn / 720 lb pickup HUD, and a responsive hamburger menu with Farm Sound controls, Farmbook, Save, Recenter Camera, How to Play, Resume, and Save & Return to Farms. Resume returned cleanly to the farm.
+- **Safety/cleanup:** All exact packaged test processes were closed; the 14-item disposable QA profile was removed after testing. The owner `%APPDATA%\\Farm Empire` profile was not opened or modified. No source/runtime files changed and no push/install occurred.
+- **Verification:** Existing release proof remains 356 tests in 53 files, strict typecheck, Vite production build, desktop-relative build, `git diff --check`, production-browser readback, artifact archive inspection, and SHA-256 evidence for the unpacked/portable/installer outputs.
