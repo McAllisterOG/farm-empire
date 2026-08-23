@@ -34,8 +34,8 @@ export interface TractorHudRuntime {
 
 export function vehicleOperationHelp(activeVehicle: TractorHudRuntime['activeVehicle']): string {
   return activeVehicle === 'pickup'
-    ? 'WASD/arrow keys or click/right-click ground to drive. Drive to the cargo pad or County Road.'
-    : 'WASD/arrow keys or click/right-click ground to drive. Click an owned field parcel for batch planting or harvesting.';
+    ? 'Drive · WASD / arrows / click · cargo pad or County Road.'
+    : 'Drive · WASD / arrows / click · Select a field parcel to work.';
 }
 
 export function shouldShowFirstDeliveryChip(mode: FarmHudMode, complete: boolean, runtime?: TractorHudRuntime): boolean {
@@ -223,15 +223,18 @@ export class FarmHud {
     this.operationEl.classList.toggle('hidden', this.mode === 'town' || (!runtime?.operating && !runtime?.manualWorking && !runtime?.farmhandWorking));
     this.operationEl.classList.toggle('working', !!runtime?.working || !!runtime?.manualWorking || !!runtime?.farmhandWorking);
     this.operationEl.textContent = runtime?.statusText ?? '';
-    this.helpEl.textContent = this.mode === 'town'
-      ? 'Click a townsperson or storefront for service. Walk only on the paved center.'
+    const contextualHelp = this.mode === 'town'
+      ? 'Town services · click a shop or neighbor.'
       : runtime?.manualWorking
-        ? 'Manual fieldwork commits when the short action finishes. Press Escape to cancel without changing the field.'
+        ? 'Fieldwork underway · Esc cancels safely.'
       : runtime?.working
-      ? 'The tractor is working section by section. Press Escape to cancel safely.'
+      ? 'Tractor job underway · Esc cancels safely.'
       : runtime?.operating
         ? vehicleOperationHelp(runtime.activeVehicle)
-        : !morning.complete ? `Today · ${morning.title} — ${morning.detail}` : nextGuide ? `Next · ${nextGuide.label} — ${nextGuide.hint}` : 'Core farm route complete. Keep growing the operation your way.';
+        : !morning.complete ? `Today · ${morning.title}` : nextGuide ? `Next · ${nextGuide.label}` : '';
+    this.helpEl.textContent = contextualHelp;
+    this.helpEl.classList.toggle('hidden', contextualHelp.length === 0);
+    this.helpEl.title = !morning.complete ? morning.detail : nextGuide?.hint ?? '';
     for (const [cropId, button] of this.cropButtons) {
       const unlock = farmCropUnlockInfo(state, cropId);
       const def = farmCropDef(cropId);

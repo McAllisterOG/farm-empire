@@ -472,7 +472,11 @@ export class Renderer {
   private renderFarm(scene: RenderScene, now: number): void {
     const { ctx, camera } = this;
     const zoom = camera.zoom;
-    ctx.fillStyle = '#6f9254';
+    const pasture = ctx.createLinearGradient(0, 0, 0, camera.viewH);
+    pasture.addColorStop(0, '#76995a');
+    pasture.addColorStop(.55, '#6e9252');
+    pasture.addColorStop(1, '#66894c');
+    ctx.fillStyle = pasture;
     ctx.fillRect(0, 0, camera.viewW, camera.viewH);
     const corners = [camera.tileAt(0, 0), camera.tileAt(camera.viewW, 0), camera.tileAt(0, camera.viewH), camera.tileAt(camera.viewW, camera.viewH)];
     const bounds = farmMainlandBounds();
@@ -1220,10 +1224,14 @@ function drawScoutFrisbee(
 function drawFarmTree(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, phase: number): void {
   const sway = Math.sin(now / 1900 + phase * .37) * 1.3;
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
-  ctx.fillStyle = '#68472c'; ctx.fillRect(-2, -19, 4, 20);
+  ctx.fillStyle = 'rgba(45,38,26,.16)'; ctx.beginPath(); ctx.ellipse(1, 2, 12, 4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5f4029'; ctx.beginPath(); ctx.moveTo(-2.8, 0); ctx.lineTo(-1.8, -21); ctx.lineTo(2.2, -21); ctx.lineTo(3.2, 0); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#88633c'; ctx.lineWidth = 1.25; ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(-5, -24); ctx.moveTo(1, -15); ctx.lineTo(7, -23); ctx.stroke();
   ctx.translate(sway, 0);
-  ctx.fillStyle = '#426f35'; ctx.beginPath(); ctx.arc(0, -25, 12, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#5b8c42'; ctx.beginPath(); ctx.arc(-5, -29, 7, 0, Math.PI * 2); ctx.arc(6, -29, 7, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.fillStyle = '#35622f'; ctx.beginPath(); ctx.arc(-6, -24, 8, 0, Math.PI * 2); ctx.arc(6, -24, 9, 0, Math.PI * 2); ctx.arc(0, -31, 10, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#4f843d'; ctx.beginPath(); ctx.arc(-5, -31, 7, 0, Math.PI * 2); ctx.arc(4, -34, 7, 0, Math.PI * 2); ctx.arc(8, -28, 6, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(145,184,90,.55)'; ctx.beginPath(); ctx.arc(-4, -35, 3.3, 0, Math.PI * 2); ctx.arc(5, -36, 2.4, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 
 function drawFarmFence(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, fence: FarmFenceCue): void {
@@ -1246,15 +1254,19 @@ function drawFarmDecor(ctx: CanvasRenderingContext2D, x: number, y: number, zoom
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
   ctx.fillStyle = 'rgba(47,34,22,.2)'; ctx.beginPath(); ctx.ellipse(0, 3, prop.type === 'crate-pallet' ? 22 : 16, 5, 0, 0, Math.PI * 2); ctx.fill();
   if (prop.type === 'hay-bale') {
-    ctx.fillStyle = '#b98732'; ctx.fillRect(-12, -18, 24, 20); ctx.fillStyle = '#d5ad4d'; ctx.fillRect(-10, -20, 20, 8); ctx.strokeStyle = '#8e6428'; ctx.lineWidth = 1.5;
+    ctx.fillStyle = '#a8702c'; ctx.fillRect(-12, -18, 24, 20); ctx.fillStyle = '#d5ad4d'; ctx.fillRect(-10, -20, 20, 8); ctx.fillStyle = '#e7c96b'; ctx.fillRect(-8, -18, 16, 3); ctx.strokeStyle = '#80561f'; ctx.lineWidth = 1.5;
     for (const line of [-5, 3]) { ctx.beginPath(); ctx.moveTo(-12, line); ctx.lineTo(12, line + 2); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(255,228,143,.5)'; ctx.lineWidth = 1; for (const strawX of [-7, -1, 5]) { ctx.beginPath(); ctx.moveTo(strawX, -16); ctx.lineTo(strawX + 4, -10); ctx.stroke(); }
   } else if (prop.type === 'crate-pallet') {
-    ctx.fillStyle = '#7b522d'; ctx.fillRect(-19, -2, 38, 5); ctx.fillStyle = '#b77b3e'; ctx.fillRect(-17, -14, 15, 13); ctx.fillRect(2, -17, 15, 16); ctx.strokeStyle = '#6b4126'; ctx.lineWidth = 1.5;
+    ctx.fillStyle = '#684528'; ctx.fillRect(-20, -2, 40, 5); ctx.fillStyle = '#a96c37'; ctx.fillRect(-17, -14, 15, 13); ctx.fillRect(2, -17, 15, 16); ctx.fillStyle = '#d09550'; ctx.fillRect(-15, -12, 11, 2); ctx.fillRect(4, -15, 11, 2); ctx.strokeStyle = '#5f3922'; ctx.lineWidth = 1.5;
     for (const px of [-13, 6]) { ctx.beginPath(); ctx.moveTo(px, -13); ctx.lineTo(px + 8, -2); ctx.moveTo(px + 8, -13); ctx.lineTo(px, -2); ctx.stroke(); }
   } else if (prop.type === 'water-trough') {
-    ctx.fillStyle = '#245f65'; ctx.fillRect(-17, -13, 34, 13); ctx.fillStyle = '#57aab0'; ctx.fillRect(-14, -11, 28, 5); ctx.strokeStyle = '#173f46'; ctx.lineWidth = 2; ctx.strokeRect(-17, -13, 34, 13); ctx.fillStyle = '#70482b'; ctx.fillRect(-12, 0, 4, 5); ctx.fillRect(8, 0, 4, 5);
+    ctx.fillStyle = '#214f55'; ctx.beginPath(); ctx.moveTo(-18, -13); ctx.lineTo(18, -13); ctx.lineTo(14, 1); ctx.lineTo(-14, 1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#54a4ad'; ctx.beginPath(); ctx.ellipse(0, -11, 15, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#a9dde0'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(-2, -11, 8, .2, 2.6); ctx.stroke();
+    ctx.strokeStyle = '#173f46'; ctx.lineWidth = 2; ctx.strokeRect(-17, -13, 34, 13); ctx.fillStyle = '#70482b'; ctx.fillRect(-12, 0, 4, 5); ctx.fillRect(8, 0, 4, 5);
   } else {
-    ctx.fillStyle = '#7f9f9c'; ctx.fillRect(-3, -25, 6, 27); ctx.fillStyle = '#b8d2ce'; ctx.fillRect(-5, -27, 10, 5); ctx.strokeStyle = '#4e6f6d'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -23); ctx.lineTo(14, -31); ctx.lineTo(18, -27); ctx.stroke(); ctx.fillStyle = '#795034'; ctx.fillRect(-10, 1, 20, 4);
+    ctx.fillStyle = '#698d8b'; ctx.fillRect(-3, -25, 6, 27); ctx.fillStyle = '#c6d9d4'; ctx.fillRect(-5, -27, 10, 5); ctx.fillStyle = '#edf2dd'; ctx.fillRect(-3, -26, 3, 3); ctx.strokeStyle = '#426361'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -23); ctx.lineTo(14, -31); ctx.lineTo(18, -27); ctx.stroke();
+    ctx.fillStyle = '#a7c9c6'; ctx.beginPath(); ctx.arc(18, -27, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#795034'; ctx.fillRect(-10, 1, 20, 4);
   }
   ctx.restore();
 }
@@ -1353,14 +1365,25 @@ function drawOldTractor(
   else if (harvestWagon?.attached) drawPersistentHarvestWagon(ctx, harvestWagon.tier, harvestWagon.used, now);
   ctx.fillStyle = 'rgba(40, 30, 20, 0.22)';
   ctx.beginPath();
-  ctx.ellipse(0, 2, 34, 10, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 3, 36, 10, 0, 0, Math.PI * 2);
   ctx.fill();
   drawTractorWheel(ctx, -20, -8, 12, 5, wheelPhase);
   ctx.save(); ctx.translate(22, -7); ctx.rotate(steer * .48); drawTractorWheel(ctx, 0, 0, 8, 3, wheelPhase * 1.35); ctx.restore();
-  ctx.fillStyle = status === 'operational' ? '#b74832' : '#7d746b';
-  ctx.fillRect(-16, -27, 37, 18);
-  ctx.fillStyle = status === 'operational' ? '#d06442' : '#9a9285';
-  ctx.fillRect(-20, -24, 8, 11);
+  ctx.fillStyle = '#523b2c'; ctx.fillRect(-23, -13, 52, 5);
+  ctx.fillStyle = status === 'operational' ? '#8f3429' : '#716c64';
+  ctx.beginPath(); ctx.arc(-20, -9, 15, Math.PI, Math.PI * 2); ctx.lineTo(-5, -8); ctx.lineTo(-5, -3); ctx.lineTo(-35, -3); ctx.closePath(); ctx.fill();
+  const hood = ctx.createLinearGradient(0, -28, 0, -8);
+  if (status === 'operational') { hood.addColorStop(0, '#db6b45'); hood.addColorStop(.55, '#bd4833'); hood.addColorStop(1, '#853128'); }
+  else { hood.addColorStop(0, '#aaa296'); hood.addColorStop(.55, '#858078'); hood.addColorStop(1, '#635f59'); }
+  ctx.fillStyle = hood; ctx.beginPath(); ctx.moveTo(-11, -28); ctx.lineTo(24, -26); ctx.lineTo(29, -12); ctx.lineTo(-12, -10); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = status === 'operational' ? '#e88a54' : '#bbb3a6'; ctx.fillRect(-10, -26, 31, 3);
+  ctx.fillStyle = '#4c4842'; ctx.fillRect(24, -24, 5, 12);
+  ctx.strokeStyle = '#252725'; ctx.lineWidth = 1.15; for (const grilleY of [-22, -19, -16]) { ctx.beginPath(); ctx.moveTo(25, grilleY); ctx.lineTo(29, grilleY + .4); ctx.stroke(); }
+  ctx.fillStyle = '#ead28a'; ctx.fillRect(26, -25, 4, 4);
+  ctx.fillStyle = '#6f2b25'; ctx.fillRect(-12, -40, 18, 15);
+  ctx.fillStyle = '#92372b'; ctx.fillRect(-14, -27, 5, 15);
+  ctx.fillStyle = '#34332f'; ctx.fillRect(-10, -31, 12, 4);
+  ctx.strokeStyle = '#484039'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(3, -31, 5, Math.PI * .8, Math.PI * 1.7); ctx.stroke();
   if (status === 'maintenance') {
     // An open hood, exposed engine, and wheel chock make the starting repair
     // state readable without adding another gameplay object or hit target.
@@ -1379,56 +1402,65 @@ function drawOldTractor(
     ctx.fillStyle = '#5e432a';
     ctx.fillRect(-31, -4, 7, 2);
   }
-  ctx.fillStyle = '#8f3027';
-  ctx.fillRect(-10, -41, 17, 16);
   ctx.fillStyle = '#b9d7df';
-  ctx.fillRect(-7, -38, 11, 10);
+  ctx.fillRect(-9, -38, 12, 8);
+  ctx.fillStyle = 'rgba(239,250,246,.55)'; ctx.beginPath(); ctx.moveTo(-8, -37); ctx.lineTo(-3, -37); ctx.lineTo(-8, -31); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#602c26'; ctx.lineWidth = 1.2; ctx.strokeRect(-9, -38, 12, 8);
   if (operating) {
     const puff = Math.sin(now / 180) * 2;
     ctx.fillStyle = working ? 'rgba(214,191,154,.42)' : 'rgba(224,224,212,.34)';
     ctx.beginPath(); ctx.arc(18 + puff, -46 - Math.abs(puff), working ? 5 : moving ? 4.5 : 3.5, 0, Math.PI * 2); ctx.fill();
     if (working || moving) { ctx.fillStyle = `rgba(157,115,67,${working ? .22 : .14})`; ctx.beginPath(); ctx.ellipse(-28 - puff, 0, moving ? 13 : 15, 4, 0, 0, Math.PI * 2); ctx.fill(); }
-    ctx.fillStyle = '#f2c59f';
-    ctx.beginPath();
-    ctx.arc(-1.5, -34, 3.2, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = '#f2c59f'; ctx.beginPath(); ctx.arc(-3, -43, 3.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#73503b'; ctx.fillRect(-7, -47, 8, 2.8); ctx.fillStyle = '#496e38'; ctx.fillRect(-7, -40, 7, 9);
   }
-  ctx.fillStyle = '#33312f';
-  ctx.fillRect(15, -36, 3, 10);
-  ctx.fillStyle = '#ead9a8';
-  ctx.fillRect(18, -24, 5, 4);
+  ctx.fillStyle = '#33312f'; ctx.fillRect(16, -39, 3.5, 14); ctx.fillStyle = '#4c4a43'; ctx.fillRect(15, -41, 5.5, 3);
+  ctx.fillStyle = '#ead9a8'; ctx.fillRect(27, -24, 4, 4);
   ctx.restore();
 }
 
-function drawPersistentHarvestWagon(ctx: CanvasRenderingContext2D, tier: 'basic' | 'county', used: number, now: number): void {
+function drawHarvestWagonBody(ctx: CanvasRenderingContext2D, tier: 'basic' | 'county', used: number, wheelPhase: number): void {
   const county = tier === 'county';
-  ctx.strokeStyle = '#6b5237'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, -11); ctx.lineTo(-42, -10); ctx.stroke();
-  ctx.fillStyle = county ? '#315f76' : '#8b5938'; ctx.fillRect(-78, -29, county ? 45 : 37, 20);
-  ctx.fillStyle = county ? '#5d99ad' : '#b67a42'; ctx.beginPath(); ctx.moveTo(-81, -31); ctx.lineTo(county ? -29 : -39, -31); ctx.lineTo(county ? -34 : -43, -8); ctx.lineTo(-76, -8); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = county ? '#d6e0d9' : '#654128'; ctx.lineWidth = 1.7; ctx.beginPath(); ctx.moveTo(-75, -24); ctx.lineTo(county ? -34 : -42, -24); ctx.moveTo(-75, -17); ctx.lineTo(county ? -35 : -43, -17); ctx.stroke();
-  ctx.fillStyle = county ? '#f0c951' : '#dfb85d'; ctx.fillRect(-79, -11, county ? 5 : 4, 4);
-  if (used > 0) { ctx.fillStyle = '#d8ad4b'; for (const cargoX of [-72, -62, -52, -42]) { ctx.beginPath(); ctx.ellipse(cargoX, -31, 5, 2.6, 0, 0, Math.PI * 2); ctx.fill(); } }
-  drawTractorWheel(ctx, -69, -6, 7, 2.6, now / 130);
-  if (county) drawTractorWheel(ctx, -43, -6, 7, 2.6, now / 130);
+  ctx.strokeStyle = '#59412f'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-18, -11); ctx.lineTo(-42, -10); ctx.stroke();
+  ctx.fillStyle = '#523c2d'; ctx.fillRect(-79, -10, county ? 48 : 40, 5);
+  const wagon = ctx.createLinearGradient(0, -34, 0, -7);
+  if (county) { wagon.addColorStop(0, '#6da8b8'); wagon.addColorStop(.55, '#3f788d'); wagon.addColorStop(1, '#294f62'); }
+  else { wagon.addColorStop(0, '#ce8a4c'); wagon.addColorStop(.55, '#a86237'); wagon.addColorStop(1, '#704329'); }
+  ctx.fillStyle = wagon; ctx.beginPath(); ctx.moveTo(-81, -32); ctx.lineTo(county ? -29 : -38, -32); ctx.lineTo(county ? -34 : -43, -8); ctx.lineTo(-76, -8); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = county ? '#d2e4df' : '#e0b36d'; ctx.lineWidth = 1.4;
+  for (const railY of [-25, -17]) { ctx.beginPath(); ctx.moveTo(-75, railY); ctx.lineTo(county ? -35 : -43, railY); ctx.stroke(); }
+  ctx.strokeStyle = county ? '#315b69' : '#704226'; ctx.lineWidth = 1.2;
+  for (const ribX of [-70, -58, -46]) { ctx.beginPath(); ctx.moveTo(ribX, -31); ctx.lineTo(ribX, -9); ctx.stroke(); }
+  ctx.fillStyle = county ? '#f0c951' : '#e8bd5a'; ctx.fillRect(-80, -12, 5, 4);
+  ctx.fillStyle = '#a6372d'; ctx.fillRect(county ? -34 : -43, -12, 4, 4);
+  if (used > 0) {
+    ctx.fillStyle = '#d8ad4b';
+    const cargoCount = Math.min(county ? 5 : 4, Math.max(2, Math.ceil(used / 80)));
+    for (let cargo = 0; cargo < cargoCount; cargo++) { const cargoX = -73 + cargo * 9; ctx.beginPath(); ctx.ellipse(cargoX, -32, 5, 2.7, 0, 0, Math.PI * 2); ctx.fill(); }
+  }
+  drawTractorWheel(ctx, -69, -6, 7, 2.6, wheelPhase);
+  if (county) drawTractorWheel(ctx, -43, -6, 7, 2.6, wheelPhase);
+}
+
+function drawPersistentHarvestWagon(ctx: CanvasRenderingContext2D, tier: 'basic' | 'county', used: number, now: number): void {
+  drawHarvestWagonBody(ctx, tier, used, now / 130);
 }
 
 function drawTractorImplement(ctx: CanvasRenderingContext2D, workKind: ParcelWorkKind, now: number): void {
   const bounce = Math.sin(now / 115) * .8;
   ctx.save(); ctx.translate(0, bounce);
-  ctx.strokeStyle = '#6b5237'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, -11); ctx.lineTo(-42, -10); ctx.stroke();
   if (workKind === 'plant') {
     // Compact row-crop planter: hopper, toolbar, gauge wheel, and three openers.
-    ctx.fillStyle = '#486f3b'; ctx.fillRect(-67, -26, 29, 15);
-    ctx.fillStyle = '#d8b950'; ctx.beginPath(); ctx.moveTo(-65, -26); ctx.lineTo(-42, -26); ctx.lineTo(-47, -34); ctx.lineTo(-60, -34); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#76532f'; ctx.lineWidth = 2.2; ctx.beginPath(); ctx.moveTo(-72, -8); ctx.lineTo(-35, -8); ctx.stroke();
-    ctx.fillStyle = '#3b3b36'; for (const opener of [-66, -54, -42]) { ctx.beginPath(); ctx.arc(opener, -3, 4.2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.strokeStyle = '#6b5237'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, -11); ctx.lineTo(-42, -10); ctx.stroke();
+    const planter = ctx.createLinearGradient(0, -34, 0, -10); planter.addColorStop(0, '#6f9b59'); planter.addColorStop(1, '#365c32');
+    ctx.fillStyle = planter; ctx.beginPath(); ctx.moveTo(-68, -27); ctx.lineTo(-38, -27); ctx.lineTo(-42, -11); ctx.lineTo(-65, -11); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#e2c45c'; ctx.beginPath(); ctx.moveTo(-65, -27); ctx.lineTo(-42, -27); ctx.lineTo(-47, -35); ctx.lineTo(-60, -35); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#e8d480'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-62, -24); ctx.lineTo(-44, -24); ctx.stroke();
+    ctx.strokeStyle = '#66472e'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(-72, -8); ctx.lineTo(-35, -8); ctx.stroke();
+    ctx.fillStyle = '#333532'; for (const opener of [-66, -54, -42]) { ctx.beginPath(); ctx.arc(opener, -3, 4.4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#9b8f76'; ctx.lineWidth = 1; ctx.stroke(); }
   } else {
     // Harvest wagon follows the tractor and visibly carries the collected crop.
-    ctx.fillStyle = '#8b5938'; ctx.fillRect(-78, -29, 37, 20);
-    ctx.fillStyle = '#b67a42'; ctx.beginPath(); ctx.moveTo(-81, -31); ctx.lineTo(-39, -31); ctx.lineTo(-43, -8); ctx.lineTo(-76, -8); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#654128'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#d8ad4b'; for (const cargoX of [-72, -62, -52, -44]) { ctx.beginPath(); ctx.ellipse(cargoX, -31, 5, 2.6, 0, 0, Math.PI * 2); ctx.fill(); }
-    drawTractorWheel(ctx, -69, -6, 7, 2.6, now / 130);
+    drawHarvestWagonBody(ctx, 'basic', 1, now / 130);
   }
   ctx.restore();
 }
@@ -1436,10 +1468,13 @@ function drawTractorImplement(ctx: CanvasRenderingContext2D, workKind: ParcelWor
 function drawTractorWheel(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, hubRadius: number, phase: number): void {
   ctx.fillStyle = '#2c2c2a'; ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, radius - 2, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#4c4b45'; ctx.lineWidth = 2;
+  for (let tread = 0; tread < 8; tread++) { const angle = phase + tread * Math.PI / 4; ctx.beginPath(); ctx.arc(x, y, radius - 1.2, angle, angle + .22); ctx.stroke(); }
   ctx.strokeStyle = '#b8a98e'; ctx.lineWidth = 1.35;
-  for (let spoke = 0; spoke < 4; spoke++) {
-    const angle = phase + spoke * Math.PI / 2;
+  for (let spoke = 0; spoke < 5; spoke++) {
+    const angle = phase + spoke * Math.PI * .4;
     ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(angle) * (radius - 3), y + Math.sin(angle) * (radius - 3)); ctx.stroke();
   }
   ctx.fillStyle = '#d6c6a8'; ctx.beginPath(); ctx.arc(x, y, hubRadius, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#75674f'; ctx.beginPath(); ctx.arc(x, y, Math.max(1.4, hubRadius * .36), 0, Math.PI * 2); ctx.fill();
 }

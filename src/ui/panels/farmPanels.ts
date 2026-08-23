@@ -141,10 +141,14 @@ function renderSeedShop(body: HTMLElement, state: GameState, actions: FarmPanelA
       h('div', { class: 'farm-card-main' },
         h('div', { class: 'farm-card-title' }, def.name),
         h('div', { class: 'farm-card-sub' },
-          `${formatMoney(def.seedPriceCents)} per 10 lb seed bag · ${Math.round(def.growMs / 1000)}s base growth · ${formatFarmCropWeight(def, def.harvestYield)} base harvest`,
+          `${formatMoney(def.seedPriceCents)} / bag · ${Math.round(def.growMs / 1000)}s · ${formatFarmCropWeight(def, def.harvestYield)} harvest`,
         ),
-        h('div', { class: 'farm-card-sub' }, `${def.role} · Expected gross ${formatMoney(gross)} · margin ${formatMoney(margin)} · ${formatFarmCropWeight(def, 1)} per produce lot · ${unlock.unlocked ? unlock.requirement : `Locked: ${unlock.requirement}`}`),
         h('div', { class: 'farm-card-stock', 'data-testid': `seed-count-${def.id}` }, `Farm seeds: ${farm.seeds[def.id] ?? 0} · Pickup: ${pickupSeedUnits(state, def.id)}`),
+        ...(actions.context === 'town' ? [h('details', { class: 'farm-card-details' },
+          h('summary', {}, 'Business details'),
+          h('div', { class: 'farm-card-sub' }, `${def.role} · Gross ${formatMoney(gross)} · Margin ${formatMoney(margin)}`),
+          h('div', { class: 'farm-card-sub' }, `${formatFarmCropWeight(def, 1)} per produce lot · ${unlock.unlocked ? unlock.requirement : `Locked: ${unlock.requirement}`}`),
+        )] : []),
       ),
       h('div', { class: 'farm-card-actions' },
         ...(actions.context === 'town' ? [
@@ -302,16 +306,18 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
       h('div', { class: 'farm-card-main' },
         h('div', { class: 'farm-card-title' }, def.name),
         h('div', { class: `market-price ${movement.direction}` },
-          `${formatMoney(quote.currentCents)} / ${formatFarmCropWeight(def, 1)} lot · ${formatMoney(farmCropPricePerPoundCents({ ...def, basePriceCents: quote.currentCents }))}/lb · ${movement.direction === 'up' ? '▲' : movement.direction === 'down' ? '▼' : '•'} ${formatMoney(Math.abs(movement.delta))}`,
+          `${formatMoney(quote.currentCents)} / ${formatFarmCropWeight(def, 1)} lot · ${movement.direction === 'up' ? '▲' : movement.direction === 'down' ? '▼' : '•'} ${formatMoney(Math.abs(movement.delta))}`,
         ),
-        h('div', { class: 'farm-card-sub' }, `Previous ${formatMoney(quote.previousCents)} · Base ${formatMoney(def.basePriceCents)}`),
         h('div', { class: 'farm-card-stock', 'data-testid': `stored-${def.id}` }, `${context === 'town' ? 'Pickup cargo' : 'Barn'}: ${formatFarmCropWeight(def, stored)} · ${stored} lot${stored === 1 ? '' : 's'}`),
+        ...(context === 'town' ? [h('details', { class: 'farm-card-details' },
+          h('summary', {}, 'Price details'),
+          h('div', { class: 'farm-card-sub' }, `${formatMoney(farmCropPricePerPoundCents({ ...def, basePriceCents: quote.currentCents }))}/lb · Previous ${formatMoney(quote.previousCents)} · Base ${formatMoney(def.basePriceCents)}`),
+        )] : []),
       ),
       h('div', { class: 'market-sell-controls' },
         ...(context === 'town' ? [
           input,
-          h('button', { class: 'btn btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell 1 from pickup cargo.' : sellUnavailable, 'data-testid': `sell-one-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, 1), actions, rerender) }, 'Sell 1'),
-          h('button', { class: 'btn btn-primary btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell the entered pickup quantity.' : sellUnavailable, 'data-testid': `sell-chosen-${def.id}`, onclick: sellChosen }, 'Sell amount'),
+          h('button', { class: 'btn btn-primary btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell the entered pickup quantity.' : sellUnavailable, 'data-testid': `sell-chosen-${def.id}`, onclick: sellChosen }, 'Sell'),
           h('button', { class: 'btn btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell all pickup cargo for this crop.' : sellUnavailable, 'data-testid': `sell-all-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, stored), actions, rerender) }, 'Sell all'),
         ] : [
           ...(canLoad || canUnload ? [input] : []),
@@ -496,81 +502,14 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
   openPanel({
     title: onFarm ? 'Farm Equipment' : 'County Equipment Desk',
     onClose: actions.onClose,
-    body: (body) => body.append(h('div', { class: 'equipment-card', 'data-testid': 'tractor-panel' },
-      h('div', { class: 'tractor-illustration' }, 'TRACTOR'),
-      h('div', { class: 'farm-card-title' }, tractor.name),
-      h('div', { class: `equipment-status ${tractor.status}` }, `Status: ${restored ? 'Operational' : 'Awaiting restoration'}`),
-      ...(!onFarm ? [h('div', { class: 'panel-note' }, 'Equipment purchases only · County Pantry & Kitchen are separate services.')] : []),
-      h('div', { class: 'equipment-kit', 'data-testid': 'tractor-restoration' },
-        h('div', { class: 'farm-card-title' }, OLD_TRACTOR_RESTORATION.name),
-        h('p', {}, `${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)} · inherited tractor`),
-        h('div', { class: 'equipment-mode', 'data-testid': 'tractor-restoration-status' }, restored
-          ? 'Complete · tractor operational'
-          : countyComplete ? 'Unlocked at the County Equipment Desk' : 'Locked · prove the farm with the County Pantry delivery'),
-        ...(!onFarm && !restored && countyComplete && actions.context === 'town' ? [h('button', {
-          class: 'btn btn-primary', 'data-testid': 'restore-old-tractor', onclick: () => {
-            const result = actions.onRestoreTractor?.();
-            if (!result) return;
-            actions.dispatch?.(result);
-            if (result.ok) openFarmEquipment(state, actions);
-          },
-        }, `Restore for ${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)}`)] : []),
-      ),
-      h('div', { class: 'equipment-kit', 'data-testid': 'county-field-kit' },
-        h('div', { class: 'farm-card-title' }, COUNTY_ROW_CROP_FIELD_KIT.name),
-        h('p', {}, `${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)} · +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% establishment · +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} harvest item`),
-        h('div', { class: 'equipment-mode', 'data-testid': 'county-field-kit-status' }, kitOwned
-          ? 'Owned · installed'
-          : kitUnlocked ? 'Unlocked at the County Equipment Desk' : countyComplete ? 'Locked · restore the tractor first' : 'Locked · complete the County Pantry order'),
-        ...(!onFarm && !kitOwned && kitUnlocked && actions.context === 'town' ? [h('button', { class: 'btn btn-primary', 'data-testid': 'buy-county-field-kit', onclick: () => {
-          const result = actions.onPurchaseKit?.();
-          if (!result) return;
-          actions.dispatch?.(result);
-          if (result.ok) openFarmEquipment(state, actions);
-        } }, `Purchase for ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)}`)] : []),
-      ),
-      h('div', { class: 'equipment-kit', 'data-testid': 'harvest-wagon' },
-        h('div', { class: 'farm-card-title' }, 'Harvest wagon · Current / Next'),
-        h('p', { 'data-testid': 'harvest-wagon-current' }, wagonPresentation.current),
-        h('div', { class: 'equipment-mode', 'data-testid': 'harvest-wagon-next' }, wagonPresentation.next),
-        ...(actions.context === 'town' && wagon.tier !== 'county' && wagonUnlocked ? [h('button', { class: 'btn btn-primary', 'data-testid': 'buy-county-harvest-wagon', onclick: () => { const result = actions.onPurchaseWagon?.(); if (!result) return; actions.dispatch?.(result); if (result.ok) openFarmEquipment(state, actions); } }, `Purchase for ${formatMoney(COUNTY_HARVEST_WAGON.priceCents)}`)] : []),
-      ),
-      h('div', { class: 'equipment-kit', 'data-testid': 'county-utility-trailer' },
-        h('div', { class: 'farm-card-title' }, COUNTY_UTILITY_TRAILER.name),
-        h('p', {}, `${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · pickup ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.fromCapacity)} → ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.toCapacity)}`),
-        h('div', { class: 'equipment-mode', 'data-testid': 'county-utility-trailer-status' }, trailerOwned
-          ? `Owned · attached · ${formatFarmCargoWeight(pickupCargoCapacity(state))} payload`
-          : trailerUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · complete one Freight Board haul'),
-        ...(!onFarm && !trailerOwned && trailerUnlocked && actions.context === 'town' ? [h('button', {
-          class: 'btn btn-primary', 'data-testid': 'buy-county-utility-trailer', onclick: () => {
-            const result = actions.onPurchaseTrailer?.();
-            if (!result) return;
-            actions.dispatch?.(result);
-            if (result.ok) openFarmEquipment(state, actions);
-          },
-        }, `Purchase for ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)}`)] : []),
-      ),
-      h('div', { class: 'equipment-kit', 'data-testid': 'county-grain-silo' },
-        h('div', { class: 'farm-card-title' }, COUNTY_GRAIN_SILO.name),
-        h('p', {}, `${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · ${formatFarmCargoWeight(COUNTY_GRAIN_SILO.toCapacity)} farm storage`),
-        h('div', { class: 'equipment-mode', 'data-testid': 'county-grain-silo-status' }, siloOwned
-          ? `Owned · ${formatFarmCargoWeight(farmOf(state).storageCapacity)} farm storage`
-          : siloUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · own the neighboring acreage and install the barn loft'),
-        ...(!onFarm && !siloOwned && siloUnlocked && actions.context === 'town' ? [h('button', {
-          class: 'btn btn-primary', 'data-testid': 'buy-county-grain-silo', onclick: () => {
-            const result = actions.onPurchaseSilo?.();
-            if (!result) return;
-            actions.dispatch?.(result);
-            if (result.ok) openFarmEquipment(state, actions);
-          },
-        }, `Build for ${formatMoney(COUNTY_GRAIN_SILO.priceCents)}`)] : []),
-      ),
-      h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, !onFarm
-        ? restored ? 'Equipment record on file - tractor operation is available back at the farm' : 'Inherited tractor on file - restoration is handled at this desk'
-        : operating
-          ? jobActive ? 'Operating - field job in progress' : 'Operating - ready to drive or work a parcel'
-          : restored ? 'Parked - select Operate to climb aboard' : 'Parked - restoration required before operation'),
-      ...(onFarm ? [h('button', {
+    body: (body) => {
+      const restorationStatus = restored
+        ? 'Complete · operational'
+        : countyComplete ? 'Available here' : 'Locked · County Pantry';
+      const kitStatus = kitOwned ? 'Owned · installed' : kitUnlocked ? 'Available here' : countyComplete ? 'Locked · restore tractor' : 'Locked · County Pantry';
+      const trailerStatus = trailerOwned ? `Owned · ${formatFarmCargoWeight(pickupCargoCapacity(state))}` : trailerUnlocked ? 'Available here' : 'Locked · one freight haul';
+      const siloStatus = siloOwned ? `Owned · ${formatFarmCargoWeight(farmOf(state).storageCapacity)}` : siloUnlocked ? 'Available here' : 'Locked · acreage + barn loft';
+      const operateButton = onFarm ? h('button', {
         class: 'btn btn-primary equipment-operate',
         'data-testid': operating ? 'exit-tractor' : 'operate-tractor',
         ...(jobActive || !restored ? { disabled: 'true' } : {}),
@@ -578,12 +517,72 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
           closePanel();
           onToggleOperating?.();
         },
-      }, operating ? jobActive ? 'Finish or cancel job before exiting' : 'Exit Tractor' : restored ? 'Operate Tractor' : 'Restoration Required')] : []),
-      h('div', { class: 'panel-note', 'data-testid': onFarm ? 'farm-equipment-note' : 'town-equipment-note' }, !onFarm
-        ? restored ? 'The Equipment Desk can review the tractor record here. Return to the farm to climb aboard and operate it.' : countyComplete ? 'The County delivery is complete. Restore the tractor here when the business can afford it.' : 'Complete Mae and Eli’s first County Pantry delivery to unlock restoration work.'
-        : operating
-          ? 'Click open ground to drive. Click an owned field section to choose acreage planting or harvesting. Escape cancels active work.'
-          : restored ? 'The driver is hidden while aboard. Tractor position is saved; active field jobs safely reset after reload.' : 'Work sections or rows by hand, complete the County Pantry delivery, then visit the Equipment Desk in town.'),
-    )),
+      }, operating ? jobActive ? 'Field job in progress' : 'Exit Tractor' : restored ? 'Operate Tractor' : 'Restoration Required') : null;
+      body.append(h('div', { class: 'equipment-card', 'data-testid': 'tractor-panel' },
+        h('div', { class: 'equipment-hero' },
+          h('div', { class: 'tractor-illustration' }, 'TRACTOR'),
+          h('div', { class: 'equipment-hero-copy' },
+            h('div', { class: 'farm-card-title' }, tractor.name),
+            h('div', { class: `equipment-status ${tractor.status}` }, restored ? 'Operational' : 'Needs restoration'),
+          ),
+          operateButton,
+        ),
+        ...(!onFarm ? [h('div', { class: 'panel-note' }, 'Equipment purchases only.')] : []),
+        h('div', { class: 'equipment-section-label' }, 'Equipment & upgrades'),
+        h('details', { class: 'equipment-kit equipment-disclosure', 'data-testid': 'tractor-restoration', ...(!onFarm && !restored && countyComplete ? { open: 'true' } : {}) },
+          h('summary', {}, h('span', { class: 'farm-card-title' }, OLD_TRACTOR_RESTORATION.name), h('span', { class: 'equipment-summary-status' }, restorationStatus)),
+          h('p', {}, `${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)} · restores the inherited tractor for field service`),
+          h('div', { class: 'equipment-mode', 'data-testid': 'tractor-restoration-status' }, restorationStatus),
+          ...(!onFarm && !restored && countyComplete && actions.context === 'town' ? [h('button', {
+            class: 'btn btn-primary', 'data-testid': 'restore-old-tractor', onclick: () => {
+              const result = actions.onRestoreTractor?.(); if (!result) return; actions.dispatch?.(result); if (result.ok) openFarmEquipment(state, actions);
+            },
+          }, `Restore · ${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)}`)] : []),
+        ),
+        h('details', { class: 'equipment-kit equipment-disclosure', 'data-testid': 'county-field-kit', ...(!onFarm && !kitOwned && kitUnlocked ? { open: 'true' } : {}) },
+          h('summary', {}, h('span', { class: 'farm-card-title' }, COUNTY_ROW_CROP_FIELD_KIT.name), h('span', { class: 'equipment-summary-status' }, kitStatus)),
+          h('p', {}, `${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)} · +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% establishment · +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} harvest item`),
+          h('div', { class: 'equipment-mode', 'data-testid': 'county-field-kit-status' }, kitStatus),
+          ...(!onFarm && !kitOwned && kitUnlocked && actions.context === 'town' ? [h('button', { class: 'btn btn-primary', 'data-testid': 'buy-county-field-kit', onclick: () => {
+            const result = actions.onPurchaseKit?.(); if (!result) return; actions.dispatch?.(result); if (result.ok) openFarmEquipment(state, actions);
+          } }, `Purchase · ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)}`)] : []),
+        ),
+        h('details', { class: 'equipment-kit equipment-disclosure', 'data-testid': 'harvest-wagon', ...(actions.context === 'town' && wagon.tier !== 'county' && wagonUnlocked ? { open: 'true' } : {}) },
+          h('summary', {}, h('span', { class: 'farm-card-title' }, 'Harvest Wagon'), h('span', { class: 'equipment-summary-status' }, wagon.owned ? `${wagon.tier === 'county' ? 'County' : 'Basic'} · ${harvestWagonReadout(state)}` : 'Included with restoration')),
+          h('p', { 'data-testid': 'harvest-wagon-current' }, wagonPresentation.current),
+          h('div', { class: 'equipment-mode', 'data-testid': 'harvest-wagon-next' }, wagonPresentation.next),
+          ...(actions.context === 'town' && wagon.tier !== 'county' && wagonUnlocked ? [h('button', { class: 'btn btn-primary', 'data-testid': 'buy-county-harvest-wagon', onclick: () => { const result = actions.onPurchaseWagon?.(); if (!result) return; actions.dispatch?.(result); if (result.ok) openFarmEquipment(state, actions); } }, `Purchase · ${formatMoney(COUNTY_HARVEST_WAGON.priceCents)}`)] : []),
+        ),
+        h('details', { class: 'equipment-kit equipment-disclosure', 'data-testid': 'county-utility-trailer', ...(!onFarm && !trailerOwned && trailerUnlocked ? { open: 'true' } : {}) },
+          h('summary', {}, h('span', { class: 'farm-card-title' }, COUNTY_UTILITY_TRAILER.name), h('span', { class: 'equipment-summary-status' }, trailerStatus)),
+          h('p', {}, `${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · pickup ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.fromCapacity)} → ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.toCapacity)}`),
+          h('div', { class: 'equipment-mode', 'data-testid': 'county-utility-trailer-status' }, trailerStatus),
+          ...(!onFarm && !trailerOwned && trailerUnlocked && actions.context === 'town' ? [h('button', {
+            class: 'btn btn-primary', 'data-testid': 'buy-county-utility-trailer', onclick: () => {
+              const result = actions.onPurchaseTrailer?.(); if (!result) return; actions.dispatch?.(result); if (result.ok) openFarmEquipment(state, actions);
+            },
+          }, `Purchase · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)}`)] : []),
+        ),
+        h('details', { class: 'equipment-kit equipment-disclosure', 'data-testid': 'county-grain-silo', ...(!onFarm && !siloOwned && siloUnlocked ? { open: 'true' } : {}) },
+          h('summary', {}, h('span', { class: 'farm-card-title' }, COUNTY_GRAIN_SILO.name), h('span', { class: 'equipment-summary-status' }, siloStatus)),
+          h('p', {}, `${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · ${formatFarmCargoWeight(COUNTY_GRAIN_SILO.toCapacity)} farm storage`),
+          h('div', { class: 'equipment-mode', 'data-testid': 'county-grain-silo-status' }, siloStatus),
+          ...(!onFarm && !siloOwned && siloUnlocked && actions.context === 'town' ? [h('button', {
+            class: 'btn btn-primary', 'data-testid': 'buy-county-grain-silo', onclick: () => {
+              const result = actions.onPurchaseSilo?.(); if (!result) return; actions.dispatch?.(result); if (result.ok) openFarmEquipment(state, actions);
+            },
+          }, `Build · ${formatMoney(COUNTY_GRAIN_SILO.priceCents)}`)] : []),
+        ),
+        h('details', { class: 'farm-card-details equipment-help' },
+          h('summary', {}, onFarm ? 'Controls & operation notes' : 'Desk notes'),
+          h('p', { class: 'equipment-mode', 'data-testid': 'tractor-mode' }, !onFarm
+            ? restored ? 'Tractor operation is available back at the farm.' : 'Restoration is handled at this desk.'
+            : operating ? jobActive ? 'Field job in progress.' : 'Operating and ready.' : restored ? 'Parked and ready.' : 'Restoration required.'),
+          h('div', { class: 'panel-note', 'data-testid': onFarm ? 'farm-equipment-note' : 'town-equipment-note' }, !onFarm
+            ? 'Return to the farm to operate equipment.'
+            : 'Drive with WASD, arrows, or click. Select a field to work. Escape cancels safely.'),
+        ),
+      ));
+    },
   });
 }
