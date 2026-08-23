@@ -765,7 +765,7 @@ export class FarmEmpireApp {
     }
     if (interaction?.kind === 'doghouse') { toast("Scout's doghouse is cozy. Catch him on open grass for scratches.", 'good'); return; }
     if (interaction?.kind === 'farmhouse') {
-      if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to use the farmhouse office.', 'bad'); return; }
+      if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to use the farmhouse.', 'bad'); return; }
       this.walkNear(interaction.point.x, interaction.point.y, () => this.openFarmhouseOffice());
       return;
     }
@@ -1341,6 +1341,9 @@ export class FarmEmpireApp {
       const result = unloadHarvestWagonToBarn(this.state);
       this.dispatch(result);
       if (result.ok) {
+        // The authoritative cargo mutation must survive even if the later
+        // presentation-only return drive is interrupted or the app closes.
+        this.save();
         this.driveTractorTo(TRACTOR_HOME_PARKING.x, TRACTOR_HOME_PARKING.y, () => {
           this.save();
           toast('Harvest wagon unloaded. Tractor returned to its parking bay.', 'good');

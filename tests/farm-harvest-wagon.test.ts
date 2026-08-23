@@ -39,6 +39,15 @@ describe('Tractor harvest wagon v22', () => {
     expect(farm.storage.crop_corn).toBe(10); expect(harvestWagonUsed(state)).toBe(0);
   });
 
+  it('persists the completed receiving-bay unload before any later parking movement', () => {
+    const state = migratedOperationalFarm(); const farm = farmOf(state);
+    farm.equipment.harvestWagon.crops = { crop_corn: 10, crop_pumpkin: 2 };
+    expect(unloadHarvestWagonToBarn(state).ok).toBe(true);
+    const reloaded = deserialize(serialize(state, NOW + 1), NOW + 2);
+    expect(farmOf(reloaded).equipment.harvestWagon.crops).toEqual({});
+    expect(farmOf(reloaded).storage).toMatchObject({ crop_corn: 10, crop_pumpkin: 2 });
+  });
+
   it('refuses a whole mixed unload when barn capacity cannot receive it', () => {
     const state = migratedOperationalFarm(); const farm = farmOf(state);
     farm.equipment.harvestWagon.crops = { crop_corn: 10, crop_pumpkin: 8 };
