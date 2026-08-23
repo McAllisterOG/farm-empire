@@ -4,7 +4,7 @@
 
 - **Date:** 2026-08-23
 - **Branch:** `codex/first-town-contact`
-- **Head:** Vehicle Parking & Logistics Clarity V1 working checkpoint; commit pending
+- **Head:** Vehicle Parking & Logistics Clarity V1 `dcf1a7d`
 - **Product state:** Farm capacity is authoritative 10-lb handling lots: basket/pickup/trailer/barn/loft/silo are 24/72/144/480/720/1,200 lots (240/720/1,440/4,800/7,200/12,000 lb). The V2 crop table is a game abstraction; starting cash remains $5,000 and existing assets, unlocks, freight premiums, and template counts remain unchanged.
 - **Save:** v26 adds valid `lastHarvestFamily` and pinned `rotationBonusMs`. Grain is corn/wheat, Legume soy, Root potato/carrot, and Garden tomato/cabbage/pumpkin. A different family after successful harvest saves 10% of base growth time; first and same-family plantings have no penalty. Existing v25 crops/history receive no bonus.
 - **Timing safety:** The existing Implement Set 20% establishment reduction and the rotation 10% reduction are additive, capped at 30%. Manual/rain establishment resets the clock once while retaining the pinned bonus. Direct, basket, tractor-wagon, farmhand, and manager harvests all record family; wither/clear do not. Corrupt crop timing fields fail closed to unready/growing without altering yield provenance, cargo, or business state; tamper resistance is not a feature goal.
