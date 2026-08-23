@@ -4,7 +4,7 @@
  * larger physical property shown by the Canvas.
  */
 import type { FarmPlot } from '../core/types';
-import { PICKUP_CARGO_PAD } from '../core/farmPickupData';
+import { PICKUP_CARGO_PAD, TRACTOR_HOME_PARKING } from '../core/farmPickupData';
 import { FARM_TOWN_ROAD_WAYPOINTS } from '../core/townGateway';
 
 /** Logical plot centre-to-centre distance in presentation-world tiles. */
@@ -19,6 +19,7 @@ export interface FarmLandmarks {
   doghouse: FarmPoint;
   scoutHome: FarmPoint;
   cargoPad: FarmPoint;
+  tractorParking: FarmPoint;
   farmhandHome: FarmPoint;
   crewHandHome: FarmPoint;
   roadsideStand: FarmPoint;
@@ -42,6 +43,7 @@ export function farmLandmarks(): FarmLandmarks {
   const doghouse = { x: 9.2, y: 13.55 };
   const scoutHome = { x: 9.15, y: 13.1 };
   const cargoPad = PICKUP_CARGO_PAD;
+  const tractorParking = TRACTOR_HOME_PARKING;
   const farmhandHome = { x: 4.3, y: 5.65 };
   const crewHandHome = { x: 5.35, y: 5.9 };
   const roadsideStand = { x: 19.25, y: 12.35 };
@@ -50,6 +52,7 @@ export function farmLandmarks(): FarmLandmarks {
     doghouse,
     scoutHome,
     cargoPad,
+    tractorParking,
     farmhandHome,
     crewHandHome,
     roadsideStand,

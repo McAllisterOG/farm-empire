@@ -592,6 +592,12 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   padding: 8px 10px; margin: 8px 0; border-radius: 10px;
   background: rgba(72, 104, 55, .1); border: 1px solid rgba(72, 104, 55, .2);
 }
+.cargo-capacity-grid { display: flex; gap: 6px; flex-wrap: wrap; width: 100%; }
+.cargo-capacity { padding: 5px 7px; border-radius: 7px; font-size: 11px; }
+.cargo-capacity.barn { background: #e7dfc7; color: #594429; }
+.cargo-capacity.pickup { background: #dbeaf0; color: #31566a; }
+.cargo-capacity.wagon { background: #ebd9bf; color: #71452c; }
+.cargo-control-unavailable { font-size: 11px; }
 .farm-crop-button::before {
   content: attr(data-key); position: absolute; left: 2px; bottom: 1px; min-width: 12px;
   border-radius: 5px; background: rgba(69, 91, 55, .84); color: #fff; font-size: 8px; line-height: 12px;

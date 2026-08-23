@@ -34,6 +34,15 @@ function near(point: FarmPoint, anchor: FarmPoint, radius: number): boolean {
   return Math.hypot(point.x - anchor.x, point.y - anchor.y) <= radius;
 }
 
+/** Reports both real vehicle silhouettes before the ordinary priority resolver picks one. */
+export function farmVehicleHitsAtWorldPoint(worldPoint: FarmPoint, runtime: Pick<FarmInteractionRuntime, 'pickup' | 'tractor'>): Array<'pickup' | 'tractor'> {
+  const logical = farmLogicalPoint(worldPoint);
+  const hits: Array<'pickup' | 'tractor'> = [];
+  if (near(logical, runtime.pickup, 1.05)) hits.push('pickup');
+  if (near(logical, runtime.tractor, 1.0)) hits.push('tractor');
+  return hits;
+}
+
 /** Scout is decorative-priority only: functional world targets always receive the click. */
 export function farmScoutHitAtWorldPoint(worldPoint: FarmPoint, runtime: Pick<FarmInteractionRuntime, 'scout'>): boolean {
   return near(farmLogicalPoint(worldPoint), runtime.scout, .8);
@@ -48,14 +57,15 @@ export function farmInteractionAtWorldPoint(
   const farm = state.farm;
   if (!farm) return null;
   const logical = farmLogicalPoint(worldPoint);
-  if (near(logical, runtime.pickup, 1.05)) return { kind: 'pickup', label: 'Old Pickup', point: { ...runtime.pickup } };
-  if (near(logical, runtime.tractor, 1.0)) return { kind: 'tractor', label: 'Old Tractor', point: { ...runtime.tractor } };
+  const vehicleHits = farmVehicleHitsAtWorldPoint(worldPoint, runtime);
+  if (vehicleHits.includes('pickup')) return { kind: 'pickup', label: 'Old Pickup', point: { ...runtime.pickup } };
+  if (vehicleHits.includes('tractor')) return { kind: 'tractor', label: 'Old Tractor', point: { ...runtime.tractor } };
   if (runtime.farmhand && near(logical, runtime.farmhand, .8)) return { kind: 'farmhand', label: 'Mara Bell · County Farmhand', point: { ...runtime.farmhand } };
   for (const worker of runtime.farmhands ?? []) if (near(logical, worker.point, .8)) return { kind: 'farmhand', label: worker.label, point: { ...worker.point } };
   const landmarks = farmLandmarks();
   const farmhouseTier = farmhousePresentationTier(farm.parcels.northOwned, farm.farmstead.officeQuartersOwned);
   if (near(logical, landmarks.farmhouse, farmhouseInteractionRadius(farmhouseTier))) {
-    return { kind: 'farmhouse', label: farmhouseTier === 'crew-quarters' ? 'Farmstead Office & Crew Quarters' : farmhouseTier === 'expanded' ? 'Expanded Farmhouse Office' : 'Farmhouse Office', point: { ...landmarks.farmhouse } };
+    return { kind: 'farmhouse', label: farmhouseTier === 'crew-quarters' ? 'Farmstead Office & Crew Quarters' : farmhouseTier === 'expanded' ? 'Expanded Farmhouse' : 'Farmhouse', point: { ...landmarks.farmhouse } };
   }
   // The physical pump sits beside the barn wall, so its tighter exact target
   // wins over the barn's intentionally generous footprint.

@@ -44,7 +44,7 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
   const northPlan = farmCropEconomics(selectedCrop, { sectionCount: farmParcelSectionCount('north') });
   const freightStatus = !freight.unlocked ? 'Prove the farm' : freight.active ? 'Active haul' : freight.offers.length > 0 ? `${freight.offers.length} routes posted` : 'Route complete today';
   const homeTier = farmhousePresentationTier(farm.parcels.northOwned, farm.farmstead.officeQuartersOwned);
-  openPanel({ title: homeTier === 'crew-quarters' ? 'Farmstead Office & Crew Quarters' : homeTier === 'expanded' ? 'Expanded Farmhouse Office' : 'Farmhouse Office', className: 'panel-farm-office', body: (body) => body.append(
+  openPanel({ title: homeTier === 'crew-quarters' ? 'Farmstead Office & Crew Quarters' : homeTier === 'expanded' ? 'Expanded Farmhouse' : 'Farmhouse', className: 'panel-farm-office', body: (body) => body.append(
     h('section', { class: 'farmbook-hero' },
       h('div', { class: 'farmbook-level-mark' }, String(knowledge.level.level)),
       h('div', { class: 'farmbook-level-copy' },

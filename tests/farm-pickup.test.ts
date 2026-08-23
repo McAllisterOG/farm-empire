@@ -6,7 +6,7 @@ import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, ma
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../src/core/farmTownContact';
 import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
 import { deserialize, serialize } from '../src/save/save';
-import { pickupHomeArrival, pickupPositionForSave, PICKUP_HOME_PLAYER, PICKUP_START } from '../src/core/farmPickupData';
+import { pickupHomeArrival, pickupPositionForSave, PICKUP_HOME_PLAYER, PICKUP_START, TRACTOR_HOME_PARKING } from '../src/core/farmPickupData';
 import { FARM_TOWN_GATE } from '../src/core/townGateway';
 
 const NOW = Date.UTC(2026, 0, 1);
@@ -81,6 +81,10 @@ describe('old pickup cargo loop', () => {
   it('provides a deterministic dismounted pickup-home arrival beside the cargo pad', () => {
     expect(pickupHomeArrival()).toEqual({ pickup: PICKUP_START, player: PICKUP_HOME_PLAYER });
     expect(Math.hypot(PICKUP_HOME_PLAYER.x - PICKUP_START.x, PICKUP_HOME_PLAYER.y - PICKUP_START.y)).toBeLessThan(1);
+  });
+
+  it('keeps the default pickup cargo pad distinct from the tractor return parking', () => {
+    expect(Math.hypot(PICKUP_START.x - TRACTOR_HOME_PARKING.x, PICKUP_START.y - TRACTOR_HOME_PARKING.y)).toBeGreaterThan(3);
   });
 
   it('derives safe All transfer amounts from mixed cargo, source stock, and weighted barn space', () => {

@@ -54,6 +54,31 @@ export interface CountyFreightMarketState {
   deliveryReady: boolean;
 }
 
+/** Compact cargo facts shared by the panels and regression tests; counts stay authoritative in core. */
+export function cargoPanelPresentation(state: GameState, context: FarmMarketContext): { cropIds: string[]; pickupProduceUsed: number; pickupSeedUsed: number } {
+  const farm = farmOf(state);
+  const pickupProduceUsed = allFarmCrops().reduce((total, crop) => total + pickupCropUnits(state, crop.id) * crop.storageUnitsPerItem, 0);
+  const pickupSeedUsed = Math.max(0, pickupCargoUsed(state) - pickupProduceUsed);
+  return {
+    cropIds: allFarmCrops().filter((crop) => context === 'town'
+      ? pickupCropUnits(state, crop.id) > 0
+      : (farm.storage[crop.id] ?? 0) > 0 || pickupCropUnits(state, crop.id) > 0).map((crop) => crop.id),
+    pickupProduceUsed,
+    pickupSeedUsed,
+  };
+}
+
+export function harvestWagonProgressPresentation(state: GameState): { current: string; next: string; unlocked: boolean } {
+  const farm = farmOf(state); const wagon = farm.equipment.harvestWagon;
+  const unlocked = farm.equipment.tractor.status === 'operational' && farm.equipment.countyRowCropFieldKitOwned && farm.parcels.northOwned && farm.countyFreight.lastCompletedDay > 0;
+  const current = wagon.owned
+    ? `Current: ${wagon.tier === 'county' ? 'County wagon' : 'Basic wagon'} · ${harvestWagonReadout(state)} · receiving-bay unload only.`
+    : 'Current: no wagon · restoration includes the 2,400 lb basic wagon.';
+  const next = wagon.tier === 'county' ? 'Next: County wagon owned · 4,800 lb capacity'
+    : `Next: County Harvest Wagon · 4,800 lb · ${formatMoney(COUNTY_HARVEST_WAGON.priceCents)} · ${unlocked ? 'ready at this desk' : `needs ${[farm.equipment.tractor.status !== 'operational' && 'restored tractor', !farm.equipment.countyRowCropFieldKitOwned && 'Implement Set', !farm.parcels.northOwned && 'neighboring acreage', farm.countyFreight.lastCompletedDay < 1 && 'one freight haul'].filter(Boolean).join(' · ')}`}`;
+  return { current, next, unlocked };
+}
+
 export function countyFreightMarketState(state: GameState, context: FarmMarketContext = 'farm', pickupPresent?: boolean): CountyFreightMarketState {
   const board = countyFreightBoardState(state);
   const progress = countyFreightProgress(state, { pickupPresent: pickupPresent === true, source: 'pickup' });
@@ -155,10 +180,16 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
   const farm = farmOf(state);
   const used = storageUsed(state);
   const pickupUsed = pickupCargoUsed(state);
+  const cargoPresentation = cargoPanelPresentation(state, context);
+  const { pickupProduceUsed, pickupSeedUsed } = cargoPresentation;
   body.append(h('div', { class: 'farm-panel-summary' },
     h('strong', { 'data-testid': 'market-cash' }, `Cash: ${formatMoney(farm.cashCents)}`),
-    h('strong', { 'data-testid': 'market-capacity' }, `Barn: ${formatFarmCargoWeight(used)} / ${formatFarmCargoWeight(farm.storageCapacity)} · Pickup: ${formatFarmCargoWeight(pickupUsed)} / ${formatFarmCargoWeight(pickupCargoCapacity(state))}${context === 'farm' ? ` · Harvest wagon: ${harvestWagonReadout(state)}` : ''}`),
-    h('span', {}, context === 'town' ? (actions.pickupPresent ? 'Sell pickup produce or deliver a County order.' : 'On foot: bring the pickup to sell or deliver.') : `${formatFarmCargoWeight(storageRemaining(state))} barn capacity remaining. Move produce between Barn and Pickup here; sales happen at the Grain Exchange.`),
+    ...(context === 'farm' ? [h('div', { class: 'cargo-capacity-grid', 'data-testid': 'market-capacity' },
+      h('strong', { class: 'cargo-capacity barn' }, `Barn · ${formatFarmCargoWeight(used)} / ${formatFarmCargoWeight(farm.storageCapacity)} · ${formatFarmCargoWeight(storageRemaining(state))} open`),
+      h('strong', { class: 'cargo-capacity pickup' }, `Pickup · ${formatFarmCargoWeight(pickupUsed)} / ${formatFarmCargoWeight(pickupCargoCapacity(state))}`),
+      h('strong', { class: 'cargo-capacity wagon' }, `Harvest wagon · ${harvestWagonReadout(state)}`),
+    )] : [h('strong', { 'data-testid': 'market-capacity' }, `Pickup · Produce ${formatFarmCargoWeight(pickupProduceUsed)} · Seed bags ${formatFarmCargoWeight(pickupSeedUsed)} · Total ${formatFarmCargoWeight(pickupUsed)} / ${formatFarmCargoWeight(pickupCargoCapacity(state))}`)]),
+    h('span', {}, context === 'town' ? (actions.pickupPresent ? 'Sell pickup produce or deliver a County order.' : 'On foot: bring the pickup to sell or deliver.') : 'Barn and pickup transfer produce here. Harvest wagon unloads only at the receiving bay.'),
     ...(context === 'farm' && !actions.cargoAtPad ? [h('strong', { class: 'panel-note', 'data-testid': 'cargo-pad-guidance' }, 'Park the pickup at the barn cargo pad to load or unload.')] : []),
   ));
 
@@ -254,13 +285,13 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     const quote = farm.market.quotes[def.id];
     const movement = marketMovement(quote.currentCents, quote.previousCents);
     const stored = context === 'town' ? pickupCropUnits(state, def.id) : farm.storage[def.id] ?? 0;
-    const pickupStored = pickupCropUnits(state, def.id);
     const canSell = actions.pickupPresent && stored > 0;
     const sellUnavailable = actions.pickupPresent ? 'No pickup cargo to sell.' : 'Bring the pickup to town.';
-    const canLoad = actions.cargoAtPad && stored > 0;
-    const canUnload = actions.cargoAtPad && pickupStored > 0;
     const maxBarnToPickup = maxBarnCropLoadToPickup(state, def.id);
     const maxPickupToBarn = maxPickupCropUnloadToBarn(state, def.id);
+    if (!cargoPresentation.cropIds.includes(def.id)) continue;
+    const canLoad = maxBarnToPickup > 0;
+    const canUnload = maxPickupToBarn > 0;
     const input = h('input', {
       class: 'market-qty', type: 'number', min: '1', max: String(Math.max(1, stored)), value: String(Math.max(1, Math.min(5, stored))),
       'aria-label': `${def.name} ${context === 'town' ? 'sale' : 'cargo transfer'} quantity`, 'data-testid': `sell-amount-${def.id}`,
@@ -277,19 +308,24 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
         h('div', { class: 'farm-card-stock', 'data-testid': `stored-${def.id}` }, `${context === 'town' ? 'Pickup cargo' : 'Barn'}: ${formatFarmCropWeight(def, stored)} · ${stored} lot${stored === 1 ? '' : 's'}`),
       ),
       h('div', { class: 'market-sell-controls' },
-        input,
         ...(context === 'town' ? [
+          input,
           h('button', { class: 'btn btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell 1 from pickup cargo.' : sellUnavailable, 'data-testid': `sell-one-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, 1), actions, rerender) }, 'Sell 1'),
           h('button', { class: 'btn btn-primary btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell the entered pickup quantity.' : sellUnavailable, 'data-testid': `sell-chosen-${def.id}`, onclick: sellChosen }, 'Sell amount'),
           h('button', { class: 'btn btn-sm', ...(!canSell ? { disabled: 'true' } : {}), title: canSell ? 'Sell all pickup cargo for this crop.' : sellUnavailable, 'data-testid': `sell-all-${def.id}`, onclick: () => runAndRender(actions.sellCrop(def.id, stored), actions, rerender) }, 'Sell all'),
         ] : [
-          ...(actions.loadCrop ? [h('button', { class: 'btn btn-primary btn-sm', ...(!canLoad ? { disabled: 'true' } : {}), title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : stored <= 0 ? 'No barn crop to load.' : 'Move the entered quantity from Barn to Pickup.', onclick: () => runAndRender(actions.loadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Barn → Pickup')] : []),
-          ...(actions.loadCrop ? [h('button', { class: 'btn btn-sm', 'data-testid': `crop-all-barn-to-pickup-${def.id}`, ...(!maxBarnToPickup ? { disabled: 'true', title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : 'No barn produce can fit.' } : {}), onclick: () => runAndRender(actions.loadCrop!(def.id, maxBarnToPickup), actions, rerender) }, 'All → Pickup')] : []),
-          ...(actions.unloadCrop ? [h('button', { class: 'btn btn-sm', ...(!canUnload ? { disabled: 'true' } : {}), title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : pickupStored <= 0 ? 'No pickup crop to unload.' : 'Move the entered quantity from Pickup to Barn.', onclick: () => runAndRender(actions.unloadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Pickup → Barn')] : []),
-          ...(actions.unloadCrop ? [h('button', { class: 'btn btn-sm', 'data-testid': `crop-all-pickup-to-barn-${def.id}`, ...(!maxPickupToBarn ? { disabled: 'true', title: !actions.cargoAtPad ? 'Park at the barn cargo pad.' : 'No pickup produce fits in the barn.' } : {}), onclick: () => runAndRender(actions.unloadCrop!(def.id, maxPickupToBarn), actions, rerender) }, 'All → Barn')] : []),
-          h('span', { class: 'panel-note' }, `Pickup: ${formatFarmCropWeight(def, pickupStored)}`),
+          ...(canLoad || canUnload ? [input] : []),
+          ...(canLoad && actions.loadCrop ? [h('button', { class: 'btn btn-primary btn-sm', title: 'Move the entered quantity from Barn to Pickup.', onclick: () => runAndRender(actions.loadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Barn → Pickup'), h('button', { class: 'btn btn-sm', 'data-testid': `crop-all-barn-to-pickup-${def.id}`, onclick: () => runAndRender(actions.loadCrop!(def.id, maxBarnToPickup), actions, rerender) }, 'All → Pickup')] : []),
+          ...(canUnload && actions.unloadCrop ? [h('button', { class: 'btn btn-sm', title: 'Move the entered quantity from Pickup to Barn.', onclick: () => runAndRender(actions.unloadCrop!(def.id, Number(input.value)), actions, rerender) }, 'Pickup → Barn'), h('button', { class: 'btn btn-sm', 'data-testid': `crop-all-pickup-to-barn-${def.id}`, onclick: () => runAndRender(actions.unloadCrop!(def.id, maxPickupToBarn), actions, rerender) }, 'All → Barn')] : []),
+          ...(!canLoad && !canUnload ? [h('span', { class: 'panel-note cargo-control-unavailable' }, !actions.cargoAtPad ? 'Park pickup at cargo pad' : stored > 0 ? 'Pickup has no open payload' : 'Barn has no open storage')] : []),
         ]),
       ),
+    ));
+  }
+  if (context === 'town' && list.childElementCount === 0) {
+    list.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'town-empty-produce' },
+      h('strong', {}, 'No produce loaded'),
+      h('span', {}, `Seed bags: ${formatFarmCargoWeight(pickupSeedUsed)} · Total pickup: ${formatFarmCargoWeight(pickupUsed)} / ${formatFarmCargoWeight(pickupCargoCapacity(state))}`),
     ));
   }
   body.append(list);
@@ -455,17 +491,19 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
   const siloOwned = farmOf(state).equipment.countyGrainSiloOwned;
   const siloUnlocked = farmOf(state).equipment.barnLoftExpansionOwned;
   const wagon = farmOf(state).equipment.harvestWagon;
-  const wagonUnlocked = restored && kitOwned && farmOf(state).parcels.northOwned && farmOf(state).countyFreight.lastCompletedDay > 0;
+  const wagonPresentation = harvestWagonProgressPresentation(state);
+  const wagonUnlocked = wagonPresentation.unlocked;
   openPanel({
-    title: onFarm ? 'Farm Equipment' : 'Farm Services Equipment Desk',
+    title: onFarm ? 'Farm Equipment' : 'County Equipment Desk',
     onClose: actions.onClose,
     body: (body) => body.append(h('div', { class: 'equipment-card', 'data-testid': 'tractor-panel' },
       h('div', { class: 'tractor-illustration' }, 'TRACTOR'),
       h('div', { class: 'farm-card-title' }, tractor.name),
       h('div', { class: `equipment-status ${tractor.status}` }, `Status: ${restored ? 'Operational' : 'Awaiting restoration'}`),
+      ...(!onFarm ? [h('div', { class: 'panel-note' }, 'Equipment purchases only · County Pantry & Kitchen are separate services.')] : []),
       h('div', { class: 'equipment-kit', 'data-testid': 'tractor-restoration' },
         h('div', { class: 'farm-card-title' }, OLD_TRACTOR_RESTORATION.name),
-        h('p', {}, `One-time restoration · ${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)} · returns the inherited tractor to dependable field service`),
+        h('p', {}, `${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)} · inherited tractor`),
         h('div', { class: 'equipment-mode', 'data-testid': 'tractor-restoration-status' }, restored
           ? 'Complete · tractor operational'
           : countyComplete ? 'Unlocked at the County Equipment Desk' : 'Locked · prove the farm with the County Pantry delivery'),
@@ -478,12 +516,9 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
           },
         }, `Restore for ${formatMoney(OLD_TRACTOR_RESTORATION.priceCents)}`)] : []),
       ),
-      h('p', {}, kitOwned
-        ? `Installed effect: +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% faster crop establishment and +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} operated harvest item.`
-        : 'Base crop time and yield apply until the County Row-Crop Field Kit is installed.'),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-field-kit' },
         h('div', { class: 'farm-card-title' }, COUNTY_ROW_CROP_FIELD_KIT.name),
-        h('p', {}, `One-time upgrade · ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)} · +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% faster establishment · +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} operated harvest item`),
+        h('p', {}, `${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)} · +${COUNTY_ROW_CROP_FIELD_KIT.workSpeedBonusBps / 100}% establishment · +${COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits} harvest item`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-field-kit-status' }, kitOwned
           ? 'Owned · installed'
           : kitUnlocked ? 'Unlocked at the County Equipment Desk' : countyComplete ? 'Locked · restore the tractor first' : 'Locked · complete the County Pantry order'),
@@ -495,17 +530,14 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
         } }, `Purchase for ${formatMoney(COUNTY_ROW_CROP_FIELD_KIT.priceCents)}`)] : []),
       ),
       h('div', { class: 'equipment-kit', 'data-testid': 'harvest-wagon' },
-        h('div', { class: 'farm-card-title' }, wagon.tier === 'county' ? COUNTY_HARVEST_WAGON.name : 'Inherited Basic Harvest Wagon'),
-        h('p', {}, wagon.owned
-          ? `Tractor-only mixed crop cargo · ${harvestWagonReadout(state)}. Drive the tractor to the barn receiving bay to unload the whole load.`
-          : 'Included with restoration. Restore the tractor to receive the basic harvest wagon.'),
-        h('div', { class: 'equipment-mode' }, wagon.tier === 'county' ? 'Owned · County capacity 4,800 lb' : wagon.owned ? 'Included with restoration · basic capacity 2,400 lb' : 'Restoration supplies the inherited basic wagon'),
+        h('div', { class: 'farm-card-title' }, 'Harvest wagon · Current / Next'),
+        h('p', { 'data-testid': 'harvest-wagon-current' }, wagonPresentation.current),
+        h('div', { class: 'equipment-mode', 'data-testid': 'harvest-wagon-next' }, wagonPresentation.next),
         ...(actions.context === 'town' && wagon.tier !== 'county' && wagonUnlocked ? [h('button', { class: 'btn btn-primary', 'data-testid': 'buy-county-harvest-wagon', onclick: () => { const result = actions.onPurchaseWagon?.(); if (!result) return; actions.dispatch?.(result); if (result.ok) openFarmEquipment(state, actions); } }, `Purchase for ${formatMoney(COUNTY_HARVEST_WAGON.priceCents)}`)] : []),
-        ...(actions.context === 'town' && wagon.tier !== 'county' && !wagonUnlocked ? [h('span', { class: 'equipment-mode' }, 'County upgrade locked · restore tractor, install Implement Set, own neighboring acreage, and complete freight')] : []),
       ),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-utility-trailer' },
         h('div', { class: 'farm-card-title' }, COUNTY_UTILITY_TRAILER.name),
-        h('p', {}, `One-time larger mixed-cargo convenience · ${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · doubles pickup payload from ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.fromCapacity)} to ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.toCapacity)}. Unlocks one trailer-required Commercial Bulk Route among daily bids.`),
+        h('p', {}, `${formatMoney(COUNTY_UTILITY_TRAILER.priceCents)} · pickup ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.fromCapacity)} → ${formatFarmCargoWeight(COUNTY_UTILITY_TRAILER.toCapacity)}`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-utility-trailer-status' }, trailerOwned
           ? `Owned · attached · ${formatFarmCargoWeight(pickupCargoCapacity(state))} payload`
           : trailerUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · complete one Freight Board haul'),
@@ -520,7 +552,7 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
       ),
       h('div', { class: 'equipment-kit', 'data-testid': 'county-grain-silo' },
         h('div', { class: 'farm-card-title' }, COUNTY_GRAIN_SILO.name),
-        h('p', {}, `One-time storage build · ${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · ${formatFarmCargoWeight(COUNTY_GRAIN_SILO.toCapacity)} combined storage. A full 96-section operated corn, soy, or cabbage harvest fits; tomatoes and pumpkins require load-out.`),
+        h('p', {}, `${formatMoney(COUNTY_GRAIN_SILO.priceCents)} · ${formatFarmCargoWeight(COUNTY_GRAIN_SILO.toCapacity)} farm storage`),
         h('div', { class: 'equipment-mode', 'data-testid': 'county-grain-silo-status' }, siloOwned
           ? `Owned · ${formatFarmCargoWeight(farmOf(state).storageCapacity)} farm storage`
           : siloUnlocked ? 'Unlocked at the County Equipment Desk' : 'Locked · own the neighboring acreage and install the barn loft'),

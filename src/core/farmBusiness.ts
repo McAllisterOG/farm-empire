@@ -6,7 +6,7 @@ import { hashSeed, mulberry32 } from './rng';
 import { fail } from './types';
 import { BARN_LOFT_EXPANSION, COUNTY_GRAIN_SILO, COUNTY_HARVEST_WAGON, COUNTY_ROW_CROP_FIELD_KIT, COUNTY_UTILITY_TRAILER, OLD_TRACTOR_RESTORATION } from '../data/farmEquipment.data';
 import { COUNTY_FREIGHT_BULK_PREMIUM_BPS, COUNTY_FREIGHT_PREMIUM_BPS, COUNTY_FREIGHT_TEMPLATES, countyFreightBulkAllowedUnits } from '../data/countyFreight.data';
-import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, PICKUP_TRAILER_CARGO_CAPACITY, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
+import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_CARGO_CAPACITY, PICKUP_ID, PICKUP_NAME, PICKUP_START, PICKUP_TRAILER_CARGO_CAPACITY, TRACTOR_HOME_PARKING, emptyPickupCargo, sanitizePickupPosition } from './farmPickupData';
 import { HAND_BASKET_CAPACITY, emptyHandBasket } from './farmHarvestBasketData';
 import {
   STARTER_FIELD_TILES, ensureOwnedFarmParcelPlots, farmParcelAtTile,
@@ -96,6 +96,9 @@ export interface ParcelWorkPlan {
   orderedPlotUids: number[];
   plantPlotUids: number[];
   harvestPlotUids: number[];
+  readyHarvestPlotUids: number[];
+  harvestOpenCapacity: number;
+  nextHarvestRequiredCapacity: number;
 }
 
 export interface ParcelWorkPlanOptions {
@@ -175,8 +178,8 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
         id: 'old-tractor',
         name: 'Old Red Tractor',
         status: 'maintenance',
-        x: 9,
-        y: 11,
+        x: TRACTOR_HOME_PARKING.x,
+        y: TRACTOR_HOME_PARKING.y,
         workSpeedBonusBps: 2_000,
         harvestBonusUnits: 1,
       },
@@ -671,7 +674,7 @@ export function planParcelWork(
   const plannedCropId = cropId ?? farm.selectedCropId;
   const owned = parcelId === 'starter' ? farm.parcels.starterOwned : farm.parcels.northOwned;
   if (!owned || farm.equipment.tractor.status !== 'operational') {
-    return { parcelId, orderedPlotUids: [], plantPlotUids: [], harvestPlotUids: [] };
+    return { parcelId, orderedPlotUids: [], plantPlotUids: [], harvestPlotUids: [], readyHarvestPlotUids: [], harvestOpenCapacity: 0, nextHarvestRequiredCapacity: 0 };
   }
 
   const plotByCoordinate = new Map(state.plots.map((plot) => [`${plot.x}:${plot.y}`, plot]));
@@ -693,7 +696,10 @@ export function planParcelWork(
   let freeCapacity = farm.equipment.harvestWagon.owned
     ? harvestWagonCapacity(state) - harvestWagonUsed(state)
     : storageRemaining(state);
+  const harvestOpenCapacity = Math.max(0, freeCapacity);
   const harvestPlotUids: number[] = [];
+  const readyHarvestPlotUids: number[] = [];
+  let nextHarvestRequiredCapacity = 0;
   for (const plot of orderedPlots) {
     if (!farmCropReady(plot, now) || !plot.crop) continue;
     const def = farmCropDefOrNull(plot.crop.defId);
@@ -701,7 +707,11 @@ export function planParcelWork(
     const bonus = farm.equipment.countyRowCropFieldKitOwned && farm.equipment.tractor.status === 'operational'
       ? COUNTY_ROW_CROP_FIELD_KIT.harvestBonusUnits : 0;
     const needed = (pinnedFarmHarvestYield(plot.crop) + bonus) * def.storageUnitsPerItem;
-    if (needed > freeCapacity) continue;
+    readyHarvestPlotUids.push(plot.uid);
+    if (needed > freeCapacity) {
+      if (nextHarvestRequiredCapacity === 0) nextHarvestRequiredCapacity = needed;
+      continue;
+    }
     harvestPlotUids.push(plot.uid);
     freeCapacity -= needed;
   }
@@ -710,6 +720,9 @@ export function planParcelWork(
     orderedPlotUids: orderedPlots.map((plot) => plot.uid),
     plantPlotUids,
     harvestPlotUids,
+    readyHarvestPlotUids,
+    harvestOpenCapacity,
+    nextHarvestRequiredCapacity,
   };
 }
 

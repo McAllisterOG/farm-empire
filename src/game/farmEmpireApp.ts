@@ -9,7 +9,7 @@ import {
 } from '../core/farmBusiness';
 import { ensureOwnedFarmParcelPlots, farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
 import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
-import { pickupHomeArrival, pickupPositionForSave } from '../core/farmPickupData';
+import { pickupHomeArrival, pickupPositionForSave, TRACTOR_HOME_PARKING } from '../core/farmPickupData';
 import { farmDirectionalInputRoute, farmVehicleControlTarget, isMoveOnlyFarmGround, isMoveOnlyPointerButton, shouldCompleteMoveOnlyGesture } from '../core/farmVehicleControls';
 import {
   HAND_BASKET_CAPACITY, basketInteractionBlockReason, handBasketHasCargo, handBasketRemaining, handBasketUsed, harvestFarmCropToBasket,
@@ -40,7 +40,7 @@ import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTra
 import { TOWN_NPCS, type TownNpcDef, type TownServiceId } from '../data/town.data';
 import { ELIOT_REYES, FIRST_FARMHAND } from '../data/farmWorkforce.data';
 import type { FarmFacing } from '../render/farmSprites';
-import { farmInteractionAtWorldPoint, farmScoutHitAtWorldPoint, type FarmInteractionTarget } from '../render/farmInteractions';
+import { farmInteractionAtWorldPoint, farmScoutHitAtWorldPoint, farmVehicleHitsAtWorldPoint, type FarmInteractionTarget } from '../render/farmInteractions';
 import {
   TOWN_EXIT, TOWN_PICKUP_PARKING, TOWN_SPAWN, cancelTownMovement, pointInTownNpcScreenHitbox,
   pointInTownPickupScreenHitbox, townInteractionAt, townPickupHit, type TownMoveTarget,
@@ -730,6 +730,15 @@ export class FarmEmpireApp {
       scout: this.scout,
       now: this.gameNow(),
     });
+    const vehicleHits = farmVehicleHitsAtWorldPoint(worldPoint, { pickup: farm.pickup, tractor: farm.equipment.tractor });
+    if (!this.operatingTractor && !this.operatingPickup && vehicleHits.length === 2) {
+      showActionMenu(sx, sy, 'Vehicles parked together', [
+        { label: 'Old Pickup · cargo and driving', onClick: () => this.openPickupPanel() },
+        { label: 'Old Tractor · operate', disabled: farm.equipment.tractor.status !== 'operational', onClick: () => this.toggleTractorOperating() },
+        { label: 'Inspect tractor equipment', onClick: () => this.openEquipmentPanel() },
+      ]);
+      return;
+    }
     if (interaction && interaction.kind !== 'scout' && farmScoutHitAtWorldPoint(worldPoint, { scout: this.scout })) this.notifyScoutOverlap();
     if (interaction?.kind === 'pickup') {
       if (this.operatingTractor) this.switchTractorToPickup();
@@ -739,6 +748,7 @@ export class FarmEmpireApp {
     }
     if (interaction?.kind === 'tractor') {
       if (this.operatingPickup) this.switchPickupToTractor();
+      else if (farm.equipment.tractor.status === 'operational') this.toggleTractorOperating();
       else this.openEquipmentPanel();
       return;
     }
@@ -775,12 +785,7 @@ export class FarmEmpireApp {
     if (interaction?.kind === 'locked-acreage') { openFarmLand(this.state, this.panelActions()); return; }
     if (interaction?.kind === 'barn') {
       if (this.operatingTractor) {
-        const bay = farmLandmarks().cargoPad;
-        this.driveTractorTo(bay.x, bay.y, () => {
-          const result = unloadHarvestWagonToBarn(this.state);
-          if (result.ok) this.save();
-          this.dispatch(result);
-        });
+        this.driveTractorToReceivingBay();
         return;
       }
       if (this.operatingPickup) {
@@ -809,7 +814,7 @@ export class FarmEmpireApp {
     else this.walkNear(tx, ty, null);
   }
 
-  /** Secondary clicks deliberately skip all interaction and service menus. */
+  /** Secondary click on the tractor inspects it; other secondary clicks remain ground-only movement. */
   private onMoveOnlyClick(sx: number, sy: number): void {
     if (isActionMenuOpen() || isPanelOpen() || this.manualFieldJob || this.manualFieldAction || this.basketUnload || this.tractorJob) return;
     if (this.mode === 'town') {
@@ -821,6 +826,10 @@ export class FarmEmpireApp {
       return;
     }
     const interaction = this.farmInteractionAtScreen(sx, sy);
+    if (interaction?.kind === 'tractor' && !this.operatingPickup) {
+      this.openEquipmentPanel();
+      return;
+    }
     if (!isMoveOnlyFarmGround(interaction?.kind)) return;
     const target = this.farmTargetAtScreen(sx, sy);
     if (!target) return;
@@ -1325,6 +1334,21 @@ export class FarmEmpireApp {
     };
   }
 
+  private driveTractorToReceivingBay(): void {
+    if (!this.operatingTractor) return;
+    const bay = farmLandmarks().cargoPad;
+    this.driveTractorTo(bay.x, bay.y, () => {
+      const result = unloadHarvestWagonToBarn(this.state);
+      this.dispatch(result);
+      if (result.ok) {
+        this.driveTractorTo(TRACTOR_HOME_PARKING.x, TRACTOR_HOME_PARKING.y, () => {
+          this.save();
+          toast('Harvest wagon unloaded. Tractor returned to its parking bay.', 'good');
+        });
+      }
+    });
+  }
+
   private drivePickupTo(x: number, y: number, cb: (() => void) | null = () => toast('Pickup parked.', 'good')): void {
     if (!this.operatingPickup || this.pickupAtTown) return;
     this.pickupTarget = { x, y, cb };
@@ -1412,7 +1436,11 @@ export class FarmEmpireApp {
         },
       },
       {
-        label: `Harvest ${plan.harvestPlotUids.length} ready field section${plan.harvestPlotUids.length === 1 ? '' : 's'} into barn`,
+        label: plan.harvestPlotUids.length > 0
+          ? `Harvest wagon · ${plan.readyHarvestPlotUids.length} ready · ${plan.harvestPlotUids.length} fits (${formatFarmCargoWeight(plan.harvestOpenCapacity)} open)`
+          : plan.readyHarvestPlotUids.length > 0
+            ? `Wagon needs unloading · ${formatFarmCargoWeight(plan.harvestOpenCapacity)} open · next section ${formatFarmCargoWeight(plan.nextHarvestRequiredCapacity)}`
+            : 'No ready field sections selected',
         icon: 'fx:ready',
         disabled: plan.harvestPlotUids.length === 0,
         onClick: () => {
@@ -1420,6 +1448,10 @@ export class FarmEmpireApp {
           this.startTractorJob('harvest', parcelId, plan.harvestPlotUids);
         },
       },
+      ...(plan.readyHarvestPlotUids.length > 0 && plan.harvestPlotUids.length === 0 ? [{
+        label: 'Drive to barn receiving bay to unload wagon',
+        onClick: () => this.driveTractorToReceivingBay(),
+      }] : []),
       {
         label: 'Drive to selected field section',
         onClick: () => {

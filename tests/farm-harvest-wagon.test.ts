@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { createFarmGame } from '../src/core/state';
 import { deserialize, serialize } from '../src/save/save';
-import { farmOf, harvestFarmCrop, harvestWagonReadout, harvestWagonUsed, unloadHarvestWagonToBarn } from '../src/core/farmBusiness';
+import { farmOf, harvestFarmCrop, harvestWagonReadout, harvestWagonUsed, planParcelWork, unloadHarvestWagonToBarn } from '../src/core/farmBusiness';
 import { farmGuideSteps } from '../src/core/farmKnowledge';
 
 const NOW = 1_700_000_000_000;
@@ -46,5 +46,23 @@ describe('Tractor harvest wagon v22', () => {
     const before = JSON.stringify(farm.equipment.harvestWagon.crops);
     expect(unloadHarvestWagonToBarn(state).ok).toBe(false);
     expect(JSON.stringify(farm.equipment.harvestWagon.crops)).toBe(before);
+  });
+
+  it('reports ready sections separately from the whole sections that fit in the wagon', () => {
+    const state = migratedOperationalFarm(); const farm = farmOf(state);
+    farm.equipment.countyRowCropFieldKitOwned = true;
+    farm.equipment.harvestWagon.crops = { crop_carrot: 228 };
+    for (const plot of state.plots) plot.crop = { defId: 'crop_carrot', plantedAt: NOW - 70_001, wateredBonusMs: 0, lastWateredAt: NOW, awaitingWater: false, harvestYieldItems: 8, harvestBalanceVersion: 2 };
+    const plan = planParcelWork(state, 'starter', NOW, 'crop_carrot');
+    expect(plan.readyHarvestPlotUids).toHaveLength(36);
+    expect(plan.harvestOpenCapacity).toBe(12);
+    expect(plan.harvestPlotUids).toHaveLength(1);
+    expect(plan.nextHarvestRequiredCapacity).toBe(9);
+    expect(harvestFarmCrop(state, plan.harvestPlotUids[0], NOW, 'operatedTractor').ok).toBe(true);
+    const blocked = planParcelWork(state, 'starter', NOW, 'crop_carrot');
+    expect(blocked.harvestPlotUids).toHaveLength(0);
+    expect(blocked.readyHarvestPlotUids).toHaveLength(35);
+    expect(blocked.harvestOpenCapacity).toBe(3);
+    expect(blocked.nextHarvestRequiredCapacity).toBe(9);
   });
 });

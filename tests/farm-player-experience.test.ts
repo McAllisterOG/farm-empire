@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { createFarmGame } from '../src/core/state';
-import { farmOf, plantFarmCrop, harvestFarmCrop } from '../src/core/farmBusiness';
+import { farmOf, plantFarmCrop, harvestFarmCrop, planParcelWork } from '../src/core/farmBusiness';
 import {
   farmGuideSteps, farmerKnowledgeSummary, farmKnowledgePoints, nextFarmGuideStep, recordFarmStat,
 } from '../src/core/farmKnowledge';
@@ -11,7 +11,7 @@ import { FARM_TOWN_GATE } from '../src/core/townGateway';
 import { NEIGHBOR_FIELD_TILES } from '../src/core/farmParcels';
 import { TOWN_PICKUP_PARKING, townPickupHit } from '../src/render/townLayout';
 import { FARM_DECOR_MANIFEST } from '../src/render/farmDecor';
-import { farmInteractionAtWorldPoint, type FarmInteractionRuntime } from '../src/render/farmInteractions';
+import { farmInteractionAtWorldPoint, farmVehicleHitsAtWorldPoint, type FarmInteractionRuntime } from '../src/render/farmInteractions';
 import { farmLandmarks, farmPlotAtWorldPoint, farmWorldPoint, pointInFarmBounds } from '../src/render/farmLayout';
 import { farmCameraPolicy, townCameraPolicy } from '../src/render/cameraPolicy';
 import { NOW } from './helpers';
@@ -85,6 +85,25 @@ describe('authoritative farm object interactions', () => {
     expect(farmInteractionAtWorldPoint(state, farmWorldPoint(FARM_TOWN_GATE), rt)?.kind).toBe('pickup');
   });
 
+  it('reports both real vehicles when their visible hit areas overlap without changing the legacy priority resolver', () => {
+    const state = makeFarm(); const rt = runtime(state);
+    rt.pickup = { x: 8, y: 9 }; rt.tractor = { x: 8, y: 9 };
+    const point = farmWorldPoint(rt.pickup);
+    expect(farmVehicleHitsAtWorldPoint(point, rt)).toEqual(['pickup', 'tractor']);
+    expect(farmInteractionAtWorldPoint(state, point, rt)?.kind).toBe('pickup');
+  });
+
+  it('keeps an operated tractor drag selection exact across rough, prepared, and stubble empty sections', () => {
+    const state = makeFarm(); const farm = farmOf(state);
+    farm.equipment.tractor.status = 'operational'; farm.seeds.crop_corn = 3;
+    const selected = state.plots.slice(0, 3);
+    farm.fieldConditions[String(selected[1].uid)] = { soil: 'tilled' };
+    farm.fieldConditions[String(selected[2].uid)] = { soil: 'stubble' };
+    const plan = planParcelWork(state, 'starter', NOW, 'crop_corn', { selectedPlotUids: selected.map((plot) => plot.uid), anchorPlotUid: selected[0].uid });
+    expect(plan.orderedPlotUids).toEqual(selected.map((plot) => plot.uid));
+    expect(plan.plantPlotUids).toEqual(selected.map((plot) => plot.uid));
+  });
+
   it('gives the hired farmhand a distinct interaction target without outranking vehicles', () => {
     const state = makeFarm();
     const rt = runtime(state);
@@ -131,7 +150,7 @@ describe('authoritative farm object interactions', () => {
     const widenedEdge = farmWorldPoint({ x: farmhouse.x, y: farmhouse.y - 1.45 });
     expect(farmInteractionAtWorldPoint(state, widenedEdge, rt)?.kind).not.toBe('farmhouse');
     farmOf(state).parcels.northOwned = true;
-    expect(farmInteractionAtWorldPoint(state, widenedEdge, rt)).toMatchObject({ kind: 'farmhouse', label: 'Expanded Farmhouse Office' });
+    expect(farmInteractionAtWorldPoint(state, widenedEdge, rt)).toMatchObject({ kind: 'farmhouse', label: 'Expanded Farmhouse' });
   });
 
   it('reveals a distinct roadside stand target only after the improvement is owned', () => {

@@ -1,6 +1,6 @@
 import type { GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
-import { farmCropUnlockInfo, farmOf, formatMoney, storageUsed } from '../core/farmBusiness';
+import { farmCropUnlockInfo, farmOf, formatMoney, harvestWagonReadout, storageUsed } from '../core/farmBusiness';
 import { pickupCargoCapacity, pickupCargoUsed } from '../core/farmPickup';
 import { formatFarmCargoWeight } from '../core/farmCargoScale';
 import { HAND_BASKET_CAPACITY, handBasketUsed } from '../core/farmHarvestBasket';
@@ -214,11 +214,12 @@ export class FarmHud {
     this.morningCard.classList.toggle('hidden', this.mode !== 'farm' || this.morningDismissed || !morning.showWelcome);
     const greeting = this.morningCard.querySelector('strong');
     if (greeting) greeting.textContent = `Good morning, ${state.player.name?.trim() || 'Farm'}.`;
+    const wagonChip = farm.equipment.harvestWagon.owned ? ` · W ${harvestWagonReadout(state)}` : '';
     this.tractorEl.textContent = runtime?.activeVehicle === 'tractor' && runtime.working
-      ? 'Field job active'
+      ? `Field job${wagonChip}`
       : runtime?.activeVehicle === 'tractor'
-        ? 'Operating'
-        : farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Needs restoration';
+        ? `Operating${wagonChip}`
+        : farm.equipment.tractor.status === 'operational' ? `Operational${wagonChip}` : 'Needs restoration';
     this.operationEl.classList.toggle('hidden', this.mode === 'town' || (!runtime?.operating && !runtime?.manualWorking && !runtime?.farmhandWorking));
     this.operationEl.classList.toggle('working', !!runtime?.working || !!runtime?.manualWorking || !!runtime?.farmhandWorking);
     this.operationEl.textContent = runtime?.statusText ?? '';

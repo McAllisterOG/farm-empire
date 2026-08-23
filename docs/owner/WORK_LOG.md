@@ -636,3 +636,12 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Native evidence:** One packaged `Farm Empire` window showed the clean title screen, fresh-farm creation/name prompt, first-morning welcome, current 4,800 lb barn / 720 lb pickup HUD, and a responsive hamburger menu with Farm Sound controls, Farmbook, Save, Recenter Camera, How to Play, Resume, and Save & Return to Farms. Resume returned cleanly to the farm.
 - **Safety/cleanup:** All exact packaged test processes were closed; the 14-item disposable QA profile was removed after testing. The owner `%APPDATA%\\Farm Empire` profile was not opened or modified. No source/runtime files changed and no push/install occurred.
 - **Verification:** Existing release proof remains 356 tests in 53 files, strict typecheck, Vite production build, desktop-relative build, `git diff --check`, production-browser readback, artifact archive inspection, and SHA-256 evidence for the unpacked/portable/installer outputs.
+
+## Vehicle Parking & Logistics Clarity V1 - complete
+
+- **Date:** 2026-08-23
+- **Branch:** `codex/first-town-contact`
+- **Commit:** pending current package commit
+- **Result:** Idle pickup/tractor overlap now exposes a compact chooser, while direct operational tractor clicks enter/exit and secondary clicks inspect. Pickup cargo-pad and tractor parking/return anchors are visibly distinct without altering arbitrary saved positions. Cargo panels hide zero crop rows, omit invalid transfer directions, distinguish barn/pickup/wagon capacity, and Town separates Produce/Seed bags/Total with an empty-produce state. The Equipment Desk is compact, separate from Pantry/Kitchen, and shows truthful Current/Next wagon capacity, $2,400 price, and gate checklist. Tractor harvest menus and HUD expose wagon capacity before a job and accurately retain ready counts after capacity stops work.
+- **Verification:** 362 tests in 54 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. A named isolated 1920×1080 browser session verified direct tractor entry, forced-overlap chooser, near-full wagon HUD, compact cargo, Town empty-produce breakdown, Equipment Desk, and empty console errors. Screenshots: `docs/screenshots/vehicle-logistics-{fresh-farm,cargo-compact,wagon-hud,town-empty-produce,equipment-desk,overlap-chooser}-1920x1080.png`.
+- **Boundaries:** No capacity/economy/progression/save-schema change, package/shortcut/push, owner-profile access, manual hitching, collision, or new services.

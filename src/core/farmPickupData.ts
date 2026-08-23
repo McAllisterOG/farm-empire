@@ -12,6 +12,8 @@ export const PICKUP_CARGO_CAPACITY = PICKUP_BASE_CARGO_CAPACITY;
 export const PICKUP_START = Object.freeze({ x: 6.25, y: 5.1 });
 export const PICKUP_CARGO_PAD = PICKUP_START;
 export const PICKUP_HOME_PLAYER = Object.freeze({ x: PICKUP_CARGO_PAD.x + .7, y: PICKUP_CARGO_PAD.y + .25 });
+/** The tractor and its wagon return here after a receiving-bay unload. */
+export const TRACTOR_HOME_PARKING = Object.freeze({ x: 9, y: 11 });
 export const PICKUP_CARGO_PAD_TOLERANCE = .8;
 export const PICKUP_GATE_CONFLICT_TOLERANCE = .9;
 /** Shared logical movement envelope for the farm's drivable vehicles. */

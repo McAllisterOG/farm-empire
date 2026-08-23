@@ -9,10 +9,10 @@ export function drawOldPickup(ctx: CanvasRenderingContext2D, x: number, y: numbe
     ctx.fillStyle = 'rgba(40,30,20,.2)'; ctx.beginPath(); ctx.ellipse(-54, 9, 28, 7, 0, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#5c4332'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-27, 0); ctx.lineTo(-36, 0); ctx.stroke();
     ctx.fillStyle = '#2d3438'; ctx.beginPath(); ctx.arc(-58, 6, 6, 0, Math.PI * 2); ctx.arc(-38, 6, 6, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#9b5536'; ctx.fillRect(-70, -7, 38, 12);
+    ctx.fillStyle = '#9b5536'; ctx.fillRect(-70, -7, 38, 12); ctx.fillStyle = '#c97945'; ctx.fillRect(-68, -18, 34, 11);
     ctx.strokeStyle = '#d9a964'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(-68, -7); ctx.lineTo(-68, -21); ctx.lineTo(-34, -21); ctx.lineTo(-34, -7); ctx.moveTo(-57, -20); ctx.lineTo(-57, -7); ctx.moveTo(-46, -20); ctx.lineTo(-46, -7); ctx.stroke();
-    ctx.fillStyle = '#e6c06e'; ctx.fillRect(-70, -5, 4, 4);
+    ctx.fillStyle = '#e6c06e'; ctx.fillRect(-70, -5, 4, 4); ctx.fillStyle = '#704a32'; ctx.fillRect(-35, -15, 3, 9);
   }
   ctx.fillStyle = 'rgba(40,30,20,.24)'; ctx.beginPath(); ctx.ellipse(0, 8, 32, 9, 0, 0, Math.PI * 2); ctx.fill();
   const roll = moving ? wheelPhase : 0;

@@ -938,7 +938,12 @@ function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: numbe
   ctx.fillStyle = 'rgba(164,137,91,.78)'; ctx.beginPath(); ctx.ellipse(px, py, 58 * zoom, 21 * zoom, 0, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = 'rgba(91,68,42,.45)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
   ctx.save(); ctx.font = `800 ${Math.max(8, 10 * zoom)}px Segoe UI, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(83,61,37,.72)'; ctx.fillText('CARGO PAD', px, py + 2 * zoom); ctx.restore();
+  ctx.fillStyle = 'rgba(83,61,37,.72)'; ctx.fillText('PICKUP CARGO PAD', px, py + 2 * zoom); ctx.restore();
+  const tractorBay = farmWorldPoint(farmLandmarks().tractorParking);
+  const tx = camera.sx(isoX(tractorBay.x, tractorBay.y)); const ty = camera.sy(isoY(tractorBay.x, tractorBay.y));
+  ctx.save(); ctx.strokeStyle = 'rgba(113,68,42,.42)'; ctx.lineWidth = 2 * zoom; ctx.setLineDash([5 * zoom, 4 * zoom]);
+  ctx.beginPath(); ctx.ellipse(tx, ty, 48 * zoom, 17 * zoom, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font = `800 ${Math.max(8, 9 * zoom)}px Segoe UI, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = 'rgba(83,61,37,.66)'; ctx.fillText('TRACTOR PARKING', tx, ty + 2 * zoom); ctx.restore();
   drawHomesteadLandscape(ctx, camera, zoom, now);
 }
 
@@ -1400,8 +1405,11 @@ function drawPersistentHarvestWagon(ctx: CanvasRenderingContext2D, tier: 'basic'
   ctx.strokeStyle = '#6b5237'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-18, -11); ctx.lineTo(-42, -10); ctx.stroke();
   ctx.fillStyle = county ? '#315f76' : '#8b5938'; ctx.fillRect(-78, -29, county ? 45 : 37, 20);
   ctx.fillStyle = county ? '#5d99ad' : '#b67a42'; ctx.beginPath(); ctx.moveTo(-81, -31); ctx.lineTo(county ? -29 : -39, -31); ctx.lineTo(county ? -34 : -43, -8); ctx.lineTo(-76, -8); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = county ? '#d6e0d9' : '#654128'; ctx.lineWidth = 1.7; ctx.beginPath(); ctx.moveTo(-75, -24); ctx.lineTo(county ? -34 : -42, -24); ctx.moveTo(-75, -17); ctx.lineTo(county ? -35 : -43, -17); ctx.stroke();
+  ctx.fillStyle = county ? '#f0c951' : '#dfb85d'; ctx.fillRect(-79, -11, county ? 5 : 4, 4);
   if (used > 0) { ctx.fillStyle = '#d8ad4b'; for (const cargoX of [-72, -62, -52, -42]) { ctx.beginPath(); ctx.ellipse(cargoX, -31, 5, 2.6, 0, 0, Math.PI * 2); ctx.fill(); } }
   drawTractorWheel(ctx, -69, -6, 7, 2.6, now / 130);
+  if (county) drawTractorWheel(ctx, -43, -6, 7, 2.6, now / 130);
 }
 
 function drawTractorImplement(ctx: CanvasRenderingContext2D, workKind: ParcelWorkKind, now: number): void {

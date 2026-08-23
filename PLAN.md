@@ -58,7 +58,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Current authorization
 
-**Final Public Demo Acceptance & Release V1 is complete.** Source snapshot `a177587`, all automated checks, production-browser readback, fresh portable/installer artifacts, native disposable-profile smoke acceptance, and exact Desktop shortcut replacement/readback are complete. Stop after this release proof; the next feature package should respond to the owner's next playtest rather than broaden scope speculatively.
+**Vehicle Parking & Logistics Clarity V1 is complete.** Idle vehicle overlaps now present an explicit chooser; pickup cargo and tractor/wagon parking read distinctly; cargo panels hide zero rows and expose the actual capacity authority; Equipment Desk wagon progression is compact and exact; no economy, progression, or save rule changed. Automated, build, desktop-relative, and isolated 1920×1080 browser checks passed. Stop after this bounded playtest repair; the next feature package should respond to the owner's next playtest rather than broaden scope speculatively.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
