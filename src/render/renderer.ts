@@ -580,7 +580,7 @@ export class Renderer {
         : drawSprite(ctx, `bld:${pl.defId}`, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom * 1.16) });
     }
     const doghousePoint = farmWorldPoint(farmLandmarks().doghouse);
-    items.push({ depth: doghousePoint.x + doghousePoint.y + 0.15, draw: () => drawFarmDoghouse(ctx, camera.sx(isoX(doghousePoint.x, doghousePoint.y)), camera.sy(isoY(doghousePoint.x, doghousePoint.y) + TILE_H / 2), zoom) });
+    items.push({ depth: doghousePoint.x + doghousePoint.y + 0.15, draw: () => drawFarmDoghouse(ctx, camera.sx(isoX(doghousePoint.x, doghousePoint.y)), camera.sy(isoY(doghousePoint.x, doghousePoint.y) + TILE_H / 2), zoom, now) });
     const tractor = scene.farm!.tractor;
     const tractorPoint = farmWorldPoint(tractor);
     items.push({ depth: tractorPoint.x + tractorPoint.y + 0.3, draw: () => drawOldTractor(ctx, camera.sx(isoX(tractorPoint.x, tractorPoint.y)), camera.sy(isoY(tractorPoint.x, tractorPoint.y) + TILE_H / 2), zoom, tractor.status, !!tractor.operating, !!tractor.working, now, tractor.headingX, tractor.headingY, tractor.steer, tractor.wheelPhase, !!tractor.moving, tractor.workKind, tractor.harvestWagon) });
@@ -588,11 +588,13 @@ export class Renderer {
     const pickupPoint = farmWorldPoint(pickup);
     items.push({ depth: pickupPoint.x + pickupPoint.y + 0.31, draw: () => drawOldPickup(ctx, camera.sx(isoX(pickupPoint.x, pickupPoint.y)), camera.sy(isoY(pickupPoint.x, pickupPoint.y) + TILE_H / 2), zoom, pickup.operating, pickup.moving, now, pickup.headingX, pickup.headingY, pickup.steer, pickup.wheelPhase, pickup.trailerOwned) });
     const scoutPoint = farmWorldPoint(scene.farm!.scout);
-    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.mode === 'home' && !scene.farm!.scout.moving, scene.farm!.scout.facing) });
+    items.push({ depth: scoutPoint.x + scoutPoint.y + 0.35, draw: () => drawScout(ctx, camera.sx(isoX(scoutPoint.x, scoutPoint.y)), camera.sy(isoY(scoutPoint.x, scoutPoint.y) + TILE_H / 2), zoom, now, scene.farm!.scout.moving, scene.farm!.scout.mode === 'home' && !scene.farm!.scout.moving, scene.farm!.scout.facing, scene.farm!.frisbee?.phase) });
     if (scene.farm!.frisbee) {
       const frisbee = scene.farm!.frisbee;
       const target = farmWorldPoint(frisbee.to);
-      items.push({ depth: target.x + target.y + .34, draw: () => drawScoutFrisbee(ctx, camera, zoom, now, farmWorldPoint(frisbee.throwFrom), farmWorldPoint(frisbee.carrier), target, frisbee.phase, frisbee.phaseStartedAt) });
+      const carrier = farmWorldPoint(frisbee.carrier);
+      const frisbeeDepth = frisbee.phase === 'returning' ? carrier.x + carrier.y + .36 : target.x + target.y + .34;
+      items.push({ depth: frisbeeDepth, draw: () => drawScoutFrisbee(ctx, camera, zoom, now, farmWorldPoint(frisbee.throwFrom), carrier, target, frisbee.phase, frisbee.phaseStartedAt, scene.farm!.scout.facing) });
     }
     for (const actor of scene.actors) {
       const point = farmWorldPoint(actor);
@@ -1116,13 +1118,34 @@ function drawFarmRoadsideStand(
   ctx.restore();
 }
 
-function drawFarmDoghouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number): void {
+function drawFarmDoghouse(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number): void {
   ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.55, zoom * 1.55);
-  ctx.fillStyle = 'rgba(48,34,23,.23)'; ctx.beginPath(); ctx.ellipse(0, 3, 28, 8, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#b84f37'; ctx.fillRect(-22, -26, 44, 28);
-  ctx.beginPath(); ctx.moveTo(-27, -26); ctx.lineTo(0, -46); ctx.lineTo(27, -26); ctx.closePath(); ctx.fillStyle = '#6e392e'; ctx.fill();
-  ctx.beginPath(); ctx.arc(0, -4, 10, Math.PI, 0); ctx.lineTo(10, 2); ctx.lineTo(-10, 2); ctx.closePath(); ctx.fillStyle = '#382b25'; ctx.fill();
-  ctx.fillStyle = '#f0d39a'; ctx.font = '700 7px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('SCOUT', 0, -31); ctx.restore();
+  ctx.fillStyle = 'rgba(48,34,23,.23)'; ctx.beginPath(); ctx.ellipse(0, 5, 38, 10, 0, 0, Math.PI * 2); ctx.fill();
+  // A tiny companion corner: deck, water bowl, flowers, and the hanging
+  // frisbee advertise play without adding another hit target or saved state.
+  ctx.fillStyle = '#8a5937'; ctx.fillRect(-27, -1, 54, 6);
+  ctx.strokeStyle = '#5f3c28'; ctx.lineWidth = 1;
+  for (let plank = -22; plank <= 22; plank += 11) { ctx.beginPath(); ctx.moveTo(plank, -1); ctx.lineTo(plank, 5); ctx.stroke(); }
+  ctx.fillStyle = '#c55d3f'; ctx.fillRect(-23, -28, 46, 29);
+  ctx.fillStyle = '#e47a50'; ctx.fillRect(-18, -26, 4, 25); ctx.fillRect(-6, -26, 4, 25); ctx.fillRect(7, -26, 4, 25); ctx.fillRect(18, -26, 3, 25);
+  ctx.beginPath(); ctx.moveTo(-29, -27); ctx.lineTo(0, -49); ctx.lineTo(29, -27); ctx.closePath(); ctx.fillStyle = '#6f3d32'; ctx.fill();
+  ctx.strokeStyle = '#4f302a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-29, -27); ctx.lineTo(0, -49); ctx.lineTo(29, -27); ctx.stroke();
+  ctx.fillStyle = '#f3dca5'; ctx.fillRect(-14, -37, 28, 10); ctx.strokeStyle = '#7b4a30'; ctx.lineWidth = 1; ctx.strokeRect(-14, -37, 28, 10);
+  ctx.fillStyle = '#6a3f2c'; ctx.font = '900 7px Segoe UI, sans-serif'; ctx.textAlign = 'center'; ctx.fillText('SCOUT', 0, -30);
+  ctx.beginPath(); ctx.arc(0, -7, 11, Math.PI, 0); ctx.lineTo(11, 1); ctx.lineTo(-11, 1); ctx.closePath(); ctx.fillStyle = '#302925'; ctx.fill();
+  ctx.fillStyle = '#e8c46d'; ctx.beginPath(); ctx.ellipse(0, -1, 8, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#3d8191'; ctx.beginPath(); ctx.ellipse(35, 2, 9, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#88d0d6'; ctx.beginPath(); ctx.ellipse(35, .5, 6.5, 1.8, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#f7cf58'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(19, -18, 6, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = '#f5ebbb'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(19, -18, 3.5, .2, Math.PI * 1.7); ctx.stroke();
+  for (const [fx, color] of [[-34, '#f39a7c'], [-27, '#f1c85b'], [45, '#f39a7c']] as const) {
+    ctx.strokeStyle = '#52723f'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(fx, 4); ctx.lineTo(fx, -3); ctx.stroke();
+    ctx.fillStyle = color; for (let petal = 0; petal < 4; petal++) { const angle = petal * Math.PI / 2; ctx.beginPath(); ctx.arc(fx + Math.cos(angle) * 2, -5 + Math.sin(angle) * 2, 1.5, 0, Math.PI * 2); ctx.fill(); }
+  }
+  const flutter = now / 500;
+  ctx.save(); ctx.translate(-38 + Math.sin(flutter) * 3, -18 + Math.cos(flutter * 1.3) * 2); ctx.rotate(Math.sin(flutter) * .25);
+  ctx.fillStyle = 'rgba(247,218,102,.9)'; ctx.beginPath(); ctx.ellipse(-2, 0, 2.5, 1.4, -.5, 0, Math.PI * 2); ctx.ellipse(2, 0, 2.5, 1.4, .5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  ctx.restore();
 }
 
 function drawFarmFarmer(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, avatar: AvatarConfig, facing: FarmFacing, frame: number, now: number, variant: 'owner' | 'farmhand' = 'owner'): void {
@@ -1175,20 +1198,67 @@ function drawFarmHarvestBasket(
   ctx.restore();
 }
 
-function drawScout(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, moving: boolean, sitting: boolean, facing: FarmFacing): void {
-  const trot = moving ? Math.sin(now / 90) * 2 : 0; const wag = Math.sin(now / 110) * (moving ? .55 : .9);
-  ctx.save(); ctx.translate(x, y + trot * zoom); ctx.scale(zoom * 1.2, zoom * 1.2);
-  ctx.fillStyle = 'rgba(35,29,23,.2)'; ctx.beginPath(); ctx.ellipse(0, 2, 18, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#965b3c'; ctx.beginPath(); ctx.ellipse(sitting ? -3 : 0, sitting ? -12 : -11, sitting ? 10 : 14, sitting ? 15 : 9, 0, 0, Math.PI * 2); ctx.fill();
-  if (sitting) { ctx.beginPath(); ctx.ellipse(-8, -2, 10, 6, 0, 0, Math.PI * 2); ctx.fill(); }
-  const headX = sitting ? 4 : facing === 'west' ? -11 : facing === 'north' ? 0 : 11; const headY = sitting ? -27 : -17;
-  ctx.fillStyle = '#b97b4c'; ctx.beginPath(); ctx.arc(headX, headY, 7, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#f2e2c1'; ctx.fillRect(headX - 2, headY - 5, 4, 8); ctx.fillRect(-5, -6, 6, 3); ctx.fillRect(4, -6, 6, 3);
-  ctx.strokeStyle = '#287b80'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(headX - 5, headY + 5); ctx.lineTo(headX + 5, headY + 5); ctx.stroke();
-  ctx.fillStyle = '#553521'; ctx.beginPath(); ctx.moveTo(7, -22); ctx.lineTo(8, -31); ctx.lineTo(13, -23); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(14, -22); ctx.lineTo(18, -29); ctx.lineTo(18, -19); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = '#6f452b'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-12, -13); ctx.quadraticCurveTo(-22, -19 + wag * 6, -24, -11 + wag * 4); ctx.stroke();
-  ctx.strokeStyle = '#4b3426'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-7, -5); ctx.lineTo(-8 + trot, 1); ctx.moveTo(6, -5); ctx.lineTo(7 - trot, 1); ctx.stroke();
-  ctx.fillStyle = '#261d19'; ctx.fillRect(14, -18, 2, 2); ctx.fillRect(18, -15, 3, 2);
+function drawScout(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  zoom: number,
+  now: number,
+  moving: boolean,
+  sitting: boolean,
+  facing: FarmFacing,
+  fetchPhase?: 'outbound' | 'pickup' | 'returning',
+): void {
+  const step = moving ? Math.sin(now / 82) : 0;
+  const bob = moving ? Math.abs(Math.sin(now / 82)) * -2 : Math.sin(now / 720) * .35;
+  const wag = Math.sin(now / (fetchPhase ? 72 : 125));
+  const sideFacing = facing === 'east' || facing === 'west';
+  ctx.save(); ctx.translate(x, y + bob * zoom); ctx.scale(zoom * 1.38, zoom * 1.38);
+  if (facing === 'west') ctx.scale(-1, 1);
+  ctx.fillStyle = 'rgba(35,29,23,.22)'; ctx.beginPath(); ctx.ellipse(0, 3, sitting ? 15 : 19, 5, 0, 0, Math.PI * 2); ctx.fill();
+
+  const coat = '#c9783f'; const coatLight = '#df9757'; const cream = '#f4e3c2'; const dark = '#402c25';
+  if (sitting) {
+    ctx.fillStyle = coat; ctx.beginPath(); ctx.ellipse(-2, -10, 12, 15, -.12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-9, -1, 9, 6, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = cream; ctx.beginPath(); ctx.ellipse(2, -10, 6, 11, 0, 0, Math.PI * 2); ctx.fill();
+  } else if (sideFacing) {
+    ctx.fillStyle = coat; ctx.beginPath(); ctx.ellipse(-2, -10, 17, 10, -.05, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = coatLight; ctx.beginPath(); ctx.ellipse(-8, -14, 9, 5, -.15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = cream; ctx.beginPath(); ctx.ellipse(5, -7, 9, 4, 0, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.fillStyle = coat; ctx.beginPath(); ctx.ellipse(0, -9, 11, 13, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = cream; ctx.beginPath(); ctx.ellipse(0, -7, 6, 9, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.strokeStyle = coatLight; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  const legs = sideFacing ? [-10, 8] : [-5, 5];
+  for (const [index, legX] of legs.entries()) { ctx.beginPath(); ctx.moveTo(legX, -6); ctx.lineTo(legX + (index ? -step : step), 1); ctx.stroke(); }
+  ctx.fillStyle = cream; for (const legX of legs) { ctx.beginPath(); ctx.ellipse(legX, 1, 3.2, 1.8, 0, 0, Math.PI * 2); ctx.fill(); }
+
+  const headX = sideFacing ? 12 : 0; const headY = sitting ? -25 : -20;
+  ctx.fillStyle = dark;
+  ctx.beginPath(); ctx.moveTo(headX - 8, headY - 4); ctx.lineTo(headX - 6, headY - 15); ctx.lineTo(headX - 1, headY - 7); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(headX + 2, headY - 7); ctx.lineTo(headX + 7, headY - 15); ctx.lineTo(headX + 9, headY - 3); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#e7a160';
+  ctx.beginPath(); ctx.moveTo(headX - 6.5, headY - 6); ctx.lineTo(headX - 5.5, headY - 12); ctx.lineTo(headX - 2.5, headY - 7); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(headX + 3.5, headY - 7); ctx.lineTo(headX + 6.5, headY - 12); ctx.lineTo(headX + 7, headY - 4); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = coat; ctx.beginPath(); ctx.ellipse(headX, headY, sideFacing ? 10 : 9.5, 9, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = cream;
+  if (facing !== 'north') { ctx.beginPath(); ctx.ellipse(headX + (sideFacing ? 4 : 0), headY + 3, sideFacing ? 6.5 : 6, 5, 0, 0, Math.PI * 2); ctx.fill(); }
+  ctx.beginPath(); ctx.moveTo(headX - 2.5, headY - 8); ctx.lineTo(headX + 2.5, headY - 8); ctx.lineTo(headX + 1.5, headY + 1); ctx.lineTo(headX - 1, headY + 3); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#2d7f86'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(headX - 7, headY + 6); ctx.quadraticCurveTo(headX, headY + 8, headX + 7, headY + 5.5); ctx.stroke();
+  ctx.fillStyle = '#efc64d'; ctx.beginPath(); ctx.arc(headX, headY + 7, 2, 0, Math.PI * 2); ctx.fill();
+  if (facing !== 'north') {
+    ctx.fillStyle = dark; const eyeY = headY - 1.5;
+    if (sideFacing) { ctx.beginPath(); ctx.arc(headX + 4, eyeY, 1.3, 0, Math.PI * 2); ctx.fill(); }
+    else { ctx.beginPath(); ctx.arc(headX - 3.2, eyeY, 1.2, 0, Math.PI * 2); ctx.arc(headX + 3.2, eyeY, 1.2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.ellipse(headX + (sideFacing ? 9 : 0), headY + 3, 2.2, 1.6, 0, 0, Math.PI * 2); ctx.fill();
+    if (fetchPhase === 'outbound' || fetchPhase === 'pickup') { ctx.fillStyle = '#ef8b8c'; ctx.beginPath(); ctx.ellipse(headX + (sideFacing ? 6 : 0), headY + 7, 2.3, 3, 0, 0, Math.PI * 2); ctx.fill(); }
+  }
+
+  ctx.strokeStyle = coat; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(sideFacing ? -16 : -8, -13); ctx.quadraticCurveTo(-24, -21 + wag * 4, -20, -8 + wag * 3); ctx.stroke();
+  ctx.strokeStyle = cream; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-21, -13 + wag * 3); ctx.lineTo(-20, -8 + wag * 3); ctx.stroke();
   ctx.restore();
 }
 
@@ -1199,14 +1269,17 @@ function drawScoutHeart(ctx: CanvasRenderingContext2D, x: number, y: number, zoo
 function drawScoutFrisbee(
   ctx: CanvasRenderingContext2D, camera: Camera, zoom: number, now: number,
   throwFrom: { x: number; y: number }, carrier: { x: number; y: number }, to: { x: number; y: number }, phase: 'outbound' | 'pickup' | 'returning', phaseStartedAt: number,
+  facing: FarmFacing,
 ): void {
   const start = { x: camera.sx(isoX(throwFrom.x, throwFrom.y)), y: camera.sy(isoY(throwFrom.x, throwFrom.y) + TILE_H / 2) };
   const end = { x: camera.sx(isoX(to.x, to.y)), y: camera.sy(isoY(to.x, to.y) + TILE_H / 2) };
   const carrierPoint = { x: camera.sx(isoX(carrier.x, carrier.y)), y: camera.sy(isoY(carrier.x, carrier.y) + TILE_H / 2) };
   ctx.save();
+  ctx.fillStyle = phase === 'pickup' ? 'rgba(239,125,53,.24)' : 'rgba(40,34,28,.16)';
+  ctx.beginPath(); ctx.ellipse(end.x, end.y, (phase === 'pickup' ? 15 : 9) * zoom, (phase === 'pickup' ? 5 : 3) * zoom, 0, 0, Math.PI * 2); ctx.fill();
   if (phase === 'outbound') {
-    ctx.strokeStyle = 'rgba(245, 193, 64, .72)'; ctx.lineWidth = Math.max(1, 1.5 * zoom); ctx.setLineDash([4 * zoom, 4 * zoom]);
-    ctx.beginPath(); ctx.moveTo(start.x, start.y - 20 * zoom); ctx.quadraticCurveTo((start.x + end.x) / 2, Math.min(start.y, end.y) - 58 * zoom, end.x, end.y - 10 * zoom); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(255, 224, 119, .5)'; ctx.lineWidth = Math.max(1, 1.25 * zoom);
+    ctx.beginPath(); ctx.moveTo(start.x, start.y - 20 * zoom); ctx.quadraticCurveTo((start.x + end.x) / 2, Math.min(start.y, end.y) - 58 * zoom, end.x, end.y - 10 * zoom); ctx.stroke();
   }
   const progress = frisbeeThrowProgress(phase, phaseStartedAt, now);
   const curve = { x: (start.x + end.x) / 2, y: Math.min(start.y, end.y) - 58 * zoom };
@@ -1214,11 +1287,20 @@ function drawScoutFrisbee(
     x: (1 - progress) * (1 - progress) * start.x + 2 * (1 - progress) * progress * curve.x + progress * progress * end.x,
     y: (1 - progress) * (1 - progress) * (start.y - 20 * zoom) + 2 * (1 - progress) * progress * curve.y + progress * progress * (end.y - 10 * zoom),
   };
-  const frisbeePoint = phase === 'returning' ? carrierPoint : thrownPoint;
-  const bob = phase === 'outbound' ? 10 + Math.sin(now / 80) * 4 : phase === 'pickup' ? 3 : 8 + Math.sin(now / 100) * 2;
-  ctx.translate(frisbeePoint.x, frisbeePoint.y - bob * zoom); ctx.rotate(now / 230);
-  ctx.fillStyle = '#ef7d35'; ctx.beginPath(); ctx.ellipse(0, 0, 7 * zoom, 2.8 * zoom, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#fff0bc'; ctx.lineWidth = Math.max(1, zoom); ctx.beginPath(); ctx.moveTo(-4 * zoom, 0); ctx.lineTo(4 * zoom, 0); ctx.stroke(); ctx.restore();
+  const carryOffset = facing === 'west' ? { x: -14, y: -18 } : facing === 'east' ? { x: 14, y: -18 } : { x: 0, y: facing === 'north' ? -26 : -16 };
+  const frisbeePoint = phase === 'returning'
+    ? { x: carrierPoint.x + carryOffset.x * zoom, y: carrierPoint.y + carryOffset.y * zoom }
+    : thrownPoint;
+  const bob = phase === 'outbound' ? 10 + Math.sin(now / 80) * 4 : phase === 'pickup' ? 3 : 0;
+  if (phase === 'pickup') {
+    const pulse = .5 + .5 * Math.sin(now / 90);
+    ctx.strokeStyle = `rgba(255,224,119,${.35 + pulse * .4})`; ctx.lineWidth = Math.max(1, 1.4 * zoom);
+    ctx.beginPath(); ctx.ellipse(end.x, end.y - 5 * zoom, (10 + pulse * 5) * zoom, (4 + pulse * 2) * zoom, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.translate(frisbeePoint.x, frisbeePoint.y - bob * zoom); ctx.rotate(phase === 'outbound' ? now / 115 : -.08);
+  const disc = ctx.createLinearGradient(0, -3 * zoom, 0, 3 * zoom); disc.addColorStop(0, '#ffab4d'); disc.addColorStop(1, '#d95630');
+  ctx.fillStyle = disc; ctx.beginPath(); ctx.ellipse(0, 0, 8 * zoom, 3.2 * zoom, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#fff0bc'; ctx.lineWidth = Math.max(1, zoom); ctx.beginPath(); ctx.ellipse(0, -.4 * zoom, 4.2 * zoom, 1.25 * zoom, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
 }
 
 function drawFarmTree(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, now: number, phase: number): void {

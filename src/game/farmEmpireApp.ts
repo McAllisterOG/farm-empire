@@ -763,7 +763,7 @@ export class FarmEmpireApp {
       this.walkNear(this.scout.x, this.scout.y, () => { this.scoutWaitingForScratch = false; this.openScoutMenu(); });
       return;
     }
-    if (interaction?.kind === 'doghouse') { toast("Scout's doghouse is cozy. Catch him on open grass for scratches.", 'good'); return; }
+    if (interaction?.kind === 'doghouse') { toast("Scout's corner is cozy. Catch him on open grass for scratches or a game of fetch.", 'good'); return; }
     if (interaction?.kind === 'farmhouse') {
       if (this.operatingTractor || this.operatingPickup) { toast('Exit the vehicle to use the farmhouse.', 'bad'); return; }
       this.walkNear(interaction.point.x, interaction.point.y, () => this.openFarmhouseOffice());
@@ -1307,15 +1307,15 @@ export class FarmEmpireApp {
     const point = farmWorldPoint(this.scout);
     const sx = this.renderer.camera.sx(isoX(point.x, point.y));
     const sy = this.renderer.camera.sy(isoY(point.x, point.y));
-    showActionMenu(sx, sy, 'Scout · farm dog', [{
-      label: 'Give Scout scratches',
+    showActionMenu(sx, sy, 'Scout · corgi companion', [{
+      label: 'Give scratches',
       onClick: () => {
         this.scoutScratchUntil = this.gameNow() + 1_200;
         this.farmAudio.playTransaction('scout');
         toast('Scout wags and leans into the scratches.', 'good');
       },
     }, {
-      label: 'Throw frisbee',
+      label: 'Play fetch',
       onClick: () => {
         this.cancelScoutApproach();
         this.scoutFetch = { phase: 'outbound', target: { x: 7.95, y: 12.3 }, throwFrom: { x: this.playerActor.x, y: this.playerActor.y }, phaseStartedAt: this.gameNow() };
