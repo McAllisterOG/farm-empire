@@ -235,6 +235,7 @@ export class FarmEmpireApp {
       onFarmbook: () => { if (!this.manualActionBlocksUi()) this.openFarmhouseOffice(); },
       onToggleHarvestDestination: () => this.toggleHarvestDestination(),
       onUnloadBasket: () => this.requestBasketUnload(),
+      onCancelOperation: () => this.cancelActiveOperation(),
       onEquipment: () => { if (!this.manualActionBlocksUi()) this.openEquipmentPanel(); },
       onReturnFarm: () => this.requestReturnToFarm(),
       onSave: () => {
@@ -480,6 +481,45 @@ export class FarmEmpireApp {
     ));
   }
 
+  private cancelActiveOperation(): void {
+    if (this.mode === 'town') {
+      if (isActionMenuOpen()) hideActionMenu();
+      else if (isPanelOpen()) closePanel();
+      this.cancelTownWalk();
+      return;
+    }
+    if (this.fieldDragSelection.length > 0) {
+      this.fieldDragSelection = [];
+      if (isActionMenuOpen()) hideActionMenu();
+      return;
+    }
+    if (this.basketUnload) {
+      this.cancelBasketUnload();
+      if (this.manualFieldJob) this.cancelManualFieldJob(false);
+    } else if (this.manualFieldJob) this.cancelManualFieldJob();
+    else if (this.manualFieldAction) this.cancelManualFieldAction();
+    else if (this.scoutWaitingForScratch) this.cancelScoutApproach();
+    else if (this.scoutFetch) this.cancelScoutFetch();
+    else if (this.tractorJob) this.cancelTractorJob();
+    else if (this.tractorTarget) {
+      this.tractorTarget = null;
+      this.tractorMotion = resetTractorMotion(this.tractorMotion);
+      toast('Tractor drive cancelled.', 'good');
+    } else if (this.pickupTarget) {
+      this.pickupTarget = null;
+      this.pickupMotion = resetTractorMotion(this.pickupMotion);
+      toast('Pickup drive cancelled.', 'good');
+    } else if (this.walkTarget) {
+      this.walkTarget = null;
+      this.playerActor.walking = false;
+      toast('Walk cancelled.', 'good');
+    } else if (isActionMenuOpen()) hideActionMenu();
+    else if (isPanelOpen()) closePanel();
+    else if (this.farmhandJob) this.cancelFarmhandJob();
+    else if (this.workerRuntime['mara-bell'].job) this.cancelWorkerJob('mara-bell');
+    else if (this.workerRuntime['eliot-reyes'].job) this.cancelWorkerJob('eliot-reyes');
+  }
+
   private bindInput(canvas: HTMLCanvasElement): void {
     let downX = 0;
     let downY = 0;
@@ -719,43 +759,7 @@ export class FarmEmpireApp {
         }
       }
       if (event.key !== 'Escape') return;
-      if (this.mode === 'town') {
-        if (isActionMenuOpen()) hideActionMenu();
-        else if (isPanelOpen()) closePanel();
-        this.cancelTownWalk();
-        return;
-      }
-      if (this.fieldDragSelection.length > 0) {
-        this.fieldDragSelection = [];
-        if (isActionMenuOpen()) hideActionMenu();
-        return;
-      }
-      if (this.basketUnload) {
-        this.cancelBasketUnload();
-        if (this.manualFieldJob) this.cancelManualFieldJob(false);
-      }
-      else if (this.manualFieldJob) this.cancelManualFieldJob();
-      else if (this.manualFieldAction) this.cancelManualFieldAction();
-      else if (this.scoutWaitingForScratch) this.cancelScoutApproach();
-      else if (this.scoutFetch) this.cancelScoutFetch();
-      else if (this.tractorJob) this.cancelTractorJob();
-      else if (this.tractorTarget) {
-        this.tractorTarget = null;
-        this.tractorMotion = resetTractorMotion(this.tractorMotion);
-        toast('Tractor drive cancelled.', 'good');
-      } else if (this.pickupTarget) {
-        this.pickupTarget = null;
-        this.pickupMotion = resetTractorMotion(this.pickupMotion);
-        toast('Pickup drive cancelled.', 'good');
-      } else if (this.walkTarget) {
-        this.walkTarget = null;
-        this.playerActor.walking = false;
-        toast('Walk cancelled.', 'good');
-      } else if (isActionMenuOpen()) hideActionMenu();
-      else if (isPanelOpen()) closePanel();
-      else if (this.farmhandJob) this.cancelFarmhandJob();
-      else if (this.workerRuntime['mara-bell'].job) this.cancelWorkerJob('mara-bell');
-      else if (this.workerRuntime['eliot-reyes'].job) this.cancelWorkerJob('eliot-reyes');
+      this.cancelActiveOperation();
     };
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
@@ -789,15 +793,15 @@ export class FarmEmpireApp {
     }
     if (this.manualFieldJob || this.manualFieldAction || this.basketUnload) {
       if (this.basketUnload) {
-        toast('Basket unloading in progress. Press Escape to stop walking; the harvest stays safe.', 'bad');
+        toast('Basket unloading in progress. Use Cancel to stop safely; the harvest stays safe.', 'bad');
         return;
       }
       const kind = this.manualFieldJob?.kind ?? this.manualFieldAction!.kind;
-      toast(`${MANUAL_FIELD_ACTION_LABELS[kind]} in progress. Press Escape to cancel.`, 'bad');
+      toast(`${MANUAL_FIELD_ACTION_LABELS[kind]} in progress. Use Cancel to stop safely.`, 'bad');
       return;
     }
     if (this.tractorJob) {
-      toast('A tractor field job is already active. Press Escape to cancel it.', 'bad');
+      toast('A tractor field job is already active. Use Cancel to stop safely.', 'bad');
       return;
     }
     // Any new world click replaces an in-progress approach to Scout. A fresh
@@ -1722,7 +1726,7 @@ export class FarmEmpireApp {
     this.save();
   }
 
-  private tractorHudRuntime(): { operating: boolean; working: boolean; activeVehicle: 'tractor' | 'pickup' | null; statusText: string; manualWorking?: boolean; farmhandWorking?: boolean } {
+  private tractorHudRuntime(): { operating: boolean; working: boolean; activeVehicle: 'tractor' | 'pickup' | null; statusText: string; manualWorking?: boolean; farmhandWorking?: boolean; canCancel?: boolean } {
     if (this.basketUnload) {
       const destination = this.basketUnload.destination === 'pickup' ? 'pickup' : 'barn';
       return {
@@ -1730,7 +1734,8 @@ export class FarmEmpireApp {
         working: false,
         activeVehicle: null,
         manualWorking: true,
-        statusText: `Carrying harvest basket · ${formatFarmCargoWeight(handBasketUsed(this.state))} / ${formatFarmCargoWeight(HAND_BASKET_CAPACITY)} · walking to ${destination} · Escape stops safely`,
+        canCancel: true,
+        statusText: `Carrying harvest basket · ${formatFarmCargoWeight(handBasketUsed(this.state))} / ${formatFarmCargoWeight(HAND_BASKET_CAPACITY)} · walking to ${destination}`,
       };
     }
     const manualJob = this.manualFieldJob;
@@ -1744,7 +1749,8 @@ export class FarmEmpireApp {
         working: false,
         activeVehicle: null,
         manualWorking: true,
-        statusText: `${MANUAL_FIELD_ACTION_LABELS[manualJob.kind]} · ${manualJob.completed}/${total} complete${manualJob.skipped ? ` · ${manualJob.skipped} skipped` : ''} · section ${current}/${total}${action ? ` · ${progress}%` : ''} · Escape cancels`,
+        canCancel: true,
+        statusText: `${MANUAL_FIELD_ACTION_LABELS[manualJob.kind]} · ${manualJob.completed}/${total} complete${manualJob.skipped ? ` · ${manualJob.skipped} skipped` : ''} · section ${current}/${total}${action ? ` · ${progress}%` : ''}`,
       };
     }
     const manual = this.manualFieldAction;
@@ -1755,7 +1761,8 @@ export class FarmEmpireApp {
         working: false,
         activeVehicle: null,
         manualWorking: true,
-        statusText: `${MANUAL_FIELD_ACTION_LABELS[manual.kind]} | ${progress}% | Escape cancels safely`,
+        canCancel: true,
+        statusText: `${MANUAL_FIELD_ACTION_LABELS[manual.kind]} · ${progress}%`,
       };
     }
     const job = this.tractorJob;
@@ -1767,14 +1774,15 @@ export class FarmEmpireApp {
         operating: true,
         working: true,
         activeVehicle: 'tractor',
+        canCancel: true,
         statusText: `${job.kind === 'plant' ? 'Planting' : 'Harvesting'}${cropLabel} · ${job.completed}/${total} completed${job.skipped ? ` · ${job.skipped} skipped` : ''} · section ${current}/${total}`,
       };
     }
     if (this.operatingTractor && this.tractorTarget) {
-      return { operating: true, working: false, activeVehicle: 'tractor', statusText: 'Driving tractor · press Escape to stop' };
+      return { operating: true, working: false, activeVehicle: 'tractor', canCancel: true, statusText: 'Driving tractor' };
     }
     if (this.operatingPickup && this.pickupTarget) {
-      return { operating: true, working: false, activeVehicle: 'pickup', statusText: 'Driving pickup · press Escape to stop' };
+      return { operating: true, working: false, activeVehicle: 'pickup', canCancel: true, statusText: 'Driving pickup' };
     }
     const farmhandJob = this.farmhandJob;
     if (farmhandJob) {
@@ -1786,6 +1794,7 @@ export class FarmEmpireApp {
         working: false,
         activeVehicle: this.operatingTractor ? 'tractor' : this.operatingPickup ? 'pickup' : null,
         farmhandWorking: true,
+        canCancel: true,
         statusText: `${FIRST_FARMHAND.name} · ${MANUAL_FIELD_ACTION_LABELS[farmhandJob.kind]} · ${farmhandJob.completed}/${total} complete${farmhandJob.skipped ? ` · ${farmhandJob.skipped} skipped` : ''} · section ${current}/${total}${this.farmhandAction ? ` · ${progress}%` : ''}`,
       };
     }
@@ -1980,7 +1989,7 @@ export class FarmEmpireApp {
       skipped: 0,
     };
     const label = scope === 'row' ? 'Row' : scope === 'three-rows' ? 'Three-row block' : 'Custom area';
-    toast(`${label} selected · ${targets.length} eligible section${targets.length === 1 ? '' : 's'} · Escape stops unfinished work.`, 'good');
+    toast(`${label} selected · ${targets.length} eligible section${targets.length === 1 ? '' : 's'} · Cancel stops unfinished work.`, 'good');
     this.beginManualFieldJobStep();
     this.hud.update(this.state, this.tractorHudRuntime());
   }
@@ -2304,12 +2313,12 @@ export class FarmEmpireApp {
 
   private manualActionBlocksUi(): boolean {
     if (this.basketUnload) {
-      toast('Basket unloading in progress. Press Escape to stop walking; the harvest stays safe.', 'bad');
+      toast('Basket unloading in progress. Use Cancel to stop safely; the harvest stays safe.', 'bad');
       return true;
     }
     const kind = this.manualFieldJob?.kind ?? this.manualFieldAction?.kind;
     if (!kind) return false;
-    toast(`${MANUAL_FIELD_ACTION_LABELS[kind]} in progress. Finish it or press Escape to cancel.`, 'bad');
+    toast(`${MANUAL_FIELD_ACTION_LABELS[kind]} in progress. Finish it or use Cancel to stop safely.`, 'bad');
     return true;
   }
 

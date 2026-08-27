@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { FARM_VEHICLE_MOVEMENT_BOUNDS } from '../src/core/farmPickupData';
 import { farmDirectionalInputRoute, farmVehicleControlTarget, isMoveOnlyFarmGround, isMoveOnlyPointerButton, shouldCompleteMoveOnlyGesture, shouldRouteDirectionToFarmVehicle } from '../src/core/farmVehicleControls';
-import { vehicleOperationHelp } from '../src/ui/farmHud';
+import { shouldShowOperationCancel, vehicleOperationHelp } from '../src/ui/farmHud';
 
 describe('direct farm vehicle controls', () => {
   it('maps cardinal and case-insensitive screen-relative controls without mutating the live position', () => {
@@ -60,5 +60,11 @@ describe('direct farm vehicle controls', () => {
     expect(vehicleOperationHelp('pickup')).toContain('cargo pad or County Road');
     expect(vehicleOperationHelp('pickup')).not.toContain('field parcel');
     expect(vehicleOperationHelp('tractor')).toContain('field parcel');
+  });
+
+  it('exposes the same safe cancellation route to touch players only while an operation can stop', () => {
+    expect(shouldShowOperationCancel({ operating: false, working: false, manualWorking: true, canCancel: true })).toBe(true);
+    expect(shouldShowOperationCancel({ operating: true, working: false, activeVehicle: 'tractor' })).toBe(false);
+    expect(shouldShowOperationCancel()).toBe(false);
   });
 });

@@ -580,7 +580,7 @@ export function openFarmEquipment(state: GameState, actions: FarmEquipmentAction
             : operating ? jobActive ? 'Field job in progress.' : 'Operating and ready.' : restored ? 'Parked and ready.' : 'Restoration required.'),
           h('div', { class: 'panel-note', 'data-testid': onFarm ? 'farm-equipment-note' : 'town-equipment-note' }, !onFarm
             ? 'Return to the farm to operate equipment.'
-            : 'Drive with WASD, arrows, or click. Select a field to work. Escape cancels safely.'),
+            : 'Drive with WASD, arrows, or click. Select a field to work. Active jobs can be cancelled safely.'),
         ),
       ));
     },

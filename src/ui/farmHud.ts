@@ -16,6 +16,7 @@ export interface FarmHudCallbacks {
   onFarmbook: () => void;
   onToggleHarvestDestination: () => void;
   onUnloadBasket: () => void;
+  onCancelOperation: () => void;
   onReturnFarm: () => void;
   onSave: () => void;
   onMenu: () => void;
@@ -30,6 +31,7 @@ export interface TractorHudRuntime {
   statusText?: string;
   manualWorking?: boolean;
   farmhandWorking?: boolean;
+  canCancel?: boolean;
 }
 
 export function vehicleOperationHelp(activeVehicle: TractorHudRuntime['activeVehicle']): string {
@@ -40,6 +42,10 @@ export function vehicleOperationHelp(activeVehicle: TractorHudRuntime['activeVeh
 
 export function shouldShowFirstDeliveryChip(mode: FarmHudMode, complete: boolean, runtime?: TractorHudRuntime): boolean {
   return mode === 'farm' && !complete && !runtime?.operating && !runtime?.working && !runtime?.manualWorking && !runtime?.farmhandWorking;
+}
+
+export function shouldShowOperationCancel(runtime?: TractorHudRuntime): boolean {
+  return runtime?.canCancel === true;
 }
 function clockText(minute: number): string {
   const hour24 = Math.floor(minute / 60) % 24;
@@ -59,6 +65,8 @@ export class FarmHud {
   private selectedEl: HTMLElement;
   private tractorEl: HTMLElement;
   private operationEl: HTMLElement;
+  private operationTextEl: HTMLElement;
+  private cancelOperationButton: HTMLButtonElement;
   private helpEl: HTMLElement;
   private brandSubEl: HTMLElement;
   private storageButton: HTMLButtonElement;
@@ -83,12 +91,20 @@ export class FarmHud {
     this.storageEl = h('strong', { 'data-testid': 'storage-summary' }, '0 / 0');
     this.selectedEl = h('strong', { 'data-testid': 'selected-crop' }, 'Corn');
     this.tractorEl = h('strong', { 'data-testid': 'tractor-status' }, 'Operational');
-    this.operationEl = h('div', {
-      class: 'farm-operation-status hidden',
+    this.operationTextEl = h('span', {
+      class: 'farm-operation-copy',
       role: 'status',
       'aria-live': 'polite',
       'data-testid': 'tractor-operation-status',
     });
+    this.cancelOperationButton = h('button', {
+      class: 'btn btn-sm farm-operation-cancel hidden',
+      type: 'button',
+      'data-testid': 'cancel-operation-button',
+      'aria-label': 'Cancel active farm work safely',
+      onclick: cb.onCancelOperation,
+    }, 'Cancel') as HTMLButtonElement;
+    this.operationEl = h('div', { class: 'farm-operation-status hidden' }, this.operationTextEl, this.cancelOperationButton);
     this.brandSubEl = h('div', { class: 'farm-brand-sub' }, 'Farm Manager · Farming Business');
     this.storageButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'storage-button', onclick: cb.onMarket }, h('span', {}, 'Barn'), this.storageEl) as HTMLButtonElement;
     this.equipmentButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'equipment-button', onclick: cb.onEquipment }, h('span', {}, 'Old Tractor'), this.tractorEl) as HTMLButtonElement;
@@ -179,7 +195,7 @@ export class FarmHud {
     this.storageButton.disabled = town;
     this.storageButton.classList.toggle('farm-stat-button', !town);
     this.brandSubEl.textContent = town ? 'County Service Center' : 'Farm Manager · Farming Business';
-    this.operationEl.classList.toggle('hidden', town || !this.operationEl.textContent);
+    this.operationEl.classList.toggle('hidden', town || !this.operationTextEl.textContent);
   }
 
   update(state: GameState, runtime?: TractorHudRuntime): void {
@@ -222,13 +238,12 @@ export class FarmHud {
         : farm.equipment.tractor.status === 'operational' ? `Operational${wagonChip}` : 'Needs restoration';
     this.operationEl.classList.toggle('hidden', this.mode === 'town' || (!runtime?.operating && !runtime?.manualWorking && !runtime?.farmhandWorking));
     this.operationEl.classList.toggle('working', !!runtime?.working || !!runtime?.manualWorking || !!runtime?.farmhandWorking);
-    this.operationEl.textContent = runtime?.statusText ?? '';
+    this.operationTextEl.textContent = runtime?.statusText ?? '';
+    this.cancelOperationButton.classList.toggle('hidden', !shouldShowOperationCancel(runtime));
     const contextualHelp = this.mode === 'town'
       ? 'Town services · click a shop or neighbor.'
-      : runtime?.manualWorking
-        ? 'Fieldwork underway · Esc cancels safely.'
-      : runtime?.working
-      ? 'Tractor job underway · Esc cancels safely.'
+      : shouldShowOperationCancel(runtime)
+        ? ''
       : runtime?.operating
         ? vehicleOperationHelp(runtime.activeVehicle)
         : !morning.complete ? `Today · ${morning.title}` : nextGuide ? `Next · ${nextGuide.label}` : '';

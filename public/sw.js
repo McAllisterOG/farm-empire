@@ -1,4 +1,4 @@
-const CACHE_NAME = 'farm-empire-travel-v1';
+const CACHE_NAME = 'farm-empire-travel-v2';
 const APP_ROOT = new URL('./', self.location.href).href;
 
 async function cacheAppShell() {
