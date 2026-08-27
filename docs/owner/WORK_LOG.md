@@ -673,3 +673,11 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Verification:** 366 tests in 55 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Embedded Codex-browser acceptance loaded the current title and live farm at 834×1194 portrait and 1194×834 landscape with zero console errors; the temporary viewport override was reset afterward.
 - **Publication:** Pushed `codex/first-town-contact` to `McAllisterOG/farm-empire` and created the free Render Static Site through the repository Blueprint. The exact public build at `https://farm-empire-hyle.onrender.com` loaded the title and created a fresh playable farm; live browser diagnostics contained no errors.
 - **Release boundary:** Browser/iPad saves do not sync with the Windows desktop profile. Offline app-shell logic was not accepted in the embedded runtime or on a physical iPad, so offline play remains unverified and is not promised by this checkpoint.
+
+## Travel Touch Controls & iPad Layout Repair V1 - implemented
+
+- **Date:** 2026-08-27
+- **Branch/commit:** `codex/first-town-contact` / `d363ac8`
+- **Result:** Replaced Escape-only active-operation guidance with a visible touch Cancel button that calls the same safe cancellation authority as the keyboard. Removed duplicate operation/help messaging, made collision feedback input-neutral, added a horizontally swipeable crop tray, compacted the 1024-pixel iPad top HUD around the menu, wrapped bottom actions cleanly, and changed the document safe-area color from blue to the farm green. Bumped the PWA shell cache to `travel-v2` so installed devices receive the repair.
+- **Verification:** 367 tests in 55 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Embedded browser acceptance at 1024×1366 found contained top and bottom HUD geometry and zero console warnings/errors. A phone-sized run exercised touch Cancel during manual fieldwork and confirmed the operation stopped safely; the temporary viewport override was reset.
+- **Release boundary:** No gameplay, save, economy, progression, transaction, or desktop-security authority changed. This is an iPad travel usability repair, not the deferred dedicated phone redesign. Physical-iPad and offline acceptance remain with the owner.
