@@ -17,6 +17,7 @@ import {
 } from '../core/farmHarvestBasket';
 import { Renderer, sceneFromState, type RenderScene, type SceneActor } from '../render/renderer';
 import { isoX, isoY, TILE_H } from '../render/iso';
+import { measurePinchGesture, pinchCameraTransform, type PinchGestureFrame, type ScreenPoint } from '../core/pinchGesture';
 import { farmhousePresentationTier, farmLogicalPoint, farmPlotAtWorldPoint, farmWorldPoint, farmLandmarks, pointInFarmBounds } from '../render/farmLayout';
 import { advanceFarmCompanionFetch, canAdvanceFarmCompanionFetch, updateFarmCompanion, type FarmCompanionFetchState, type FarmCompanionState } from '../core/farmCompanion';
 import { recordFarmStat } from '../core/farmKnowledge';
@@ -487,8 +488,42 @@ export class FarmEmpireApp {
     let selectionAnchorUid: number | null = null;
     let fieldSelecting = false;
     let secondaryGestureArmed = false;
+    const touchPointers = new Map<number, ScreenPoint>();
+    let previousPinch: PinchGestureFrame | null = null;
+    let touchGestureConsumed = false;
+
+    const currentPinch = (): PinchGestureFrame | null => {
+      const points = [...touchPointers.values()];
+      if (points.length < 2) return null;
+      return measurePinchGesture(points[0], points[1]);
+    };
+
+    const resetDirectGesture = (): void => {
+      dragging = false;
+      panning = false;
+      selectionAnchorUid = null;
+      fieldSelecting = false;
+      secondaryGestureArmed = false;
+      this.fieldDragSelection = [];
+    };
+
     const onPointerDown = (event: PointerEvent): void => {
       this.farmAudio.ensureStarted();
+      try {
+        canvas.setPointerCapture(event.pointerId);
+      } catch {
+        // Some embedded browsers can reject capture during a cancelled gesture.
+      }
+      if (event.pointerType === 'touch') {
+        touchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (touchPointers.size >= 2) {
+          previousPinch = currentPinch();
+          touchGestureConsumed = true;
+          resetDirectGesture();
+          event.preventDefault();
+          return;
+        }
+      }
       if (isMoveOnlyPointerButton(event.button)) {
         secondaryGestureArmed = !dragging;
         return;
@@ -522,6 +557,27 @@ export class FarmEmpireApp {
       }
     };
     const onPointerMove = (event: PointerEvent): void => {
+      if (event.pointerType === 'touch' && touchPointers.has(event.pointerId)) {
+        touchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        const nextPinch = currentPinch();
+        if (nextPinch) {
+          if (previousPinch) {
+            const transform = pinchCameraTransform(previousPinch, nextPinch);
+            this.renderer.camera.pan(transform.panX, transform.panY);
+            this.renderer.camera.zoomAt(transform.zoomFactor, transform.center.x, transform.center.y);
+            if (this.mode === 'town') this.renderer.clampTownCamera(); else this.renderer.clampFarmCamera();
+          }
+          previousPinch = nextPinch;
+          touchGestureConsumed = true;
+          resetDirectGesture();
+          event.preventDefault();
+          return;
+        }
+        if (touchGestureConsumed) {
+          event.preventDefault();
+          return;
+        }
+      }
       if (dragging) {
         const dx = event.clientX - downX;
         const dy = event.clientY - downY;
@@ -542,6 +598,18 @@ export class FarmEmpireApp {
       this.townHover = this.mode === 'town' ? this.townInteractionHintAtScreen(event.clientX, event.clientY) : null;
     };
     const onPointerUp = (event: PointerEvent): void => {
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+      if (event.pointerType === 'touch') {
+        const consumed = touchGestureConsumed;
+        touchPointers.delete(event.pointerId);
+        previousPinch = currentPinch();
+        if (consumed) {
+          resetDirectGesture();
+          if (touchPointers.size === 0) touchGestureConsumed = false;
+          event.preventDefault();
+          return;
+        }
+      }
       if (event.button !== 0) {
         if (isMoveOnlyPointerButton(event.button) && shouldCompleteMoveOnlyGesture(secondaryGestureArmed, dragging)) this.onMoveOnlyClick(event.clientX, event.clientY);
         if (isMoveOnlyPointerButton(event.button)) secondaryGestureArmed = false;
@@ -570,12 +638,26 @@ export class FarmEmpireApp {
       }
       this.onClick(event.clientX, event.clientY);
     };
-    const onPointerLeave = (): void => {
+    const onPointerLeave = (event: PointerEvent): void => {
+      if (event.pointerType === 'touch') {
+        touchPointers.delete(event.pointerId);
+        previousPinch = currentPinch();
+        if (touchPointers.size === 0) touchGestureConsumed = false;
+      }
       if (dragging && selectionAnchorUid !== null) this.fieldDragSelection = [];
       dragging = false;
       selectionAnchorUid = null;
       fieldSelecting = false;
       secondaryGestureArmed = false;
+      this.hover = null;
+      this.townHover = null;
+    };
+    const onPointerCancel = (event: PointerEvent): void => {
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+      if (event.pointerType === 'touch') touchPointers.delete(event.pointerId);
+      previousPinch = currentPinch();
+      if (touchPointers.size === 0) touchGestureConsumed = false;
+      resetDirectGesture();
       this.hover = null;
       this.townHover = null;
     };
@@ -679,6 +761,7 @@ export class FarmEmpireApp {
     canvas.addEventListener('pointermove', onPointerMove);
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointerleave', onPointerLeave);
+    canvas.addEventListener('pointercancel', onPointerCancel);
     canvas.addEventListener('wheel', onWheel, { passive: false });
     canvas.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('keydown', onKeyDown);
@@ -687,6 +770,7 @@ export class FarmEmpireApp {
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointerleave', onPointerLeave);
+      canvas.removeEventListener('pointercancel', onPointerCancel);
       canvas.removeEventListener('wheel', onWheel);
       canvas.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('keydown', onKeyDown);
@@ -1182,7 +1266,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Ready crops remain harvestable for one active hour. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried.'), h('p', {}, 'Cargo is measured in pounds. Each seed bag uses 10 lb of payload; produce lots vary by crop. Park the pickup at the marked barn cargo pad to load, then drive it to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration, including its basic 2,400 lb harvest wagon. Operated harvest loads that wagon—not the barn—so drive the tractor to the barn receiving bay to unload. The County 4,800 lb wagon costs $2,400 after the Implement Set, neighboring acreage, and one completed freight haul.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops. On a touchscreen, drag open ground to pan and pinch anywhere on the farm to zoom.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Ready crops remain harvestable for one active hour. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried.'), h('p', {}, 'Cargo is measured in pounds. Each seed bag uses 10 lb of payload; produce lots vary by crop. Park the pickup at the marked barn cargo pad to load, then drive it to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration, including its basic 2,400 lb harvest wagon. Operated harvest loads that wagon—not the barn—so drive the tractor to the barn receiving bay to unload. The County 4,800 lb wagon costs $2,400 after the Implement Set, neighboring acreage, and one completed freight haul.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });

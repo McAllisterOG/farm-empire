@@ -12,12 +12,16 @@
   --gold: #f2c018;
   --shadow: 0 6px 18px rgba(74, 59, 50, 0.22);
   --radius: 14px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
   font-family: "Varela Round", "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-html, body { width: 100%; height: 100%; overflow: hidden; background: var(--sea-deep); color: var(--ink); }
+html, body { width: 100%; height: 100%; min-height: 100dvh; overflow: hidden; background: var(--sea-deep); color: var(--ink); }
 
 .hidden { display: none !important; }
 
@@ -47,6 +51,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
     radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.35), transparent 40%),
     linear-gradient(180deg, #8fd8f0 0%, #6fc8e8 45%, #4aa8d8 100%);
   overflow: auto;
+  padding: calc(14px + var(--safe-top)) calc(14px + var(--safe-right)) calc(14px + var(--safe-bottom)) calc(14px + var(--safe-left));
 }
 
 .title-box {
@@ -78,6 +83,11 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .slot-sub { font-size: 12px; color: #9a8a78; margin-top: 3px; }
 .title-footer { margin-top: 22px; font-size: 12px; color: #9a8a78; }
 .title-footer a { color: var(--sea-deep); }
+.title-device-note {
+  margin-top: 14px; padding: 8px 10px; border-radius: 10px;
+  background: #eef4df; color: #58644a; font-size: 11.5px; line-height: 1.35;
+}
+.title-device-note strong { color: #315b3a; }
 
 /* ---------------- 通用按钮 ---------------- */
 
@@ -167,7 +177,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 /* ---------------- Toast 与浮动文字 ---------------- */
 
 .toast-root {
-  position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
+  position: fixed; top: calc(90px + var(--safe-top)); left: 50%; transform: translateX(-50%);
   display: flex; flex-direction: column; gap: 8px; z-index: 60; pointer-events: none;
   align-items: center;
 }
@@ -215,10 +225,11 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(42, 60, 80, 0.45);
   display: flex; align-items: center; justify-content: center; z-index: 50;
+  padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
 }
 .modal-panel {
   background: var(--paper); border: 3px solid #f4e3bd; border-radius: 18px;
-  width: min(520px, 94vw); max-height: 86vh; display: flex; flex-direction: column;
+  width: min(520px, 94vw); max-width: 100%; max-height: min(86vh, calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom))); display: flex; flex-direction: column;
   box-shadow: var(--shadow); overflow: hidden;
 }
 .modal-panel.panel-wide { width: min(720px, 96vw); }
@@ -486,7 +497,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .farm-hud-root { position: fixed; inset: 0; pointer-events: none; z-index: 20; }
 .farm-hud-root > * { pointer-events: auto; }
 .farm-hud-top {
-  position: absolute; top: 10px; left: 10px; right: 10px;
+  position: absolute; top: calc(10px + var(--safe-top)); left: calc(10px + var(--safe-left)); right: calc(10px + var(--safe-right));
   display: flex; align-items: stretch; gap: 8px; max-width: 1060px;
 }
 .farm-brand, .farm-stat {
@@ -512,12 +523,12 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .farm-stat-button:hover { background: #fff4cf; }
 .farm-stat-button:hover { transform: translateY(-1px); border-color: #b79b55; }
 .farm-menu-button {
-  position: fixed; top: 10px; right: 10px; z-index: 2;
+  position: fixed; top: calc(10px + var(--safe-top)); right: calc(10px + var(--safe-right)); z-index: 2;
   min-width: 42px; font-size: 20px; line-height: 1;
 }
 .pickup-panel-illustration { width: 150px; padding: 20px; border-radius: 10px; background: #c75a3d; color: #fff1c9; font-weight: 900; text-align: center; }
 .farm-hud-bottom {
-  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: calc(12px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
   display: flex; align-items: center; gap: 10px; width: min(1100px, 96vw);
   background: rgba(255, 252, 238, 0.97); border: 2px solid #d7c486;
   border-radius: 16px; box-shadow: var(--shadow); padding: 8px 10px;
@@ -558,13 +569,13 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .harvest-destination-button { border-color: #b99854; background: #fff7da; color: #5f4d2f; }
 .harvest-destination-button:hover { background: #ffefb8; }
 .farm-help {
-  position: absolute; top: 82px; left: 10px; padding: 7px 11px; max-width: 440px;
+  position: absolute; top: calc(82px + var(--safe-top)); left: calc(10px + var(--safe-left)); padding: 7px 11px; max-width: 440px;
   background: rgba(47, 96, 56, 0.92); color: white; border-radius: 9px;
   font-size: 12px; box-shadow: var(--shadow); line-height: 1.35;
   animation: farm-hud-in .22s ease-out;
 }
 .first-delivery-chip {
-  position: absolute; top: 82px; right: 10px; max-width: 390px; padding: 7px 10px;
+  position: absolute; top: calc(82px + var(--safe-top)); right: calc(10px + var(--safe-right)); max-width: 390px; padding: 7px 10px;
   border: 2px solid #d0a743; border-radius: 10px; background: rgba(255, 248, 218, .97);
   color: #694a25; font-size: 12px; font-weight: 800; box-shadow: var(--shadow);
 }
@@ -576,7 +587,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .first-morning-card strong { color: #315b3a; font-size: 14px; }
 .first-morning-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .farm-operation-status {
-  position: absolute; top: 82px; right: 10px; padding: 8px 12px; max-width: 560px;
+  position: absolute; top: calc(82px + var(--safe-top)); right: calc(10px + var(--safe-right)); padding: 8px 12px; max-width: 560px;
   background: rgba(255, 248, 218, 0.97); color: #6d4124; border: 2px solid #d6ad48;
   border-radius: 10px; font-size: 12px; font-weight: 900; box-shadow: var(--shadow);
   animation: farm-hud-in .22s ease-out;
@@ -721,16 +732,20 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 @keyframes farm-hud-in { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (max-width: 900px) {
-  .farm-help { top: 136px; left: 10px; right: 10px; max-width: none; }
-  .first-delivery-chip { top: 188px; left: 10px; right: auto; max-width: calc(100vw - 20px); }
-  .first-morning-card { top: 242px; }
-  .farm-operation-status { top: 82px; right: 10px; }
+  .farm-help { top: calc(136px + var(--safe-top)); left: calc(10px + var(--safe-left)); right: calc(10px + var(--safe-right)); max-width: none; }
+  .first-delivery-chip { top: calc(188px + var(--safe-top)); left: calc(10px + var(--safe-left)); right: auto; max-width: calc(100vw - 20px - var(--safe-left) - var(--safe-right)); }
+  .first-morning-card { top: calc(242px + var(--safe-top)); }
+  .farm-operation-status { top: calc(82px + var(--safe-top)); right: calc(10px + var(--safe-right)); }
   .farm-brand { min-width: 180px; }
   .farm-stat { min-width: 100px; }
   .farm-hud-bottom { align-items: flex-start; flex-wrap: wrap; }
   .farm-actions { width: 100%; justify-content: center; }
   .farm-operation-status { top: 82px; max-width: calc(100vw - 20px); }
-  .farm-hud-top { max-width: calc(100vw - 20px); overflow-x: auto; scrollbar-width: thin; }
+  .farm-hud-top {
+    right: calc(62px + var(--safe-right)); max-width: none;
+    overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none;
+  }
+  .farm-hud-top::-webkit-scrollbar { display: none; }
   .farm-brand, .farm-stat { flex: 0 0 auto; }
   .farm-hud-bottom { width: calc(100vw - 20px); }
   .farm-crop-strip { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
@@ -741,21 +756,21 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 }
 
 @media (max-width: 560px) {
-  #title-screen { align-items: flex-start; padding: 14px 0; }
+  #title-screen { align-items: flex-start; padding: calc(14px + var(--safe-top)) var(--safe-right) calc(14px + var(--safe-bottom)) var(--safe-left); }
   .title-box { padding: 24px 18px; }
   .farm-title-eyebrow { letter-spacing: 1.2px; }
   .farm-title-logo { font-size: clamp(32px, 10vw, 44px); letter-spacing: clamp(1px, 1.2vw, 3px); }
   .title-tagline { font-size: 12px; letter-spacing: 1px; }
-  .farm-help { top: 126px; font-size: 11px; }
-  .first-delivery-chip { top: 178px; font-size: 11px; }
-  .first-morning-card { top: 228px; width: calc(100vw - 20px); font-size: 11px; }
-  .farm-operation-status { top: 76px; left: 10px; right: 10px; max-width: none; }
+  .farm-help { top: calc(126px + var(--safe-top)); font-size: 11px; }
+  .first-delivery-chip { top: calc(178px + var(--safe-top)); font-size: 11px; }
+  .first-morning-card { top: calc(228px + var(--safe-top)); width: calc(100vw - 20px - var(--safe-left) - var(--safe-right)); font-size: 11px; }
+  .farm-operation-status { top: calc(76px + var(--safe-top)); left: calc(10px + var(--safe-left)); right: calc(10px + var(--safe-right)); max-width: none; }
   .farm-hud-top { gap: 5px; }
   .farm-brand { min-width: 168px; padding: 6px 8px; }
   .farm-brand-mark { width: 32px; height: 32px; }
   .farm-stat { min-width: 94px; padding: 6px 8px; }
   .farm-stat > strong { font-size: 12px; }
-  .farm-hud-bottom { bottom: 8px; padding: 7px; gap: 6px; }
+  .farm-hud-bottom { bottom: calc(8px + var(--safe-bottom)); padding: 7px; gap: 6px; }
   .farm-selected { min-width: 128px; }
   .farm-actions { gap: 4px; }
   .farm-actions .btn { padding: 6px 9px; font-size: 12px; }

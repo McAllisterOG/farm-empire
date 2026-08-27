@@ -87,11 +87,23 @@ function renderTitle(root: HTMLElement): void {
     h('div', { class: 'title-sub' }, 'Build a farm. Read the market. Own the land.'),
     h('div', { class: 'title-tagline' }, 'BUY SEEDS → GROW CROPS → STORE → SELL → EXPAND'),
     list,
+    h('div', { class: 'title-device-note' },
+      h('strong', {}, 'Playing on iPad?'),
+      ' Use Safari Share → Add to Home Screen. This browser keeps its own farm saves.',
+    ),
     h('div', { class: 'title-footer' },
       'Original Farm Empire systems built on the MIT-licensed Paradise Isle engine · ',
       h('a', { href: 'https://github.com/McAllisterOG/farm-empire', target: '_blank', rel: 'noreferrer' }, 'GitHub'),
     ),
   ));
+}
+
+function registerWebAppShell(): void {
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator) || location.protocol === 'file:') return;
+  window.addEventListener('load', () => {
+    const base = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+    void navigator.serviceWorker.register(`${base}sw.js`, { scope: base }).catch(() => undefined);
+  }, { once: true });
 }
 
 function boot(): void {
@@ -105,3 +117,4 @@ function boot(): void {
 }
 
 boot();
+registerWebAppShell();
