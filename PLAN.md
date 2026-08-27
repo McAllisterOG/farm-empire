@@ -62,7 +62,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Current authorization
 
-**iPad Travel Release V1 is implementation-complete.** Commit `67cdfb4` adds the installable Safari/PWA surface, touch camera gestures, responsive safe-area treatment, Render Blueprint, and explicit device-local save guidance without changing gameplay, saves, economy, progression, or the desktop security/runtime policy. Automated, production, desktop-relative, and embedded iPad portrait/landscape checks passed. Remote publication awaits the owner-account Render connection and issued HTTPS URL; cloud save sync and physical-iPad offline acceptance remain outside this package.
+**iPad Travel Release V1 is published.** Commit `67cdfb4` adds the installable Safari/PWA surface, touch camera gestures, responsive safe-area treatment, Render Blueprint, and explicit device-local save guidance without changing gameplay, saves, economy, progression, or the desktop security/runtime policy. Automated, production, desktop-relative, and embedded iPad portrait/landscape checks passed. The `codex/first-town-contact` branch is live at `https://farm-empire-hyle.onrender.com`; cloud save sync and physical-iPad offline acceptance remain outside this package.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.

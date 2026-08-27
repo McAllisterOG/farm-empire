@@ -665,10 +665,11 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Release:** `release/companion-corner-491e3c1/verified-win-unpacked/Farm Empire.exe`; `resources/app.asar` is 1,812,090 bytes with SHA-256 `D1AFB7EEB84606170F5DD6084BE45F56F47304C897DB3B2A7841C0F1FD2A5D4E`. Electron Builder hit the documented local staging-rename `EPERM`; the accepted Electron 43.3.0 shell was reused and the current application archive was rebuilt and inspected.
 - **Desktop acceptance/boundaries:** The Desktop shortcut now targets the verified release; target, working directory, target existence, and icon existence were read back without launching the app. The owner profile was untouched. No save/schema, economy, capacity, progression, transaction, dependency, external asset, or push change.
 
-## iPad Travel Release V1 - implementation complete
+## iPad Travel Release V1 - published
 
-- **Date:** 2026-08-26
-- **Branch/commit:** `codex/first-town-contact` / `67cdfb4`
+- **Date:** 2026-08-27
+- **Branch/commit:** `codex/first-town-contact` / implementation `67cdfb4`, published snapshot `50156b3`
 - **Result:** Added iPad-safe responsive layout, two-finger pan/zoom with accidental-tap suppression, installable Safari metadata/icon/manifest, a versioned same-origin app-shell service worker, and a Render Static Site Blueprint. The title discloses that hosted browser saves are local to that browser; the Windows file build skips service-worker registration and retains its existing desktop behavior.
 - **Verification:** 366 tests in 55 files passed; strict typecheck, Vite production build, desktop-relative build, and `git diff --check` passed. Embedded Codex-browser acceptance loaded the current title and live farm at 834×1194 portrait and 1194×834 landscape with zero console errors; the temporary viewport override was reset afterward.
-- **Release boundary:** The package is Render-ready but the public HTTPS service still requires the owner's Render account/repository connection. Browser/iPad saves do not sync with the Windows desktop profile. Offline app-shell logic was not accepted in the embedded runtime or on a physical iPad, so offline play remains unverified and is not promised by this checkpoint.
+- **Publication:** Pushed `codex/first-town-contact` to `McAllisterOG/farm-empire` and created the free Render Static Site through the repository Blueprint. The exact public build at `https://farm-empire-hyle.onrender.com` loaded the title and created a fresh playable farm; live browser diagnostics contained no errors.
+- **Release boundary:** Browser/iPad saves do not sync with the Windows desktop profile. Offline app-shell logic was not accepted in the embedded runtime or on a physical iPad, so offline play remains unverified and is not promised by this checkpoint.
