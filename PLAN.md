@@ -58,10 +58,11 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 52. **Vehicle Parking & Logistics Clarity V1** - distinct pickup/tractor parking, explicit overlap selection, compact cargo and Equipment Desk surfaces, truthful wagon-capacity guidance, and serialized receiving-bay unload without economy or save changes.
 53. **Visual Cohesion & Interaction Compression V1** - richer machinery, trailer, wagon, tree, pasture, and prop presentation plus shorter routine guidance and progressive disclosure for dense seed, market, and equipment details without gameplay-rule changes.
 54. **Companion & Homestead Warmth V1** - a more recognizable corgi-like Scout, richer doghouse corner, clearer scratches/fetch discovery, and upgraded runtime-only fetch presentation without save or gameplay-rule changes.
+55. **iPad Travel Release V1** - an installable hosted Safari build with iPad safe-area layout, touch pan/pinch camera control, an app-shell service worker, device-local save disclosure, and a Render Static Site Blueprint without gameplay or desktop-runtime changes.
 
 ## Current authorization
 
-**Companion & Homestead Warmth V1 is complete.** Scout and his corner now carry the warm, cutesy companion identity requested by the owner, while the existing scratches, fetch, overlap priority, and runtime-only save boundary remain intact. No save, economy, capacity, progression, or transaction rule changed. Automated, desktop-relative, responsive embedded-browser, archive, and Desktop-shortcut checks passed. Stop after this bounded presentation package; the next feature package should respond to the owner's next packaged-app playtest rather than broaden scope speculatively.
+**iPad Travel Release V1 is implementation-complete.** Commit `67cdfb4` adds the installable Safari/PWA surface, touch camera gestures, responsive safe-area treatment, Render Blueprint, and explicit device-local save guidance without changing gameplay, saves, economy, progression, or the desktop security/runtime policy. Automated, production, desktop-relative, and embedded iPad portrait/landscape checks passed. Remote publication awaits the owner-account Render connection and issued HTTPS URL; cloud save sync and physical-iPad offline acceptance remain outside this package.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
