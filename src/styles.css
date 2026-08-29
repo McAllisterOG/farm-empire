@@ -526,6 +526,10 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   position: fixed; top: calc(10px + var(--safe-top)); right: calc(10px + var(--safe-right)); z-index: 2;
   min-width: 42px; font-size: 20px; line-height: 1;
 }
+.farm-fit-button {
+  display: none; position: fixed; top: calc(10px + var(--safe-top)); right: calc(62px + var(--safe-right)); z-index: 2;
+  min-width: 42px; min-height: 42px; padding: 6px 8px; font-size: 11px; line-height: 1;
+}
 .pickup-panel-illustration { width: 150px; padding: 20px; border-radius: 10px; background: #c75a3d; color: #fff1c9; font-weight: 900; text-align: center; }
 .farm-hud-bottom {
   position: absolute; bottom: calc(12px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
@@ -793,7 +797,8 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .first-morning-card { top: calc(228px + var(--safe-top)); width: calc(100vw - 20px - var(--safe-left) - var(--safe-right)); font-size: 11px; }
   .farm-operation-status { top: calc(76px + var(--safe-top)); left: calc(10px + var(--safe-left)); right: calc(10px + var(--safe-right)); max-width: none; }
   .farm-operation-cancel { min-height: 44px; }
-  .farm-hud-top { gap: 5px; }
+  .farm-hud-top { right: calc(112px + var(--safe-right)); gap: 5px; }
+  .farm-fit-button { display: block; }
   .farm-brand { min-width: 168px; padding: 6px 8px; }
   .farm-brand-mark { width: 32px; height: 32px; }
   .farm-stat { min-width: 94px; padding: 6px 8px; }
@@ -815,6 +820,88 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .farmbook-weather-row { grid-template-columns: 1fr; }
   .farmbook-field-note { grid-template-columns: 1fr; }
   .farmbook-field-note strong { grid-row: auto; }
+}
+
+/* Short landscape is a distinct phone layout, not a wrapped desktop HUD. */
+@media (max-height: 500px) and (orientation: landscape) {
+  #title-screen {
+    align-items: flex-start;
+    padding: calc(6px + var(--safe-top)) calc(8px + var(--safe-right)) calc(6px + var(--safe-bottom)) calc(8px + var(--safe-left));
+  }
+  .farm-title-box {
+    width: min(760px, calc(100vw - 16px - var(--safe-left) - var(--safe-right)));
+    max-width: none; margin: auto; padding: 10px 14px; border-radius: 15px;
+  }
+  .farm-title-eyebrow { font-size: 8px; letter-spacing: 1.2px; }
+  .farm-title-logo { font-size: 27px; line-height: 1.05; letter-spacing: 2px; }
+  .farm-title-box .title-sub { margin-top: 2px; font-size: 10px; }
+  .farm-title-box .title-tagline { margin: 3px 0 7px; font-size: 9px; letter-spacing: 1px; }
+  .farm-title-box .slot-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .farm-title-box .slot-card { min-width: 0; padding: 6px 7px; gap: 4px; border-radius: 9px; }
+  .farm-title-box .slot-name { font-size: 11px; }
+  .farm-title-box .slot-sub { font-size: 8px; line-height: 1.2; }
+  .farm-title-box .slot-card > .btn { padding: 4px 6px; font-size: 9px; }
+  .farm-title-box .title-device-note { margin-top: 6px; padding: 4px 6px; font-size: 8px; }
+  .farm-title-box .title-footer { margin-top: 5px; font-size: 8px; }
+
+  .farm-hud-top {
+    top: calc(4px + var(--safe-top)); left: calc(6px + var(--safe-left)); right: calc(108px + var(--safe-right));
+    gap: 4px; max-height: 52px;
+  }
+  .farm-brand, .farm-stat { height: 52px; padding: 4px 6px; border-radius: 9px; }
+  .farm-brand { min-width: 150px; gap: 6px; }
+  .farm-brand-mark { width: 28px; height: 28px; border-radius: 7px; font-size: 12px; }
+  .farm-brand-title { font-size: 12px; letter-spacing: 1px; }
+  .farm-brand-sub { font-size: 8px; }
+  .farm-stat { min-width: 82px; }
+  .farm-stat > span { font-size: 8px; }
+  .farm-stat > strong { font-size: 11px; }
+  .farm-weather-stat { min-width: 68px; }
+  .farm-menu-button, .farm-fit-button { top: calc(4px + var(--safe-top)); min-width: 46px; min-height: 46px; }
+  .farm-menu-button { right: calc(6px + var(--safe-right)); }
+  .farm-fit-button { display: block; right: calc(58px + var(--safe-right)); }
+
+  .farm-help {
+    top: calc(62px + var(--safe-top)); left: calc(6px + var(--safe-left)); right: calc(6px + var(--safe-right));
+    max-width: none; padding: 4px 8px; font-size: 10px; line-height: 1.2;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .first-delivery-chip {
+    top: calc(92px + var(--safe-top)); left: calc(6px + var(--safe-left)); right: auto;
+    max-width: 48vw; padding: 4px 7px; font-size: 9px;
+  }
+  .first-morning-card {
+    top: calc(92px + var(--safe-top)); left: calc(6px + var(--safe-left)); width: min(340px, 46vw);
+    max-height: calc(100dvh - 158px - var(--safe-top) - var(--safe-bottom)); overflow: auto;
+    padding: 7px 8px; gap: 3px; font-size: 9px;
+  }
+  .first-morning-card strong { font-size: 11px; }
+  .first-morning-actions { gap: 3px; }
+  .first-morning-actions .btn { padding: 4px 6px; font-size: 9px; }
+  .farm-operation-status {
+    top: calc(62px + var(--safe-top)); left: auto; right: calc(6px + var(--safe-right)); max-width: 55vw;
+    padding: 3px 4px 3px 7px; gap: 5px; font-size: 9px;
+  }
+  .farm-operation-cancel { min-width: 54px; min-height: 30px; padding: 4px 6px; font-size: 9px; }
+
+  .farm-hud-bottom {
+    bottom: calc(4px + var(--safe-bottom)); width: calc(100vw - 12px - var(--safe-left) - var(--safe-right));
+    padding: 4px 6px; gap: 5px; border-radius: 11px; align-items: center; flex-wrap: nowrap;
+  }
+  .farm-selected { flex: 0 0 108px; min-width: 108px; }
+  .farm-selected span { font-size: 8px; }
+  .farm-selected strong { font-size: 10px; line-height: 1.15; }
+  .farm-crop-strip { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .farm-crop-strip::-webkit-scrollbar { display: none; }
+  .farm-crop-button { gap: 2px; padding: 2px 5px; border-radius: 7px; font-size: 9px; }
+  .farm-crop-button .icon-md { width: 20px; height: 20px; }
+  .farm-actions { flex: 0 0 auto; width: auto; margin-left: 0; gap: 3px; flex-wrap: nowrap; justify-content: flex-end; }
+  .farm-actions .btn { padding: 4px 6px; font-size: 9px; white-space: nowrap; }
+  .farm-hud-town-controls { flex-wrap: nowrap; gap: 6px; }
+  .town-hud-copy { flex: 1 1 auto; min-width: 0; }
+  .town-hud-copy strong { font-size: 10px; }
+  .town-hud-copy span { display: none; }
+  .farm-hud-town-controls .farm-actions { margin-left: auto; width: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

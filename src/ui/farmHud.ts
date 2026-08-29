@@ -19,6 +19,7 @@ export interface FarmHudCallbacks {
   onCancelOperation: () => void;
   onReturnFarm: () => void;
   onSave: () => void;
+  onFitFarm: () => void;
   onMenu: () => void;
 }
 
@@ -142,6 +143,13 @@ export class FarmHud {
       this.storageButton,
       this.equipmentButton,
       this.locationStat,
+      h('button', {
+        class: 'btn farm-fit-button',
+        type: 'button',
+        'aria-label': 'Fit farm to screen',
+        'data-testid': 'fit-farm-button',
+        onclick: cb.onFitFarm,
+      }, 'Fit'),
       h('button', { class: 'btn farm-menu-button', 'aria-label': 'Open game menu', 'data-testid': 'game-menu-button', onclick: cb.onMenu }, '☰'),
     );
 

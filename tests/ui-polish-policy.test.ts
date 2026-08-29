@@ -48,4 +48,13 @@ describe('Demo polish interaction contracts', () => {
     expect(styles).toContain('@media (max-width: 560px)');
     expect(styles).toContain('.farm-title-logo { font-size: clamp(');
   });
+
+  it('provides a short-landscape HUD, a touch Fit control, and settled iOS viewport handling', () => {
+    expect(styles).toContain('@media (max-height: 500px) and (orientation: landscape)');
+    expect(styles).toContain('grid-template-columns: repeat(3, minmax(0, 1fr))');
+    expect(styles).toContain('.farm-fit-button { display: block;');
+    expect(app).toContain("window.visualViewport?.addEventListener('resize', this.onResize)");
+    expect(app).toContain("window.addEventListener('orientationchange', this.onResize)");
+    expect(title).toContain('title.scrollTop = 0');
+  });
 });

@@ -196,11 +196,24 @@ export class FarmEmpireApp {
   private lastRainNoticeDay = 0;
   private devTools: HTMLElement | null = null;
   private inputCleanup: (() => void) | null = null;
-  private readonly onResize = (): void => {
+  private resizeRaf = 0;
+  private resizeSettleTimer: number | null = null;
+  private applyViewportResize(): void {
     this.renderer.resize();
     // A live resize changes the active scene's fit, so discard stale viewport
     // framing instead of merely clamping a desktop zoom into a compact view.
     if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm();
+  }
+  private readonly onResize = (): void => {
+    cancelAnimationFrame(this.resizeRaf);
+    if (this.resizeSettleTimer !== null) window.clearTimeout(this.resizeSettleTimer);
+    // iOS emits orientation and visual-viewport changes in separate phases.
+    // Refit once on the next paint and once after the viewport has settled.
+    this.resizeRaf = requestAnimationFrame(() => this.applyViewportResize());
+    this.resizeSettleTimer = window.setTimeout(() => {
+      this.resizeSettleTimer = null;
+      this.applyViewportResize();
+    }, 180);
   };
 
   constructor(canvas: HTMLCanvasElement, state: GameState, slot: number, onBackToTitle: () => void) {
@@ -213,6 +226,8 @@ export class FarmEmpireApp {
     this.farmAudio = new FarmSoundscape(audioStorage);
     this.farmAudio.ensureStarted();
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('orientationchange', this.onResize);
+    window.visualViewport?.addEventListener('resize', this.onResize);
     this.playerActor = {
       avatar: state.player.avatar,
       x: state.player.px,
@@ -241,6 +256,9 @@ export class FarmEmpireApp {
       onSave: () => {
         this.save();
         toast(this.mode === 'town' ? 'Farm business saved from town.' : 'Farm saved.', 'good');
+      },
+      onFitFarm: () => {
+        if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm();
       },
       onMenu: () => { if (!this.manualActionBlocksUi()) this.openGameMenu(onBackToTitle); },
     });
@@ -324,10 +342,14 @@ export class FarmEmpireApp {
   destroy(): void {
     this.running = false;
     cancelAnimationFrame(this.raf);
+    cancelAnimationFrame(this.resizeRaf);
+    if (this.resizeSettleTimer !== null) window.clearTimeout(this.resizeSettleTimer);
     this.hud.destroy();
     this.farmAudio.destroy();
     window.removeEventListener('beforeunload', this.save);
     window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('orientationchange', this.onResize);
+    window.visualViewport?.removeEventListener('resize', this.onResize);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.inputCleanup?.(); this.inputCleanup = null;
     this.devTools?.remove();

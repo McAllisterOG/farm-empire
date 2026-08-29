@@ -163,10 +163,15 @@ describe('Town Gateway travel and save boundary', () => {
 
   it('resizes backing pixels and viewport without changing farm or town camera framing', () => {
     const viewport = { width: 900, height: 600 };
-    vi.stubGlobal('window', { devicePixelRatio: 2, innerWidth: 900, innerHeight: 600 });
+    vi.stubGlobal('window', {
+      devicePixelRatio: 2,
+      get innerWidth() { return viewport.width; },
+      get innerHeight() { return viewport.height; },
+    });
     const canvas = {
       get clientWidth() { return viewport.width; },
       get clientHeight() { return viewport.height; },
+      style: {},
       width: 0,
       height: 0,
       getContext: () => ({}),

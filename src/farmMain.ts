@@ -8,8 +8,42 @@ import { initToast, toast } from './ui/toast';
 import { closePanel, confirmDialog, initModal, promptDialog } from './ui/modal';
 import { hideActionMenu, initActionMenu } from './ui/actionMenu';
 import { installRuntimeFailureCapture, setRuntimeReturnToTitle } from './ui/runtimeFailure';
+import { resolveViewportSize } from './core/viewportPolicy';
 
 let currentApp: FarmEmpireApp | null = null;
+let titleLandscape: boolean | null = null;
+let titleSettleTimer: number | null = null;
+
+function currentViewportIsLandscape(): boolean {
+  const viewport = resolveViewportSize({
+    visualWidth: window.visualViewport?.width,
+    visualHeight: window.visualViewport?.height,
+    innerWidth: window.innerWidth,
+    innerHeight: window.innerHeight,
+    clientWidth: document.documentElement.clientWidth,
+    clientHeight: document.documentElement.clientHeight,
+  });
+  return viewport.width > viewport.height;
+}
+
+function onTitleViewportChange(): void {
+  const landscape = currentViewportIsLandscape();
+  if (titleLandscape === null) {
+    titleLandscape = landscape;
+    return;
+  }
+  if (titleLandscape === landscape) return;
+  titleLandscape = landscape;
+  if (titleSettleTimer !== null) window.clearTimeout(titleSettleTimer);
+  titleSettleTimer = window.setTimeout(() => {
+    titleSettleTimer = null;
+    const title = document.getElementById('title-screen');
+    if (title && !title.classList.contains('hidden')) {
+      title.scrollTop = 0;
+      title.scrollLeft = 0;
+    }
+  }, 180);
+}
 
 function canvasEl(): HTMLCanvasElement {
   return document.getElementById('game-canvas') as HTMLCanvasElement;
@@ -35,6 +69,9 @@ function showTitle(): void {
   const title = document.getElementById('title-screen')!;
   title.classList.remove('hidden');
   renderTitle(title);
+  title.scrollTop = 0;
+  title.scrollLeft = 0;
+  titleLandscape = currentViewportIsLandscape();
 }
 
 function renderTitle(root: HTMLElement): void {
@@ -113,6 +150,8 @@ function boot(): void {
   initToast();
   initModal();
   initActionMenu();
+  window.addEventListener('orientationchange', onTitleViewportChange);
+  window.visualViewport?.addEventListener('resize', onTitleViewportChange);
   showTitle();
 }
 

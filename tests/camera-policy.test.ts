@@ -54,4 +54,10 @@ describe('scene camera policies', () => {
       expect(compact).toBeGreaterThanOrEqual(policy.minZoom);
     }
   });
+
+  it('uses viewport-specific farm policy while preserving desktop defaults', () => {
+    expect(farmCameraPolicy().minZoom).toBe(.46);
+    expect(farmCameraPolicy(390, 844).minZoom).toBe(.18);
+    expect(farmCameraPolicy(844, 390).padding).toBe(18);
+  });
 });

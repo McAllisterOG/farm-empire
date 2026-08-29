@@ -478,3 +478,12 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Title slots are semantic labelled buttons with independent Delete actions. Panels, dialogs, and action menus receive semantics, initial focus, Escape, focus containment, and safe restoration; transitions clear stale UI state.
 - Renderer failures use one Reload/Return-to-Title surface. Electron observes failed loads, renderer loss, unresponsive windows, and actionable console errors with a re-entrant-safe native recovery prompt. Isolation, sandbox, disabled Node integration, navigation, and external-link policy are unchanged.
 - Red Team repairs made the Electron prompt gate reusable after every dialog outcome and completed renderer recovery focus lifecycle, including Escape-to-title, Tab/Shift+Tab containment, listener cleanup, and guarded focus restoration.
+
+## 2026-08-29 - Make phone orientation changes recover camera and UI deterministically
+
+**Status:** Approved and complete locally
+
+- Keep the PWA manifest orientation set to `any`. A player may begin in portrait and rotate either direction without reloading or restarting the farm.
+- Prefer the browser `visualViewport` dimensions over stale layout-viewport fallbacks. Refit once on the immediate resize/orientation signal and once after the iOS viewport settles; use the same policy for the renderer backing surface and camera bounds.
+- Phone portrait and short landscape use an 18-pixel camera-fit padding and a 0.18 overview floor. Tablet and desktop retain the established 70-pixel padding and 0.46 farm minimum. A visible touch Fit action re-applies the authoritative fit without changing saved camera or gameplay state.
+- Short landscape means landscape at 500 CSS pixels high or less. It receives a compact HUD and crop tray; title orientation changes return the save list to its top after the viewport settles. No gameplay, save, economy, progression, transaction, iPad camera, or desktop camera authority changes.

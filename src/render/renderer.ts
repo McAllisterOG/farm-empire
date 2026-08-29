@@ -14,6 +14,7 @@ import { animalPhase } from '../core/animals';
 import { WATER_COOLDOWN_MS } from '../core/balance';
 import { FARM_TOWN_GATE } from '../core/townGateway';
 import { Camera } from './camera';
+import { resolveViewportSize } from '../core/viewportPolicy';
 import { diamondPath, isoX, isoY, TILE_H, TILE_W } from './iso';
 import { charKey, drawSprite } from './sprites';
 import { farmDriveLane, farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint, farmLandmarks, type FarmhousePresentationTier } from './farmLayout';
@@ -160,8 +161,20 @@ export class Renderer {
   }
 
   resize(): void {
-    const w = this.canvas.clientWidth || window.innerWidth;
-    const h = this.canvas.clientHeight || window.innerHeight;
+    const viewport = resolveViewportSize({
+      visualWidth: window.visualViewport?.width,
+      visualHeight: window.visualViewport?.height,
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      clientWidth: this.canvas.clientWidth,
+      clientHeight: this.canvas.clientHeight,
+    });
+    const w = viewport.width;
+    const h = viewport.height;
+    // Explicit CSS dimensions prevent a stale portrait layout viewport from
+    // stretching the canvas after an iOS orientation change.
+    this.canvas.style.width = `${w}px`;
+    this.canvas.style.height = `${h}px`;
     this.dpr = boundedRenderScale(w, h, window.devicePixelRatio || 1);
     this.canvas.width = Math.max(1, Math.round(w * this.dpr));
     this.canvas.height = Math.max(1, Math.round(h * this.dpr));
@@ -453,7 +466,7 @@ export class Renderer {
   }
 
   centerOnFarm(): void {
-    const policy = farmCameraPolicy();
+    const policy = farmCameraPolicy(this.camera.viewW, this.camera.viewH);
     const center = cameraFitCenter(policy);
     this.camera.cx = center.cx;
     this.camera.cy = center.cy;
@@ -465,7 +478,7 @@ export class Renderer {
     this.camera.zoom = cameraFitZoom(townCameraPolicy(), this.camera.viewW, this.camera.viewH); this.clampTownCamera();
   }
 
-  clampFarmCamera(): void { const policy = farmCameraPolicy(); this.camera.zoom = clampCameraZoom(this.camera.zoom, policy); const p = clampCameraCenter(this.camera.cx, this.camera.cy, this.camera.zoom, this.camera.viewW, this.camera.viewH, policy); this.camera.cx = p.cx; this.camera.cy = p.cy; }
+  clampFarmCamera(): void { const policy = farmCameraPolicy(this.camera.viewW, this.camera.viewH); this.camera.zoom = clampCameraZoom(this.camera.zoom, policy); const p = clampCameraCenter(this.camera.cx, this.camera.cy, this.camera.zoom, this.camera.viewW, this.camera.viewH, policy); this.camera.cx = p.cx; this.camera.cy = p.cy; }
   clampTownCamera(): void { const policy = townCameraPolicy(); this.camera.zoom = clampCameraZoom(this.camera.zoom, policy); const p = clampCameraCenter(this.camera.cx, this.camera.cy, this.camera.zoom, this.camera.viewW, this.camera.viewH, policy); this.camera.cx = p.cx; this.camera.cy = p.cy; }
 
   /** Farm-only presentation branch.  Legacy island rendering above stays isolated. */

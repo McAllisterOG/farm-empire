@@ -60,7 +60,9 @@ export class Camera {
   zoomAt(factor: number, sx: number, sy: number): void {
     const beforeX = this.wx(sx);
     const beforeY = this.wy(sy);
-    this.zoom = Math.min(2.2, Math.max(0.45, this.zoom * factor));
+    // Scene policies apply the authoritative floor after this transform. Keep
+    // this generic camera permissive enough for the phone farm overview.
+    this.zoom = Math.min(2.2, Math.max(0.12, this.zoom * factor));
     // 保持鼠标下的世界点不动
     this.cx += beforeX - this.wx(sx);
     this.cy += beforeY - this.wy(sy);

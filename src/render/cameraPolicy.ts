@@ -1,5 +1,6 @@
 import { isoX, isoY } from './iso';
 import { farmHomeFocusBounds, farmMainlandBounds } from './farmLayout';
+import { farmCameraViewportPolicy } from '../core/viewportPolicy';
 
 export interface WorldRect { minX: number; minY: number; maxX: number; maxY: number }
 export interface CameraPolicy { bounds: WorldRect; fitBounds?: WorldRect; padding: number; minZoom: number; maxZoom: number }
@@ -34,14 +35,15 @@ export function cameraFitCenter(policy: CameraPolicy): { cx: number; cy: number 
   return { cx: (fit.minX + fit.maxX) / 2, cy: (fit.minY + fit.maxY) / 2 };
 }
 
-export function farmCameraPolicy(): CameraPolicy {
+export function farmCameraPolicy(viewW = 1280, viewH = 720): CameraPolicy {
   const property = farmMainlandBounds();
   const home = farmHomeFocusBounds();
+  const viewport = farmCameraViewportPolicy(viewW, viewH);
   return {
     bounds: tileBoundsToWorld(property.minX, property.minY, property.maxX, property.maxY),
     fitBounds: tileBoundsToWorld(home.minX, home.minY, home.maxX, home.maxY),
-    padding: 70,
-    minZoom: .46,
+    padding: viewport.padding,
+    minZoom: viewport.minZoom,
     maxZoom: 1.15,
   };
 }
