@@ -57,4 +57,11 @@ describe('Demo polish interaction contracts', () => {
     expect(app).toContain("window.addEventListener('orientationchange', this.onResize)");
     expect(title).toContain('title.scrollTop = 0');
   });
+
+  it('keeps the short-landscape first-morning overlay separate and phone controls touch-readable', () => {
+    expect(styles).toContain('.farm-hud-root.first-morning-active .first-delivery-chip { display: none; }');
+    expect(styles).toContain('.farm-crop-button { min-width: 44px; min-height: 44px; font-size: 12px; }');
+    expect(styles).toContain('.btn-close { width: 44px; height: 44px; font-size: 17px; }');
+    expect(styles).toContain('.farm-actions .btn { min-height: 44px; padding: 5px 8px; font-size: 11px; white-space: nowrap; }');
+  });
 });

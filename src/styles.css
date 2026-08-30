@@ -807,6 +807,9 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .farm-selected { min-width: 128px; }
   .farm-actions { gap: 4px; }
   .farm-actions .btn { padding: 6px 9px; font-size: 12px; }
+  .farm-crop-button { min-width: 44px; min-height: 44px; font-size: 12px; }
+  .farm-actions .btn, .first-morning-actions .btn, .tab-btn, .action-btn { min-height: 44px; }
+  .btn-close { width: 44px; height: 44px; font-size: 17px; }
   .farm-help { top: 126px; max-width: calc(100vw - 20px); }
   .modal-panel { width: calc(100vw - 20px); max-height: 88vh; border-width: 2px; }
   .panel-header { padding: 11px 13px 9px; }
@@ -870,6 +873,8 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
     top: calc(92px + var(--safe-top)); left: calc(6px + var(--safe-left)); right: auto;
     max-width: 48vw; padding: 4px 7px; font-size: 9px;
   }
+  /* The welcome is actionable; keep its route readable instead of layering the progress chip beneath it. */
+  .farm-hud-root.first-morning-active .first-delivery-chip { display: none; }
   .first-morning-card {
     top: calc(92px + var(--safe-top)); left: calc(6px + var(--safe-left)); width: min(340px, 46vw);
     max-height: calc(100dvh - 158px - var(--safe-top) - var(--safe-bottom)); overflow: auto;
@@ -877,12 +882,12 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   }
   .first-morning-card strong { font-size: 11px; }
   .first-morning-actions { gap: 3px; }
-  .first-morning-actions .btn { padding: 4px 6px; font-size: 9px; }
+  .first-morning-actions .btn { min-height: 44px; padding: 5px 8px; font-size: 11px; }
   .farm-operation-status {
     top: calc(62px + var(--safe-top)); left: auto; right: calc(6px + var(--safe-right)); max-width: 55vw;
     padding: 3px 4px 3px 7px; gap: 5px; font-size: 9px;
   }
-  .farm-operation-cancel { min-width: 54px; min-height: 30px; padding: 4px 6px; font-size: 9px; }
+  .farm-operation-cancel { min-width: 54px; min-height: 44px; padding: 5px 8px; font-size: 11px; }
 
   .farm-hud-bottom {
     bottom: calc(4px + var(--safe-bottom)); width: calc(100vw - 12px - var(--safe-left) - var(--safe-right));
@@ -893,10 +898,10 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .farm-selected strong { font-size: 10px; line-height: 1.15; }
   .farm-crop-strip { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
   .farm-crop-strip::-webkit-scrollbar { display: none; }
-  .farm-crop-button { gap: 2px; padding: 2px 5px; border-radius: 7px; font-size: 9px; }
+  .farm-crop-button { gap: 2px; min-width: 44px; min-height: 44px; padding: 3px 6px; border-radius: 7px; font-size: 11px; }
   .farm-crop-button .icon-md { width: 20px; height: 20px; }
   .farm-actions { flex: 0 0 auto; width: auto; margin-left: 0; gap: 3px; flex-wrap: nowrap; justify-content: flex-end; }
-  .farm-actions .btn { padding: 4px 6px; font-size: 9px; white-space: nowrap; }
+  .farm-actions .btn { min-height: 44px; padding: 5px 8px; font-size: 11px; white-space: nowrap; }
   .farm-hud-town-controls { flex-wrap: nowrap; gap: 6px; }
   .town-hud-copy { flex: 1 1 auto; min-width: 0; }
   .town-hud-copy strong { font-size: 10px; }

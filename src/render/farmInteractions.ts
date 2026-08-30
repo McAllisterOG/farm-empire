@@ -22,8 +22,8 @@ export interface FarmInteractionTarget {
 }
 
 export interface FarmInteractionRuntime {
-  pickup: FarmPoint;
-  tractor: FarmPoint;
+  pickup: FarmPoint & { headingX?: number; headingY?: number; trailerOwned?: boolean };
+  tractor: FarmPoint & { headingX?: number; headingY?: number; attachmentVisible?: boolean };
   scout: FarmPoint;
   farmhand?: FarmPoint;
   farmhands?: { point: FarmPoint; label: string }[];
@@ -34,12 +34,31 @@ function near(point: FarmPoint, anchor: FarmPoint, radius: number): boolean {
   return Math.hypot(point.x - anchor.x, point.y - anchor.y) <= radius;
 }
 
+function headingOf(vehicle: { headingX?: number; headingY?: number }): FarmPoint {
+  const length = Math.hypot(vehicle.headingX ?? 1, vehicle.headingY ?? 0);
+  return length > 0.0001 ? { x: (vehicle.headingX ?? 1) / length, y: (vehicle.headingY ?? 0) / length } : { x: 1, y: 0 };
+}
+
+/** A narrow oriented capsule for a painted attachment behind its vehicle. */
+function attachmentHit(point: FarmPoint, vehicle: FarmPoint & { headingX?: number; headingY?: number }, distance: number, halfLength: number, halfWidth: number): boolean {
+  const heading = headingOf(vehicle);
+  const center = { x: vehicle.x - heading.x * distance, y: vehicle.y - heading.y * distance };
+  const dx = point.x - center.x; const dy = point.y - center.y;
+  const along = dx * heading.x + dy * heading.y;
+  const across = dx * -heading.y + dy * heading.x;
+  return Math.abs(along) <= halfLength && Math.abs(across) <= halfWidth;
+}
+
 /** Reports both real vehicle silhouettes before the ordinary priority resolver picks one. */
 export function farmVehicleHitsAtWorldPoint(worldPoint: FarmPoint, runtime: Pick<FarmInteractionRuntime, 'pickup' | 'tractor'>): Array<'pickup' | 'tractor'> {
   const logical = farmLogicalPoint(worldPoint);
   const hits: Array<'pickup' | 'tractor'> = [];
-  if (near(logical, runtime.pickup, 1.05)) hits.push('pickup');
-  if (near(logical, runtime.tractor, 1.0)) hits.push('tractor');
+  // The attachment dimensions mirror the visible painter proportions while
+  // remaining intentionally tighter than the primary vehicle silhouettes.
+  if (near(logical, runtime.pickup, 1.05)
+    || (runtime.pickup.trailerOwned === true && attachmentHit(logical, runtime.pickup, 1.5, .62, .46))) hits.push('pickup');
+  if (near(logical, runtime.tractor, 1.0)
+    || (runtime.tractor.attachmentVisible === true && attachmentHit(logical, runtime.tractor, 1.45, .72, .48))) hits.push('tractor');
   return hits;
 }
 

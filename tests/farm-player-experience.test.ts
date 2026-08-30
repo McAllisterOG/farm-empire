@@ -93,6 +93,25 @@ describe('authoritative farm object interactions', () => {
     expect(farmInteractionAtWorldPoint(state, point, rt)?.kind).toBe('pickup');
   });
 
+  it('keeps direct vehicle centers, visible attachments, misses, and chooser overlap deterministic', () => {
+    const state = makeFarm();
+    const pickup = { x: 12, y: 12, headingX: 0, headingY: 1, trailerOwned: true };
+    const tractor = { x: 15, y: 12, headingX: 1, headingY: 0, attachmentVisible: true };
+    const rt = { ...runtime(state), pickup, tractor };
+
+    expect(farmVehicleHitsAtWorldPoint(farmWorldPoint(pickup), rt)).toEqual(['pickup']);
+    // The pickup trailer is behind its south-facing cab; the wagon is behind
+    // its east-facing tractor. These are painted attachment centers, not broad circles.
+    expect(farmVehicleHitsAtWorldPoint(farmWorldPoint({ x: 12, y: 10.5 }), rt)).toEqual(['pickup']);
+    expect(farmVehicleHitsAtWorldPoint(farmWorldPoint({ x: 13.55, y: 12 }), rt)).toEqual(['tractor']);
+    expect(farmVehicleHitsAtWorldPoint(farmWorldPoint({ x: 12.8, y: 10.5 }), rt)).toEqual([]);
+
+    const overlapping = { ...rt, tractor: { x: 12, y: 11.95, headingX: 0, headingY: 1, attachmentVisible: true } };
+    const sharedAttachment = farmWorldPoint({ x: 12, y: 10.5 });
+    expect(farmVehicleHitsAtWorldPoint(sharedAttachment, overlapping)).toEqual(['pickup', 'tractor']);
+    expect(farmInteractionAtWorldPoint(state, sharedAttachment, overlapping)?.kind).toBe('pickup');
+  });
+
   it('keeps an operated tractor drag selection exact across rough, prepared, and stubble empty sections', () => {
     const state = makeFarm(); const farm = farmOf(state);
     farm.equipment.tractor.status = 'operational'; farm.seeds.crop_corn = 3;

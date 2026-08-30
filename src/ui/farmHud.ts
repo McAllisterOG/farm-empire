@@ -235,7 +235,9 @@ export class FarmHud {
     if (this.mode === 'farm') this.brandSubEl.textContent = `${knowledge.level.name} · Farming Business`;
     this.deliveryChip.classList.toggle('hidden', !shouldShowFirstDeliveryChip(this.mode, morning.complete, runtime));
     this.deliveryChip.textContent = `County Pantry · Pickup loaded · ${morning.cornProgress.current}/${morning.cornProgress.required} corn`;
-    this.morningCard.classList.toggle('hidden', this.mode !== 'farm' || this.morningDismissed || !morning.showWelcome);
+    const morningVisible = this.mode === 'farm' && !this.morningDismissed && morning.showWelcome;
+    this.morningCard.classList.toggle('hidden', !morningVisible);
+    this.root.classList.toggle('first-morning-active', morningVisible);
     const greeting = this.morningCard.querySelector('strong');
     if (greeting) greeting.textContent = `Good morning, ${state.player.name?.trim() || 'Farm'}.`;
     const wagonChip = farm.equipment.harvestWagon.owned ? ` · W ${harvestWagonReadout(state)}` : '';
