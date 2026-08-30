@@ -692,10 +692,11 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Publication:** Render manually deployed implementation snapshot `10b92ea` successfully. Public HTTPS readback returned JavaScript `index-sFZpxx39.js`, CSS `index-pq5nKsbV.css`, and service-worker cache `farm-empire-phone-orientation-v1`.
 - **Boundary:** No gameplay, save, economy, capacity, progression, transaction, map, desktop runtime, or tablet/desktop camera change. No owner save/profile was opened. Physical-device and offline acceptance remain with the owner.
 
-## Asset Integrity & Mobile Readability V1 - complete locally
+## Asset Integrity & Mobile Readability V1 - published
 
 - **Date:** 2026-08-29
-- **Branch/commit:** `codex/first-town-contact` / local-only, not published
+- **Branch/commit:** `codex/first-town-contact` / implementation `c7cb8cd`
 - **Result:** Separated the short-landscape first-morning card from the delivery chip by suppressing the chip while the welcome card is active. Scoped phone crop/action/tab/menu controls and the modal close now have 44px touch targets; short-landscape actionable labels are at least 11px. Owned pickup trailers and visible tractor wagon/implements now use narrow heading-aware hit regions while keeping direct-center selection and existing pickup-first chooser priority.
 - **Verification/review:** 375 tests in 56 files passed, along with strict typecheck, Vite production build, and `git diff --check`. Isolated hidden real Chrome at 390×844 and 844×390 reported zero body overflow, relevant overlay collisions, and console errors; every visible scoped control was at least 44px and modal close measured 44×44. 1024×1366, 1366×1024, and 1920×1080 likewise had zero overflow, overlap, or console errors. Red Team returned SHIP with no Critical, High, or Medium findings.
-- **Boundary:** No save/schema, economy, capacity, progression, camera/orientation policy, world art, dependency, deployment, or push change. Temporary QA files were removed.
+- **Publication:** Pushed implementation snapshot `c7cb8cd` to `codex/first-town-contact`; Render reported the manual deployment succeeded and is Live. Cache-bypassed public HTTPS readback returned JavaScript `index-Bd-5XWMG.js` and CSS `index-EkLLfDk3.css`, exactly matching the verified local production build.
+- **Boundary:** No save/schema, economy, capacity, progression, camera/orientation policy, world art, or dependency change. Temporary QA files were removed.

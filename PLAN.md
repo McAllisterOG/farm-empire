@@ -65,7 +65,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Current authorization
 
-**Asset Integrity & Mobile Readability V1 is complete locally and not published.** It separates the short-landscape first-morning card from the delivery chip, gives scoped phone controls 44px touch targets with legible 11px short-landscape action labels, and makes painted pickup/tractor attachments selectable with heading-aware narrow regions. The package preserves saves, economy, camera policy, and interaction priority; cloud save sync, a dedicated phone redesign, and physical-device offline acceptance remain outside it.
+**Asset Integrity & Mobile Readability V1 is published from implementation snapshot `c7cb8cd`.** It separates the short-landscape first-morning card from the delivery chip, gives scoped phone controls 44px touch targets with legible 11px short-landscape action labels, and makes painted pickup/tractor attachments selectable with heading-aware narrow regions. The package preserves saves, economy, camera policy, and interaction priority; cloud save sync, a dedicated phone redesign, and physical-device offline acceptance remain outside it. No later milestone is authorized yet; Machinery & World Truthfulness V1 is the next candidate for owner scoping.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
