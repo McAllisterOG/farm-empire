@@ -7,6 +7,7 @@ import { FARM_DECOR_MANIFEST } from './farmDecor';
 import {
   farmhouseInteractionRadius, farmhousePresentationTier, farmLandmarks, farmLogicalPoint, farmPlotAtWorldPoint, type FarmPoint,
 } from './farmLayout';
+import { tractorAttachmentHitShape, type HarvestWagonTier } from './farmMachinery';
 
 export type FarmInteractionKind =
   | 'pickup' | 'tractor' | 'farmhand' | 'scout' | 'farmhouse' | 'barn' | 'pump'
@@ -23,7 +24,7 @@ export interface FarmInteractionTarget {
 
 export interface FarmInteractionRuntime {
   pickup: FarmPoint & { headingX?: number; headingY?: number; trailerOwned?: boolean };
-  tractor: FarmPoint & { headingX?: number; headingY?: number; attachmentVisible?: boolean };
+  tractor: FarmPoint & { headingX?: number; headingY?: number; attachmentVisible?: boolean; attachmentTier?: HarvestWagonTier };
   scout: FarmPoint;
   farmhand?: FarmPoint;
   farmhands?: { point: FarmPoint; label: string }[];
@@ -57,8 +58,9 @@ export function farmVehicleHitsAtWorldPoint(worldPoint: FarmPoint, runtime: Pick
   // remaining intentionally tighter than the primary vehicle silhouettes.
   if (near(logical, runtime.pickup, 1.05)
     || (runtime.pickup.trailerOwned === true && attachmentHit(logical, runtime.pickup, 1.5, .62, .46))) hits.push('pickup');
+  const tractorAttachment = tractorAttachmentHitShape(runtime.tractor.attachmentTier);
   if (near(logical, runtime.tractor, 1.0)
-    || (runtime.tractor.attachmentVisible === true && attachmentHit(logical, runtime.tractor, 1.45, .72, .48))) hits.push('tractor');
+    || (runtime.tractor.attachmentVisible === true && attachmentHit(logical, runtime.tractor, tractorAttachment.distance, tractorAttachment.halfLength, tractorAttachment.halfWidth))) hits.push('tractor');
   return hits;
 }
 

@@ -700,3 +700,11 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Verification/review:** 375 tests in 56 files passed, along with strict typecheck, Vite production build, and `git diff --check`. Isolated hidden real Chrome at 390×844 and 844×390 reported zero body overflow, relevant overlay collisions, and console errors; every visible scoped control was at least 44px and modal close measured 44×44. 1024×1366, 1366×1024, and 1920×1080 likewise had zero overflow, overlap, or console errors. Red Team returned SHIP with no Critical, High, or Medium findings.
 - **Publication:** Pushed implementation snapshot `c7cb8cd` to `codex/first-town-contact`; Render reported the manual deployment succeeded and is Live. Cache-bypassed public HTTPS readback returned JavaScript `index-Bd-5XWMG.js` and CSS `index-EkLLfDk3.css`, exactly matching the verified local production build.
 - **Boundary:** No save/schema, economy, capacity, progression, camera/orientation policy, world art, or dependency change. Temporary QA files were removed.
+
+## Machinery & World Truthfulness V1 - complete locally
+
+- **Date:** 2026-08-30
+- **Branch:** `codex/first-town-contact`
+- **Result:** Replaced generic/fabricated tractor-wagon presentation with the authoritative owned basic/County wagon tier and live cargo load in parked and active states. Planting now composes a readable tractor-planter-real-wagon chain, tier-specific narrow hit shapes follow the visible attachment, and the established receiving-bay/tractor-parking anchors have restrained dual-use wheel guides and gravel treatment.
+- **Verification:** 379 tests in 57 files passed; strict typecheck, Vite production build, and `git diff --check` passed. Isolated hidden real Edge verified loaded County-wagon parking and active planting at 1920×1080 plus stable 390×844, 844×390, and 1024×768 layouts with no JavaScript exceptions or runtime errors. Independent Red Team returned SHIP with no findings at any severity.
+- **Boundary:** No save/schema, economy, progression, capacity, transaction, camera, map-geometry, dependency, push, deployment, or owner-profile change. Render remains on published snapshot `c7cb8cd`.

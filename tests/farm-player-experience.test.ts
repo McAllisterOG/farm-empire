@@ -14,6 +14,7 @@ import { FARM_DECOR_MANIFEST } from '../src/render/farmDecor';
 import { farmInteractionAtWorldPoint, farmVehicleHitsAtWorldPoint, type FarmInteractionRuntime } from '../src/render/farmInteractions';
 import { farmLandmarks, farmPlotAtWorldPoint, farmWorldPoint, pointInFarmBounds } from '../src/render/farmLayout';
 import { farmCameraPolicy, townCameraPolicy } from '../src/render/cameraPolicy';
+import { tractorAttachmentHitShape } from '../src/render/farmMachinery';
 import { NOW } from './helpers';
 
 function makeFarm() {
@@ -110,6 +111,15 @@ describe('authoritative farm object interactions', () => {
     const sharedAttachment = farmWorldPoint({ x: 12, y: 10.5 });
     expect(farmVehicleHitsAtWorldPoint(sharedAttachment, overlapping)).toEqual(['pickup', 'tractor']);
     expect(farmInteractionAtWorldPoint(state, sharedAttachment, overlapping)?.kind).toBe('pickup');
+  });
+
+  it('keeps County wagon hit geometry aligned with its visibly longer painted attachment', () => {
+    const state = makeFarm(); const rt = runtime(state);
+    const tractor = { x: 15, y: 12, headingX: 1, headingY: 0, attachmentVisible: true, attachmentTier: 'county' as const };
+    const shape = tractorAttachmentHitShape('county');
+    const center = { x: tractor.x - shape.distance, y: tractor.y };
+    expect(farmVehicleHitsAtWorldPoint(farmWorldPoint(center), { ...rt, tractor })).toEqual(['tractor']);
+    expect(tractorAttachmentHitShape('county').halfLength).toBeGreaterThan(tractorAttachmentHitShape('basic').halfLength);
   });
 
   it('keeps an operated tractor drag selection exact across rough, prepared, and stubble empty sections', () => {

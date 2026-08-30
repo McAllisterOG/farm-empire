@@ -34,6 +34,7 @@ import { drawWeatherCast, drawWeatherPrecipitation } from './farmWeatherEffects'
 import { frisbeeThrowProgress } from '../core/farmCompanion';
 import { farmCropSpriteVariant, farmCropVisualFor, isFarmCropRipeStage, type FarmCropVisual } from './farmCropVisuals';
 import { boundedRenderScale } from './renderResolution';
+import { harvestWagonLoadPresentation, tractorWagonRenderOffset } from './farmMachinery';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -954,15 +955,25 @@ function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: numbe
   ctx.strokeStyle = '#c4ad7d'; ctx.lineWidth = 16 * zoom; ctx.stroke();
   const pad = farmWorldPoint(farmLandmarks().cargoPad);
   const px = camera.sx(isoX(pad.x, pad.y)); const py = camera.sy(isoY(pad.x, pad.y));
-  ctx.fillStyle = 'rgba(164,137,91,.78)'; ctx.beginPath(); ctx.ellipse(px, py, 58 * zoom, 21 * zoom, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = 'rgba(91,68,42,.45)'; ctx.lineWidth = 2 * zoom; ctx.stroke();
-  ctx.save(); ctx.font = `800 ${Math.max(8, 10 * zoom)}px Segoe UI, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(83,61,37,.72)'; ctx.fillText('PICKUP CARGO PAD', px, py + 2 * zoom); ctx.restore();
+  // The cargo pad and receiving bay share their authoritative loading anchor.
+  // Parallel wheel guides distinguish their two real uses without extra labels.
+  ctx.fillStyle = 'rgba(164,137,91,.82)'; ctx.beginPath(); ctx.ellipse(px, py, 58 * zoom, 21 * zoom, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(63,95,111,.8)'; ctx.lineWidth = Math.max(1.2, 2 * zoom); ctx.beginPath(); ctx.ellipse(px - 17 * zoom, py, 22 * zoom, 8 * zoom, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(174,113,45,.82)'; ctx.beginPath(); ctx.ellipse(px + 17 * zoom, py, 22 * zoom, 8 * zoom, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.save(); ctx.strokeStyle = 'rgba(255,235,178,.72)'; ctx.lineWidth = Math.max(1, 1.5 * zoom); ctx.setLineDash([3 * zoom, 4 * zoom]);
+  for (const offset of [-9, 9]) { ctx.beginPath(); ctx.moveTo(px - 45 * zoom, py + offset * zoom); ctx.lineTo(px + 45 * zoom, py + offset * zoom); ctx.stroke(); }
+  ctx.restore();
   const tractorBay = farmWorldPoint(farmLandmarks().tractorParking);
   const tx = camera.sx(isoX(tractorBay.x, tractorBay.y)); const ty = camera.sy(isoY(tractorBay.x, tractorBay.y));
+  // A compact gravel spur makes the return parking anchor read as a working
+  // route while leaving all movement geometry and targets untouched.
+  ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(128,99,68,.78)'; ctx.lineWidth = 15 * zoom; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke();
+  ctx.strokeStyle = 'rgba(197,174,126,.86)'; ctx.lineWidth = 8 * zoom; ctx.stroke(); ctx.restore();
   ctx.save(); ctx.strokeStyle = 'rgba(113,68,42,.42)'; ctx.lineWidth = 2 * zoom; ctx.setLineDash([5 * zoom, 4 * zoom]);
   ctx.beginPath(); ctx.ellipse(tx, ty, 48 * zoom, 17 * zoom, 0, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
-  ctx.font = `800 ${Math.max(8, 9 * zoom)}px Segoe UI, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = 'rgba(83,61,37,.66)'; ctx.fillText('TRACTOR PARKING', tx, ty + 2 * zoom); ctx.restore();
+  ctx.strokeStyle = 'rgba(236,219,169,.65)'; ctx.lineWidth = Math.max(1, 1.4 * zoom);
+  for (const offset of [-8, 8]) { ctx.beginPath(); ctx.moveTo(tx - 27 * zoom, ty + offset * zoom); ctx.lineTo(tx + 27 * zoom, ty + offset * zoom); ctx.stroke(); }
+  ctx.restore();
   drawHomesteadLandscape(ctx, camera, zoom, now);
 }
 
@@ -1456,8 +1467,10 @@ function drawOldTractor(
   const pose = farmUprightPose({ x: headingX, y: headingY });
   ctx.rotate(pose.slope);
   if (pose.mirrored) ctx.scale(-1, 1);
-  if (working && workKind) drawTractorImplement(ctx, workKind, now);
-  else if (harvestWagon?.attached) drawPersistentHarvestWagon(ctx, harvestWagon.tier, harvestWagon.used, now);
+  // Working implements and a real attached wagon are rendered together.  A
+  // harvest job therefore never swaps in a generic, fabricated basic wagon.
+  if (harvestWagon?.attached) drawPersistentHarvestWagon(ctx, harvestWagon.tier, harvestWagon.used, now, tractorWagonRenderOffset(workKind));
+  if (working && workKind && workKind !== 'harvest') drawTractorImplement(ctx, workKind, now);
   ctx.fillStyle = 'rgba(40, 30, 20, 0.22)';
   ctx.beginPath();
   ctx.ellipse(0, 3, 36, 10, 0, 0, Math.PI * 2);
@@ -1528,17 +1541,26 @@ function drawHarvestWagonBody(ctx: CanvasRenderingContext2D, tier: 'basic' | 'co
   for (const ribX of [-70, -58, -46]) { ctx.beginPath(); ctx.moveTo(ribX, -31); ctx.lineTo(ribX, -9); ctx.stroke(); }
   ctx.fillStyle = county ? '#f0c951' : '#e8bd5a'; ctx.fillRect(-80, -12, 5, 4);
   ctx.fillStyle = '#a6372d'; ctx.fillRect(county ? -34 : -43, -12, 4, 4);
-  if (used > 0) {
+  const load = harvestWagonLoadPresentation(tier, used);
+  if (load.fill > 0) {
     ctx.fillStyle = '#d8ad4b';
-    const cargoCount = Math.min(county ? 5 : 4, Math.max(2, Math.ceil(used / 80)));
-    for (let cargo = 0; cargo < cargoCount; cargo++) { const cargoX = -73 + cargo * 9; ctx.beginPath(); ctx.ellipse(cargoX, -32, 5, 2.7, 0, 0, Math.PI * 2); ctx.fill(); }
+    const cargoSpan = county ? 43 : 35;
+    const cargoStart = -76;
+    for (let cargo = 0; cargo < load.cargoCount; cargo++) {
+      const ratio = load.cargoCount === 1 ? .5 : cargo / (load.cargoCount - 1);
+      const cargoX = cargoStart + ratio * cargoSpan;
+      const height = 1.2 + load.fill * 3.3;
+      ctx.beginPath(); ctx.ellipse(cargoX, -32 - height * .25, 4.4, height, 0, 0, Math.PI * 2); ctx.fill();
+    }
   }
   drawTractorWheel(ctx, -69, -6, 7, 2.6, wheelPhase);
   if (county) drawTractorWheel(ctx, -43, -6, 7, 2.6, wheelPhase);
 }
 
-function drawPersistentHarvestWagon(ctx: CanvasRenderingContext2D, tier: 'basic' | 'county', used: number, now: number): void {
+function drawPersistentHarvestWagon(ctx: CanvasRenderingContext2D, tier: 'basic' | 'county', used: number, now: number, offsetX = 0): void {
+  ctx.save(); ctx.translate(offsetX, 0);
   drawHarvestWagonBody(ctx, tier, used, now / 130);
+  ctx.restore();
 }
 
 function drawTractorImplement(ctx: CanvasRenderingContext2D, workKind: ParcelWorkKind, now: number): void {
@@ -1553,9 +1575,6 @@ function drawTractorImplement(ctx: CanvasRenderingContext2D, workKind: ParcelWor
     ctx.strokeStyle = '#e8d480'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-62, -24); ctx.lineTo(-44, -24); ctx.stroke();
     ctx.strokeStyle = '#66472e'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(-72, -8); ctx.lineTo(-35, -8); ctx.stroke();
     ctx.fillStyle = '#333532'; for (const opener of [-66, -54, -42]) { ctx.beginPath(); ctx.arc(opener, -3, 4.4, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#9b8f76'; ctx.lineWidth = 1; ctx.stroke(); }
-  } else {
-    // Harvest wagon follows the tractor and visibly carries the collected crop.
-    drawHarvestWagonBody(ctx, 'basic', 1, now / 130);
   }
   ctx.restore();
 }

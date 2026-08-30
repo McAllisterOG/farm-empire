@@ -458,7 +458,7 @@ export class FarmEmpireApp {
     const farm = farmOf(this.state);
     return farmInteractionAtWorldPoint(this.state, world, {
       pickup: { ...farm.pickup, headingX: this.pickupMotion.headingX, headingY: this.pickupMotion.headingY, trailerOwned: farm.equipment.countyUtilityTrailerOwned },
-      tractor: { ...farm.equipment.tractor, headingX: this.tractorMotion.headingX, headingY: this.tractorMotion.headingY, attachmentVisible: !!this.tractorJob || (farm.equipment.harvestWagon.owned && Object.values(farm.equipment.harvestWagon.crops).some((count) => count > 0)) },
+      tractor: { ...farm.equipment.tractor, headingX: this.tractorMotion.headingX, headingY: this.tractorMotion.headingY, attachmentVisible: farm.equipment.harvestWagon.owned && (this.tractorJob?.kind === 'harvest' || Object.values(farm.equipment.harvestWagon.crops).some((count) => count > 0)), attachmentTier: farm.equipment.harvestWagon.tier },
       farmhand: farm.workforce.farmhandHired ? this.farmhandActor : undefined,
       farmhands: farm.workforce.eliotHired ? [{ point: this.eliotActor, label: `${ELIOT_REYES.name} · ${ELIOT_REYES.role}` }] : undefined,
       scout: this.scout,
@@ -834,7 +834,7 @@ export class FarmEmpireApp {
     const farm = farmOf(this.state);
     const interaction = farmInteractionAtWorldPoint(this.state, worldPoint, {
       pickup: { ...farm.pickup, headingX: this.pickupMotion.headingX, headingY: this.pickupMotion.headingY, trailerOwned: farm.equipment.countyUtilityTrailerOwned },
-      tractor: { ...farm.equipment.tractor, headingX: this.tractorMotion.headingX, headingY: this.tractorMotion.headingY, attachmentVisible: !!this.tractorJob || (farm.equipment.harvestWagon.owned && Object.values(farm.equipment.harvestWagon.crops).some((count) => count > 0)) },
+      tractor: { ...farm.equipment.tractor, headingX: this.tractorMotion.headingX, headingY: this.tractorMotion.headingY, attachmentVisible: farm.equipment.harvestWagon.owned && Object.values(farm.equipment.harvestWagon.crops).some((count) => count > 0), attachmentTier: farm.equipment.harvestWagon.tier },
       farmhand: farm.workforce.farmhandHired ? this.farmhandActor : undefined,
       farmhands: farm.workforce.eliotHired ? [{ point: this.eliotActor, label: `${ELIOT_REYES.name} · ${ELIOT_REYES.role}` }] : undefined,
       scout: this.scout,
@@ -842,7 +842,7 @@ export class FarmEmpireApp {
     });
     const vehicleHits = farmVehicleHitsAtWorldPoint(worldPoint, {
       pickup: { ...farm.pickup, headingX: this.pickupMotion.headingX, headingY: this.pickupMotion.headingY, trailerOwned: farm.equipment.countyUtilityTrailerOwned },
-      tractor: { ...farm.equipment.tractor, headingX: this.tractorMotion.headingX, headingY: this.tractorMotion.headingY, attachmentVisible: !!this.tractorJob || (farm.equipment.harvestWagon.owned && Object.values(farm.equipment.harvestWagon.crops).some((count) => count > 0)) },
+      tractor: { ...farm.equipment.tractor, headingX: this.tractorMotion.headingX, headingY: this.tractorMotion.headingY, attachmentVisible: farm.equipment.harvestWagon.owned && Object.values(farm.equipment.harvestWagon.crops).some((count) => count > 0), attachmentTier: farm.equipment.harvestWagon.tier },
     });
     if (!this.operatingTractor && !this.operatingPickup && vehicleHits.length === 2) {
       showActionMenu(sx, sy, 'Vehicles parked together', [
