@@ -35,6 +35,7 @@ import { frisbeeThrowProgress } from '../core/farmCompanion';
 import { farmCropSpriteVariant, farmCropVisualFor, isFarmCropRipeStage, type FarmCropVisual } from './farmCropVisuals';
 import { boundedRenderScale } from './renderResolution';
 import { harvestWagonLoadPresentation, tractorWagonRenderOffset } from './farmMachinery';
+import { compareSequencedDepth, FarmCropAnchorCache, type FarmCropPlantAnchor } from './farmDepth';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -122,10 +123,40 @@ export function sceneFromState(state: GameState): RenderScene {
   };
 }
 
-interface DrawItem {
+interface StandardDrawItem {
   depth: number;
+  order?: number;
   draw: () => void;
 }
+
+interface FarmCropDrawItem {
+  kind: 'crop';
+  depth: number;
+  order?: number;
+  anchor: FarmCropPlantAnchor;
+  plot: FarmPlot;
+  stage: string;
+  visual: FarmCropVisual;
+}
+
+interface FarmCropIndicatorDrawItem {
+  kind: 'cropIndicator';
+  depth: number;
+  order?: number;
+  plot: FarmPlot;
+  stage: string;
+}
+
+type DrawItem = StandardDrawItem | FarmCropDrawItem | FarmCropIndicatorDrawItem;
+
+interface CachedFarmCropDrawItems {
+  rows: number;
+  columns: number;
+  items: FarmCropDrawItem[];
+  indicator: FarmCropIndicatorDrawItem;
+}
+
+const MAX_FARM_CROP_DRAW_CACHE_ENTRIES = 192;
 
 /** 一天中的光照：返回夜色覆盖透明度 0(白天)~0.45(深夜) */
 export function nightAlpha(now: number): number {
@@ -154,6 +185,9 @@ export class Renderer {
   readonly ctx: CanvasRenderingContext2D;
   readonly camera = new Camera();
   private dpr = 1;
+  private readonly farmItems: DrawItem[] = [];
+  private readonly farmCropAnchorCache = new FarmCropAnchorCache(MAX_FARM_CROP_DRAW_CACHE_ENTRIES);
+  private readonly farmCropDrawCache = new Map<string, CachedFarmCropDrawItems>();
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -291,7 +325,7 @@ export class Renderer {
     }
 
     // ---- 实体深度排序
-    const items: DrawItem[] = [];
+    const items: StandardDrawItem[] = [];
     const bob = Math.sin(now / 350) * 1.6;
 
     for (const plot of scene.plots) {
@@ -541,7 +575,8 @@ export class Renderer {
     }
     if (scene.farm!.destination) drawFarmDestination(ctx, camera, zoom, now, scene.farm!.destination);
 
-    const items: DrawItem[] = [];
+    const items = this.farmItems;
+    items.length = 0;
     const bob = Math.sin(now / 350) * 1.6;
     for (const tree of farmWindbreakAnchors()) {
       items.push({ depth: tree.x + tree.y, draw: () => drawFarmTree(ctx, camera.sx(isoX(tree.x, tree.y)), camera.sy(isoY(tree.x, tree.y)), zoom, now, tree.x * 19 + tree.y) });
@@ -579,9 +614,10 @@ export class Renderer {
     const farmhousePoint = farmWorldPoint(farmLandmarks().farmhouse);
     items.push({ depth: farmhousePoint.x + farmhousePoint.y + .19, draw: () => drawFarmhouse(ctx, camera.sx(isoX(farmhousePoint.x, farmhousePoint.y)), camera.sy(isoY(farmhousePoint.x, farmhousePoint.y) + TILE_H / 2), zoom, now, scene.farm!.farmhouseTier) });
     for (const plot of scene.plots) if (plot.crop) {
-      const point = farmWorldPoint(plot);
       const stage = farmCropStage(plot.crop, now);
-      items.push({ depth: point.x + point.y, draw: () => drawFarmCropRows(ctx, camera, plot, stage, zoom, now, bob) });
+      const visual = farmCropVisualFor(plot.crop.defId);
+      const cropLayers = this.farmCropDrawItems(plot, stage, visual);
+      items.push(...cropLayers.items, cropLayers.indicator);
     }
     for (const pl of scene.placements) {
       const def = buildingDef(pl.defId);
@@ -652,7 +688,12 @@ export class Renderer {
         ),
       });
     }
-    items.sort((a, b) => a.depth - b.depth); items.forEach((item) => item.draw());
+    items.forEach((item, order) => { item.order = order; });
+    items.sort(compareSequencedDepth); items.forEach((item) => {
+      if (!('kind' in item)) item.draw();
+      else if (item.kind === 'crop') drawFarmCropPlantAt(ctx, camera, item.plot, item.stage, zoom, now, item.visual, item.anchor);
+      else drawFarmCropIndicator(ctx, camera, item.plot, item.stage, zoom, bob);
+    });
     if (scene.farm!.harvestFeedback) drawFarmHarvestCompletion(ctx, camera, zoom, now, scene.farm!.harvestFeedback);
     const na = farmNightAlpha(scene.farm!.clockMinute);
     if (na > .01) {
@@ -668,6 +709,39 @@ export class Renderer {
     const world = farmWorldPoint(point);
     this.camera.centerOnTile(world.x, world.y);
     this.clampFarmCamera();
+  }
+
+  private farmCropDrawItems(plot: FarmPlot, stage: string, visual: FarmCropVisual): CachedFarmCropDrawItems {
+    const key = `${plot.x}:${plot.y}`;
+    let cached = this.farmCropDrawCache.get(key);
+    if (!cached || cached.rows !== visual.rows || cached.columns !== visual.columns) {
+      if (!cached && this.farmCropDrawCache.size >= MAX_FARM_CROP_DRAW_CACHE_ENTRIES) {
+        const oldest = this.farmCropDrawCache.keys().next().value;
+        if (oldest !== undefined) this.farmCropDrawCache.delete(oldest);
+      }
+      cached = {
+        rows: visual.rows,
+        columns: visual.columns,
+        items: this.farmCropAnchorCache.anchorsFor(plot, visual).map((anchor) => ({
+          kind: 'crop', depth: anchor.depth, anchor, plot, stage, visual,
+        })),
+        // The marker was formerly painted after every plant in its section.
+        // Keep that cue above its cached plants without a per-frame closure.
+        indicator: { kind: 'cropIndicator', depth: 0, plot, stage },
+      };
+      cached.indicator.depth = cached.items[cached.items.length - 1]!.depth + .001;
+      this.farmCropDrawCache.set(key, cached);
+    } else {
+      this.farmCropDrawCache.delete(key); this.farmCropDrawCache.set(key, cached);
+    }
+    for (const item of cached.items) {
+      item.plot = plot;
+      item.stage = stage;
+      item.visual = visual;
+    }
+    cached.indicator.plot = plot;
+    cached.indicator.stage = stage;
+    return cached;
   }
 }
 
@@ -745,6 +819,7 @@ function drawFarmSection(
   }
 }
 
+
 function drawManualFieldAction(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -814,19 +889,23 @@ function drawManualFieldAction(
   ctx.restore();
 }
 
-function drawFarmCropRows(ctx: CanvasRenderingContext2D, camera: Camera, plot: FarmPlot, stage: string, zoom: number, now: number, bob: number): void {
-  const footprint = farmPlotFootprint(plot);
-  const visual = farmCropVisualFor(plot.crop!.defId);
-  // Crop-specific spacing favors fewer, readable silhouettes over indistinct micro-detail.
-  for (let row = 0; row < visual.rows; row++) for (let col = 0; col < visual.columns; col++) {
-    const x = footprint.minX + (col + .5 + (row % 2 ? .08 : 0)) * (footprint.maxX - footprint.minX) / visual.columns;
-    const y = footprint.minY + (row + .5) * (footprint.maxY - footprint.minY) / visual.rows;
-    const sx = camera.sx(isoX(x, y)); const sy = camera.sy(isoY(x, y) + TILE_H / 2);
-    // Separate row phases read as a breeze across the section, not a global bob.
-    const cropStage = stage === 'needs-water' ? 'seedling' : stage;
-    const sway = Math.sin(now / 720 + row * 1.17 + col * .34 + plot.x * .7 + plot.y) * (cropStage === 'seedling' ? .45 : 1.15) * zoom;
-    drawFarmCropPlant(ctx, sx + sway, sy, zoom * .78, visual, cropStage, row * visual.columns + col);
-  }
+function drawFarmCropPlantAt(
+  ctx: CanvasRenderingContext2D,
+  camera: Camera,
+  plot: FarmPlot,
+  stage: string,
+  zoom: number,
+  now: number,
+  visual: FarmCropVisual,
+  anchor: FarmCropPlantAnchor,
+): void {
+  const sx = camera.sx(isoX(anchor.x, anchor.y)); const sy = camera.sy(isoY(anchor.x, anchor.y) + TILE_H / 2);
+  const cropStage = stage === 'needs-water' ? 'seedling' : stage;
+  const sway = Math.sin(now / 720 + anchor.row * 1.17 + anchor.column * .34 + plot.x * .7 + plot.y) * (cropStage === 'seedling' ? .45 : 1.15) * zoom;
+  drawFarmCropPlant(ctx, sx + sway, sy, zoom * .78, visual, cropStage, anchor.index);
+}
+
+function drawFarmCropIndicator(ctx: CanvasRenderingContext2D, camera: Camera, plot: FarmPlot, stage: string, zoom: number, bob: number): void {
   const centre = farmWorldPoint(plot); const sx = camera.sx(isoX(centre.x, centre.y)); const sy = camera.sy(isoY(centre.x, centre.y) + TILE_H / 2);
   if (stage === 'ready') drawSprite(ctx, 'fx:ready', sx, sy - 67 * zoom + bob * zoom, zoom * 1.15);
   else if (stage === 'withered') drawSprite(ctx, 'fx:hungry', sx, sy - 56 * zoom + bob * zoom, zoom * 1.15);

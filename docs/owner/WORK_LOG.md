@@ -701,10 +701,20 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Publication:** Pushed implementation snapshot `c7cb8cd` to `codex/first-town-contact`; Render reported the manual deployment succeeded and is Live. Cache-bypassed public HTTPS readback returned JavaScript `index-Bd-5XWMG.js` and CSS `index-EkLLfDk3.css`, exactly matching the verified local production build.
 - **Boundary:** No save/schema, economy, capacity, progression, camera/orientation policy, world art, or dependency change. Temporary QA files were removed.
 
-## Machinery & World Truthfulness V1 - complete locally
+## Machinery & World Truthfulness V1 - published
+
+- **Date:** 2026-08-30
+- **Branch/commit:** `codex/first-town-contact` / `f0102fe`
+- **Result:** Replaced generic/fabricated tractor-wagon presentation with the authoritative owned basic/County wagon tier and live cargo load in parked and active states. Planting now composes a readable tractor-planter-real-wagon chain, tier-specific narrow hit shapes follow the visible attachment, and the established receiving-bay/tractor-parking anchors have restrained dual-use wheel guides and gravel treatment.
+- **Verification:** 379 tests in 57 files passed; strict typecheck, Vite production build, and `git diff --check` passed. Isolated hidden real Edge verified loaded County-wagon parking and active planting at 1920×1080 plus stable 390×844, 844×390, and 1024×768 layouts with no JavaScript exceptions or runtime errors. Independent Red Team returned SHIP with no findings at any severity.
+- **Publication:** Pushed `f0102fe` to `codex/first-town-contact`; the owner confirmed Render's manual deployment succeeded and is Live from source `f0102fe`. Cache-bypassed public readback returned the expected machinery bundle, JavaScript `index-DAJlvusT.js` and CSS `index-EkLLfDk3.css`.
+- **Boundary:** No save/schema, economy, progression, capacity, transaction, camera, map-geometry, dependency, or owner-profile change.
+
+## Crop Depth V1 - local release candidate
 
 - **Date:** 2026-08-30
 - **Branch:** `codex/first-town-contact`
-- **Result:** Replaced generic/fabricated tractor-wagon presentation with the authoritative owned basic/County wagon tier and live cargo load in parked and active states. Planting now composes a readable tractor-planter-real-wagon chain, tier-specific narrow hit shapes follow the visible attachment, and the established receiving-bay/tractor-parking anchors have restrained dual-use wheel guides and gravel treatment.
-- **Verification:** 379 tests in 57 files passed; strict typecheck, Vite production build, and `git diff --check` passed. Isolated hidden real Edge verified loaded County-wagon parking and active planting at 1920×1080 plus stable 390×844, 844×390, and 1024×768 layouts with no JavaScript exceptions or runtime errors. Independent Red Team returned SHIP with no findings at any severity.
-- **Boundary:** No save/schema, economy, progression, capacity, transaction, camera, map-geometry, dependency, push, deployment, or owner-profile change. Render remains on published snapshot `c7cb8cd`.
+- **Result:** Replaced one-depth-per-section crop painting with global per-plant ground-anchor ordering, so plants interleave correctly with the farmer, Scout, vehicles, trees, buildings, and each other. Ready markers sort just after their plot's deepest plant. Explicit sequence ties preserve deterministic output, while a bounded 192-section anchor cache and reusable crop draw entries avoid warm-frame per-plant allocation; the current maximum farm uses 132 sections and the catalog maximum is 20 plants per section.
+- **Verification/review:** 382 tests in 57 files passed; strict typecheck, Vite production build, and `git diff --check` passed. Focused coverage verifies edge ordering, stable ties, marker placement, cache reuse/replacement/eviction, and maximum density. An independent Red Team found the first implementation's per-frame allocation risk; one bounded repair removed it, and re-review returned SHIP with no findings at any severity.
+- **Player-surface status:** Browser acceptance at 1920×1080, 1024×768, 390×844, and 844×390 is pending because no in-app browser session was available while the owner was away. The local URL was queued for the Codex side panel; Computer Use and the owner's desktop/browser session were not used.
+- **Boundary:** Renderer and render-data tests only. No save/schema, crop lifecycle, art density, economy, progression, capacity, transaction, hitbox, camera, map-geometry, dependency, push, deployment, or owner-profile change.
