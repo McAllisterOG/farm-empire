@@ -710,11 +710,11 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Publication:** Pushed `f0102fe` to `codex/first-town-contact`; the owner confirmed Render's manual deployment succeeded and is Live from source `f0102fe`. Cache-bypassed public readback returned the expected machinery bundle, JavaScript `index-DAJlvusT.js` and CSS `index-EkLLfDk3.css`.
 - **Boundary:** No save/schema, economy, progression, capacity, transaction, camera, map-geometry, dependency, or owner-profile change.
 
-## Crop Depth V1 - local release candidate
+## Crop Depth V1 - published
 
 - **Date:** 2026-08-30
-- **Branch:** `codex/first-town-contact`
+- **Branch/commit:** `codex/first-town-contact` / `6a33105`
 - **Result:** Replaced one-depth-per-section crop painting with global per-plant ground-anchor ordering, so plants interleave correctly with the farmer, Scout, vehicles, trees, buildings, and each other. Ready markers sort just after their plot's deepest plant. Explicit sequence ties preserve deterministic output, while a bounded 192-section anchor cache and reusable crop draw entries avoid warm-frame per-plant allocation; the current maximum farm uses 132 sections and the catalog maximum is 20 plants per section.
 - **Verification/review:** 382 tests in 57 files passed; strict typecheck, Vite production build, and `git diff --check` passed. Focused coverage verifies edge ordering, stable ties, marker placement, cache reuse/replacement/eviction, and maximum density. An independent Red Team found the first implementation's per-frame allocation risk; one bounded repair removed it, and re-review returned SHIP with no findings at any severity.
-- **Player-surface status:** Browser acceptance at 1920×1080, 1024×768, 390×844, and 844×390 is pending because no in-app browser session was available while the owner was away. The local URL was queued for the Codex side panel; Computer Use and the owner's desktop/browser session were not used.
-- **Boundary:** Renderer and render-data tests only. No save/schema, crop lifecycle, art density, economy, progression, capacity, transaction, hitbox, camera, map-geometry, dependency, push, deployment, or owner-profile change.
+- **Publication:** The owner confirmed Render's manual deployment succeeded and is Live from source `6a33105`. Player-surface acceptance at 1920×1080, 1024×768, 390×844, and 844×390 remains the first Demo-Complete V1 gate; Computer Use and the owner's desktop/browser session remain out of scope while the owner is away.
+- **Boundary:** Renderer and render-data tests only. No save/schema, crop lifecycle, art density, economy, progression, capacity, transaction, hitbox, camera, map-geometry, dependency, or owner-profile change.

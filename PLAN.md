@@ -67,7 +67,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Current authorization
 
-**Machinery & World Truthfulness V1 is published from `f0102fe`; Crop Depth V1 is complete and independently accepted locally but is not published.** Crop Depth replaces section-center crop ordering with per-plant ground anchors, deterministic ties, and bounded reusable draw data while preserving saves, economy, progression, crop behavior, art density, hitboxes, camera policy, map geometry, and transaction authority. Its automated gates and Red Team review are complete; player-surface browser acceptance is pending an available in-app browser session. No later milestone is authorized.
+**Demo-Complete V1 is the active finite package from published checkpoint `6a33105`.** Crop Depth V1 is live and has passed its automated gates and independent Red Team review; its remaining live viewport acceptance is the first release gate. The authorized sequence then covers Farm World Continuity V1, County & Homestead Variety V1, UI Accessibility & Panel Cohesion V1, Brand Asset Integrity V1, full release regression, one independent Red Team/repair cycle, a current Windows package and shortcut refresh, and publication of the known-good checkpoint. “Demo-complete” means stable, understandable, visually coherent, and honestly scoped for a public demo; it does not authorize new land tiers, crops, machinery systems, cloud saves, a continuous world, or other deferred gameplay scope.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
