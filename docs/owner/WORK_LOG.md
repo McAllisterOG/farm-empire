@@ -683,10 +683,11 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Publication:** Render manually deployed snapshot `e5e9567` successfully. The public HTTPS site served JavaScript `index-Car0-7oH.js`, CSS `index-BXSk4BiB.css`, the corrected farm-green document background, and no browser-console errors.
 - **Release boundary:** No gameplay, save, economy, progression, transaction, or desktop-security authority changed. This is an iPad travel usability repair, not the deferred dedicated phone redesign. Physical-iPad and offline acceptance remain with the owner.
 
-## Phone Orientation & Camera Reliability V1 - complete locally
+## Phone Orientation & Camera Reliability V1 - published
 
 - **Date:** 2026-08-29
-- **Branch:** `codex/first-town-contact`
+- **Branch/commit:** `codex/first-town-contact` / implementation `10b92ea`
 - **Scope/result:** Added a shared visual-viewport policy, deterministic immediate/settled orientation refits, phone-only farm overview bounds, a short-landscape HUD/title treatment, title-scroll restoration, and a visible touch Fit action. The PWA cache is versioned as `phone-orientation-v1` so a later published build can replace the installed travel shell cleanly.
 - **Verification:** 373 tests in 56 files passed; strict typecheck and Vite production build passed. A named headless browser session verified 390×844 portrait, live 844×390 landscape rotation, portrait recovery, title rotation, saved-farm reload, and the Fit action. The 844×390 body had no overflow, its 40-pixel bottom tray ended at y=386, and browser errors/warnings were empty.
-- **Boundary:** No gameplay, save, economy, capacity, progression, transaction, map, desktop runtime, or tablet/desktop camera change. No owner save/profile was opened. The public Render site remains on snapshot `e5e9567`; publication and physical-device/offline acceptance are pending.
+- **Publication:** Render manually deployed implementation snapshot `10b92ea` successfully. Public HTTPS readback returned JavaScript `index-sFZpxx39.js`, CSS `index-pq5nKsbV.css`, and service-worker cache `farm-empire-phone-orientation-v1`.
+- **Boundary:** No gameplay, save, economy, capacity, progression, transaction, map, desktop runtime, or tablet/desktop camera change. No owner save/profile was opened. Physical-device and offline acceptance remain with the owner.

@@ -481,7 +481,7 @@ Only approved decisions with durable product, architecture, or workflow impact b
 
 ## 2026-08-29 - Make phone orientation changes recover camera and UI deterministically
 
-**Status:** Approved and complete locally
+**Status:** Approved, complete, and published
 
 - Keep the PWA manifest orientation set to `any`. A player may begin in portrait and rotate either direction without reloading or restarting the farm.
 - Prefer the browser `visualViewport` dimensions over stale layout-viewport fallbacks. Refit once on the immediate resize/orientation signal and once after the iOS viewport settles; use the same policy for the renderer backing surface and camera bounds.
