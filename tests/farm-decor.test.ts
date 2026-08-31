@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmDecorIsSafe, farmDecorManifest, farmDecorTypes, farmWindbreakAnchors } from '../src/render/farmDecor';
-import { farmMainlandBounds, farmWorldPoint, pointInFarmBounds } from '../src/render/farmLayout';
+import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, FARM_WORLD_CUE_MANIFEST, farmDecorIsSafe, farmDecorManifest, farmDecorTypes, farmWindbreakAnchors, farmWorldCueIsSafe, farmWorldCueManifest, farmWorldCueTypes } from '../src/render/farmDecor';
+import { farmDriveLane, farmLandmarks, farmMainlandBounds, farmWorldPoint, pointInFarmBounds } from '../src/render/farmLayout';
+import { FARM_TOWN_GATE } from '../src/core/townGateway';
 import { farmNightAlpha } from '../src/render/renderer';
 
 describe('Farm atmosphere decor manifest', () => {
@@ -11,6 +12,25 @@ describe('Farm atmosphere decor manifest', () => {
     expect(new Set(FARM_DECOR_MANIFEST.map((item) => item.type))).toEqual(new Set(farmDecorTypes()));
     expect(FARM_FENCE_MANIFEST).toHaveLength(10);
     expect(FARM_FIREFLY_ANCHORS).toHaveLength(6);
+  });
+
+  it('keeps finite deterministic working-land cues outside fields, anchors, and the active lane', () => {
+    expect(farmWorldCueManifest()).toBe(FARM_WORLD_CUE_MANIFEST);
+    expect(FARM_WORLD_CUE_MANIFEST).toHaveLength(14);
+    expect(new Set(FARM_WORLD_CUE_MANIFEST.map((cue) => cue.type))).toEqual(new Set(farmWorldCueTypes()));
+    expect(new Set(FARM_WORLD_CUE_MANIFEST.map((cue) => cue.id)).size).toBe(FARM_WORLD_CUE_MANIFEST.length);
+    for (const cue of FARM_WORLD_CUE_MANIFEST) {
+      expect(pointInFarmBounds(farmWorldPoint(cue), farmMainlandBounds())).toBe(true);
+      expect(farmWorldCueIsSafe(cue), cue.id).toBe(true);
+    }
+  });
+
+  it('keeps the visual road spine continuous from cargo receiving through the County gateway', () => {
+    const lane = farmDriveLane();
+    expect(lane.at(0)).toEqual(farmWorldPoint(farmLandmarks().cargoPad));
+    expect(lane.at(-1)).toEqual(farmWorldPoint(FARM_TOWN_GATE));
+    expect(lane).toHaveLength(6);
+    expect(lane.every((point) => pointInFarmBounds(point))).toBe(true);
   });
 
   it('keeps props within the mainland and away from field, landmark, and lane constraints', () => {

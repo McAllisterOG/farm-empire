@@ -7,6 +7,7 @@ import { NEIGHBOR_FIELD_TILES, STARTER_FIELD_TILES } from '../core/farmBusiness'
 import { FARM_PLOT_SPAN, farmDriveLane, farmLandmarks, farmMainlandBounds, farmPlotFootprint, farmWorldPoint, type FarmBounds, type FarmPoint } from './farmLayout';
 
 export type FarmDecorType = 'hay-bale' | 'crate-pallet' | 'water-trough' | 'hand-pump';
+export type FarmWorldCueType = 'grass-tuft' | 'stone-cluster' | 'field-marker' | 'utility-pole';
 
 export interface FarmDecor {
   id: string;
@@ -22,6 +23,18 @@ export interface FarmFenceCue {
   y: number;
   direction: 'east-west' | 'north-south';
   gate?: boolean;
+}
+
+/**
+ * Finite working-land cues that make the large farm read as maintained acreage
+ * at overview scale. They are logical presentation anchors, never terrain,
+ * collision, or interaction geometry.
+ */
+export interface FarmWorldCue {
+  id: string;
+  type: FarmWorldCueType;
+  x: number;
+  y: number;
 }
 
 /** Small, deliberately finite prop cluster: decoration rather than a new system. */
@@ -46,6 +59,27 @@ export const FARM_FENCE_MANIFEST: readonly FarmFenceCue[] = [
   { id: 'southeast-corner', x: 56.0, y: 38.0, direction: 'north-south' },
   { id: 'parcel-gate', x: 24.1, y: 42.6, direction: 'east-west', gate: true },
   { id: 'yard-gate', x: 24.1, y: 17.3, direction: 'north-south', gate: true },
+] as const;
+
+/**
+ * Keep commercial headlands, road approaches, and open perimeter ground
+ * purposeful without placing anything over an operable field or route.
+ */
+export const FARM_WORLD_CUE_MANIFEST: readonly FarmWorldCue[] = [
+  { id: 'north-headland-tuft-a', type: 'grass-tuft', x: 10.05, y: 1.65 },
+  { id: 'north-headland-marker-a', type: 'field-marker', x: 12.65, y: 1.7 },
+  { id: 'north-headland-tuft-b', type: 'grass-tuft', x: 15.3, y: 1.72 },
+  { id: 'commercial-east-stones-a', type: 'stone-cluster', x: 18.15, y: 3.15 },
+  { id: 'commercial-east-marker-a', type: 'field-marker', x: 18.2, y: 6.3 },
+  { id: 'commercial-east-tuft-a', type: 'grass-tuft', x: 19.35, y: 11.45 },
+  { id: 'commercial-south-marker-a', type: 'field-marker', x: 10.1, y: 16.6 },
+  { id: 'commercial-south-tuft-a', type: 'grass-tuft', x: 13.1, y: 16.6 },
+  { id: 'commercial-south-stones-a', type: 'stone-cluster', x: 16.05, y: 16.6 },
+  { id: 'yard-approach-marker-a', type: 'field-marker', x: 6.8, y: 16.15 },
+  { id: 'yard-approach-tuft-a', type: 'grass-tuft', x: 6.35, y: 16.5 },
+  { id: 'roadside-utility-a', type: 'utility-pole', x: 18.75, y: 13.05 },
+  { id: 'gateway-utility-a', type: 'utility-pole', x: 19.55, y: 10.6 },
+  { id: 'gateway-stones-a', type: 'stone-cluster', x: 20.15, y: 8.35 },
 ] as const;
 
 /** Fixed logical anchors fade in only with the farm's saved night clock. */
@@ -75,6 +109,14 @@ export function farmDecorTypes(): readonly FarmDecorType[] {
   return ['hay-bale', 'crate-pallet', 'water-trough', 'hand-pump'];
 }
 
+export function farmWorldCueTypes(): readonly FarmWorldCueType[] {
+  return ['grass-tuft', 'stone-cluster', 'field-marker', 'utility-pole'];
+}
+
+export function farmWorldCueManifest(): readonly FarmWorldCue[] {
+  return FARM_WORLD_CUE_MANIFEST;
+}
+
 export function farmDecorIsSafe(point: FarmPoint): boolean {
   const projected = farmWorldPoint(point);
   const bounds = farmMainlandBounds();
@@ -82,11 +124,16 @@ export function farmDecorIsSafe(point: FarmPoint): boolean {
   const fieldTiles = [...STARTER_FIELD_TILES, ...NEIGHBOR_FIELD_TILES];
   if (fieldTiles.some((tile) => pointInBounds(projected, farmPlotFootprint(tile)))) return false;
   const landmarks = farmLandmarks();
-  const blocked = [farmWorldPoint({ x: 8, y: 5 }), farmWorldPoint({ x: 9, y: 11 }), farmWorldPoint(landmarks.doghouse), farmWorldPoint(landmarks.scoutHome)];
+  const blocked = [farmWorldPoint({ x: 8, y: 5 }), farmWorldPoint({ x: 9, y: 11 }), farmWorldPoint({ x: 19.3, y: 9 }), farmWorldPoint(landmarks.farmhouse), farmWorldPoint(landmarks.doghouse), farmWorldPoint(landmarks.scoutHome), farmWorldPoint(landmarks.cargoPad), farmWorldPoint(landmarks.tractorParking)];
   if (blocked.some((anchor) => Math.hypot(projected.x - anchor.x, projected.y - anchor.y) < 2.25)) return false;
   // The middle of the deliberately broad gravel route stays clear.
   const lane = farmDriveLane();
   return !lane.slice(1).some((end, index) => distanceToSegment(projected, lane[index], end) < FARM_PLOT_SPAN * .35);
+}
+
+/** World cues use the same strict presentation-only exclusion policy as props. */
+export function farmWorldCueIsSafe(cue: Pick<FarmWorldCue, 'x' | 'y'>): boolean {
+  return farmDecorIsSafe(cue);
 }
 
 function pointInBounds(point: FarmPoint, bounds: FarmBounds): boolean {

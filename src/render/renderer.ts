@@ -20,7 +20,7 @@ import { charKey, drawSprite } from './sprites';
 import { farmDriveLane, farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint, farmLandmarks, type FarmhousePresentationTier } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
-import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue } from './farmDecor';
+import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, FARM_WORLD_CUE_MANIFEST, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue, type FarmWorldCue } from './farmDecor';
 import { farmNightAlpha as farmClockNightAlpha, nightAlphaAtHour as clockNightAlpha } from './lighting';
 import { renderTown, type TownRenderScene } from './townRenderer';
 import { roadsideCustomerActors } from './countyLife';
@@ -588,6 +588,10 @@ export class Renderer {
       const point = farmWorldPoint(prop);
       items.push({ depth: point.x + point.y + .1, draw: () => drawFarmDecor(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, prop) });
     }
+    for (const cue of FARM_WORLD_CUE_MANIFEST) {
+      const point = farmWorldPoint(cue);
+      items.push({ depth: point.x + point.y + .08, draw: () => drawFarmWorldCue(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, cue) });
+    }
     const townGatePoint = farmWorldPoint(FARM_TOWN_GATE);
     items.push({ depth: townGatePoint.x + townGatePoint.y + .18, draw: () => drawFarmTownGateway(ctx, camera.sx(isoX(townGatePoint.x, townGatePoint.y)), camera.sy(isoY(townGatePoint.x, townGatePoint.y) + TILE_H / 2), zoom) });
     if (scene.farm!.roadsideStand.owned) {
@@ -1032,6 +1036,15 @@ function drawFarmyard(ctx: CanvasRenderingContext2D, camera: Camera, zoom: numbe
   lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); }); ctx.stroke();
   ctx.beginPath(); lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)); index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
   ctx.strokeStyle = '#c4ad7d'; ctx.lineWidth = 16 * zoom; ctx.stroke();
+  // Low-contrast shoulder marks carry the same working lane through the wide
+  // commercial view, while staying behind fields, labels, vehicles, and props.
+  ctx.save(); ctx.strokeStyle = 'rgba(91,72,47,.38)'; ctx.lineWidth = Math.max(1, 1.4 * zoom); ctx.setLineDash([4 * zoom, 7 * zoom]);
+  for (const offset of [-11, 11]) {
+    ctx.beginPath();
+    lane.forEach((point, index) => { const sx = camera.sx(isoX(point.x, point.y)); const sy = camera.sy(isoY(point.x, point.y)) + offset * zoom; index ? ctx.lineTo(sx, sy) : ctx.moveTo(sx, sy); });
+    ctx.stroke();
+  }
+  ctx.restore();
   const pad = farmWorldPoint(farmLandmarks().cargoPad);
   const px = camera.sx(isoX(pad.x, pad.y)); const py = camera.sy(isoY(pad.x, pad.y));
   // The cargo pad and receiving bay share their authoritative loading anchor.
@@ -1452,6 +1465,25 @@ function drawFarmDecor(ctx: CanvasRenderingContext2D, x: number, y: number, zoom
   } else {
     ctx.fillStyle = '#698d8b'; ctx.fillRect(-3, -25, 6, 27); ctx.fillStyle = '#c6d9d4'; ctx.fillRect(-5, -27, 10, 5); ctx.fillStyle = '#edf2dd'; ctx.fillRect(-3, -26, 3, 3); ctx.strokeStyle = '#426361'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -23); ctx.lineTo(14, -31); ctx.lineTo(18, -27); ctx.stroke();
     ctx.fillStyle = '#a7c9c6'; ctx.beginPath(); ctx.arc(18, -27, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#795034'; ctx.fillRect(-10, 1, 20, 4);
+  }
+  ctx.restore();
+}
+
+/** Tiny overview-scale land-management cues; they deliberately have no hit area. */
+function drawFarmWorldCue(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, cue: FarmWorldCue): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  if (cue.type === 'grass-tuft') {
+    ctx.strokeStyle = 'rgba(55,105,46,.82)'; ctx.lineWidth = 1.35; ctx.lineCap = 'round';
+    for (const lean of [-5, -2, 1, 4]) { ctx.beginPath(); ctx.moveTo(0, 1); ctx.quadraticCurveTo(lean * .35, -5, lean, -8 - Math.abs(lean) * .25); ctx.stroke(); }
+  } else if (cue.type === 'stone-cluster') {
+    ctx.fillStyle = 'rgba(55,48,37,.18)'; ctx.beginPath(); ctx.ellipse(0, 2, 13, 4, 0, 0, Math.PI * 2); ctx.fill();
+    for (const [sx, sy, radius] of [[-5, -2, 3], [1, -4, 4], [6, -1, 2.7]] as const) { ctx.fillStyle = '#8b8874'; ctx.beginPath(); ctx.arc(sx, sy, radius, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(231,223,185,.48)'; ctx.beginPath(); ctx.arc(sx - 1, sy - 1, Math.max(1, radius * .38), 0, Math.PI * 2); ctx.fill(); }
+  } else if (cue.type === 'field-marker') {
+    ctx.fillStyle = 'rgba(47,37,27,.19)'; ctx.beginPath(); ctx.ellipse(0, 2, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#765334'; ctx.fillRect(-1.8, -16, 3.6, 18); ctx.fillStyle = '#e1c66e'; ctx.fillRect(-4.5, -18, 9, 4); ctx.strokeStyle = '#66442d'; ctx.lineWidth = .8; ctx.strokeRect(-4.5, -18, 9, 4);
+  } else {
+    ctx.fillStyle = 'rgba(47,37,27,.19)'; ctx.beginPath(); ctx.ellipse(0, 3, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#6d5135'; ctx.fillRect(-2.4, -29, 4.8, 32); ctx.fillStyle = '#b48d55'; ctx.fillRect(-3.5, -31, 7, 4); ctx.fillStyle = '#423c31'; ctx.fillRect(-12, -26, 24, 2.2);
   }
   ctx.restore();
 }
