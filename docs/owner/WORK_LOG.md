@@ -739,3 +739,10 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Added semantic keyboard-operated stable tabs, explicitly named dialogs and prompts, safe-area/dynamic-viewport scrollable overlays and contextual menus, 44px coarse-pointer and short-landscape targets, retained compact copy of at least 11px, and a separate single-message polite toast announcer. Gameplay, saves, economy, and progression are unchanged.
 - **Verification/review:** 387 tests in 57 files passed with strict typecheck, Vite production build, and `git diff --check`. The initial Red Team pass found repeated toast announcements, an unnamed prompt input, nonexistent referenced tab panels, unbounded action menus, and narrow targets. One bounded repair fixed all five; re-review returned SHIP with no Critical, High, or Medium defects.
 - **Boundary:** UI/presentation-only. No gameplay, save/schema, economy, progression, camera, map, dependency, or owner-profile change.
+
+## Brand Asset Integrity V1 - complete locally
+
+- **Date:** 2026-08-30
+- **Result:** Replaced independently maintained icon drawings with one deterministic geometry-driven generator. Regenerated the desktop SVG/PNG, a seven-size 32-bit Windows ICO, dedicated 192/512 PWA icons, and safe-padded 192/512 maskable icons; updated manifest, HTML, and desktop release documentation; and added binary asset contract coverage.
+- **Verification/review:** 390 tests in 58 files passed with focused brand-asset tests, strict typecheck, standard and desktop-relative production builds, desktop packaging, and `git diff --check`. Independent isolated regeneration matched all eight checked-in generated artifacts byte-for-byte. Red Team verified PNG/ICO structure, maskable safe gutters, Vite base-path resolution, manifest/index semantics, and documentation, returning SHIP with no findings at any severity.
+- **Boundary:** Branding/build assets and documentation only. No gameplay, save/schema, service-worker, economy, progression, camera, dependency, deployment, shortcut, package release, or owner-profile change.

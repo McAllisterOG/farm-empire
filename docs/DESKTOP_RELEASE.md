@@ -10,7 +10,13 @@ Run `npm.cmd run desktop:package` on Windows. `electron-builder` writes ignored 
 - `Farm Empire Setup *.exe` - NSIS installer with Desktop and Start Menu shortcuts.
 - `Farm Empire Portable *.exe` - portable x64 executable.
 
-The checked-in `desktop/icon.svg` is the original deterministic icon source, with checked-in PNG/ICO derivatives for Windows. The ICO is copied outside the app archive into `resources/icon.ico`; the BrowserWindow/taskbar and shortcut helper use that exact branded resource. The unsigned executable itself is not post-edited by a signing/resource tool in this release environment.
+`desktop/generate-icon.ps1` is the canonical Farm Empire icon source: it declares the normalized geometry and palette, then deterministically regenerates `desktop/icon.svg`, `desktop/icon.png`, `desktop/icon.ico`, and the web/PWA PNGs. Run it on Windows after intentionally changing the icon:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\desktop\generate-icon.ps1
+```
+
+The checked-in ICO has 16, 24, 32, 48, 64, 128, and 256 pixel 32-bit entries. It is copied outside the app archive into `resources/icon.ico`; the BrowserWindow/taskbar and shortcut helper use that exact branded resource. `public/icon-{192,512}.png` are the normal web/PWA assets, while `public/icon-maskable-{192,512}.png` deliberately reserve a safe background gutter. `public/farm-empire-icon.png` remains a generated compatibility alias. The unsigned executable itself is not post-edited by a signing/resource tool in this release environment.
 
 The repository shortcut helper is the supported branded shortcut workflow for `win-unpacked`; the NSIS installer creates its standard shortcuts but does not run that helper or post-edit shortcut resources.
 
