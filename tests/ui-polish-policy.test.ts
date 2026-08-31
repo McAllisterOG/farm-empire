@@ -27,6 +27,9 @@ describe('Demo polish interaction contracts', () => {
     expect(modal).toContain('trapFocus(event, panelBox)');
     expect(modal).toContain('restoreFocus(restoreTarget)');
     expect(modal).toContain("role: 'tablist'");
+    expect(modal).toContain("if (ev.key !== 'Enter') return;");
+    expect(modal).toContain('ev.preventDefault();');
+    expect(modal).toContain('ev.stopPropagation();');
     expect(modal).toContain("role: 'tab'");
     expect(modal).toContain("role: 'tabpanel'");
     expect(modal).toContain("'aria-selected'");

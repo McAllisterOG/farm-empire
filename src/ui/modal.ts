@@ -201,7 +201,10 @@ export function promptDialog(text: string, defaultValue: string, onSubmit: (v: s
     h('button', { class: 'btn', type: 'button', onclick: () => close() }, t('ui.cancel')),
   ));
   input.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') submit();
+    if (ev.key !== 'Enter') return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    submit();
   });
   openDialog(box, input);
   close = () => (box.parentElement as HTMLElement & { closeDialog?: () => void } | null)?.closeDialog?.();
