@@ -20,7 +20,7 @@ import { charKey, drawSprite } from './sprites';
 import { farmDriveLane, farmMainlandBounds, farmPlotFootprint, farmUprightPose, farmWorldPoint, farmLandmarks, type FarmhousePresentationTier } from './farmLayout';
 import { farmGroundVariant } from './farmTerrain';
 import { FARM_WALK_FRAME_COUNT, type FarmFacing } from './farmSprites';
-import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, FARM_WORLD_CUE_MANIFEST, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue, type FarmWorldCue } from './farmDecor';
+import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, FARM_HOMESTEAD_DECOR_MANIFEST, FARM_WORLD_CUE_MANIFEST, farmWindbreakAnchors, type FarmDecor, type FarmFenceCue, type FarmHomesteadDecor, type FarmWorldCue } from './farmDecor';
 import { farmNightAlpha as farmClockNightAlpha, nightAlphaAtHour as clockNightAlpha } from './lighting';
 import { renderTown, type TownRenderScene } from './townRenderer';
 import { roadsideCustomerActors } from './countyLife';
@@ -587,6 +587,10 @@ export class Renderer {
     for (const prop of FARM_DECOR_MANIFEST) {
       const point = farmWorldPoint(prop);
       items.push({ depth: point.x + point.y + .1, draw: () => drawFarmDecor(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, prop) });
+    }
+    for (const prop of FARM_HOMESTEAD_DECOR_MANIFEST) {
+      const point = farmWorldPoint(prop);
+      items.push({ depth: point.x + point.y + .1, draw: () => drawFarmHomesteadDecor(ctx, camera.sx(isoX(point.x, point.y)), camera.sy(isoY(point.x, point.y) + TILE_H / 2), zoom, prop) });
     }
     for (const cue of FARM_WORLD_CUE_MANIFEST) {
       const point = farmWorldPoint(cue);
@@ -1465,6 +1469,26 @@ function drawFarmDecor(ctx: CanvasRenderingContext2D, x: number, y: number, zoom
   } else {
     ctx.fillStyle = '#698d8b'; ctx.fillRect(-3, -25, 6, 27); ctx.fillStyle = '#c6d9d4'; ctx.fillRect(-5, -27, 10, 5); ctx.fillStyle = '#edf2dd'; ctx.fillRect(-3, -26, 3, 3); ctx.strokeStyle = '#426361'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, -23); ctx.lineTo(14, -31); ctx.lineTo(18, -27); ctx.stroke();
     ctx.fillStyle = '#a7c9c6'; ctx.beginPath(); ctx.arc(18, -27, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#795034'; ctx.fillRect(-10, 1, 20, 4);
+  }
+  ctx.restore();
+}
+
+/** Small home-yard props belong to the normal farm painter queue, never the terrain underlay. */
+function drawFarmHomesteadDecor(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, decor: FarmHomesteadDecor): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  ctx.fillStyle = 'rgba(47,34,22,.16)'; ctx.beginPath(); ctx.ellipse(0, 3, decor.type === 'orchard-tree' ? 18 : 13, 4, 0, 0, Math.PI * 2); ctx.fill();
+  if (decor.type === 'flower-bed') {
+    ctx.fillStyle = '#775438'; ctx.fillRect(-16, -4, 32, 5); for (const [dx, color] of [[-10, '#edc95f'], [-3, '#df8394'], [5, '#e8d8ad'], [11, '#b98bd0']] as const) { ctx.fillStyle = '#4f803d'; ctx.fillRect(dx, -11, 2, 8); ctx.fillStyle = color; ctx.beginPath(); ctx.arc(dx + 1, -12, 3, 0, Math.PI * 2); ctx.fill(); }
+  } else if (decor.type === 'trellis-fence') {
+    ctx.strokeStyle = '#9c7042'; ctx.lineWidth = 2; ctx.strokeRect(-14, -22, 28, 23); for (const dx of [-12, 0, 12]) { ctx.beginPath(); ctx.moveTo(dx - 4, -20); ctx.lineTo(dx + 5, -2); ctx.stroke(); } ctx.strokeStyle = '#4f833e'; ctx.beginPath(); ctx.moveTo(-12, -14); ctx.quadraticCurveTo(0, -29, 12, -13); ctx.stroke();
+  } else if (decor.type === 'woodpile') {
+    ctx.fillStyle = '#765035'; ctx.fillRect(-15, -5, 30, 6); for (const [dx, dy] of [[-9, -10], [0, -13], [9, -9], [-4, -5], [6, -5]] as const) { ctx.fillStyle = '#a46f3d'; ctx.beginPath(); ctx.arc(dx, dy, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#dec07b'; ctx.beginPath(); ctx.arc(dx, dy, 1.5, 0, Math.PI * 2); ctx.fill(); }
+  } else if (decor.type === 'sitting-set') {
+    ctx.fillStyle = '#765239'; ctx.fillRect(-14, -7, 11, 5); ctx.fillRect(4, -7, 11, 5); ctx.fillStyle = '#c69a5c'; ctx.fillRect(-13, -16, 9, 9); ctx.fillRect(5, -16, 9, 9); ctx.fillStyle = '#8b673e'; ctx.beginPath(); ctx.ellipse(0, -8, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+  } else if (decor.type === 'wash-line') {
+    ctx.strokeStyle = '#745137'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-15, 1); ctx.lineTo(-15, -24); ctx.lineTo(15, -19); ctx.lineTo(15, 1); ctx.stroke(); for (const [dx, color] of [[-7, '#e4e1c8'], [1, '#bc785c'], [9, '#e6cd72']] as const) { ctx.fillStyle = color; ctx.fillRect(dx, -19 + (dx + 7) * .15, 6, 8); }
+  } else {
+    ctx.fillStyle = '#65462f'; ctx.fillRect(-3, -29, 6, 31); for (const [dx, dy, radius, color] of [[-10, -31, 12, '#4f7e3d'], [9, -31, 12, '#598a43'], [0, -43, 14, '#638f48']] as const) { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(dx, dy, radius, 0, Math.PI * 2); ctx.fill(); } ctx.fillStyle = '#c78a55'; for (const [dx, dy] of [[-7, -33], [6, -36], [1, -45]] as const) { ctx.beginPath(); ctx.arc(dx, dy, 2.5, 0, Math.PI * 2); ctx.fill(); }
   }
   ctx.restore();
 }

@@ -4,7 +4,7 @@ import {
   FARM_TOWN_GATE, FARM_TOWN_RETURN, placePlayerAtTownReturn, townTravelBlockReason,
 } from '../src/core/townGateway';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
-import { TOWN_BUILDINGS, TOWN_DECOR, TOWN_NPCS, TOWN_SERVICE_IDS } from '../src/data/town.data';
+import { TOWN_BUILDINGS, TOWN_DECOR, TOWN_EDGE_DECOR, TOWN_EDGE_HOMES, TOWN_NPCS, TOWN_SERVICE_IDS } from '../src/data/town.data';
 import { TOWN_NEIGHBOR_ROUTE, TOWN_SHOPPER_ROUTE } from '../src/render/countyLife';
 import { serialize } from '../src/save/save';
 import {
@@ -79,6 +79,18 @@ describe('Town Gateway layout and real services', () => {
     }
     for (const end of [...TOWN_BUILDINGS.map((building) => building.door), ...TOWN_NPCS, TOWN_EXIT]) for (const building of TOWN_BUILDINGS) {
       expect(townSegmentCrossesBuilding(TOWN_PICKUP_PARKING, end, building), `${building.id}: pickup approach`).toBe(false);
+    }
+  });
+
+  it('keeps four unique edge-home silhouettes and private yard cues outside public service space', () => {
+    expect(TOWN_EDGE_HOMES).toHaveLength(4);
+    expect(new Set(TOWN_EDGE_HOMES.map((home) => home.id)).size).toBe(4);
+    expect(new Set(TOWN_EDGE_HOMES.map((home) => home.style)).size).toBe(4);
+    expect(new Set(TOWN_EDGE_DECOR.map((decor) => decor.id)).size).toBe(TOWN_EDGE_DECOR.length);
+    for (const point of [...TOWN_EDGE_HOMES, ...TOWN_EDGE_DECOR]) {
+      for (const building of TOWN_BUILDINGS) expect(Math.hypot(point.x - building.door.x, point.y - building.door.y), point.id).toBeGreaterThan(1.25);
+      expect(pointInTownWalkSurface(point), point.id).toBe(false);
+      expect(Math.hypot(point.x - TOWN_PICKUP_PARKING.x, point.y - TOWN_PICKUP_PARKING.y), point.id).toBeGreaterThan(1.5);
     }
   });
 

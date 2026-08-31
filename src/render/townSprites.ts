@@ -1,5 +1,5 @@
 import type { AvatarConfig } from '../core/types';
-import type { TownBuildingDef, TownDecorDef, TownNpcDef } from '../data/town.data';
+import type { TownBuildingDef, TownDecorDef, TownEdgeDecorDef, TownEdgeHomeDef, TownNpcDef } from '../data/town.data';
 import type { CountyLifeActor } from './countyLife';
 import type { FarmFacing } from './farmSprites';
 
@@ -76,6 +76,53 @@ export function drawTownBuilding(
     rect(ctx, -73, 1, 146, 7, '#594b3a');
     const puff = Math.max(0, Math.sin(now / 780));
     ellipse(ctx, 53 + puff * 3, -91 - puff * 7, 5 + puff * 2, 4 + puff, 'rgba(225,224,208,.58)');
+  }
+  ctx.restore();
+}
+
+/** Presentation-only County homes; each style has a deliberately distinct silhouette. */
+export function drawTownEdgeHome(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, home: TownEdgeHomeDef): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom * 1.45, zoom * 1.45);
+  ellipse(ctx, 0, 3, home.style === 'brick-duplex' ? 27 : 22, 7, 'rgba(45,34,24,.2)');
+  if (home.style === 'porch-cottage') {
+    rect(ctx, -17, -25, 34, 25, '#d5bf91');
+    ctx.fillStyle = '#76513b'; ctx.beginPath(); ctx.moveTo(-22, -24); ctx.lineTo(0, -43); ctx.lineTo(22, -24); ctx.closePath(); ctx.fill();
+    rect(ctx, -19, -4, 38, 4, '#876347'); rect(ctx, -12, -13, 24, 9, '#e9d7af');
+    rect(ctx, -10, -17, 7, 7, '#9fc2bd'); rect(ctx, 5, -17, 7, 7, '#9fc2bd'); rect(ctx, -3, -14, 6, 14, '#654631');
+  } else if (home.style === 'garden-bungalow') {
+    rect(ctx, -20, -22, 40, 22, '#b9c98d');
+    ctx.fillStyle = '#496d48'; ctx.beginPath(); ctx.moveTo(-25, -21); ctx.lineTo(-5, -39); ctx.lineTo(25, -21); ctx.closePath(); ctx.fill();
+    rect(ctx, -15, -17, 10, 8, '#b9d5cf'); rect(ctx, 6, -17, 10, 8, '#b9d5cf'); rect(ctx, -3, -12, 7, 12, '#73503b');
+    ctx.strokeStyle = '#f4e5be'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-22, -2); ctx.lineTo(22, -2); ctx.stroke();
+  } else if (home.style === 'brick-duplex') {
+    rect(ctx, -24, -28, 48, 28, '#a75d48');
+    ctx.fillStyle = '#654039'; ctx.beginPath(); ctx.moveTo(-29, -27); ctx.lineTo(0, -48); ctx.lineTo(29, -27); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(105,57,46,.65)'; ctx.lineWidth = 1; for (let row = -23; row < -2; row += 7) { ctx.beginPath(); ctx.moveTo(-23, row); ctx.lineTo(23, row); ctx.stroke(); }
+    for (const wx of [-17, -5, 5, 17]) rect(ctx, wx - 3, -20, 6, 7, '#a9cad0');
+    rect(ctx, -12, -11, 7, 11, '#5b4035'); rect(ctx, 5, -11, 7, 11, '#5b4035');
+  } else {
+    rect(ctx, -19, -27, 38, 27, '#e0c58c');
+    ctx.fillStyle = '#9b503c'; ctx.beginPath(); ctx.moveTo(-24, -26); ctx.lineTo(0, -48); ctx.lineTo(24, -26); ctx.closePath(); ctx.fill();
+    rect(ctx, 8, -44, 6, 18, '#806047'); rect(ctx, -14, -20, 8, 9, '#9dc4c1'); rect(ctx, 6, -20, 8, 9, '#9dc4c1'); rect(ctx, -3, -13, 7, 13, '#704a32');
+    rect(ctx, -23, -3, 46, 3, '#825b3b');
+  }
+  ctx.restore();
+}
+
+/** Small immutable yard accents paired with the County edge homes. */
+export function drawTownEdgeDecor(ctx: CanvasRenderingContext2D, x: number, y: number, zoom: number, decor: TownEdgeDecorDef): void {
+  ctx.save(); ctx.translate(x, y); ctx.scale(zoom, zoom);
+  if (decor.kind === 'laundry-line') {
+    ctx.strokeStyle = '#745137'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-16, 1); ctx.lineTo(-16, -22); ctx.lineTo(16, -18); ctx.lineTo(16, 1); ctx.stroke();
+    for (const [dx, color] of [[-7, '#d7e2cf'], [1, '#d88470'], [9, '#f1d990']] as const) rect(ctx, dx, -18 + (dx + 7) * .12, 6, 7, color);
+  } else if (decor.kind === 'mailbox') {
+    rect(ctx, -2, -15, 4, 16, '#705038'); rect(ctx, -7, -18, 14, 7, '#587b77'); rect(ctx, -5, -20, 10, 3, '#84a8a1');
+  } else if (decor.kind === 'vegetable-patch') {
+    rect(ctx, -14, -4, 28, 5, '#775536'); ctx.strokeStyle = '#5f883f'; ctx.lineWidth = 2; for (let row = -10; row <= -5; row += 5) { ctx.beginPath(); ctx.moveTo(-11, row); ctx.lineTo(11, row + 2); ctx.stroke(); }
+  } else if (decor.kind === 'bicycle') {
+    ctx.strokeStyle = '#3d4c58'; ctx.lineWidth = 2; for (const dx of [-6, 7]) { ctx.beginPath(); ctx.arc(dx, -5, 5, 0, Math.PI * 2); ctx.stroke(); } ctx.beginPath(); ctx.moveTo(-6, -5); ctx.lineTo(0, -15); ctx.lineTo(7, -5); ctx.lineTo(-3, -8); ctx.lineTo(4, -15); ctx.stroke();
+  } else {
+    ctx.fillStyle = '#8d8a76'; ctx.beginPath(); ctx.ellipse(0, -5, 7, 3, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#a5cfe0'; ctx.beginPath(); ctx.ellipse(0, -7, 5, 2, 0, 0, Math.PI * 2); ctx.fill(); rect(ctx, -1, -4, 2, 5, '#76614a');
   }
   ctx.restore();
 }

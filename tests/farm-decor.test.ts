@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, FARM_WORLD_CUE_MANIFEST, farmDecorIsSafe, farmDecorManifest, farmDecorTypes, farmWindbreakAnchors, farmWorldCueIsSafe, farmWorldCueManifest, farmWorldCueTypes } from '../src/render/farmDecor';
+import { FARM_DECOR_MANIFEST, FARM_FENCE_MANIFEST, FARM_FIREFLY_ANCHORS, FARM_HOMESTEAD_DECOR_MANIFEST, FARM_WORLD_CUE_MANIFEST, farmDecorIsSafe, farmDecorManifest, farmDecorTypes, farmHomesteadDecorIsSafe, farmHomesteadDecorManifest, farmHomesteadDecorTypes, farmWindbreakAnchors, farmWorldCueIsSafe, farmWorldCueManifest, farmWorldCueTypes } from '../src/render/farmDecor';
 import { farmDriveLane, farmLandmarks, farmMainlandBounds, farmWorldPoint, pointInFarmBounds } from '../src/render/farmLayout';
 import { FARM_TOWN_GATE } from '../src/core/townGateway';
 import { farmNightAlpha } from '../src/render/renderer';
@@ -40,6 +40,17 @@ describe('Farm atmosphere decor manifest', () => {
     }
     for (const tree of farmWindbreakAnchors()) expect(pointInFarmBounds(tree)).toBe(true);
     for (const firefly of FARM_FIREFLY_ANCHORS) expect(farmDecorIsSafe(firefly), `${firefly.x},${firefly.y}`).toBe(true);
+  });
+
+  it('keeps finite homestead dressing deterministic and clear of farm anchors', () => {
+    expect(farmHomesteadDecorManifest()).toBe(FARM_HOMESTEAD_DECOR_MANIFEST);
+    expect(FARM_HOMESTEAD_DECOR_MANIFEST).toHaveLength(6);
+    expect(new Set(FARM_HOMESTEAD_DECOR_MANIFEST.map((decor) => decor.id)).size).toBe(FARM_HOMESTEAD_DECOR_MANIFEST.length);
+    expect(new Set(FARM_HOMESTEAD_DECOR_MANIFEST.map((decor) => decor.type))).toEqual(new Set(farmHomesteadDecorTypes()));
+    for (const decor of FARM_HOMESTEAD_DECOR_MANIFEST) {
+      expect(pointInFarmBounds(farmWorldPoint(decor), farmMainlandBounds())).toBe(true);
+      expect(farmHomesteadDecorIsSafe(decor), decor.id).toBe(true);
+    }
   });
 });
 

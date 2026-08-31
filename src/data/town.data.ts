@@ -2,6 +2,8 @@ import type { FarmFacing } from '../render/farmSprites';
 
 export type TownServiceId = 'seed-supplier' | 'commodity-market' | 'farm-services' | 'county-kitchen';
 export type TownNpcStyle = 'supply-clerk' | 'grain-buyer' | 'service-manager' | 'kitchen-host';
+export type TownEdgeHomeStyle = 'porch-cottage' | 'garden-bungalow' | 'brick-duplex' | 'farmhouse-cottage';
+export type TownEdgeDecorKind = 'laundry-line' | 'mailbox' | 'vegetable-patch' | 'bicycle' | 'birdbath';
 
 export interface TownPoint { x: number; y: number }
 
@@ -76,6 +78,36 @@ export const TOWN_DECOR = [
 ] as const;
 
 export type TownDecorDef = typeof TOWN_DECOR[number];
+
+/**
+ * Fixed edge scenery deliberately paints before the town's interactive depth
+ * queue. These are homes and exterior cues only, never buildings or targets.
+ */
+export interface TownEdgeHomeDef extends TownPoint {
+  id: 'west-porch-cottage' | 'south-garden-bungalow' | 'north-brick-duplex' | 'east-farmhouse-cottage';
+  style: TownEdgeHomeStyle;
+}
+
+export interface TownEdgeDecorDef extends TownPoint {
+  id: 'porch-mailbox' | 'garden-laundry' | 'duplex-bicycle' | 'farmhouse-vegetables' | 'farmhouse-birdbath';
+  kind: TownEdgeDecorKind;
+}
+
+export const TOWN_EDGE_HOMES: readonly TownEdgeHomeDef[] = [
+  { id: 'west-porch-cottage', style: 'porch-cottage', x: 4, y: 16.3 },
+  { id: 'south-garden-bungalow', style: 'garden-bungalow', x: 14.9, y: 18.05 },
+  { id: 'north-brick-duplex', style: 'brick-duplex', x: 27.4, y: 6.1 },
+  { id: 'east-farmhouse-cottage', style: 'farmhouse-cottage', x: 27.1, y: 15.7 },
+] as const;
+
+/** Small private-yard cues with no service or walk-surface meaning. */
+export const TOWN_EDGE_DECOR: readonly TownEdgeDecorDef[] = [
+  { id: 'porch-mailbox', kind: 'mailbox', x: 3.15, y: 15.55 },
+  { id: 'garden-laundry', kind: 'laundry-line', x: 13.45, y: 17.85 },
+  { id: 'duplex-bicycle', kind: 'bicycle', x: 28.45, y: 6.75 },
+  { id: 'farmhouse-vegetables', kind: 'vegetable-patch', x: 28.4, y: 15.05 },
+  { id: 'farmhouse-birdbath', kind: 'birdbath', x: 28.3, y: 16.7 },
+] as const;
 
 export function townBuildingById(id: TownBuildingDef['id']): TownBuildingDef {
   const building = TOWN_BUILDINGS.find((candidate) => candidate.id === id);

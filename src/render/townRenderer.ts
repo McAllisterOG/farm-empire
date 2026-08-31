@@ -1,12 +1,12 @@
 import type { AvatarConfig } from '../core/types';
-import { TOWN_BUILDINGS, TOWN_DECOR, TOWN_NPCS, type TownNpcDef } from '../data/town.data';
+import { TOWN_BUILDINGS, TOWN_DECOR, TOWN_EDGE_DECOR, TOWN_EDGE_HOMES, TOWN_NPCS, type TownNpcDef } from '../data/town.data';
 import type { Camera } from './camera';
 import type { FarmFacing } from './farmSprites';
 import { diamondPath, isoX, isoY, TILE_H } from './iso';
 import { farmNightAlpha } from './lighting';
 import { TOWN_BOUNDS, TOWN_EXIT, TOWN_WALK_POLYGON } from './townLayout';
 import {
-  drawCountyLifeActor, drawTownBuilding, drawTownDecor, drawTownExitSign, drawTownLampGlow, drawTownNpc, drawTownPlayer,
+  drawCountyLifeActor, drawTownBuilding, drawTownDecor, drawTownEdgeDecor, drawTownEdgeHome, drawTownExitSign, drawTownLampGlow, drawTownNpc, drawTownPlayer,
 } from './townSprites';
 import { townCountyLifeActors } from './countyLife';
 import { drawOldPickup } from './pickupPainter';
@@ -72,11 +72,8 @@ function drawTownName(ctx: CanvasRenderingContext2D, x: number, y: number, zoom:
 }
 
 function drawTownEdgeCluster(ctx: CanvasRenderingContext2D, camera: Camera, zoom: number): void {
-  for (const house of [{ x: 4, y: 16.3 }, { x: 14.9, y: 17.2 }, { x: 27.4, y: 6.1 }, { x: 27.1, y: 15.7 }]) {
-    const p = project(camera, house, true); ctx.save(); ctx.translate(p.x, p.y); ctx.scale(zoom * 1.45, zoom * 1.45);
-    ctx.fillStyle = 'rgba(45,34,24,.2)'; ctx.beginPath(); ctx.ellipse(0, 3, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#caa66e'; ctx.fillRect(-17, -25, 34, 25); ctx.fillStyle = '#78533b'; ctx.beginPath(); ctx.moveTo(-22, -24); ctx.lineTo(0, -42); ctx.lineTo(22, -24); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#97b7b2'; ctx.fillRect(-11, -17, 7, 7); ctx.fillRect(5, -17, 7, 7); ctx.restore();
-  }
+  for (const home of TOWN_EDGE_HOMES) { const p = project(camera, home, true); drawTownEdgeHome(ctx, p.x, p.y, zoom, home); }
+  for (const decor of TOWN_EDGE_DECOR) { const p = project(camera, decor, true); drawTownEdgeDecor(ctx, p.x, p.y, zoom, decor); }
   for (const anchor of [{ x: 29, y: 3.8 }, { x: 29, y: 18.2 }]) { const field = project(camera, anchor, true); ctx.save(); ctx.translate(field.x, field.y); ctx.scale(zoom, zoom); ctx.strokeStyle = '#7c9e52'; ctx.lineWidth = 3; for (let i = -18; i <= 18; i += 9) { ctx.beginPath(); ctx.moveTo(i, -10); ctx.lineTo(i + 8, 12); ctx.stroke(); } ctx.restore(); }
 }
 

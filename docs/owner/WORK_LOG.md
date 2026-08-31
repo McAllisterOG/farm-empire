@@ -718,3 +718,17 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Verification/review:** 382 tests in 57 files passed; strict typecheck, Vite production build, and `git diff --check` passed. Focused coverage verifies edge ordering, stable ties, marker placement, cache reuse/replacement/eviction, and maximum density. An independent Red Team found the first implementation's per-frame allocation risk; one bounded repair removed it, and re-review returned SHIP with no findings at any severity.
 - **Publication/acceptance:** The owner confirmed Render's manual deployment succeeded and is Live from source `6a33105`. Fresh disposable hosted-game contexts at 1920×1080, 1024×768, 390×844, and 844×390 then rendered all 36 planted sections with the farmer, Scout, pickup, tractor, and relocated barn in the same scene. Every viewport had exact client/scroll bounds, no visible stale dialog, and no console warning/error, page error, or failed request. Small remaining touch-target measurements were routed into the authorized accessibility milestone. Computer Use and the owner's desktop/browser session were not used.
 - **Boundary:** Renderer and render-data tests only. No save/schema, crop lifecycle, art density, economy, progression, capacity, transaction, hitbox, camera, map-geometry, dependency, or owner-profile change.
+
+## Farm World Continuity V1 - complete locally
+
+- **Date:** 2026-08-30
+- **Result:** Added fourteen deterministic, safety-checked working-land cues and route-derived low-contrast road shoulders, making the commercial acreage and County lane read as one maintained farm property without adding interactive or saved objects.
+- **Verification/review:** 384 tests in 57 files passed with strict typecheck, Vite production build, and `git diff --check`. Four isolated local browser viewports had exact body bounds and no console, page, or request failures. Independent Red Team returned ACCEPT with no findings.
+- **Boundary:** Presentation-only. No field, route, camera, hit target, save, economy, progression, transaction, or gameplay authority changed.
+
+## County & Homestead Variety V1 - complete locally
+
+- **Date:** 2026-08-30
+- **Result:** Replaced repeated County boundary homes with four distinct deterministic identities and five yard cues, then added six safety-checked homestead accents through the existing depth queue. Functional services, public routes, working acreage, farmhouse progression, and interaction priority remain authoritative and unchanged.
+- **Verification/review:** 386 tests in 57 files passed with strict typecheck, Vite production build, and `git diff --check`. Focused manifest tests cover uniqueness, bounds, public-surface separation, service-door clearance, parking clearance, and farm exclusion policy. Independent Red Team returned ACCEPT with no findings after checking geometry, routes, depth, interaction truth, determinism, and performance.
+- **Boundary:** Presentation-only. No save/schema, economy, progression, transaction, camera, map geometry, service, NPC, or gameplay change.

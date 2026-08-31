@@ -8,6 +8,7 @@ import { FARM_PLOT_SPAN, farmDriveLane, farmLandmarks, farmMainlandBounds, farmP
 
 export type FarmDecorType = 'hay-bale' | 'crate-pallet' | 'water-trough' | 'hand-pump';
 export type FarmWorldCueType = 'grass-tuft' | 'stone-cluster' | 'field-marker' | 'utility-pole';
+export type FarmHomesteadDecorType = 'flower-bed' | 'trellis-fence' | 'woodpile' | 'sitting-set' | 'wash-line' | 'orchard-tree';
 
 export interface FarmDecor {
   id: string;
@@ -36,6 +37,23 @@ export interface FarmWorldCue {
   x: number;
   y: number;
 }
+
+/** Immutable exterior accents for the home yard; no interaction or terrain role. */
+export interface FarmHomesteadDecor {
+  id: string;
+  type: FarmHomesteadDecorType;
+  x: number;
+  y: number;
+}
+
+export const FARM_HOMESTEAD_DECOR_MANIFEST: readonly FarmHomesteadDecor[] = [
+  { id: 'garden-flower-bed', type: 'flower-bed', x: 4.05, y: 3.15 },
+  { id: 'garden-trellis', type: 'trellis-fence', x: 3.05, y: 4.65 },
+  { id: 'porch-woodpile', type: 'woodpile', x: 6.8, y: 3.05 },
+  { id: 'pond-sitting-set', type: 'sitting-set', x: 3.1, y: 5.75 },
+  { id: 'yard-wash-line', type: 'wash-line', x: 8.05, y: 3.95 },
+  { id: 'west-orchard', type: 'orchard-tree', x: 1.95, y: 3.5 },
+] as const;
 
 /** Small, deliberately finite prop cluster: decoration rather than a new system. */
 export const FARM_DECOR_MANIFEST: readonly FarmDecor[] = [
@@ -109,6 +127,14 @@ export function farmDecorTypes(): readonly FarmDecorType[] {
   return ['hay-bale', 'crate-pallet', 'water-trough', 'hand-pump'];
 }
 
+export function farmHomesteadDecorManifest(): readonly FarmHomesteadDecor[] {
+  return FARM_HOMESTEAD_DECOR_MANIFEST;
+}
+
+export function farmHomesteadDecorTypes(): readonly FarmHomesteadDecorType[] {
+  return ['flower-bed', 'trellis-fence', 'woodpile', 'sitting-set', 'wash-line', 'orchard-tree'];
+}
+
 export function farmWorldCueTypes(): readonly FarmWorldCueType[] {
   return ['grass-tuft', 'stone-cluster', 'field-marker', 'utility-pole'];
 }
@@ -134,6 +160,11 @@ export function farmDecorIsSafe(point: FarmPoint): boolean {
 /** World cues use the same strict presentation-only exclusion policy as props. */
 export function farmWorldCueIsSafe(cue: Pick<FarmWorldCue, 'x' | 'y'>): boolean {
   return farmDecorIsSafe(cue);
+}
+
+/** Homestead accents use the existing strict field, landmark, and lane exclusions. */
+export function farmHomesteadDecorIsSafe(decor: Pick<FarmHomesteadDecor, 'x' | 'y'>): boolean {
+  return farmDecorIsSafe(decor);
 }
 
 function pointInBounds(point: FarmPoint, bounds: FarmBounds): boolean {
