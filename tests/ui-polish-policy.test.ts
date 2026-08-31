@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { focusTrapTargetIndex } from '../src/ui/focus';
+import { actionMenuPlacement } from '../src/ui/actionMenu';
+import { rovingTabIndex } from '../src/ui/modal';
 import { runtimeFailureKeyAction } from '../src/ui/runtimeFailurePolicy';
 
 const title = readFileSync(resolve('src/farmMain.ts'), 'utf8');
@@ -19,14 +21,36 @@ describe('Demo polish interaction contracts', () => {
     expect(title).toContain('aria-label');
   });
 
-  it('gives panels, dialogs, and action menus keyboard focus discipline', () => {
+  it('gives panels and dialogs keyboard focus discipline with semantic roving tabs', () => {
     expect(modal).toContain("panelBox.setAttribute('role', 'dialog')");
     expect(modal).toContain("panelBox.setAttribute('aria-modal', 'true')");
     expect(modal).toContain('trapFocus(event, panelBox)');
     expect(modal).toContain('restoreFocus(restoreTarget)');
-    expect(menu).toContain("role: 'menu'");
-    expect(menu).toContain("role: 'menuitem'");
+    expect(modal).toContain("role: 'tablist'");
+    expect(modal).toContain("role: 'tab'");
+    expect(modal).toContain("role: 'tabpanel'");
+    expect(modal).toContain("'aria-selected'");
+    expect(modal).toContain("'aria-controls'");
+    expect(modal).toContain('const panels = new Map<string, HTMLElement>();');
+    expect(modal).toContain("hidden: 'true'");
+    expect(modal).toContain("'aria-labelledby'");
+    expect(modal).toContain("'aria-describedby'");
+    expect(rovingTabIndex('ArrowRight', 0, 3)).toBe(1);
+    expect(rovingTabIndex('ArrowLeft', 0, 3)).toBe(2);
+    expect(rovingTabIndex('Home', 2, 3)).toBe(0);
+    expect(rovingTabIndex('End', 0, 3)).toBe(2);
+    expect(rovingTabIndex('Enter', 0, 3)).toBeNull();
+    expect(menu).toContain("role: 'group'");
+    expect(menu).not.toContain("role: 'menuitem'");
     expect(menu).toContain('focusFirst(root)');
+    expect(modal).toContain("input.setAttribute('aria-labelledby', descriptionId)");
+  });
+
+  it('keeps contextual action buttons inside the visual viewport margin', () => {
+    expect(actionMenuPlacement(-20, -20, 120, 90, { left: 0, top: 0, width: 390, height: 240 })).toEqual({ x: 8, y: 8 });
+    expect(actionMenuPlacement(500, 300, 120, 90, { left: 0, top: 0, width: 390, height: 240 })).toEqual({ x: 262, y: 142 });
+    expect(actionMenuPlacement(195, 120, 374, 224, { left: 0, top: 0, width: 390, height: 240 })).toEqual({ x: 8, y: 8 });
+    expect(menu).toContain('root.style.maxHeight');
   });
 
   it('clears stale overlays and interaction hints on scene transitions', () => {
@@ -63,5 +87,13 @@ describe('Demo polish interaction contracts', () => {
     expect(styles).toContain('.farm-crop-button { min-width: 44px; min-height: 44px; font-size: 12px; }');
     expect(styles).toContain('.btn-close { width: 44px; height: 44px; font-size: 17px; }');
     expect(styles).toContain('.farm-actions .btn { min-height: 44px; padding: 5px 8px; font-size: 11px; white-space: nowrap; }');
+    expect(styles).toContain('.farm-hud-root button { min-width: 44px; min-height: 44px; }');
+    expect(styles).toContain('#title-screen button { min-width: 44px; min-height: 44px; }');
+    expect(styles).toContain('height: 100dvh');
+    expect(styles).toContain('max-height: calc(100dvh - 16px - var(--safe-top) - var(--safe-bottom)); overflow: auto;');
+    expect(styles).toContain('@media (pointer: coarse)');
+    expect(styles).toContain('.tab-btn, .action-btn { min-width: 44px; min-height: 44px; }');
+    expect(readFileSync(resolve('src/ui/toast.ts'), 'utf8')).toContain("class: 'toast-announcement', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true'");
+    expect(readFileSync(resolve('src/ui/toast.ts'), 'utf8')).toContain("toastAnnouncement.textContent = ''");
   });
 });

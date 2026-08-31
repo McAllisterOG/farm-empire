@@ -732,3 +732,10 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Result:** Replaced repeated County boundary homes with four distinct deterministic identities and five yard cues, then added six safety-checked homestead accents through the existing depth queue. Functional services, public routes, working acreage, farmhouse progression, and interaction priority remain authoritative and unchanged.
 - **Verification/review:** 386 tests in 57 files passed with strict typecheck, Vite production build, and `git diff --check`. Focused manifest tests cover uniqueness, bounds, public-surface separation, service-door clearance, parking clearance, and farm exclusion policy. Independent Red Team returned ACCEPT with no findings after checking geometry, routes, depth, interaction truth, determinism, and performance.
 - **Boundary:** Presentation-only. No save/schema, economy, progression, transaction, camera, map geometry, service, NPC, or gameplay change.
+
+## UI Accessibility & Panel Cohesion V1 - complete locally
+
+- **Date:** 2026-08-30
+- **Result:** Added semantic keyboard-operated stable tabs, explicitly named dialogs and prompts, safe-area/dynamic-viewport scrollable overlays and contextual menus, 44px coarse-pointer and short-landscape targets, retained compact copy of at least 11px, and a separate single-message polite toast announcer. Gameplay, saves, economy, and progression are unchanged.
+- **Verification/review:** 387 tests in 57 files passed with strict typecheck, Vite production build, and `git diff --check`. The initial Red Team pass found repeated toast announcements, an unnamed prompt input, nonexistent referenced tab panels, unbounded action menus, and narrow targets. One bounded repair fixed all five; re-review returned SHIP with no Critical, High, or Medium defects.
+- **Boundary:** UI/presentation-only. No gameplay, save/schema, economy, progression, camera, map, dependency, or owner-profile change.

@@ -189,6 +189,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast-good { background: rgba(76, 145, 56, 0.94); }
 .toast-bad { background: rgba(216, 74, 60, 0.94); }
+.toast-announcement { position: fixed; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 .float-root { position: fixed; inset: 0; pointer-events: none; z-index: 55; }
 .float-text {
@@ -206,7 +207,8 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .action-menu {
   position: fixed; z-index: 40; display: flex; flex-direction: column; gap: 4px;
   background: rgba(255, 253, 246, 0.98); border: 2px solid #eeddb2;
-  border-radius: 12px; padding: 8px; box-shadow: var(--shadow); min-width: 150px;
+  border-radius: 12px; padding: 8px; box-shadow: var(--shadow); min-width: min(150px, calc(100vw - 16px - var(--safe-left) - var(--safe-right)));
+  max-width: calc(100vw - 16px - var(--safe-left) - var(--safe-right)); max-height: calc(100dvh - 16px - var(--safe-top) - var(--safe-bottom)); overflow: auto;
 }
 .action-menu-title {
   font-size: 12.5px; font-weight: 800; color: #9a8a78; text-align: center;
@@ -223,9 +225,9 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 /* ---------------- 模态面板 ---------------- */
 
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(42, 60, 80, 0.45);
+  position: fixed; inset: 0; width: 100%; height: 100dvh; box-sizing: border-box; background: rgba(42, 60, 80, 0.45);
   display: flex; align-items: center; justify-content: center; z-index: 50;
-  padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left));
+  padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left)); overflow: auto;
 }
 .modal-panel {
   background: var(--paper); border: 3px solid #f4e3bd; border-radius: 18px;
@@ -372,13 +374,14 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 /* ---------------- 对话框 ---------------- */
 
 .dialog-overlay {
-  position: fixed; inset: 0; background: rgba(42, 60, 80, 0.5);
+  position: fixed; inset: 0; width: 100%; height: 100dvh; box-sizing: border-box; background: rgba(42, 60, 80, 0.5);
   display: flex; align-items: center; justify-content: center; z-index: 70;
+  padding: calc(10px + var(--safe-top)) calc(10px + var(--safe-right)) calc(10px + var(--safe-bottom)) calc(10px + var(--safe-left)); overflow: auto;
 }
 .dialog-box {
   background: var(--paper); border: 3px solid #f4e3bd; border-radius: 16px;
-  padding: 22px 26px; max-width: min(400px, 92vw); box-shadow: var(--shadow);
-  display: flex; flex-direction: column; gap: 14px; text-align: center;
+  padding: 22px 26px; width: min(400px, 100%); max-width: 100%; max-height: calc(100dvh - 20px - var(--safe-top) - var(--safe-bottom)); box-sizing: border-box; box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 14px; text-align: center; overflow: auto;
 }
 .dialog-title { font-size: 18px; font-weight: 800; color: var(--coral); }
 .dialog-text { font-size: 14.5px; }
@@ -524,12 +527,14 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .farm-stat-button:hover { transform: translateY(-1px); border-color: #b79b55; }
 .farm-menu-button {
   position: fixed; top: calc(10px + var(--safe-top)); right: calc(10px + var(--safe-right)); z-index: 2;
-  min-width: 42px; font-size: 20px; line-height: 1;
+  width: 44px; min-width: 44px; min-height: 44px; padding: 0; font-size: 20px; line-height: 1;
 }
 .farm-fit-button {
   display: none; position: fixed; top: calc(10px + var(--safe-top)); right: calc(62px + var(--safe-right)); z-index: 2;
-  min-width: 42px; min-height: 42px; padding: 6px 8px; font-size: 11px; line-height: 1;
+  width: 44px; min-width: 44px; min-height: 44px; padding: 6px 8px; font-size: 11px; line-height: 1;
 }
+.farm-hud-root button { min-width: 44px; min-height: 44px; }
+#title-screen button { min-width: 44px; min-height: 44px; }
 .pickup-panel-illustration { width: 150px; padding: 20px; border-radius: 10px; background: #c75a3d; color: #fff1c9; font-weight: 900; text-align: center; }
 .farm-hud-bottom {
   position: absolute; bottom: calc(12px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
@@ -835,17 +840,14 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
     width: min(760px, calc(100vw - 16px - var(--safe-left) - var(--safe-right)));
     max-width: none; margin: auto; padding: 10px 14px; border-radius: 15px;
   }
-  .farm-title-eyebrow { font-size: 8px; letter-spacing: 1.2px; }
+  .farm-title-eyebrow, .farm-title-box .title-tagline, .farm-title-box .title-device-note, .farm-title-box .title-footer { display: none; }
   .farm-title-logo { font-size: 27px; line-height: 1.05; letter-spacing: 2px; }
-  .farm-title-box .title-sub { margin-top: 2px; font-size: 10px; }
-  .farm-title-box .title-tagline { margin: 3px 0 7px; font-size: 9px; letter-spacing: 1px; }
+  .farm-title-box .title-sub { margin-top: 2px; font-size: 11px; }
   .farm-title-box .slot-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .farm-title-box .slot-card { min-width: 0; padding: 6px 7px; gap: 4px; border-radius: 9px; }
   .farm-title-box .slot-name { font-size: 11px; }
-  .farm-title-box .slot-sub { font-size: 8px; line-height: 1.2; }
-  .farm-title-box .slot-card > .btn { padding: 4px 6px; font-size: 9px; }
-  .farm-title-box .title-device-note { margin-top: 6px; padding: 4px 6px; font-size: 8px; }
-  .farm-title-box .title-footer { margin-top: 5px; font-size: 8px; }
+  .farm-title-box .slot-sub { display: none; }
+  .farm-title-box .slot-card > .btn { min-height: 44px; padding: 4px 6px; font-size: 11px; }
 
   .farm-hud-top {
     top: calc(4px + var(--safe-top)); left: calc(6px + var(--safe-left)); right: calc(108px + var(--safe-right));
@@ -855,9 +857,9 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .farm-brand { min-width: 150px; gap: 6px; }
   .farm-brand-mark { width: 28px; height: 28px; border-radius: 7px; font-size: 12px; }
   .farm-brand-title { font-size: 12px; letter-spacing: 1px; }
-  .farm-brand-sub { font-size: 8px; }
+  .farm-brand-sub { display: none; }
   .farm-stat { min-width: 82px; }
-  .farm-stat > span { font-size: 8px; }
+  .farm-stat > span { display: none; }
   .farm-stat > strong { font-size: 11px; }
   .farm-weather-stat { min-width: 68px; }
   .farm-menu-button, .farm-fit-button { top: calc(4px + var(--safe-top)); min-width: 46px; min-height: 46px; }
@@ -866,26 +868,26 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 
   .farm-help {
     top: calc(62px + var(--safe-top)); left: calc(6px + var(--safe-left)); right: calc(6px + var(--safe-right));
-    max-width: none; padding: 4px 8px; font-size: 10px; line-height: 1.2;
+    max-width: none; padding: 4px 8px; font-size: 11px; line-height: 1.2;
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   }
   .first-delivery-chip {
     top: calc(92px + var(--safe-top)); left: calc(6px + var(--safe-left)); right: auto;
-    max-width: 48vw; padding: 4px 7px; font-size: 9px;
+    max-width: 48vw; padding: 4px 7px; font-size: 11px;
   }
   /* The welcome is actionable; keep its route readable instead of layering the progress chip beneath it. */
   .farm-hud-root.first-morning-active .first-delivery-chip { display: none; }
   .first-morning-card {
     top: calc(92px + var(--safe-top)); left: calc(6px + var(--safe-left)); width: min(340px, 46vw);
     max-height: calc(100dvh - 158px - var(--safe-top) - var(--safe-bottom)); overflow: auto;
-    padding: 7px 8px; gap: 3px; font-size: 9px;
+    padding: 7px 8px; gap: 3px; font-size: 11px;
   }
   .first-morning-card strong { font-size: 11px; }
   .first-morning-actions { gap: 3px; }
   .first-morning-actions .btn { min-height: 44px; padding: 5px 8px; font-size: 11px; }
   .farm-operation-status {
     top: calc(62px + var(--safe-top)); left: auto; right: calc(6px + var(--safe-right)); max-width: 55vw;
-    padding: 3px 4px 3px 7px; gap: 5px; font-size: 9px;
+    padding: 3px 4px 3px 7px; gap: 5px; font-size: 11px;
   }
   .farm-operation-cancel { min-width: 54px; min-height: 44px; padding: 5px 8px; font-size: 11px; }
 
@@ -894,19 +896,24 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
     padding: 4px 6px; gap: 5px; border-radius: 11px; align-items: center; flex-wrap: nowrap;
   }
   .farm-selected { flex: 0 0 108px; min-width: 108px; }
-  .farm-selected span { font-size: 8px; }
-  .farm-selected strong { font-size: 10px; line-height: 1.15; }
+  .farm-selected span { display: none; }
+  .farm-selected strong { font-size: 11px; line-height: 1.15; }
   .farm-crop-strip { flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
   .farm-crop-strip::-webkit-scrollbar { display: none; }
   .farm-crop-button { gap: 2px; min-width: 44px; min-height: 44px; padding: 3px 6px; border-radius: 7px; font-size: 11px; }
+  .tab-btn, .action-btn { min-width: 44px; min-height: 44px; }
   .farm-crop-button .icon-md { width: 20px; height: 20px; }
   .farm-actions { flex: 0 0 auto; width: auto; margin-left: 0; gap: 3px; flex-wrap: nowrap; justify-content: flex-end; }
   .farm-actions .btn { min-height: 44px; padding: 5px 8px; font-size: 11px; white-space: nowrap; }
   .farm-hud-town-controls { flex-wrap: nowrap; gap: 6px; }
   .town-hud-copy { flex: 1 1 auto; min-width: 0; }
-  .town-hud-copy strong { font-size: 10px; }
+  .town-hud-copy strong { font-size: 11px; }
   .town-hud-copy span { display: none; }
   .farm-hud-town-controls .farm-actions { margin-left: auto; width: auto; }
+}
+
+@media (pointer: coarse) {
+  .tab-btn, .action-btn { min-width: 44px; min-height: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

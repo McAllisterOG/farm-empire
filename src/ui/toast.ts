@@ -4,18 +4,28 @@
 import { h } from './dom';
 
 let toastRoot: HTMLElement | null = null;
+let toastAnnouncement: HTMLElement | null = null;
 let floatRoot: HTMLElement | null = null;
 
 export function initToast(): void {
   toastRoot = h('div', { class: 'toast-root' });
+  toastAnnouncement = h('div', { class: 'toast-announcement', role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' });
   floatRoot = h('div', { class: 'float-root' });
-  document.body.append(toastRoot, floatRoot);
+  document.body.append(toastRoot, toastAnnouncement, floatRoot);
+}
+
+function announceToast(text: string): void {
+  if (!toastAnnouncement) return;
+  // Clear first so repeated text is a new, single announcement rather than a replay of the visual queue.
+  toastAnnouncement.textContent = '';
+  queueMicrotask(() => { if (toastAnnouncement) toastAnnouncement.textContent = text; });
 }
 
 export function toast(text: string, kind: 'info' | 'good' | 'bad' = 'info'): void {
   if (!toastRoot) return;
   const el = h('div', { class: `toast toast-${kind}` }, text);
   toastRoot.append(el);
+  announceToast(text);
   requestAnimationFrame(() => el.classList.add('show'));
   setTimeout(() => {
     el.classList.remove('show');

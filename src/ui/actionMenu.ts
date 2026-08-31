@@ -8,7 +8,7 @@ let root: HTMLElement | null = null;
 let restoreTarget: HTMLElement | null = null;
 
 export function initActionMenu(): void {
-  root = h('div', { class: 'action-menu hidden', role: 'menu', 'aria-label': 'Context actions' });
+  root = h('div', { class: 'action-menu hidden', role: 'group', 'aria-label': 'Context actions' });
   document.body.append(root);
 }
 
@@ -19,6 +19,25 @@ export interface MenuAction {
   onClick: () => void;
 }
 
+export interface ActionMenuViewport {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+export function actionMenuPlacement(sx: number, sy: number, width: number, height: number, viewport: ActionMenuViewport, margin = 8): { x: number; y: number } {
+  const minX = viewport.left + margin;
+  const maxX = Math.max(minX, viewport.left + viewport.width - width - margin);
+  const minY = viewport.top + margin;
+  const maxY = Math.max(minY, viewport.top + viewport.height - height - margin);
+  return { x: Math.min(maxX, Math.max(minX, sx - width / 2)), y: Math.min(maxY, Math.max(minY, sy - height - 16)) };
+}
+
+function safeInset(name: string): number {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
+}
+
 export function showActionMenu(sx: number, sy: number, title: string, actions: MenuAction[]): void {
   if (!root) return;
   restoreTarget = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -26,7 +45,7 @@ export function showActionMenu(sx: number, sy: number, title: string, actions: M
   root.append(h('div', { class: 'action-menu-title' }, title));
   for (const a of actions) {
     const btn = h('button', {
-      class: `action-btn ${a.disabled ? 'disabled' : ''}`, role: 'menuitem', type: 'button',
+      class: `action-btn ${a.disabled ? 'disabled' : ''}`, type: 'button',
       ...(a.disabled ? { disabled: 'true' } : {}),
       onclick: () => {
         if (a.disabled) return;
@@ -37,10 +56,20 @@ export function showActionMenu(sx: number, sy: number, title: string, actions: M
     root.append(btn);
   }
   root.classList.remove('hidden');
-  // 位置：靠近点击处但不出屏
+  const visual = window.visualViewport;
+  const viewportLeft = visual?.offsetLeft ?? 0;
+  const viewportTop = visual?.offsetTop ?? 0;
+  const viewport = {
+    left: viewportLeft + safeInset('--safe-left'),
+    top: viewportTop + safeInset('--safe-top'),
+    width: (visual?.width ?? window.innerWidth) - safeInset('--safe-left') - safeInset('--safe-right'),
+    height: (visual?.height ?? window.innerHeight) - safeInset('--safe-top') - safeInset('--safe-bottom'),
+  };
+  root.style.maxWidth = `${Math.max(0, viewport.width - 16)}px`;
+  root.style.maxHeight = `${Math.max(0, viewport.height - 16)}px`;
+  // Position after constraining the menu so oversized action groups are measured at their scrollable size.
   const rect = root.getBoundingClientRect();
-  const x = Math.min(window.innerWidth - rect.width - 8, Math.max(8, sx - rect.width / 2));
-  const y = Math.min(window.innerHeight - rect.height - 8, Math.max(8, sy - rect.height - 16));
+  const { x, y } = actionMenuPlacement(sx, sy, rect.width, rect.height, viewport);
   root.style.left = `${x}px`;
   root.style.top = `${y}px`;
   focusFirst(root);
