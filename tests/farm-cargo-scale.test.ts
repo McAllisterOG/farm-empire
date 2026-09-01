@@ -4,14 +4,14 @@ import {
   farmCropPricePerPoundCents, formatFarmCargoWeight, formatFarmCropWeight,
 } from '../src/core/farmCargoScale';
 
-describe('farm cargo weight presentation', () => {
-  it('projects stable 10 lb handling lots without changing authoritative counts', () => {
+describe('farm cargo scale compatibility', () => {
+  it('retains the internal scale while presenting abstract quantities', () => {
     const crop = { storageUnitsPerItem: 3, basePriceCents: 2_600 };
     expect(FARM_CARGO_POUNDS_PER_UNIT).toBe(10);
     expect(farmCargoPounds(72)).toBe(720);
-    expect(formatFarmCargoWeight(144)).toBe('1,440 lb');
+    expect(formatFarmCargoWeight(144)).toBe('144');
     expect(farmCropCargoPounds(crop, 8)).toBe(240);
-    expect(formatFarmCropWeight(crop, 8)).toBe('240 lb');
+    expect(formatFarmCropWeight(crop, 8)).toBe('8');
     expect(farmCropPricePerPoundCents(crop)).toBeCloseTo(86.6667, 3);
   });
 

@@ -5,7 +5,8 @@ import { farmOf, storageUsed, syncCashMirror } from './farmBusiness';
 import { recordFarmStat } from './farmKnowledge';
 
 import { PICKUP_BASE_CARGO_CAPACITY, PICKUP_TRAILER_CARGO_CAPACITY, pickupAtCargoPad } from './farmPickupData';
-import { formatFarmCargoWeight } from './farmCargoScale';
+import { formatFarmCapacity, formatFarmCargoWeight } from './farmCargoScale';
+import { COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY, COUNTY_PANTRY_CORN_ORDER } from '../data/townWorkOrders.data';
 
 export { PICKUP_BASE_CARGO_CAPACITY, PICKUP_TRAILER_CARGO_CAPACITY } from './farmPickupData';
 
@@ -89,6 +90,80 @@ export function pickupHasCargo(state: GameState): boolean {
 
 export function pickupIsAtCargoPad(state: GameState): boolean {
   return pickupAtCargoPad(farmOf(state).pickup);
+}
+
+export type FarmQuantityBatch = Readonly<Record<string, number>>;
+export interface FarmBatchPlan {
+  readonly quantities: Record<string, number>;
+  readonly used: number;
+  readonly capacity: number;
+  readonly snapshot: string;
+}
+
+function batchSnapshot(state: GameState, source: 'barn' | 'pickup'): string {
+  const farm = farmOf(state);
+  const values = Object.keys(farm.storage).sort().map((id) => `${id}:${farm.storage[id] ?? 0}`);
+  const cargo = Object.keys(farm.pickup.cargo.crops).sort().map((id) => `${id}:${farm.pickup.cargo.crops[id] ?? 0}`);
+  return `${source}|${values.join(',')}|${cargo.join(',')}|${storageUsed(state)}|${pickupCargoUsed(state)}|${farm.storageCapacity}|${pickupCargoCapacity(state)}`;
+}
+
+function cleanBatch(batch: FarmQuantityBatch): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const [cropId, value] of Object.entries(batch)) if (Number.isSafeInteger(value) && value > 0) result[cropId] = value;
+  return result;
+}
+
+export function preflightLoadBarnBatch(state: GameState, batch: FarmQuantityBatch): { ok: true; plan: FarmBatchPlan } | { ok: false; reason: string } {
+  const pad = requireCargoPad(state); if (pad) return { ok: false, reason: pad.reason ?? 'Park the pickup at the barn cargo pad.' };
+  const quantities = cleanBatch(batch); let used = 0;
+  for (const [cropId, count] of Object.entries(quantities)) {
+    const def = farmCropDefOrNull(cropId); if (!def) return { ok: false, reason: 'Unknown crop.' };
+    if (count > (farmOf(state).storage[cropId] ?? 0)) return { ok: false, reason: `Not enough ${def.name} in the barn.` };
+    used += count * def.storageUnitsPerItem;
+  }
+  if (used > pickupCargoRemaining(state)) return { ok: false, reason: `Pickup has ${formatFarmCapacity(pickupCargoUsed(state), pickupCargoCapacity(state))} capacity; this load is too large.` };
+  return { ok: true, plan: { quantities, used, capacity: pickupCargoCapacity(state), snapshot: batchSnapshot(state, 'barn') } };
+}
+
+export function commitLoadBarnBatch(state: GameState, plan: FarmBatchPlan): ActionResult {
+  const fresh = preflightLoadBarnBatch(state, plan.quantities);
+  if (!fresh.ok || fresh.plan.snapshot !== plan.snapshot) return fail('The barn or pickup changed. Review the load amounts and try again.');
+  const farm = farmOf(state);
+  for (const [cropId, count] of Object.entries(plan.quantities)) {
+    farm.storage[cropId] = (farm.storage[cropId] ?? 0) - count;
+    farm.pickup.cargo.crops[cropId] = pickupCropUnits(state, cropId) + count;
+  }
+  recordFarmStat(state, 'farmCargoLoads'); recordFarmStat(state, 'farmCargoUnitsMoved', plan.used);
+  return { ok: true, events: [{ type: 'toast', target: 'Produce loaded into the pickup.' }] };
+}
+
+export function maxPickupCropSale(state: GameState, cropId: string): number {
+  const owned = pickupCropUnits(state, cropId);
+  const farm = farmOf(state);
+  let reserved = 0;
+  if (farm.townContact.status === 'active' && cropId === COUNTY_PANTRY_CORN_ORDER.cropId) reserved += COUNTY_PANTRY_CORN_ORDER.requiredUnits;
+  if (farm.countyKitchen.status === 'active') reserved += COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.cargo[cropId as keyof typeof COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.cargo] ?? 0;
+  if (farm.countyFreight.active?.cropId === cropId) reserved += farm.countyFreight.active.requiredUnits;
+  return Math.max(0, owned - reserved);
+}
+
+export function reservedMarketCropUnits(state: GameState, cropId: string): number {
+  return pickupCropUnits(state, cropId) - maxPickupCropSale(state, cropId);
+}
+
+export function sellPickupCropBatch(state: GameState, batch: FarmQuantityBatch, pickupPresent: boolean): ActionResult {
+  const blocked = requireFarmPickup(state, 'town', pickupPresent); if (blocked) return blocked;
+  const quantities = cleanBatch(batch); let totalCents = 0;
+  for (const [cropId, count] of Object.entries(quantities)) {
+    const def = farmCropDefOrNull(cropId); if (!def) return fail('Unknown crop.');
+    if (count > maxPickupCropSale(state, cropId)) return fail(`${def.name} includes produce reserved for a County obligation.`);
+    totalCents += (farmOf(state).market.quotes[cropId]?.currentCents ?? 0) * count;
+  }
+  const farm = farmOf(state);
+  for (const [cropId, count] of Object.entries(quantities)) farm.pickup.cargo.crops[cropId] = pickupCropUnits(state, cropId) - count;
+  const moved = Object.values(quantities).reduce((sum, count) => sum + count, 0);
+  farm.cashCents += totalCents; recordFarmStat(state, 'itemsSold', moved); recordFarmStat(state, 'farmCashEarnedCents', totalCents); syncCashMirror(state);
+  return { ok: true, events: [{ type: 'sell', target: 'batch', amount: moved, data: totalCents }] };
 }
 
 function requireCargoPad(state: GameState): ActionResult | null {

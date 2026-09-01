@@ -8,7 +8,7 @@ import {
   placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind, type ParcelWorkPlan,
 } from '../core/farmBusiness';
 import { ensureOwnedFarmParcelPlots, farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
-import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, sellPickupCrop, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
+import { buyTownSeedsIntoPickup, commitLoadBarnBatch, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, preflightLoadBarnBatch, sellPickupCrop, sellPickupCropBatch, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { pickupHomeArrival, pickupPositionForSave, TRACTOR_HOME_PARKING } from '../core/farmPickupData';
 import { farmDirectionalInputRoute, farmVehicleControlTarget, isMoveOnlyFarmGround, isMoveOnlyPointerButton, shouldCompleteMoveOnlyGesture } from '../core/farmVehicleControls';
 import {
@@ -61,7 +61,7 @@ import { h } from '../ui/dom';
 import { shouldTriggerFarmHarvestFeedback } from './farmHarvestFeedback';
 import { resumeFarmSession } from '../core/farmOfflineSafety';
 import { shouldRenderFarmFrame } from '../render/renderResolution';
-import { formatFarmCargoWeight } from '../core/farmCargoScale';
+import { formatFarmCapacity } from '../core/farmCargoScale';
 import { FarmWorkforceReservationLedger } from '../core/farmWorkforceReservations';
 
 const AUTOSAVE_MS = 15_000;
@@ -322,6 +322,8 @@ export class FarmEmpireApp {
       sellCrop: (cropId, count) => this.mode === 'town'
         ? sellPickupCrop(this.state, cropId, count, this.pickupAtTown)
         : failFarmSideSale(),
+      sellBatch: (batch) => this.mode === 'town' ? sellPickupCropBatch(this.state, batch, this.pickupAtTown) : failFarmSideSale(),
+      loadBatch: (batch) => { const preflight = preflightLoadBarnBatch(this.state, batch); return preflight.ok ? commitLoadBarnBatch(this.state, preflight.plan) : { ok: false, reason: preflight.reason }; },
       loadCrop: (cropId, count) => loadBarnCropToPickup(this.state, cropId, count),
       unloadCrop: (cropId, count) => unloadPickupCropToBarn(this.state, cropId, count),
       loadSeeds: (cropId, count) => loadFarmSeedsToPickup(this.state, cropId, count),
@@ -477,8 +479,8 @@ export class FarmEmpireApp {
     const point = this.renderer.camera.tilePointAt(sx, sy);
     if (this.pickupAtTown && pointInTownPickupScreenHitbox(
       { x: sx, y: sy }, pickupAnchor, this.renderer.camera.zoom,
-    )) return { label: `Old Pickup · ${formatFarmCargoWeight(pickupCargoUsed(this.state))} / ${formatFarmCargoWeight(pickupCargoCapacity(this.state))}`, ...TOWN_PICKUP_PARKING };
-    if (townPickupHit(point, this.pickupAtTown)) return { label: `Old Pickup · ${formatFarmCargoWeight(pickupCargoUsed(this.state))} / ${formatFarmCargoWeight(pickupCargoCapacity(this.state))}`, ...TOWN_PICKUP_PARKING };
+    )) return { label: `Old Pickup · ${formatFarmCapacity(pickupCargoUsed(this.state), pickupCargoCapacity(this.state))}`, ...TOWN_PICKUP_PARKING };
+    if (townPickupHit(point, this.pickupAtTown)) return { label: `Old Pickup · ${formatFarmCapacity(pickupCargoUsed(this.state), pickupCargoCapacity(this.state))}`, ...TOWN_PICKUP_PARKING };
     const screenNpc = this.townNpcAtScreen(sx, sy);
     if (screenNpc) return { label: `${screenNpc.name} · ${screenNpc.role}`, x: screenNpc.x, y: screenNpc.y };
     const interaction = townInteractionAt(point);
@@ -904,7 +906,11 @@ export class FarmEmpireApp {
       if (this.operatingPickup) {
         const pad = farmLandmarks().cargoPad;
         this.drivePickupTo(pad.x, pad.y, () => { toast('Pickup parked at the cargo pad.', 'good'); this.openPickupPanel(); });
-      } else this.walkNear(interaction.point.x, interaction.point.y, () => openFarmMarket(this.state, this.panelActions(), 'farm'));
+      } else this.walkNear(interaction.point.x, interaction.point.y, () => showActionMenu(sx, sy, 'Barn · Cargo & Storage', [
+        { label: 'Load Produce for Town', icon: 'icon:produce_corn', onClick: () => pickupIsAtCargoPad(this.state) ? openFarmMarket(this.state, this.panelActions(), 'farm') : this.drivePickupToCargoPad() },
+        { label: 'Unload Pickup', icon: 'icon:produce_wheat', onClick: () => pickupIsAtCargoPad(this.state) ? openFarmMarket(this.state, this.panelActions(), 'farm') : this.drivePickupToCargoPad() },
+        { label: 'View Barn & Upgrades', onClick: () => this.openEquipmentPanel() },
+      ]));
       return;
     }
     if (interaction?.kind === 'field' && interaction.plotUid !== undefined) {
@@ -1257,8 +1263,8 @@ export class FarmEmpireApp {
       body: (body) => body.append(
         h('div', { class: 'equipment-card', 'data-testid': 'pickup-panel' },
           h('div', { class: 'pickup-panel-illustration' }, 'OLD PICKUP'),
-          h('div', { class: 'farm-card-title' }, `Cargo · ${formatFarmCargoWeight(pickupCargoUsed(this.state))} / ${formatFarmCargoWeight(pickupCargoCapacity(this.state))}`),
-          h('div', { class: 'farm-panel-summary' }, `Cargo: ${formatFarmCargoWeight(pickupCargoUsed(this.state))} / ${formatFarmCargoWeight(pickupCargoCapacity(this.state))} · ${atPad ? 'Parked at the barn cargo pad.' : 'Drive to the barn cargo pad to manage cargo.'}`),
+          h('div', { class: 'farm-card-title' }, `Cargo · ${formatFarmCapacity(pickupCargoUsed(this.state), pickupCargoCapacity(this.state))}`),
+          h('div', { class: 'farm-panel-summary' }, `Cargo: ${formatFarmCapacity(pickupCargoUsed(this.state), pickupCargoCapacity(this.state))} · ${atPad ? 'Parked at the barn cargo pad.' : 'Drive to the barn cargo pad to manage cargo.'}`),
           ...(!atPad ? [h('button', { class: 'btn btn-primary', 'data-testid': 'drive-pickup-to-cargo-pad', onclick: () => this.drivePickupToCargoPad() }, 'Drive to Barn Cargo Pad')] : []),
           h('button', { class: `btn ${atPad ? 'btn-primary' : ''}`, 'data-testid': this.operatingPickup ? 'exit-pickup' : 'operate-pickup', onclick: () => { closePanel(); this.togglePickupOperating(); } }, this.operatingPickup ? 'Exit Pickup' : 'Operate Pickup'),
           ...(atPad ? [
@@ -1295,7 +1301,7 @@ export class FarmEmpireApp {
         ...(this.mode === 'farm' ? [h('button', { class: 'btn', onclick: () => this.openFarmhouseOffice() }, 'Farmbook')] : []),
         h('button', { class: 'btn', onclick: () => { this.save(); toast('Farm saved.', 'good'); } }, 'Save'),
         h('button', { class: 'btn', onclick: () => { closePanel(); if (this.mode === 'town') this.renderer.centerOnTown(); else this.renderer.centerOnFarm(); } }, 'Recenter Camera'),
-        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops. On a touchscreen, drag open ground to pan and pinch anywhere on the farm to zoom.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Ready crops remain harvestable for one active hour. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried.'), h('p', {}, 'Cargo is measured in pounds. Each seed bag uses 10 lb of payload; produce lots vary by crop. Park the pickup at the marked barn cargo pad to load, then drive it to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration, including its basic 2,400 lb harvest wagon. Operated harvest loads that wagon—not the barn—so drive the tractor to the barn receiving bay to unload. The County 4,800 lb wagon costs $2,400 after the Implement Set, neighboring acreage, and one completed freight haul.')) }) }, 'How to Play'),
+        h('button', { class: 'btn', onclick: () => openPanel({ title: 'How to Play', body: (help) => help.append(h('p', {}, 'Drag across owned field sections to highlight any rectangular work area, then choose Prepare, Plant, Water, Harvest, or Clear. A planting selection uses the active crop and stops cleanly when its seeds run out. Number keys 1–8 select crops. On a touchscreen, drag open ground to pan and pinch anywhere on the farm to zoom.'), h('p', {}, 'Prepare rough soil, plant, then water new seedlings to start growth. Ready crops remain harvestable for one active hour. Manual harvests fill your visible basket; use Harvest → Barn/Pickup on the bottom bar to choose where each basket is carried.'), h('p', {}, 'Cargo uses crop quantities and abstract capacity. Park the pickup at the marked barn cargo pad to load, then drive it to the County Grain Exchange to sell or deliver.'), h('p', {}, 'Completing the Pantry delivery unlocks tractor restoration and its harvest wagon. Operated harvest loads that wagon—not the barn—so drive the tractor to the barn receiving bay to unload.')) }) }, 'How to Play'),
         h('button', { class: 'btn btn-primary', onclick: () => { this.save(); closePanel(); onBackToTitle(); } }, 'Save & Return to Farms'),
       );
     } });
@@ -1553,9 +1559,9 @@ export class FarmEmpireApp {
       },
       {
         label: plan.harvestPlotUids.length > 0
-          ? `Harvest wagon · ${plan.readyHarvestPlotUids.length} ready · ${plan.harvestPlotUids.length} fits (${formatFarmCargoWeight(plan.harvestOpenCapacity)} open)`
+          ? `Harvest wagon · ${plan.readyHarvestPlotUids.length} ready · ${plan.harvestPlotUids.length} fits (${plan.harvestOpenCapacity} open)`
           : plan.readyHarvestPlotUids.length > 0
-            ? `Wagon needs unloading · ${formatFarmCargoWeight(plan.harvestOpenCapacity)} open · next section ${formatFarmCargoWeight(plan.nextHarvestRequiredCapacity)}`
+            ? `Wagon needs unloading · ${plan.harvestOpenCapacity} open · next section ${plan.nextHarvestRequiredCapacity}`
             : 'No ready field sections selected',
         icon: 'fx:ready',
         disabled: plan.harvestPlotUids.length === 0,
@@ -1760,7 +1766,7 @@ export class FarmEmpireApp {
         activeVehicle: null,
         manualWorking: true,
         canCancel: true,
-        statusText: `Carrying harvest basket · ${formatFarmCargoWeight(handBasketUsed(this.state))} / ${formatFarmCargoWeight(HAND_BASKET_CAPACITY)} · walking to ${destination}`,
+        statusText: `Carrying harvest basket · ${handBasketUsed(this.state)} / ${HAND_BASKET_CAPACITY} · walking to ${destination}`,
       };
     }
     const manualJob = this.manualFieldJob;

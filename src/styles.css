@@ -658,6 +658,13 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
 .market-price.down { color: #b44e3d; }
 .market-price.flat { color: #756c5b; }
 .market-qty { width: 64px; padding: 5px 6px; border: 2px solid #d9c589; border-radius: 8px; }
+.quantity-selector { min-width: min(330px, 100%); padding: 9px 10px; border-radius: 11px; background: linear-gradient(135deg, #fff8df, #eef5df); border: 1px solid #d9c98f; }
+.quantity-selector-head { display: flex; justify-content: space-between; align-items: center; color: #315b3a; font-weight: 900; font-size: 13px; }
+.quantity-value { min-width: 2.5em; padding: 3px 7px; border-radius: 7px; background: #315b3a; color: #fff8df; text-align: center; font-weight: 900; }
+.quantity-selector-controls { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+.quantity-slider { min-width: 90px; flex: 1; accent-color: #4f8b4b; }
+.quantity-step { min-width: 40px; padding-inline: 7px; font-size: 18px; line-height: 1; }
+.cargo-batch-submit { width: 100%; margin-bottom: 8px; }
 .land-card { display: flex; flex-direction: column; gap: 9px; padding: 18px; border-radius: 14px; border: 3px solid #b48a58; background: #fff5d9; }
 .land-card.owned { border-color: #5f974d; background: #eef7e3; }
 .land-card-badge { width: fit-content; padding: 3px 8px; border-radius: 8px; background: #795235; color: white; font-size: 11px; font-weight: 900; }
@@ -823,6 +830,8 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .farm-card { align-items: flex-start; flex-wrap: wrap; }
   .farm-card-main { min-width: min(180px, calc(100% - 56px)); }
   .market-sell-controls { width: 100%; justify-content: flex-start; padding-left: 56px; }
+  .quantity-selector { width: 100%; min-width: 0; }
+  .quantity-selector-controls { gap: 4px; }
   .farmbook-guide-list { grid-template-columns: 1fr; }
   .farmbook-snapshot { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .farmbook-weather-row { grid-template-columns: 1fr; }

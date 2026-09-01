@@ -21,7 +21,7 @@ describe('vehicle logistics clarity presentation', () => {
   it('states the exact County wagon price and only the unmet prerequisite checklist', () => {
     const state = createFarmGame('Wagon clarity', 13, NOW); const farm = farmOf(state);
     const locked = harvestWagonProgressPresentation(state);
-    expect(locked.current).toContain('2,400 lb');
+    expect(locked.current).toContain('basic wagon');
     expect(locked.next).toContain('$2,400');
     expect(locked.next).toContain('restored tractor');
     farm.equipment.tractor.status = 'operational';

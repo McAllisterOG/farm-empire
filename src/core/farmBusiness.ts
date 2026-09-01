@@ -776,7 +776,7 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
   if (context === 'operatedTractor' && farm.equipment.harvestWagon.owned) {
     const wagon = farm.equipment.harvestWagon;
     const open = harvestWagonCapacity(state) - harvestWagonUsed(state);
-    if (needed > open) return fail(`Harvest wagon full: ${needed * 10} lb required; ${Math.max(0, open) * 10} lb open. Drive to the barn receiving bay to unload.`);
+    if (needed > open) return fail(`Harvest wagon full: ${needed} capacity required; ${Math.max(0, open)} open. Drive to the barn receiving bay to unload.`);
     wagon.crops[def.id] = (wagon.crops[def.id] ?? 0) + amount;
     recordFarmHarvestFamily(plot);
     plot.crop = null;
@@ -785,7 +785,7 @@ export function harvestFarmCrop(state: GameState, plotUid: number, now: number, 
     return { ok: true, events: [{ type: 'harvest', target: def.id, amount }] };
   }
   if (storageRemaining(state) < needed) {
-    return fail(`Barn full: ${needed} handling lots (${needed * 10} lb) of open storage are required. Sell crops before harvesting.`);
+    return fail(`Barn full: ${needed} capacity is required. Sell crops before harvesting.`);
   }
   farm.storage[def.id] = (farm.storage[def.id] ?? 0) + amount;
   recordFarmHarvestFamily(plot);
@@ -831,17 +831,17 @@ export function purchaseCountyHarvestWagon(state: GameState): ActionResult {
   farm.cashCents -= COUNTY_HARVEST_WAGON.priceCents;
   farm.equipment.harvestWagon.owned = true; farm.equipment.harvestWagon.tier = 'county';
   recordFarmStat(state, 'farmCashSpentCents', COUNTY_HARVEST_WAGON.priceCents); syncCashMirror(state);
-  return { ok: true, events: [{ type: 'toast', target: 'County Harvest Wagon purchased. Capacity is now 4,800 lb.' }] };
+  return { ok: true, events: [{ type: 'toast', target: 'County Harvest Wagon purchased. Pickup capacity expanded.' }] };
 }
 
 export function unloadHarvestWagonToBarn(state: GameState): ActionResult {
   const farm = farmOf(state); const wagon = farm.equipment.harvestWagon; const used = harvestWagonUsed(state);
   if (used <= 0) return fail('The harvest wagon is empty.');
   const open = storageRemaining(state);
-  if (used > open) return fail(`Barn needs ${used * 10} lb open; only ${open * 10} lb is available. The wagon was not unloaded.`);
+  if (used > open) return fail(`Barn needs ${used} open capacity; only ${open} is available. The wagon was not unloaded.`);
   for (const def of allFarmCrops()) { const count = wagon.crops[def.id] ?? 0; if (count) farm.storage[def.id] = (farm.storage[def.id] ?? 0) + count; }
   wagon.crops = {};
-  return { ok: true, events: [{ type: 'toast', target: `Harvest wagon unloaded: ${used * 10} lb received by the barn.` }] };
+  return { ok: true, events: [{ type: 'toast', target: `Harvest wagon unloaded: ${used} capacity received by the barn.` }] };
 }
 
 export function purchaseCountyUtilityTrailer(state: GameState): ActionResult {
@@ -853,7 +853,7 @@ export function purchaseCountyUtilityTrailer(state: GameState): ActionResult {
   farm.equipment.countyUtilityTrailerOwned = true;
   recordFarmStat(state, 'farmCashSpentCents', COUNTY_UTILITY_TRAILER.priceCents);
   syncCashMirror(state);
-  return { ok: true, events: [{ type: 'toast', target: 'County Utility Trailer purchased. Pickup payload is now 1,440 lb.' }] };
+  return { ok: true, events: [{ type: 'toast', target: 'County Utility Trailer purchased. Pickup capacity expanded.' }] };
 }
 
 function farmCropReady(plot: FarmPlot, now: number): boolean {

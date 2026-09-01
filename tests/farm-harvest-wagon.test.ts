@@ -21,7 +21,7 @@ describe('Tractor harvest wagon v22', () => {
     expect(harvestWagonReadout(fresh)).toBe('Restoration required');
     expect(farmGuideSteps(fresh).find((step) => step.id === 'restore')?.hint).toContain('barn receiving bay');
     const restored = migratedOperationalFarm();
-    expect(harvestWagonReadout(restored)).toBe('0 lb / 2,400 lb');
+    expect(harvestWagonReadout(restored)).toBe('0 / 240');
   });
 
   it('grandfathers only an operational v21 tractor with an empty basic wagon', () => {

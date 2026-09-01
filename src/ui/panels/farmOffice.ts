@@ -11,7 +11,7 @@ import { roadsideStandView } from '../../core/farmRoadsideStand';
 import { firstFarmMorningGuide } from '../../core/firstFarmMorning';
 import { h } from '../dom';
 import { openPanel } from '../modal';
-import { formatFarmCargoWeight } from '../../core/farmCargoScale';
+import { formatFarmCapacity } from '../../core/farmCargoScale';
 import { COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY } from '../../data/townWorkOrders.data';
 import { farmhousePresentationTier } from '../../render/farmLayout';
 
@@ -89,20 +89,20 @@ export function openFarmOffice(state: GameState, actions: FarmOfficeActions): vo
     h('section', { class: 'farmbook-section farmbook-capital-plan', 'data-testid': 'farmbook-capital-plan' },
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, `Capital Plan · ${selectedCrop.name}`), h('span', {}, 'base market')),
       h('div', { class: 'farmbook-capital-rows' },
-        h('div', {}, h('strong', {}, '36 starter'), h('span', {}, `Seed ${formatMoney(starterPlan.seedCostCents)} · Gross ${formatMoney(starterPlan.grossBaseValueCents)} · Net ${formatMoney(starterPlan.netBaseValueCents)} · ${formatFarmCargoWeight(starterPlan.totalStorageUnits)} storage`)),
-        h('div', {}, h('strong', {}, '96 north'), h('span', {}, `Seed ${formatMoney(northPlan.seedCostCents)} · Gross ${formatMoney(northPlan.grossBaseValueCents)} · Net ${formatMoney(northPlan.netBaseValueCents)} · ${formatFarmCargoWeight(northPlan.totalStorageUnits)} storage`)),
+        h('div', {}, h('strong', {}, '36 starter'), h('span', {}, `Seed ${formatMoney(starterPlan.seedCostCents)} · Gross ${formatMoney(starterPlan.grossBaseValueCents)} · Net ${formatMoney(starterPlan.netBaseValueCents)} · ${starterPlan.totalStorageUnits} storage used`)),
+        h('div', {}, h('strong', {}, '96 north'), h('span', {}, `Seed ${formatMoney(northPlan.seedCostCents)} · Gross ${formatMoney(northPlan.grossBaseValueCents)} · Net ${formatMoney(northPlan.netBaseValueCents)} · ${northPlan.totalStorageUnits} storage used`)),
       ),
       h('small', { 'data-testid': 'farmbook-wagon-guidance' }, farm.equipment.harvestWagon.owned
-        ? 'Operated harvest loads the tractor wagon; drive it to the barn receiving bay for one whole-load unload. County wagon: Implement Set + neighboring acreage + completed freight + $2,400, expanding to 4,800 lb.'
-        : 'Tractor restoration includes the basic 2,400 lb harvest wagon. The County 4,800 lb wagon later requires the Implement Set, neighboring acreage, completed freight, and $2,400.'),
+        ? 'Operated harvest loads the tractor wagon; drive it to the barn receiving bay for one whole-load unload. The County wagon expands cargo capacity after the required upgrades.'
+        : 'Tractor restoration includes the basic harvest wagon. The County wagon later requires the Implement Set, neighboring acreage, completed freight, and $2,400.'),
     ),
     h('section', { class: 'farmbook-section' },
       h('div', { class: 'farmbook-section-title' }, h('strong', {}, 'Operation'), h('span', {}, `${ownedSections} sections`)),
       h('div', { class: 'farmbook-snapshot' },
         h('div', {}, h('span', {}, 'Cash'), h('strong', {}, formatMoney(farm.cashCents))),
-        h('div', {}, h('span', {}, 'Barn'), h('strong', {}, `${formatFarmCargoWeight(storageUsed(state))} / ${formatFarmCargoWeight(farm.storageCapacity)}`)),
+        h('div', {}, h('span', {}, 'Storage'), h('strong', {}, formatFarmCapacity(storageUsed(state), farm.storageCapacity))),
         h('div', {}, h('span', {}, 'Silo'), h('strong', {}, farm.equipment.countyGrainSiloOwned ? 'County grain silo' : farm.equipment.barnLoftExpansionOwned ? 'Build unlocked' : 'Not built')),
-        h('div', {}, h('span', {}, 'Pickup'), h('strong', {}, `${formatFarmCargoWeight(pickupCargoUsed(state))} / ${formatFarmCargoWeight(pickupCargoCapacity(state))}`)),
+        h('div', {}, h('span', {}, 'Pickup'), h('strong', {}, formatFarmCapacity(pickupCargoUsed(state), pickupCargoCapacity(state)))),
         h('div', {}, h('span', {}, 'Trailer'), h('strong', {}, farm.equipment.countyUtilityTrailerOwned ? 'County utility trailer' : 'Not owned')),
         h('div', {}, h('span', {}, 'Land'), h('strong', {}, farm.parcels.northOwned ? '2 acreages' : '1 acreage')),
         h('div', {}, h('span', {}, 'Tractor'), h('strong', {}, farm.equipment.tractor.status === 'operational' ? 'Operational' : 'Restoration needed')),
