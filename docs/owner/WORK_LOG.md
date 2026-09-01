@@ -747,12 +747,15 @@ Record major completed packages and stable checkpoints here. Keep day-to-day cha
 - **Verification/review:** 390 tests in 58 files passed with focused brand-asset tests, strict typecheck, standard and desktop-relative production builds, desktop packaging, and `git diff --check`. Independent isolated regeneration matched all eight checked-in generated artifacts byte-for-byte. Red Team verified PNG/ICO structure, maskable safe gutters, Vite base-path resolution, manifest/index semantics, and documentation, returning SHIP with no findings at any severity.
 - **Boundary:** Branding/build assets and documentation only. No gameplay, save/schema, service-worker, economy, progression, camera, dependency, deployment, shortcut, package release, or owner-profile change.
 
-## Farm HUD/Cargo Simplification V1 - integrated, publication in progress
+## Farm HUD/Cargo Simplification V1 - published
 
 - **Date/commits:** 2026-09-01 / accepted source chain `b5cadab`, `2e331e6`, `4d99526`, `1965424`, `1ba6867`, `762e9eb`; integrated locally as six logical cherry-picks after `1055e4a`
 - **Result:** Simplified farm cargo quantities and action menus, compressed the HUD, restored basket-capacity recovery, clarified whole-field manual action scope, limited crop changes to stocked seeds, served the development stylesheet directly, and fit the HUD on narrow screens. Existing save/economy authority and unrelated owner records were preserved.
 - **Pre-integration gate:** Independent review returned SHIP with no Critical/High findings; 61 files/397 tests passed, focused coverage passed 6 files/17 tests, and typecheck, production build, desktop build, and diff checks passed. Local browser verification covered requested farm HUD, cargo, crop, field, barn, and save flows at the required viewport set.
-- **Publication boundary:** Final integrated tests/builds, non-force push of `codex/first-town-contact`, exact existing Render service deployment, live-source readback, and cache-bypassed hosted acceptance remain in this package. No other branch, service, or scope is included.
+- **GitHub publication:** Non-force pushed `codex/first-town-contact` to `https://github.com/McAllisterOG/farm-empire.git`; remote readback verified published snapshot `e73d5f56894e76fd2c5388488ff20463c6cfab8a`.
+- **Render publication:** Existing service `srv-da7sfo0u01pc73bsd4u0` deployed exact source `e73d5f56894e76fd2c5388488ff20463c6cfab8a` as deployment `dep-dablccafngtc73egmjj0`; Render reported `Deploy succeeded | Live` in 20.2 seconds. Build logs checked out `e73d5f5`, ran `npm ci && npm run build`, found 0 vulnerabilities, and served bundles `index-CRr4gY2e.js` / `index-D_vMESye.css`.
+- **Hosted acceptance:** Cache-bypassed public acceptance passed title, disposable new-farm naming, first morning, compact controls, menu/save/title/reload persistence, and clean console logs. All required viewports—1920x1080, 1024x768, 390x844, 844x390, 820x1180, and 1180x820—matched their client and scroll dimensions with no document overflow.
+- **Safety/boundary:** No other branch, service, configuration, or gameplay scope was included. The disposable hosted QA farm remains in browser-local storage; no owner desktop save/profile was opened.
 
 ## Demo-Complete V1 release - published
 

@@ -71,7 +71,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Current authorization
 
-**Farm HUD/Cargo Simplification publication is authorized and integrated locally.** The six accepted commits after published snapshot `1055e4a` cover cargo quantities/menus, compact HUD and basket recovery, whole-field action copy, stocked-seed enforcement, dev stylesheet serving, and narrow-screen HUD fit. The final automated/build matrix, non-force GitHub publication, exact Render deployment, and cache-bypassed hosted acceptance are the remaining bounded release actions. No new land tiers, crops, machinery systems, cloud saves, a continuous world, or unrelated gameplay scope is authorized.
+**Farm HUD/Cargo Simplification publication is complete and accepted.** The six accepted commits after published snapshot `1055e4a` cover cargo quantities/menus, compact HUD and basket recovery, whole-field action copy, stocked-seed enforcement, dev stylesheet serving, and narrow-screen HUD fit. Published snapshot `e73d5f5` is live on GitHub and the existing Render service, with cache-bypassed hosted acceptance passed. No new land tiers, crops, machinery systems, cloud saves, a continuous world, or unrelated gameplay scope was added.
 ## Later directions
 
 - **Further property expansion:** Acreage V2 now establishes 36 starter and 96 neighboring sections. Do not add another land tier until playtesting and the economy study show how capital, storage, machinery time, and navigation should scale beyond this tract.
