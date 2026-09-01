@@ -826,12 +826,22 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   .first-morning-card { top: calc(228px + var(--safe-top)); width: calc(100vw - 20px - var(--safe-left) - var(--safe-right)); font-size: 11px; }
   .farm-operation-status { top: calc(76px + var(--safe-top)); left: calc(10px + var(--safe-left)); right: calc(10px + var(--safe-right)); max-width: none; }
   .farm-operation-cancel { min-height: 44px; }
-  .farm-hud-top { right: calc(112px + var(--safe-right)); gap: 5px; }
+  .farm-hud-top {
+    left: calc(10px + var(--safe-left)); right: calc(10px + var(--safe-right));
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: 52px 46px; gap: 5px;
+  }
   .farm-fit-button { display: block; }
-  .farm-brand { min-width: 168px; padding: 6px 8px; }
+  .farm-brand { grid-column: 1 / -1; grid-row: 1; min-width: 0; margin-right: 100px; padding: 6px 8px; }
   .farm-brand-mark { width: 32px; height: 32px; }
-  .farm-stat { min-width: 94px; padding: 6px 8px; }
-  .farm-stat > strong { font-size: 12px; }
+  .farm-hud-top > .farm-stat:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .farm-hud-top > .farm-stat:nth-child(3) { grid-column: 2; grid-row: 2; }
+  .farm-hud-top > .farm-stat:nth-child(4) { grid-column: 3; grid-row: 2; }
+  .farm-hud-top > .farm-stat:nth-child(5) { grid-column: 4; grid-row: 2; }
+  .farm-hud-top > .farm-stat:nth-child(6) { grid-column: 5; grid-row: 2; }
+  .farm-stat { min-width: 0; width: auto; padding: 5px 5px; overflow: hidden; }
+  .farm-stat > span { font-size: 8px; letter-spacing: .2px; }
+  .farm-stat > strong { overflow: hidden; text-overflow: ellipsis; font-size: 10px; }
+  .farm-hud-top > .farm-stat-button { text-align: center; }
   .farm-hud-bottom { bottom: calc(8px + var(--safe-bottom)); padding: 7px; gap: 6px; }
   .farm-selected { min-width: 128px; }
   .farm-actions { gap: 4px; }
@@ -963,3 +973,19 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   z-index: 6;
 }
 .farm-crop-control, .basket-chip { min-height: 44px; white-space: nowrap; }
+
+@media (min-width: 561px) and (max-width: 900px) and (min-height: 501px) {
+  .farm-hud-top {
+    left: calc(10px + var(--safe-left)); right: calc(10px + var(--safe-right));
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-template-rows: 52px 46px; gap: 6px;
+  }
+  .farm-brand { grid-column: 1 / -1; grid-row: 1; min-width: 0; margin-right: 100px; }
+  .farm-hud-top > .farm-stat:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .farm-hud-top > .farm-stat:nth-child(3) { grid-column: 2; grid-row: 2; }
+  .farm-hud-top > .farm-stat:nth-child(4) { grid-column: 3; grid-row: 2; }
+  .farm-hud-top > .farm-stat:nth-child(5) { grid-column: 4; grid-row: 2; }
+  .farm-hud-top > .farm-stat:nth-child(6) { grid-column: 5; grid-row: 2; }
+  .farm-stat { min-width: 0; width: auto; padding: 6px 8px; overflow: hidden; }
+  .farm-stat > strong { overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+  .farm-stat > span { font-size: 9px; }
+}
