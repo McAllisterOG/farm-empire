@@ -1156,6 +1156,7 @@ export class FarmEmpireApp {
       for (const [index, def] of allFarmCrops().entries()) {
         const unlock = farmCropUnlockInfo(this.state, def.id);
         if (!unlock.unlocked) continue;
+        if (returnTo && (farm.seeds[def.id] ?? 0) <= 0) continue;
         const button = h('button', { class: `crop-chooser-row ${farm.selectedCropId === def.id ? 'active' : ''}`, type: 'button', 'data-testid': `choose-${def.id}`, 'aria-pressed': farm.selectedCropId === def.id ? 'true' : 'false', onclick: () => { this.dispatch(selectFarmCrop(this.state, def.id)); closePanel(); if (returnTo) this.openPlotMenu(returnTo.plotUid, returnTo.sx, returnTo.sy); } }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-md'), h('span', { class: 'crop-chooser-name' }, `${index + 1}. ${def.name}`), h('strong', {}, `${farm.seeds[def.id] ?? 0} seeds`));
         list.append(button);
       }
