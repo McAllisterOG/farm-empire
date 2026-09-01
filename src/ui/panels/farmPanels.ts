@@ -12,7 +12,7 @@ import { countyWorkOrderProgress, townContact } from '../../core/farmTownContact
 import { countyKitchenProgress } from '../../core/farmCountyKitchen';
 import { countyFreightTemplate, COUNTY_FREIGHT_BULK_PREMIUM_BPS, COUNTY_FREIGHT_PREMIUM_BPS } from '../../data/countyFreight.data';
 import { countyFreightBoardState, countyFreightProgress } from '../../core/farmCountyFreight';
-import { maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropSale, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, maxTownSeedPurchase, pickupCargoCapacity, pickupCargoRemaining, pickupCargoUsed, pickupCropUnits, pickupSeedUnits, reservedMarketCropUnits, type FarmQuantityBatch } from '../../core/farmPickup';
+import { loadEverythingThatFits, unloadEverythingThatFits, maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropSale, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, maxTownSeedPurchase, pickupCargoCapacity, pickupCargoRemaining, pickupCargoUsed, pickupCropUnits, pickupSeedUnits, reservedMarketCropUnits, type FarmQuantityBatch } from '../../core/farmPickup';
 import { h, spriteImg, clearChildren } from '../dom';
 import { closePanel, openPanel } from '../modal';
 import { formatFarmCapacity, formatFarmOpenCapacity } from '../../core/farmCargoScale';
@@ -25,6 +25,8 @@ export interface FarmPanelActions {
   sellCrop: (cropId: string, count: number) => ActionResult;
   sellBatch?: (batch: FarmQuantityBatch) => ActionResult;
   loadBatch?: (batch: FarmQuantityBatch) => ActionResult;
+  loadAll?: () => ActionResult;
+  unloadAll?: () => ActionResult;
   loadCrop?: (cropId: string, count: number) => ActionResult;
   unloadCrop?: (cropId: string, count: number) => ActionResult;
   loadSeeds?: (cropId: string, count: number) => ActionResult;
@@ -213,6 +215,10 @@ function renderMarket(body: HTMLElement, state: GameState, actions: FarmPanelAct
     )] : [h('strong', { 'data-testid': 'market-capacity' }, `Pickup · Produce ${pickupProduceUsed} · Seed bags ${pickupSeedUsed} · Total ${formatFarmCapacity(pickupUsed, pickupCargoCapacity(state))}`)]),
     h('span', {}, context === 'town' ? (actions.pickupPresent ? 'Sell pickup produce or deliver a County order.' : 'On foot: bring the pickup to sell or deliver.') : 'Barn and pickup transfer produce here. Harvest wagon unloads only at the receiving bay.'),
     ...(context === 'farm' && !actions.cargoAtPad ? [h('strong', { class: 'panel-note', 'data-testid': 'cargo-pad-guidance' }, 'Park the pickup at the barn cargo pad to load or unload.')] : []),
+    ...(context === 'farm' && actions.cargoAtPad ? [h('div', { class: 'cargo-batch-actions' },
+      h('button', { class: 'btn btn-primary btn-sm', 'data-testid': 'load-everything-that-fits', onclick: () => runAndRender(actions.loadAll ? actions.loadAll() : loadEverythingThatFits(state), actions, rerender) }, 'Load everything that fits'),
+      h('button', { class: 'btn btn-sm', 'data-testid': 'unload-everything-that-fits', onclick: () => runAndRender(actions.unloadAll ? actions.unloadAll() : unloadEverythingThatFits(state), actions, rerender) }, 'Unload all that fits'),
+    )] : []),
   ));
 
   if (context === 'farm') body.append(h('div', { class: 'cargo-panel-switch' },

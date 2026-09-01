@@ -29,7 +29,7 @@ export function shouldPresentStarterGuideTarget(runtime: StarterGuidePresentatio
 /** Read-only first-session presentation derived from current authority alone. */
 export function firstFarmMorningGuide(state: GameState, now: number): FirstFarmMorningGuide {
   const required = COUNTY_PANTRY_CORN_ORDER.requiredUnits;
-  if (!state.farm) return { phase: 'prepare', title: 'Prepare a field section', detail: 'Open a rough field section and prepare the soil.', cornProgress: { current: 0, required }, fieldTarget: null, showWelcome: false, complete: false };
+  if (!state.farm) return { phase: 'prepare', title: 'Prepare six field sections', detail: 'Open six rough field sections and prepare the soil.', cornProgress: { current: 0, required }, fieldTarget: null, showWelcome: false, complete: false };
   const safeNow = Number.isFinite(now) ? now : 0;
   const farm = farmOf(state); const cornId = COUNTY_PANTRY_CORN_ORDER.cropId;
   const cornInPickup = positive(farm.pickup?.cargo?.crops?.[cornId]); const cornInBarn = positive(farm.storage?.[cornId]); const cornInBasket = positive(farm.handBasket?.crops?.[cornId]);
@@ -48,5 +48,5 @@ export function firstFarmMorningGuide(state: GameState, now: number): FirstFarmM
   if (prepared) return { ...base, phase: 'prepared', title: 'Plant corn', detail: 'Corn is selected. Plant a prepared field section.', fieldTarget: prepared, complete: false };
   if (farm.townContact.status === 'offered') return { ...base, phase: 'offered', title: 'Accept Mae’s delivery', detail: 'Mae at Farm Services has the County Pantry order ready.', fieldTarget: null, complete: false };
   if (farm.townContact.status === 'active') return { ...base, phase: 'active', title: 'Grow corn for the Pantry', detail: `${cornInPickup}/${required} corn loaded. Prepare a field section for the rest.`, fieldTarget: rough, complete: false };
-  return { ...base, phase: 'prepare', title: 'Prepare a field section', detail: 'Click one rough field section, then choose Prepare soil.', fieldTarget: rough, complete: false };
+  return { ...base, phase: 'prepare', title: 'Prepare six field sections', detail: 'Select a rough field section, then drag across the field to select more and choose Prepare.', fieldTarget: rough, complete: false };
 }

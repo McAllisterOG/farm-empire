@@ -34,7 +34,7 @@ describe('County crop catalog', () => {
     old.version = SAVE_VERSION;
     const loaded = deserialize(JSON.stringify(old), NOW + 1);
     for (const id of NEW_CROPS) expect(farmOf(loaded).seeds[id]).toBe(0);
-    expect(farmOf(loaded).seeds.crop_wheat).toBe(2);
+    expect(farmOf(loaded).seeds.crop_wheat).toBe(0);
   });
 
   it('uses exact fail-closed unlock boundaries', () => {

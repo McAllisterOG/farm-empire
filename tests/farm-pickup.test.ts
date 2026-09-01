@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import '../src/data';
 import { createFarmGame, SAVE_VERSION } from '../src/core/state';
 import { farmOf } from '../src/core/farmBusiness';
-import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadFarmSeedsToPickup, maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, maxTownSeedPurchase, pickupCargoRemaining, pickupCargoUsed, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
+import { buyTownSeedsIntoPickup, loadBarnCropToPickup, loadEverythingThatFits, loadFarmSeedsToPickup, maxBarnCropLoadToPickup, maxFarmSeedLoadToPickup, maxPickupCropUnloadToBarn, maxPickupSeedUnloadToFarm, maxTownSeedPurchase, pickupCargoRemaining, pickupCargoUsed, unloadEverythingThatFits, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../src/core/farmPickup';
 import { acceptCountyWorkOrder, fulfillCountyWorkOrder, offerCountyWorkOrder } from '../src/core/farmTownContact';
 import { countyDeliveryMarketState } from '../src/ui/panels/farmPanels';
 import { deserialize, serialize } from '../src/save/save';
@@ -12,6 +12,18 @@ import { FARM_TOWN_GATE } from '../src/core/townGateway';
 const NOW = Date.UTC(2026, 0, 1);
 
 describe('old pickup cargo loop', () => {
+  it('loads and unloads every eligible item that fits atomically', () => {
+    const state = createFarmGame('All fits', 9, NOW); const farm = farmOf(state);
+    farm.storage.crop_potato = 22; farm.pickup.cargo.crops.crop_corn = 54;
+    farm.pickup.x += 4;
+    expect(loadEverythingThatFits(state).ok).toBe(false);
+    farm.pickup.x = PICKUP_START.x; farm.pickup.y = PICKUP_START.y;
+    expect(loadEverythingThatFits(state).ok).toBe(true);
+    expect(farm.storage.crop_potato).toBe(4);
+    expect(unloadEverythingThatFits(state).ok).toBe(true);
+    expect(farm.storage.crop_corn).toBe(54);
+    expect(farm.pickup.cargo.crops.crop_corn).toBe(0);
+  });
   it('only parks the pickup on save when it is actually in town', () => {
     const elsewhere = { x: 18, y: 14 };
     expect(pickupPositionForSave(false, elsewhere)).toEqual(elsewhere);
@@ -41,6 +53,7 @@ describe('old pickup cargo loop', () => {
 
   it('accounts for mixed cargo and bulky produce atomically', () => {
     const state = createFarmGame('Pickup', 3, NOW); const farm = farmOf(state);
+    farm.seeds.crop_wheat = 2;
     farm.parcels.northOwned = true; farm.equipment.barnLoftExpansionOwned = true; farm.storageCapacity = 200; farm.storage.crop_pumpkin = 10;
     expect(loadBarnCropToPickup(state, 'crop_pumpkin', 10).ok).toBe(true);
     expect(pickupCargoUsed(state)).toBe(30);
@@ -56,6 +69,7 @@ describe('old pickup cargo loop', () => {
 
   it('buys town seeds into pickup and unloads them without duplication', () => {
     const state = createFarmGame('Pickup', 4, NOW); const farm = farmOf(state);
+    farm.seeds.crop_wheat = 2;
     const cash = farm.cashCents;
     expect(buyTownSeedsIntoPickup(state, 'crop_wheat', 2, false).ok).toBe(false);
     expect(buyTownSeedsIntoPickup(state, 'crop_wheat', 2, true).ok).toBe(true);

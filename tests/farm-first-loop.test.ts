@@ -24,6 +24,7 @@ describe('Farm Empire first-loop reliability', () => {
   it('completes the basket-to-pickup County Pantry loop once, then remains sound for a repeat crop cycle', () => {
     const state = createFarmGame('First Loop', 402, NOW);
     const farm = farmOf(state);
+    farm.seeds.crop_wheat = 2;
     const openingCash = farm.cashCents;
     offerCountyWorkOrder(state); expect(acceptCountyWorkOrder(state).ok).toBe(true);
 

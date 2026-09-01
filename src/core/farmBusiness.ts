@@ -146,7 +146,10 @@ export function createFarmBusinessState(now: number): FarmBusinessState {
   const storage: Record<string, number> = {};
   for (const def of allFarmCrops()) {
     quotes[def.id] = { currentCents: def.basePriceCents, previousCents: def.basePriceCents };
-    seeds[def.id] = def.startingSeeds;
+    // A new farm's first loop is intentionally six corn sections.  Keep this
+    // override here (rather than changing catalog defaults) so old saves still
+    // normalize from their stored inventory and migrations remain compatible.
+    seeds[def.id] = def.id === 'crop_corn' ? 6 : 0;
     storage[def.id] = 0;
   }
   return {

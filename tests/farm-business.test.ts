@@ -113,7 +113,8 @@ describe('tractor parcel work planning and transactional steps', () => {
     const state = makeFarm();
     plantAndMature(state, 'crop_corn', 1);
     const readyUid = state.plots[1].uid;
-    farmOf(state).seeds.crop_wheat = 1;
+    farmOf(state).selectedCropId = 'crop_wheat';
+    farmOf(state).seeds.crop_wheat = 2;
     expect(plantFarmCrop(state, state.plots[4].uid, 'crop_wheat', NOW, 'operatedTractor').ok).toBe(true);
     state.plots.reverse();
 

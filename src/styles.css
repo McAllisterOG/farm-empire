@@ -973,6 +973,7 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   z-index: 6;
 }
 .farm-crop-control, .basket-chip { min-height: 44px; white-space: nowrap; }
+.cargo-batch-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 
 @media (min-width: 561px) and (max-width: 900px) and (min-height: 501px) {
   .farm-hud-top {

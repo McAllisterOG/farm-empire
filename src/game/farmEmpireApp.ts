@@ -8,7 +8,7 @@ import {
   placePlayerAtTractorDismount, restoreOldTractor, storageUsed, type FarmParcelId, type ParcelWorkKind, type ParcelWorkPlan,
 } from '../core/farmBusiness';
 import { ensureOwnedFarmParcelPlots, farmParcelDef, farmParcelSectionCount } from '../core/farmParcels';
-import { buyTownSeedsIntoPickup, commitLoadBarnBatch, loadBarnCropToPickup, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, preflightLoadBarnBatch, sellPickupCrop, sellPickupCropBatch, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
+import { buyTownSeedsIntoPickup, commitLoadBarnBatch, loadBarnCropToPickup, loadEverythingThatFits, loadFarmSeedsToPickup, pickupCargoCapacity, pickupCargoUsed, pickupIsAtCargoPad, preflightLoadBarnBatch, sellPickupCrop, sellPickupCropBatch, unloadEverythingThatFits, unloadPickupCropToBarn, unloadPickupSeedsToFarm } from '../core/farmPickup';
 import { pickupHomeArrival, pickupPositionForSave, TRACTOR_HOME_PARKING } from '../core/farmPickupData';
 import { farmDirectionalInputRoute, farmVehicleControlTarget, isMoveOnlyFarmGround, isMoveOnlyPointerButton, shouldCompleteMoveOnlyGesture } from '../core/farmVehicleControls';
 import {
@@ -35,7 +35,7 @@ import { acceptCountyKitchenDelivery, fulfillCountyKitchenDelivery, offerCountyK
 import { acceptCountyFreightOffer, countyFreightBoardState, countyFreightProgress, fulfillCountyFreightContract } from '../core/farmCountyFreight';
 import { approveWorkforceDispatch, hireEliotReyes, hireFarmManager, hireFirstFarmhand, planFarmManagerDispatch, planFarmhandWork, reviewWorkforceDispatch, startWorkerShift, updateFarmManagerPlan, updateWorkerPlanSlot, workerDefinition, workerDispatchAvailable, type FarmhandWorkKind } from '../core/farmWorkforce';
 import { purchaseFarmsteadOfficeQuarters } from '../core/farmstead';
-import { applyCurrentFarmRain, currentFarmWeather, farmWeatherForDay } from '../core/farmWeather';
+import { applyCurrentFarmRain, currentFarmWeather, farmWeatherForDay, farmWeatherForecast } from '../core/farmWeather';
 import { fulfillRoadsideStandOrder, purchaseRoadsideStand, roadsideStandOrder, roadsideStandView } from '../core/farmRoadsideStand';
 import { FARM_TOWN_GATE, farmTownRoadRouteFrom, placePlayerAtTownReturn, townTravelBlockReason } from '../core/townGateway';
 import { TOWN_NPCS, type TownNpcDef, type TownServiceId } from '../data/town.data';
@@ -243,6 +243,7 @@ export class FarmEmpireApp {
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
       onOpenCropChooser: () => this.openCropChooser(),
+      onWeather: () => this.openWeatherPanel(),
       onMarket: () => { if (this.manualActionBlocksUi()) return; this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions(), 'farm'); },
       onFarmbook: () => { if (!this.manualActionBlocksUi()) this.openFarmhouseOffice(); },
       onToggleHarvestDestination: () => this.openBasketMenu(),
@@ -321,6 +322,8 @@ export class FarmEmpireApp {
         : failFarmSideSale(),
       sellBatch: (batch) => this.mode === 'town' ? sellPickupCropBatch(this.state, batch, this.pickupAtTown) : failFarmSideSale(),
       loadBatch: (batch) => { const preflight = preflightLoadBarnBatch(this.state, batch); return preflight.ok ? commitLoadBarnBatch(this.state, preflight.plan) : { ok: false, reason: preflight.reason }; },
+      loadAll: () => loadEverythingThatFits(this.state),
+      unloadAll: () => unloadEverythingThatFits(this.state),
       loadCrop: (cropId, count) => loadBarnCropToPickup(this.state, cropId, count),
       unloadCrop: (cropId, count) => unloadPickupCropToBarn(this.state, cropId, count),
       loadSeeds: (cropId, count) => loadFarmSeedsToPickup(this.state, cropId, count),
@@ -1147,21 +1150,35 @@ export class FarmEmpireApp {
     });
   }
 
+  private openWeatherPanel(): void {
+    if (this.mode !== 'farm' || this.manualActionBlocksUi()) return;
+    const current = currentFarmWeather(this.state);
+    openPanel({ title: 'Farm Weather', className: 'panel-weather', body: (body) => {
+      body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'weather-guidance' },
+        h('strong', {}, `${current.label} · Day ${current.day}`),
+        h('span', {}, current.kind === 'rain' ? 'Rain waters planted seedlings automatically, including their first establishment watering.' : current.fieldNote),
+      ));
+      body.append(h('h3', {}, 'Three-day forecast'));
+      for (const day of farmWeatherForecast(this.state, 3)) body.append(h('div', { class: 'inventory-row' }, h('span', {}, `Day ${day.day}`), h('strong', {}, day.label)));
+    } });
+  }
+
   private openCropChooser(returnTo?: { plotUid: number; sx: number; sy: number }): void {
     if (this.mode !== 'farm' || this.manualActionBlocksUi()) return;
     openPanel({ title: 'Choose Crop', className: 'panel-crop-chooser', body: (body) => {
       const farm = farmOf(this.state);
-      body.append(h('p', { class: 'panel-note' }, 'Choose an unlocked crop. Seed quantities are exact; number keys 1–8 remain available on the farm.'));
+      body.append(h('p', { class: 'panel-note' }, 'Choose a stocked crop for the next planting. Growth times are normal in-game time.'));
       const list = h('div', { class: 'crop-chooser-list', role: 'list' });
+      let stocked = 0;
       for (const [index, def] of allFarmCrops().entries()) {
         const unlock = farmCropUnlockInfo(this.state, def.id);
         if (!unlock.unlocked) continue;
-        if (returnTo && (farm.seeds[def.id] ?? 0) <= 0) continue;
-        const button = h('button', { class: `crop-chooser-row ${farm.selectedCropId === def.id ? 'active' : ''}`, type: 'button', 'data-testid': `choose-${def.id}`, 'aria-pressed': farm.selectedCropId === def.id ? 'true' : 'false', onclick: () => { this.dispatch(selectFarmCrop(this.state, def.id)); closePanel(); if (returnTo) this.openPlotMenu(returnTo.plotUid, returnTo.sx, returnTo.sy); } }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-md'), h('span', { class: 'crop-chooser-name' }, `${index + 1}. ${def.name}`), h('strong', {}, `${farm.seeds[def.id] ?? 0} seeds`));
+        if ((farm.seeds[def.id] ?? 0) <= 0) continue;
+        stocked += 1;
+        const button = h('button', { class: `crop-chooser-row ${farm.selectedCropId === def.id ? 'active' : ''}`, type: 'button', 'data-testid': `choose-${def.id}`, 'aria-pressed': farm.selectedCropId === def.id ? 'true' : 'false', onclick: () => { this.dispatch(selectFarmCrop(this.state, def.id)); closePanel(); if (returnTo) this.openPlotMenu(returnTo.plotUid, returnTo.sx, returnTo.sy); } }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-md'), h('span', { class: 'crop-chooser-name' }, `${index + 1}. ${def.name} · ${Math.ceil(def.growMs / 1000)}s`), h('strong', {}, `${farm.seeds[def.id] ?? 0} seeds`));
         list.append(button);
       }
-      const locked = allFarmCrops().filter((def) => !farmCropUnlockInfo(this.state, def.id).unlocked);
-      if (locked.length) list.append(h('details', { class: 'crop-chooser-locked' }, h('summary', {}, `${locked.length} more crops locked`), h('div', {}, locked.map((def) => `${def.name} · ${farmCropUnlockInfo(this.state, def.id).requirement}`).join(' · '))));
+      if (stocked === 0) list.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'crop-chooser-empty' }, h('strong', {}, 'No stocked crops'), h('span', {}, 'Buy seed in town, then unload it at the barn before planting.')));
       body.append(list);
     } });
   }
@@ -1931,35 +1948,20 @@ export class FarmEmpireApp {
     const anchor = this.state.plots.find((plot) => plot.uid === anchorPlotUid);
     const parcelId = anchor ? ownedFarmParcelAt(this.state, anchor.x, anchor.y) : null;
     const acreage = parcelId ? manualFieldAcreagePlotUids(this.state, anchorPlotUid) : [];
-    const whole = this.manualTargetsFromPlotUids(kind, acreage, cropId);
     const eligibleWhole = this.manualEligibleTargetsFromPlotUids(kind, acreage, cropId);
-    const scopes: { scope: ManualFieldSelectionScope; label: string }[] = [
-      { scope: 'section', label: 'this section' },
-      { scope: 'row', label: 'this row' },
-      { scope: 'three-rows', label: '3-row block' },
-    ];
-    const secondary = scopes.flatMap(({ scope, label }) => {
-        const targets = this.manualTargetsFor(kind, anchorPlotUid, scope, cropId);
-        if (targets.length === 0) return [];
-        return [{
-          label: `${actionName} ${label} · ${targets.length} section${targets.length === 1 ? '' : 's'}`,
-          icon: actionIcon,
-          onClick: () => this.startManualSelection(kind, anchorPlotUid, scope, cropId),
-        }];
-      });
-    const primary = whole.length > 0 ? [{
-      label: kind === 'plant' && whole.length < eligibleWhole.length
-        ? `${actionName} ${whole.length} of ${eligibleWhole.length} prepared sections · ${farmOf(this.state).seeds[cropId ?? ''] ?? 0} seeds available`
-        : `${actionName} all matching sections · ${whole.length}`,
+    const selected = this.manualTargetsFor(kind, anchorPlotUid, 'section', cropId);
+    const primary = selected.length > 0 ? [{
+      label: kind === 'plant' && selected.length < eligibleWhole.length
+        ? `${actionName} ${selected.length} · ${farmOf(this.state).seeds[cropId ?? ''] ?? 0} seeds available`
+        : `${actionName} ${selected.length}`,
       icon: actionIcon,
-      onClick: () => this.startManualTargetList(kind, whole, 'selection', cropId),
+      onClick: () => this.startManualTargetList(kind, selected, 'section', cropId),
     }] : [];
-    const dragCue = [{ label: 'Drag for a custom selection', onClick: () => toast('Drag across field sections for a custom selection.', 'good') }];
-    showActionMenu(sx, sy, `${title} · ${whole.length || 0} matching in this acreage`, [
+    showActionMenu(sx, sy, `${title} · ${selected.length} selected`, [
       ...primary,
-      ...secondary,
-      ...dragCue,
+      { label: 'Drag across the field to select more sections', onClick: () => { hideActionMenu(); toast('Drag across compatible field sections, then choose the primary action.', 'good'); } },
       ...extraActions,
+      { label: 'Cancel', onClick: () => hideActionMenu() },
     ]);
   }
 
@@ -2047,21 +2049,6 @@ export class FarmEmpireApp {
     }
     if (actions.length === 0) actions.push({ label: 'No eligible work in this selection', disabled: true, onClick: () => {} });
     showActionMenu(sx, sy, `${selectedPlotUids.length} field section${selectedPlotUids.length === 1 ? '' : 's'} selected`, actions);
-  }
-
-  private startManualSelection(
-    kind: ManualFieldActionKind,
-    anchorPlotUid: number,
-    scope: ManualFieldSelectionScope,
-    cropId?: string,
-  ): void {
-    if (this.manualFieldAction || this.manualFieldJob || this.operatingTractor || this.operatingPickup) return;
-    const targets = this.manualTargetsFor(kind, anchorPlotUid, scope, cropId);
-    if (targets.length === 0) {
-      toast('No eligible field sections remain in that selection.', 'bad');
-      return;
-    }
-    this.startManualTargetList(kind, targets, scope, cropId);
   }
 
   private startManualTargetList(

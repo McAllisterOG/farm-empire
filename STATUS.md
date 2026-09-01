@@ -2,6 +2,8 @@
 
 ## Current known-good checkpoint
 
+- **Current local package:** First Harvest Onboarding & Field Interaction Simplification V1 is implemented locally on this branch. Fresh farms now start with six corn seeds only; stocked crop choice, weather guidance, selection-first field actions, and atomic all-fit cargo transfers are player-visible. Existing serialized inventories remain authoritative.
+
 - **Date:** 2026-09-01
 - **Branch:** `codex/first-town-contact`
 - **Head:** Published snapshot `e73d5f5` contains the accepted Farm HUD/Cargo Simplification package and is live on GitHub and the existing Render site.

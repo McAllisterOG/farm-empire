@@ -1,6 +1,6 @@
 import type { ActionResult, GameState } from './types';
 import { fail } from './types';
-import { farmCropDefOrNull } from './registry';
+import { allFarmCrops, farmCropDefOrNull } from './registry';
 import { farmOf, storageUsed, syncCashMirror } from './farmBusiness';
 import { recordFarmStat } from './farmKnowledge';
 
@@ -134,7 +134,52 @@ export function commitLoadBarnBatch(state: GameState, plan: FarmBatchPlan): Acti
     farm.pickup.cargo.crops[cropId] = pickupCropUnits(state, cropId) + count;
   }
   recordFarmStat(state, 'farmCargoLoads'); recordFarmStat(state, 'farmCargoUnitsMoved', plan.used);
-  return { ok: true, events: [{ type: 'toast', target: 'Produce loaded into the pickup.' }] };
+  const summary = Object.entries(plan.quantities)
+    .map(([cropId, count]) => `${count} ${farmCropDefOrNull(cropId)?.name ?? cropId}`)
+    .join(', ');
+  return { ok: true, events: [{ type: 'toast', target: `Loaded ${summary} into the pickup.` }] };
+}
+
+/** Deterministic source-order batch that fills every open pickup unit. */
+export function loadEverythingThatFits(state: GameState): ActionResult {
+  const openPayload = pickupCargoRemaining(state);
+  if (openPayload <= 0) return fail('Pickup is full; no cargo can fit.');
+  let open = openPayload;
+  const quantities: Record<string, number> = {};
+  for (const def of [...allFarmCrops()].sort((a, b) => a.id.localeCompare(b.id))) {
+    const count = Math.min(farmOf(state).storage[def.id] ?? 0, Math.floor(open / def.storageUnitsPerItem));
+    if (count > 0) { quantities[def.id] = count; open -= count * def.storageUnitsPerItem; }
+  }
+  if (Object.keys(quantities).length === 0) return fail('There is no produce in the barn that fits the pickup.');
+  const preflight = preflightLoadBarnBatch(state, quantities);
+  if (!preflight.ok) return preflight;
+  const result = commitLoadBarnBatch(state, preflight.plan);
+  if (!result.ok) return result;
+  const loaded = Object.entries(quantities).map(([id, count]) => `${count} ${farmCropDefOrNull(id)?.name ?? id}`).join(', ');
+  const barnRemaining = Object.entries(quantities)
+    .map(([id]) => `${farmOf(state).storage[id] ?? 0} ${farmCropDefOrNull(id)?.name ?? id}`)
+    .join(', ');
+  return { ...result, events: [{ type: 'toast', target: `Loaded ${loaded}; ${barnRemaining} remain in the barn.` }] };
+}
+
+/** Deterministic weighted batch that unloads every pickup crop unit that fits. */
+export function unloadEverythingThatFits(state: GameState): ActionResult {
+  const open = Math.max(0, farmOf(state).storageCapacity - storageUsed(state));
+  if (open <= 0) return fail('Barn is full; no pickup produce can fit.');
+  let openStorage = open;
+  const quantities: Record<string, number> = {};
+  for (const def of [...allFarmCrops()].sort((a, b) => a.id.localeCompare(b.id))) {
+    const count = Math.min(pickupCropUnits(state, def.id), Math.floor(openStorage / def.storageUnitsPerItem));
+    if (count > 0) { quantities[def.id] = count; openStorage -= count * def.storageUnitsPerItem; }
+  }
+  if (Object.keys(quantities).length === 0) return fail('There is no pickup produce that fits the barn.');
+  for (const [cropId, count] of Object.entries(quantities)) {
+    farmOf(state).pickup.cargo.crops[cropId] = pickupCropUnits(state, cropId) - count;
+    farmOf(state).storage[cropId] = (farmOf(state).storage[cropId] ?? 0) + count;
+  }
+  const summary = Object.entries(quantities).map(([id, count]) => `${count} ${farmCropDefOrNull(id)?.name ?? id}`).join(', ');
+  const pickupRemainingItems = Object.entries(quantities).map(([id]) => `${pickupCropUnits(state, id)} ${farmCropDefOrNull(id)?.name ?? id}`).join(', ');
+  return { ok: true, events: [{ type: 'toast', target: `Unloaded ${summary}; ${pickupRemainingItems} remain in the pickup.` }] };
 }
 
 export function maxPickupCropSale(state: GameState, cropId: string): number {

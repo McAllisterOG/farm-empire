@@ -12,6 +12,7 @@ import { h } from './dom';
 export interface FarmHudCallbacks {
   onSelectCrop: (cropId: string) => void;
   onOpenCropChooser: () => void;
+  onWeather: () => void;
   onMarket: () => void;
   onEquipment: () => void;
   onFarmbook?: () => void;
@@ -87,7 +88,7 @@ export class FarmHud {
     this.cashEl = h('strong', { 'data-testid': 'cash' }, '$0.00');
     this.clockEl = h('strong', { 'data-testid': 'farm-clock' }, 'Day 1 · 8:00 AM');
     this.weatherEl = h('strong', { 'data-testid': 'farm-weather' }, 'Clear');
-    this.weatherStat = h('div', { class: 'farm-stat farm-weather-stat' }, h('span', {}, 'Weather'), this.weatherEl);
+    this.weatherStat = h('button', { class: 'farm-stat farm-stat-button farm-weather-stat', type: 'button', 'data-testid': 'farm-weather-button', onclick: cb.onWeather }, h('span', {}, 'Weather'), this.weatherEl);
     this.storageEl = h('strong', { 'data-testid': 'storage-summary' }, '0 / 0');
     this.tractorEl = h('strong', { 'data-testid': 'tractor-status' }, 'Operational');
     this.operationTextEl = h('span', {
