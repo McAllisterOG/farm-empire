@@ -57,12 +57,13 @@ import { openFarmOffice } from '../ui/panels/farmOffice';
 import { openFarmWorkforce } from '../ui/panels/farmWorkforce';
 import { openFarmRoadsideStand } from '../ui/panels/farmRoadsideStand';
 import { saveToSlot } from '../save/save';
-import { h } from '../ui/dom';
+import { h, spriteImg } from '../ui/dom';
 import { shouldTriggerFarmHarvestFeedback } from './farmHarvestFeedback';
 import { resumeFarmSession } from '../core/farmOfflineSafety';
 import { shouldRenderFarmFrame } from '../render/renderResolution';
 import { formatFarmCapacity } from '../core/farmCargoScale';
 import { FarmWorkforceReservationLedger } from '../core/farmWorkforceReservations';
+import { pickupReminderSignature, pickupReminderText, reminderWindow } from '../core/farmPickupReminder';
 
 const AUTOSAVE_MS = 15_000;
 const FIELD_ACTION_PAUSE_MS = 260;
@@ -190,6 +191,10 @@ export class FarmEmpireApp {
   private lastFrame = 0;
   private lastRenderedAt = 0;
   private lastHudRefresh = 0;
+  private pickupReminderSignature = '';
+  private pickupReminderText: string | null = null;
+  private pickupReminderShowAt = 0;
+  private pickupReminderExpiresAt = 0;
   private hiddenAt: number | null = null;
   private lastSave: number;
   private simulationOffsetMs = 0;
@@ -246,9 +251,10 @@ export class FarmEmpireApp {
     this.scout = { ...scoutHome, mode: 'home', moving: false };
     this.hud = new FarmHud({
       onSelectCrop: (cropId) => this.dispatch(selectFarmCrop(this.state, cropId)),
+      onOpenCropChooser: () => this.openCropChooser(),
       onMarket: () => { if (this.manualActionBlocksUi()) return; this.cancelScoutApproach(); openFarmMarket(this.state, this.panelActions(), 'farm'); },
       onFarmbook: () => { if (!this.manualActionBlocksUi()) this.openFarmhouseOffice(); },
-      onToggleHarvestDestination: () => this.toggleHarvestDestination(),
+      onToggleHarvestDestination: () => this.openBasketMenu(),
       onUnloadBasket: () => this.requestBasketUnload(),
       onCancelOperation: () => this.cancelActiveOperation(),
       onEquipment: () => { if (!this.manualActionBlocksUi()) this.openEquipmentPanel(); },
@@ -424,6 +430,20 @@ export class FarmEmpireApp {
     }
     this.hud.update(this.state, this.tractorHudRuntime());
   };
+
+  private updatePickupReminder(now: number): void {
+    const context = { mode: this.mode, pickupAtTown: this.pickupAtTown, driving: this.operatingPickup || this.operatingTractor || !!this.pickupTarget, basketUnits: handBasketUsed(this.state) } as const;
+    const signature = pickupReminderSignature(this.state, context);
+    if (signature !== this.pickupReminderSignature) {
+      this.pickupReminderSignature = signature;
+      this.pickupReminderText = pickupReminderText(this.state, context);
+      const window = reminderWindow(now);
+      this.pickupReminderShowAt = window.showAt;
+      this.pickupReminderExpiresAt = window.expiresAt;
+    }
+    const visible = this.pickupReminderText && now >= this.pickupReminderShowAt && now < this.pickupReminderExpiresAt && !context.driving;
+    this.hud.setPickupReminder(visible ? this.pickupReminderText : null);
+  }
 
   private playerScreenX(): number {
     const tractor = farmOf(this.state).equipment.tractor;
@@ -909,7 +929,7 @@ export class FarmEmpireApp {
       } else this.walkNear(interaction.point.x, interaction.point.y, () => showActionMenu(sx, sy, 'Barn · Cargo & Storage', [
         { label: 'Load Produce for Town', icon: 'icon:produce_corn', onClick: () => pickupIsAtCargoPad(this.state) ? openFarmMarket(this.state, this.panelActions(), 'farm') : this.drivePickupToCargoPad() },
         { label: 'Unload Pickup', icon: 'icon:produce_wheat', onClick: () => pickupIsAtCargoPad(this.state) ? openFarmMarket(this.state, this.panelActions(), 'farm') : this.drivePickupToCargoPad() },
-        { label: 'View Barn & Upgrades', onClick: () => this.openEquipmentPanel() },
+        { label: 'View Barn & Upgrades', onClick: () => this.openFarmInventory() },
       ]));
       return;
     }
@@ -1134,6 +1154,47 @@ export class FarmEmpireApp {
         this.equipmentPanelOpen = false;
       },
     });
+  }
+
+  private openCropChooser(): void {
+    if (this.mode !== 'farm' || this.manualActionBlocksUi()) return;
+    openPanel({ title: 'Choose Crop', className: 'panel-crop-chooser', body: (body) => {
+      const farm = farmOf(this.state);
+      body.append(h('p', { class: 'panel-note' }, 'Choose an unlocked crop. Seed quantities are exact; number keys 1–8 remain available on the farm.'));
+      const list = h('div', { class: 'crop-chooser-list', role: 'list' });
+      for (const [index, def] of allFarmCrops().entries()) {
+        const unlock = farmCropUnlockInfo(this.state, def.id);
+        if (!unlock.unlocked) continue;
+        const button = h('button', { class: `crop-chooser-row ${farm.selectedCropId === def.id ? 'active' : ''}`, type: 'button', 'data-testid': `choose-${def.id}`, 'aria-pressed': farm.selectedCropId === def.id ? 'true' : 'false', onclick: () => { this.dispatch(selectFarmCrop(this.state, def.id)); closePanel(); } }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-md'), h('span', { class: 'crop-chooser-name' }, `${index + 1}. ${def.name}`), h('strong', {}, `${farm.seeds[def.id] ?? 0} seeds`));
+        list.append(button);
+      }
+      const locked = allFarmCrops().filter((def) => !farmCropUnlockInfo(this.state, def.id).unlocked);
+      if (locked.length) list.append(h('details', { class: 'crop-chooser-locked' }, h('summary', {}, `${locked.length} more crops locked`), h('div', {}, locked.map((def) => `${def.name} · ${farmCropUnlockInfo(this.state, def.id).requirement}`).join(' · '))));
+      body.append(list);
+    } });
+  }
+
+  private openFarmInventory(): void {
+    if (this.mode !== 'farm') return;
+    openPanel({ title: 'Farm Inventory', className: 'panel-wide panel-farm-inventory', body: (body) => {
+      const farm = farmOf(this.state);
+      body.append(h('div', { class: 'farm-panel-summary inventory-capacity' }, h('strong', {}, `Storage · ${formatFarmCapacity(storageUsed(this.state), farm.storageCapacity)}`), h('span', {}, `Pickup · ${formatFarmCapacity(pickupCargoUsed(this.state), pickupCargoCapacity(this.state))}`)));
+      const produce = h('div', { class: 'inventory-section' }, h('h3', {}, 'Produce in storage'));
+      for (const def of allFarmCrops()) { const count = farm.storage[def.id] ?? 0; if (count > 0) produce.append(h('div', { class: 'inventory-row' }, spriteImg(`icon:produce_${def.id.replace('crop_', '')}`, 'icon-sm'), h('span', {}, def.name), h('strong', {}, String(count)))); }
+      if (produce.childElementCount === 1) produce.append(h('p', { class: 'panel-note' }, 'No produce stored yet.'));
+      const seeds = h('div', { class: 'inventory-section' }, h('h3', {}, 'Seed bags'));
+      for (const def of allFarmCrops()) { const count = farm.seeds[def.id] ?? 0; if (count > 0) seeds.append(h('div', { class: 'inventory-row' }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-sm'), h('span', {}, def.name), h('strong', {}, String(count)))); }
+      body.append(produce, seeds, h('div', { class: 'inventory-actions' }, h('button', { class: 'btn btn-primary', 'data-testid': 'inventory-load-produce', onclick: () => openFarmMarket(this.state, this.panelActions(), 'farm') }, 'Load Produce for Town'), h('button', { class: 'btn', 'data-testid': 'inventory-view-upgrades', onclick: () => this.openEquipmentPanel() }, 'View Equipment Upgrades'), h('button', { class: 'btn', 'data-testid': 'inventory-barn-upgrades', onclick: () => openCountyWorkOrder(this.state, this.panelActions()) }, 'View Barn Upgrades')));
+    } });
+  }
+
+  private openBasketMenu(): void {
+    if (!handBasketHasCargo(this.state) || this.manualActionBlocksUi()) return;
+    const farm = farmOf(this.state);
+    showActionMenu(window.innerWidth / 2, window.innerHeight - 80, `Basket · ${handBasketUsed(this.state)} / ${HAND_BASKET_CAPACITY}`, [
+      { label: 'Unload to Barn', disabled: farm.storageCapacity - storageUsed(this.state) < handBasketUsed(this.state), onClick: () => { this.dispatch(setHarvestDestination(this.state, 'barn')); this.requestBasketUnload(); } },
+      { label: 'Unload to Pickup', disabled: this.pickupAtTown || pickupCargoCapacity(this.state) - pickupCargoUsed(this.state) < handBasketUsed(this.state), onClick: () => { this.dispatch(setHarvestDestination(this.state, 'pickup')); this.requestBasketUnload(); } },
+    ]);
   }
 
   private closeEquipmentPanelIfOpen(): void {
@@ -1397,10 +1458,6 @@ export class FarmEmpireApp {
   private togglePickupOperating(): void {
     if (this.operatingTractor || this.tractorJob || this.tractorTarget) {
       toast('Exit the tractor before operating the pickup.', 'bad');
-      return;
-    }
-    if (!this.operatingPickup && handBasketHasCargo(this.state)) {
-      toast('Unload the harvest basket before operating the pickup.', 'bad');
       return;
     }
     this.cancelScoutFetch(false);
@@ -2153,19 +2210,6 @@ export class FarmEmpireApp {
     this.cancelWorkerJob('mara-bell'); this.hud.update(this.state, this.tractorHudRuntime());
   }
 
-  private toggleHarvestDestination(): void {
-    const blocked = this.basketInteractionBlockReason();
-    if (blocked) {
-      toast(blocked, 'bad');
-      return;
-    }
-    if (this.manualActionBlocksUi()) return;
-    const next: FarmHarvestDestination = farmOf(this.state).handBasket.destination === 'barn' ? 'pickup' : 'barn';
-    const result = setHarvestDestination(this.state, next);
-    this.dispatch(result);
-    if (result.ok) this.save();
-  }
-
   private requestBasketUnload(): void {
     const blocked = this.basketInteractionBlockReason();
     if (blocked) {
@@ -2244,7 +2288,13 @@ export class FarmEmpireApp {
     this.basketUnload = null;
     this.walkTarget = null;
     this.playerActor.walking = false;
-    toast(`Harvest paused: ${job.completed} completed, ${untouched} not attempted. ${reason} The basket contents remain safe.`, 'bad');
+    const basketUnits = handBasketUsed(this.state);
+    const barnFull = farmOf(this.state).storageCapacity - storageUsed(this.state) < basketUnits;
+    const pickupFull = pickupCargoCapacity(this.state) - pickupCargoUsed(this.state) < basketUnits;
+    const recovery = barnFull && pickupFull
+      ? ' Drive the pickup to town to sell cargo and make space, then return to unload the basket.'
+      : '';
+    toast(`Harvest paused: ${job.completed} completed, ${untouched} not attempted. ${reason} The basket contents remain safe.${recovery}`, 'bad');
     this.save();
     this.hud.update(this.state, this.tractorHudRuntime());
   }
@@ -2496,6 +2546,7 @@ export class FarmEmpireApp {
         advanceFarmDays(this.state, 1);
       }
       this.hud.update(this.state, this.tractorHudRuntime());
+      this.updatePickupReminder(this.gameNow());
     });
     addButton('dev-fund-land', 'Fund land test', () => {
       farmOf(this.state).cashCents = 1_000_000;
@@ -2661,6 +2712,7 @@ export class FarmEmpireApp {
     if (realNow - this.lastHudRefresh >= HUD_REFRESH_MS) {
       this.lastHudRefresh = realNow;
       this.hud.update(this.state, this.tractorHudRuntime());
+      this.updatePickupReminder(now);
     }
     if (realNow - this.lastSave >= AUTOSAVE_MS) {
       this.lastSave = realNow;

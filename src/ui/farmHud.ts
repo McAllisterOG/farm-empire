@@ -1,19 +1,20 @@
 import type { GameState } from '../core/types';
-import { allFarmCrops, farmCropDef } from '../core/registry';
-import { farmCropUnlockInfo, farmOf, formatMoney, harvestWagonReadout, storageUsed } from '../core/farmBusiness';
+import { farmCropDef } from '../core/registry';
+import { farmOf, formatMoney, harvestWagonReadout, storageUsed } from '../core/farmBusiness';
 import { pickupCargoCapacity, pickupCargoUsed } from '../core/farmPickup';
 import { formatFarmCapacity } from '../core/farmCargoScale';
 import { HAND_BASKET_CAPACITY, handBasketUsed } from '../core/farmHarvestBasket';
-import { farmGuideSteps, farmerKnowledgeSummary, nextFarmGuideStep } from '../core/farmKnowledge';
+import { nextFarmGuideStep, farmerKnowledgeSummary } from '../core/farmKnowledge';
 import { currentFarmWeather } from '../core/farmWeather';
 import { firstFarmMorningGuide } from '../core/firstFarmMorning';
-import { h, spriteImg } from './dom';
+import { h } from './dom';
 
 export interface FarmHudCallbacks {
   onSelectCrop: (cropId: string) => void;
+  onOpenCropChooser: () => void;
   onMarket: () => void;
   onEquipment: () => void;
-  onFarmbook: () => void;
+  onFarmbook?: () => void;
   onToggleHarvestDestination: () => void;
   onUnloadBasket: () => void;
   onCancelOperation: () => void;
@@ -63,7 +64,7 @@ export class FarmHud {
   private weatherEl: HTMLElement;
   private weatherStat: HTMLElement;
   private storageEl: HTMLElement;
-  private selectedEl: HTMLElement;
+  private cropControlButton: HTMLButtonElement;
   private tractorEl: HTMLElement;
   private operationEl: HTMLElement;
   private operationTextEl: HTMLElement;
@@ -73,16 +74,14 @@ export class FarmHud {
   private storageButton: HTMLButtonElement;
   private equipmentButton: HTMLButtonElement;
   private locationStat: HTMLElement;
-  private farmbookButton: HTMLButtonElement;
-  private harvestDestinationButton: HTMLButtonElement;
-  private unloadBasketButton: HTMLButtonElement;
+  private basketButton: HTMLButtonElement;
   private farmControls: HTMLElement;
   private townControls: HTMLElement;
   private morningCard: HTMLElement;
   private deliveryChip: HTMLElement;
+  private pickupReminder: HTMLElement;
   private morningDismissed = false;
   private mode: FarmHudMode = 'farm';
-  private cropButtons = new Map<string, HTMLButtonElement>();
 
   constructor(cb: FarmHudCallbacks) {
     this.cashEl = h('strong', { 'data-testid': 'cash' }, '$0.00');
@@ -90,7 +89,6 @@ export class FarmHud {
     this.weatherEl = h('strong', { 'data-testid': 'farm-weather' }, 'Clear');
     this.weatherStat = h('div', { class: 'farm-stat farm-weather-stat' }, h('span', {}, 'Weather'), this.weatherEl);
     this.storageEl = h('strong', { 'data-testid': 'storage-summary' }, '0 / 0');
-    this.selectedEl = h('strong', { 'data-testid': 'selected-crop' }, 'Corn');
     this.tractorEl = h('strong', { 'data-testid': 'tractor-status' }, 'Operational');
     this.operationTextEl = h('span', {
       class: 'farm-operation-copy',
@@ -110,18 +108,10 @@ export class FarmHud {
     this.storageButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'storage-button', onclick: cb.onMarket }, h('span', {}, 'Barn'), this.storageEl) as HTMLButtonElement;
     this.equipmentButton = h('button', { class: 'farm-stat farm-stat-button', 'data-testid': 'equipment-button', onclick: cb.onEquipment }, h('span', {}, 'Old Tractor'), this.tractorEl) as HTMLButtonElement;
     this.locationStat = h('div', { class: 'farm-stat town-location-stat hidden', 'data-testid': 'town-location-stat' }, h('span', {}, 'Location'), h('strong', {}, 'County Service Center'));
-    this.farmbookButton = h('button', { class: 'btn btn-primary farmbook-button', 'data-testid': 'farmbook-button', onclick: cb.onFarmbook }, 'Farmbook') as HTMLButtonElement;
-    this.harvestDestinationButton = h('button', {
-      class: 'btn harvest-destination-button',
-      'data-testid': 'harvest-destination-button',
-      onclick: cb.onToggleHarvestDestination,
-    }, 'Harvest → Barn') as HTMLButtonElement;
-    this.unloadBasketButton = h('button', {
-      class: 'btn btn-primary hidden',
-      'data-testid': 'unload-basket-button',
-      onclick: cb.onUnloadBasket,
-    }, 'Unload Basket') as HTMLButtonElement;
+    this.cropControlButton = h('button', { class: 'btn farm-crop-control', type: 'button', 'data-testid': 'compact-crop-control', 'aria-label': 'Choose crop', onclick: cb.onOpenCropChooser }, 'Crop · Corn · 0') as HTMLButtonElement;
+    this.basketButton = h('button', { class: 'btn btn-primary hidden basket-chip', type: 'button', 'data-testid': 'basket-chip', onclick: cb.onToggleHarvestDestination }, 'Basket · 0 / 24 · Unload') as HTMLButtonElement;
     this.deliveryChip = h('div', { class: 'first-delivery-chip', 'data-testid': 'first-delivery-chip' });
+    this.pickupReminder = h('div', { class: 'pickup-reminder hidden', role: 'status', 'aria-live': 'polite', 'data-testid': 'pickup-reminder' });
     const dismissMorning = (): void => { this.morningDismissed = true; this.morningCard.classList.add('hidden'); };
     this.morningCard = h('section', { class: 'first-morning-card', 'data-testid': 'first-morning-card' },
       h('strong', {}, 'Good morning.'),
@@ -153,26 +143,10 @@ export class FarmHud {
       h('button', { class: 'btn farm-menu-button', 'aria-label': 'Open game menu', 'data-testid': 'game-menu-button', onclick: cb.onMenu }, '☰'),
     );
 
-    const cropStrip = h('div', { class: 'farm-crop-strip', 'aria-label': 'Crop selection' });
-    for (const [index, def] of allFarmCrops().entries()) {
-      const button = h('button', {
-        class: 'farm-crop-button',
-        'data-crop-id': def.id,
-        'data-key': String(index + 1),
-        'data-testid': `select-${def.id}`,
-        onclick: () => cb.onSelectCrop(def.id),
-      }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-md'), h('span', {}, def.name)) as HTMLButtonElement;
-      this.cropButtons.set(def.id, button);
-      cropStrip.append(button);
-    }
-
     this.farmControls = h('div', { class: 'farm-hud-farm-controls' },
-      h('div', { class: 'farm-selected' }, h('span', {}, 'Selected crop'), this.selectedEl),
-      cropStrip,
+      this.cropControlButton,
       h('div', { class: 'farm-actions' },
-        this.harvestDestinationButton,
-        this.unloadBasketButton,
-        this.farmbookButton,
+        this.basketButton,
       ),
     );
     this.townControls = h('div', { class: 'farm-hud-town-controls hidden' },
@@ -188,8 +162,13 @@ export class FarmHud {
     const bottom = h('div', { class: 'farm-hud-bottom' }, this.farmControls, this.townControls);
 
     this.helpEl = h('div', { class: 'farm-help' }, 'Select a crop, then click an empty field section to plant. Click a ready crop to harvest.');
-    this.root = h('div', { class: 'farm-hud-root' }, top, bottom, this.deliveryChip, this.morningCard, this.operationEl, this.helpEl);
+    this.root = h('div', { class: 'farm-hud-root' }, top, bottom, this.deliveryChip, this.pickupReminder, this.morningCard, this.operationEl, this.helpEl);
     document.body.append(this.root);
+  }
+
+  setPickupReminder(text: string | null): void {
+    this.pickupReminder.textContent = text ?? '';
+    this.pickupReminder.classList.toggle('hidden', !text || this.mode !== 'farm');
   }
 
   setMode(mode: FarmHudMode): void {
@@ -216,23 +195,15 @@ export class FarmHud {
     this.weatherStat.classList.toggle('cloudy', weather.kind === 'cloudy');
     this.weatherStat.title = weather.fieldNote;
     this.storageEl.textContent = `Storage ${formatFarmCapacity(storageUsed(state), farm.storageCapacity)} · Pickup ${formatFarmCapacity(pickupCargoUsed(state), pickupCargoCapacity(state))}`;
-    const selectedIndex = allFarmCrops().findIndex((def) => def.id === farm.selectedCropId);
     const selectedSeeds = farm.seeds[farm.selectedCropId] ?? 0;
-    this.selectedEl.textContent = `${selectedIndex + 1} · ${farmCropDef(farm.selectedCropId).name} · ${selectedSeeds} seed${selectedSeeds === 1 ? '' : 's'}`;
+    this.cropControlButton.textContent = `Crop · ${farmCropDef(farm.selectedCropId).name} · ${selectedSeeds}`;
+    this.cropControlButton.setAttribute('aria-label', `Choose crop. Selected ${farmCropDef(farm.selectedCropId).name}, ${selectedSeeds} seeds.`);
     const basketUsed = handBasketUsed(state);
-    const basketDestination = farm.handBasket.destination === 'pickup' ? 'Pickup' : 'Barn';
-    this.harvestDestinationButton.textContent = `Harvest → ${basketDestination}`;
-    this.harvestDestinationButton.title = `Click to switch where manual harvest baskets are unloaded. Basket: ${basketUsed} / ${HAND_BASKET_CAPACITY}.`;
-    this.unloadBasketButton.classList.toggle('hidden', basketUsed <= 0);
-    this.unloadBasketButton.textContent = `Unload Basket · ${basketUsed}`;
-    this.unloadBasketButton.title = `Walk to the ${basketDestination.toLowerCase()} and unload the saved harvest basket.`;
-    const knowledge = farmerKnowledgeSummary(state);
-    const guide = farmGuideSteps(state);
+    this.basketButton.classList.toggle('hidden', basketUsed <= 0 || this.mode !== 'farm');
+    this.basketButton.textContent = `Basket · ${basketUsed} / ${HAND_BASKET_CAPACITY} · Unload`;
     const nextGuide = nextFarmGuideStep(state);
     const morning = firstFarmMorningGuide(state, Date.now());
-    this.farmbookButton.textContent = `Farmbook · ${guide.filter((step) => step.done).length}/${guide.length}`;
-    this.farmbookButton.title = `${knowledge.level.name}${nextGuide ? ` · Next: ${nextGuide.label}` : ' · Core route complete'}`;
-    if (this.mode === 'farm') this.brandSubEl.textContent = `${knowledge.level.name} · Farming Business`;
+    if (this.mode === 'farm') this.brandSubEl.textContent = `${farmerKnowledgeSummary(state).level.name} · Farming Business`;
     this.deliveryChip.classList.toggle('hidden', !shouldShowFirstDeliveryChip(this.mode, morning.complete, runtime));
     this.deliveryChip.textContent = `County Pantry · Pickup loaded · ${morning.cornProgress.current}/${morning.cornProgress.required} corn`;
     const morningVisible = this.mode === 'farm' && !this.morningDismissed && morning.showWelcome;
@@ -260,19 +231,6 @@ export class FarmHud {
     this.helpEl.textContent = contextualHelp;
     this.helpEl.classList.toggle('hidden', contextualHelp.length === 0);
     this.helpEl.title = !morning.complete ? morning.detail : nextGuide?.hint ?? '';
-    for (const [cropId, button] of this.cropButtons) {
-      const unlock = farmCropUnlockInfo(state, cropId);
-      const def = farmCropDef(cropId);
-      button.classList.toggle('active', cropId === farm.selectedCropId);
-      button.classList.toggle('locked', !unlock.unlocked);
-      button.disabled = !unlock.unlocked;
-      const seedCount = farm.seeds[cropId] ?? 0;
-      button.title = unlock.unlocked
-        ? `${def.name}: ${seedCount} seed${seedCount === 1 ? '' : 's'}`
-        : `${def.name} locked: ${unlock.requirement}`;
-      button.setAttribute('aria-label', unlock.unlocked ? `${def.name}, ${seedCount} seeds` : `${def.name}, locked. ${unlock.requirement}`);
-      button.dataset.count = String(seedCount);
-    }
   }
 
   destroy(): void {
