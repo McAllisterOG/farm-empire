@@ -90,6 +90,19 @@ export function manualFieldSelectionPlotUids(
   return result;
 }
 
+/** All sections in the clicked owned acreage, in stable row-major order. */
+export function manualFieldAcreagePlotUids(state: GameState, anchorPlotUid: number): number[] {
+  const anchor = state.plots.find((plot) => plot.uid === anchorPlotUid);
+  if (!anchor) return [];
+  const parcelId = farmParcelAtTile(anchor.x, anchor.y);
+  if (!parcelId) return [];
+  const byCoordinate = new Map(state.plots.map((plot) => [`${plot.x}:${plot.y}`, plot.uid]));
+  return farmParcelDef(parcelId) ? Array.from({ length: farmParcelDef(parcelId).rows }, (_, row) =>
+    Array.from({ length: farmParcelDef(parcelId).columns }, (_, column) => byCoordinate.get(`${farmParcelDef(parcelId).originX + column}:${farmParcelDef(parcelId).originY + row}`))
+      .filter((uid): uid is number => uid !== undefined),
+  ).flat() : [];
+}
+
 /**
  * Deterministic rectangular drag selection within one owned acreage. The
  * returned route is serpentine so the existing manual job runner can walk it

@@ -26,7 +26,7 @@ import { firstFarmMorningGuide, shouldPresentStarterGuideTarget } from '../core/
 import { FarmSoundscape, type FarmAudioSettings } from '../audio/farmSoundscape';
 import {
   MANUAL_FIELD_ACTION_LABELS, createManualFieldAction, manualFieldActionComplete, manualFieldActionProgress,
-  manualFieldRectanglePlotUids, manualFieldSelectionPlotUids,
+  manualFieldAcreagePlotUids, manualFieldRectanglePlotUids, manualFieldSelectionPlotUids,
   type ManualFieldAction, type ManualFieldActionKind, type ManualFieldSelectionScope,
 } from '../core/farmManualAction';
 import { advanceTractorMotion, createTractorMotion, resetTractorMotion, type TractorMotion } from '../core/farmTractorMotion';
@@ -67,15 +67,6 @@ import { pickupReminderSignature, pickupReminderText, reminderWindow } from '../
 
 const AUTOSAVE_MS = 15_000;
 const FIELD_ACTION_PAUSE_MS = 260;
-const MANUAL_ACTION_VERBS: Readonly<Record<ManualFieldActionKind, string>> = {
-  prepare: 'Prepare',
-  rework: 'Rework',
-  plant: 'Plant',
-  water: 'Water',
-  harvest: 'Harvest',
-  clear: 'Clear',
-};
-
 interface TractorMoveTarget {
   x: number;
   y: number;
@@ -1156,7 +1147,7 @@ export class FarmEmpireApp {
     });
   }
 
-  private openCropChooser(): void {
+  private openCropChooser(returnTo?: { plotUid: number; sx: number; sy: number }): void {
     if (this.mode !== 'farm' || this.manualActionBlocksUi()) return;
     openPanel({ title: 'Choose Crop', className: 'panel-crop-chooser', body: (body) => {
       const farm = farmOf(this.state);
@@ -1165,7 +1156,7 @@ export class FarmEmpireApp {
       for (const [index, def] of allFarmCrops().entries()) {
         const unlock = farmCropUnlockInfo(this.state, def.id);
         if (!unlock.unlocked) continue;
-        const button = h('button', { class: `crop-chooser-row ${farm.selectedCropId === def.id ? 'active' : ''}`, type: 'button', 'data-testid': `choose-${def.id}`, 'aria-pressed': farm.selectedCropId === def.id ? 'true' : 'false', onclick: () => { this.dispatch(selectFarmCrop(this.state, def.id)); closePanel(); } }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-md'), h('span', { class: 'crop-chooser-name' }, `${index + 1}. ${def.name}`), h('strong', {}, `${farm.seeds[def.id] ?? 0} seeds`));
+        const button = h('button', { class: `crop-chooser-row ${farm.selectedCropId === def.id ? 'active' : ''}`, type: 'button', 'data-testid': `choose-${def.id}`, 'aria-pressed': farm.selectedCropId === def.id ? 'true' : 'false', onclick: () => { this.dispatch(selectFarmCrop(this.state, def.id)); closePanel(); if (returnTo) this.openPlotMenu(returnTo.plotUid, returnTo.sx, returnTo.sy); } }, spriteImg(`icon:seed_${def.id.replace('crop_', '')}`, 'icon-md'), h('span', { class: 'crop-chooser-name' }, `${index + 1}. ${def.name}`), h('strong', {}, `${farm.seeds[def.id] ?? 0} seeds`));
         list.append(button);
       }
       const locked = allFarmCrops().filter((def) => !farmCropUnlockInfo(this.state, def.id).unlocked);
@@ -1655,16 +1646,15 @@ export class FarmEmpireApp {
         );
         return;
       }
-      const def = farmCropDef(farm.selectedCropId);
+      const preferredCropId = this.resolvePlantingCrop();
+      const def = farmCropDef(preferredCropId);
       const count = farm.seeds[def.id] ?? 0;
       const rotation = rotationPreview(plot, def.id);
       this.showManualScopeMenu(
         sx, sy, `Prepared soil · ${def.name} · ${count} seed${count === 1 ? '' : 's'} · ${rotation.bonusMs ? 'Rotation +10%' : rotation.lastHarvestFamily ? 'Same family' : 'First crop'}`,
-        'plant', plotUid, def.id, [{
-          label: count > 0 ? 'More seeds are sold in town' : 'No seeds · see the Farmbook route',
-          disabled: count > 0,
-          onClick: () => this.openFarmhouseOffice(),
-        }],
+        'plant', plotUid, def.id, count > 0
+          ? [{ label: 'Change crop', onClick: () => this.openCropChooser({ plotUid, sx, sy }) }]
+          : [{ label: 'No stocked seeds · buy in town, then unload at the barn', onClick: () => this.openFarmhouseOffice() }],
       );
       return;
     }
@@ -1935,25 +1925,53 @@ export class FarmEmpireApp {
     extraActions: { label: string; disabled?: boolean; icon?: string; onClick: () => void }[] = [],
     icon?: string,
   ): void {
-    const verb = kind === 'plant' && cropId ? `Plant ${farmCropDef(cropId).name} on` : MANUAL_ACTION_VERBS[kind];
+    const actionName = kind === 'prepare' ? 'Prepare' : kind === 'rework' ? 'Rework' : kind === 'plant' && cropId ? `Plant ${farmCropDef(cropId).name}` : kind === 'water' ? 'Water' : kind === 'harvest' ? 'Harvest' : 'Clear';
     const actionIcon = icon ?? (kind === 'plant' && cropId ? `icon:seed_${cropId.replace('crop_', '')}` : undefined);
+    const anchor = this.state.plots.find((plot) => plot.uid === anchorPlotUid);
+    const parcelId = anchor ? ownedFarmParcelAt(this.state, anchor.x, anchor.y) : null;
+    const acreage = parcelId ? manualFieldAcreagePlotUids(this.state, anchorPlotUid) : [];
+    const whole = this.manualTargetsFromPlotUids(kind, acreage, cropId);
+    const eligibleWhole = this.manualEligibleTargetsFromPlotUids(kind, acreage, cropId);
     const scopes: { scope: ManualFieldSelectionScope; label: string }[] = [
       { scope: 'section', label: 'this section' },
       { scope: 'row', label: 'this row' },
       { scope: 'three-rows', label: '3-row block' },
     ];
-    showActionMenu(sx, sy, title, [
-      ...scopes.map(({ scope, label }) => {
+    const secondary = scopes.flatMap(({ scope, label }) => {
         const targets = this.manualTargetsFor(kind, anchorPlotUid, scope, cropId);
-        return {
-          label: `${verb} ${label}${scope === 'section' ? '' : ` · ${targets.length} eligible`}`,
+        if (targets.length === 0) return [];
+        return [{
+          label: `${actionName} ${label} · ${targets.length} section${targets.length === 1 ? '' : 's'}`,
           icon: actionIcon,
-          disabled: targets.length === 0,
           onClick: () => this.startManualSelection(kind, anchorPlotUid, scope, cropId),
-        };
-      }),
+        }];
+      });
+    const primary = whole.length > 0 ? [{
+      label: kind === 'plant' && whole.length < eligibleWhole.length
+        ? `${actionName} ${whole.length} of ${eligibleWhole.length} prepared sections · ${farmOf(this.state).seeds[cropId ?? ''] ?? 0} seeds available`
+        : `${actionName} all matching sections · ${whole.length}`,
+      icon: actionIcon,
+      onClick: () => this.startManualTargetList(kind, whole, 'selection', cropId),
+    }] : [];
+    const dragCue = [{ label: 'Drag for a custom selection', onClick: () => toast('Drag across field sections for a custom selection.', 'good') }];
+    showActionMenu(sx, sy, `${title} · ${whole.length || 0} matching in this acreage`, [
+      ...primary,
+      ...secondary,
+      ...dragCue,
       ...extraActions,
     ]);
+  }
+
+  private resolvePlantingCrop(): string {
+    const farm = farmOf(this.state);
+    const current = farmCropDef(farm.selectedCropId);
+    if (farm.seeds[current.id] > 0 && isFarmCropUnlocked(this.state, current.id)) return current.id;
+    const recent = [...this.state.plots]
+      .filter((plot) => plot.crop && isFarmCropUnlocked(this.state, plot.crop.defId) && (farm.seeds[plot.crop.defId] ?? 0) > 0)
+      .sort((a, b) => (b.crop?.plantedAt ?? 0) - (a.crop?.plantedAt ?? 0))[0]?.crop?.defId;
+    const fallback = recent ?? allFarmCrops().find((def) => isFarmCropUnlocked(this.state, def.id) && (farm.seeds[def.id] ?? 0) > 0)?.id;
+    if (fallback) farm.selectedCropId = fallback;
+    return fallback ?? farm.selectedCropId;
   }
 
   private manualTargetsFor(
