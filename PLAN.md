@@ -71,7 +71,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Current authorization
 
-**First Harvest Onboarding & Field Interaction Simplification V1 is complete locally.** The package covers selection-first field actions, stocked crop choice, six-corn fresh-farm onboarding, weather/growth communication, and atomic all-fit barn/pickup transfers. It is locally committed only; no push or deployment was performed.
+**First Harvest Onboarding & Field Interaction Simplification V1 is published and accepted.** Product commit `9244e1e6eff84117fff4562c6a71010ad6de0c7d` is live on `codex/first-town-contact` and the existing Render service `srv-da7sfo0u01pc73bsd4u0` as deployment `dep-dabmk5btqb8s73ct11kg`. Live bundles are `index-DBS9lLEM.js` and `index-U2W3TlJZ.css`; hosted acceptance passed all six required viewports, fresh six-corn onboarding, weather/crop/field interaction, save/title/reload, overflow, and console checks. A docs-only receipt commit follows this product publication and must not trigger a second product deployment loop.
 
 **Farm HUD/Cargo Simplification publication is complete and accepted.** The six accepted commits after published snapshot `1055e4a` cover cargo quantities/menus, compact HUD and basket recovery, whole-field action copy, stocked-seed enforcement, dev stylesheet serving, and narrow-screen HUD fit. Published snapshot `e73d5f5` is live on GitHub and the existing Render service, with cache-bypassed hosted acceptance passed. No new land tiers, crops, machinery systems, cloud saves, a continuous world, or unrelated gameplay scope was added.
 ## Later directions
