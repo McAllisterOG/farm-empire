@@ -1,5 +1,6 @@
 import type { ActionResult, FarmHarvestDestination, FarmWorkerId, GameState } from '../core/types';
 import { allFarmCrops, farmCropDef } from '../core/registry';
+import { showFarmSaleFeedback } from '../ui/farmTransactionFeedback';
 import {
   FIRST_PARCEL_PRICE_CENTS, NEIGHBOR_FIELD_TILES, advanceFarmClock, advanceFarmDays, farmOf,
   formatMoney, harvestFarmCrop, plantFarmCrop, purchaseBarnLoftExpansion, purchaseCountyGrainSilo, purchaseCountyHarvestWagon, purchaseCountyRowCropFieldKit, purchaseCountyUtilityTrailer, purchaseNeighborParcel, selectFarmCrop, unloadHarvestWagonToBarn,
@@ -414,7 +415,7 @@ export class FarmEmpireApp {
         floatText(this.playerScreenX(), this.playerScreenY() - 45, `+${event.amount ?? 0}`, 'float-good');
       } else if (event.type === 'sell') {
         this.farmAudio.playTransaction('sell');
-        toast(`Sold ${event.amount ?? 0} ${farmCropDef(String(event.target)).name} for ${formatMoney(Number(event.data ?? 0))}.`, 'good');
+        showFarmSaleFeedback(event);
       } else if (event.type === 'expand') {
         this.farmAudio.playTransaction('expand');
         toast(`Neighboring acreage purchased. ${event.amount ?? farmParcelSectionCount('north')} field sections are usable, and the farmhouse has expanded.`, 'good');
