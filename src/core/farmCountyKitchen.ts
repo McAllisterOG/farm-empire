@@ -6,9 +6,9 @@ import { pickupCropUnits } from './farmPickup';
 import { recordFarmStat } from './farmKnowledge';
 
 export interface CountyKitchenContext { pickupPresent: boolean; source: 'pickup'; }
-export function countyKitchenProgress(state: GameState, context?: CountyKitchenContext): Record<'crop_corn' | 'crop_carrots' | 'crop_tomatoes', number> {
+export function countyKitchenProgress(state: GameState, context?: CountyKitchenContext): Record<'crop_corn' | 'crop_carrot' | 'crop_tomato', number> {
   const present = context?.source === 'pickup' && context.pickupPresent;
-  return { crop_corn: present ? pickupCropUnits(state, 'crop_corn') : 0, crop_carrots: present ? pickupCropUnits(state, 'crop_carrots') : 0, crop_tomatoes: present ? pickupCropUnits(state, 'crop_tomatoes') : 0 };
+  return { crop_corn: present ? pickupCropUnits(state, 'crop_corn') : 0, crop_carrot: present ? pickupCropUnits(state, 'crop_carrot') : 0, crop_tomato: present ? pickupCropUnits(state, 'crop_tomato') : 0 };
 }
 export function offerCountyKitchenDelivery(state: GameState): ActionResult {
   const kitchen = farmOf(state).countyKitchen;
@@ -29,11 +29,11 @@ export function fulfillCountyKitchenDelivery(state: GameState, context?: CountyK
   if (kitchen.status !== 'active') return fail('There is no active Garden Table Delivery.');
   if (!context || context.source !== 'pickup' || !context.pickupPresent) return fail('Bring the old pickup to County Pantry & Kitchen before delivery.');
   const progress = countyKitchenProgress(state, context); const cargo = COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.cargo;
-  if (progress.crop_corn < cargo.crop_corn || progress.crop_carrots < cargo.crop_carrots || progress.crop_tomatoes < cargo.crop_tomatoes) return fail('Load the exact Garden Table produce list into the pickup before delivery.');
+  if (progress.crop_corn < cargo.crop_corn || progress.crop_carrot < cargo.crop_carrot || progress.crop_tomato < cargo.crop_tomato) return fail('Load the exact Garden Table produce list into the pickup before delivery.');
   kitchen.status = 'completed';
   farm.pickup.cargo.crops.crop_corn = progress.crop_corn - cargo.crop_corn;
-  farm.pickup.cargo.crops.crop_carrots = progress.crop_carrots - cargo.crop_carrots;
-  farm.pickup.cargo.crops.crop_tomatoes = progress.crop_tomatoes - cargo.crop_tomatoes;
+  farm.pickup.cargo.crops.crop_carrot = progress.crop_carrot - cargo.crop_carrot;
+  farm.pickup.cargo.crops.crop_tomato = progress.crop_tomato - cargo.crop_tomato;
   farm.cashCents += COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.payoutCents;
   recordFarmStat(state, 'farmDeliveries'); recordFarmStat(state, 'itemsSold', 18); recordFarmStat(state, 'farmCashEarnedCents', COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.payoutCents); syncCashMirror(state);
   return { ok: true, events: [{ type: 'toast', target: 'Garden Table Delivery served. $115.00 received.' }] };

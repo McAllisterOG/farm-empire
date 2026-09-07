@@ -486,8 +486,8 @@ export function countyKitchenPanelState(state: GameState): CountyKitchenPanelSta
 function renderCountyKitchen(body: HTMLElement, state: GameState, actions: FarmPanelActions): void {
   clearChildren(body); const farm = farmOf(state); const kitchen = farm.countyKitchen; const panel = countyKitchenPanelState(state); const cargo = COUNTY_KITCHEN_GARDEN_TABLE_DELIVERY.cargo;
   const progress = countyKitchenProgress(state, { pickupPresent: actions.pickupPresent, source: 'pickup' });
-  const ready = actions.pickupPresent && progress.crop_corn >= cargo.crop_corn && progress.crop_carrots >= cargo.crop_carrots && progress.crop_tomatoes >= cargo.crop_tomatoes;
-  const line = `Corn ${Math.min(progress.crop_corn, cargo.crop_corn)}/${cargo.crop_corn} · Carrots ${Math.min(progress.crop_carrots, cargo.crop_carrots)}/${cargo.crop_carrots} · Tomatoes ${Math.min(progress.crop_tomatoes, cargo.crop_tomatoes)}/${cargo.crop_tomatoes}`;
+  const ready = actions.pickupPresent && progress.crop_corn >= cargo.crop_corn && progress.crop_carrot >= cargo.crop_carrot && progress.crop_tomato >= cargo.crop_tomato;
+  const line = `Corn ${Math.min(progress.crop_corn, cargo.crop_corn)}/${cargo.crop_corn} · Carrots ${Math.min(progress.crop_carrot, cargo.crop_carrot)}/${cargo.crop_carrot} · Tomatoes ${Math.min(progress.crop_tomato, cargo.crop_tomato)}/${cargo.crop_tomato}`;
   const rerender = (): void => renderCountyKitchen(body, state, actions);
   if (panel.locked) { body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-kitchen-locked' }, h('strong', {}, 'County Pantry first'), h('span', {}, 'Complete Mae and Eli’s County Pantry delivery before Rosa can post a Garden Table order.'))); return; }
   if (kitchen.status === 'completed') { body.append(h('div', { class: 'farm-panel-summary', 'data-testid': 'county-kitchen-completed' }, h('strong', {}, 'Garden Table Delivery served'), h('span', {}, 'Rosa Alvarez: The table is full, and the kitchen is grateful.'))); return; }
