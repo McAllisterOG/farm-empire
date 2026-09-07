@@ -39,7 +39,7 @@ npm.cmd run build
 npm.cmd run preview -- --host 127.0.0.1 --port 5194 --strictPort
 ```
 
-Bundle clone may report no default HEAD until the explicit tag checkout. Rehearsal installation and production build passed; real-browser restore check is recorded with release evidence when complete.
+Bundle clone may report no default HEAD until the explicit tag checkout. Rehearsal installation and production build passed. Actual isolated browser play created Rollback Rehearsal QA and prepared one soil section with no console errors; rollback-played.png records the result.
 
 ## Hosted restore
 
@@ -52,3 +52,5 @@ Render's [documented rollback](https://render.com/docs/rollbacks) reuses retaine
 The remaster must preserve save v26 in both directions. Browser saves belong to their origin/profile, not Git or Render. Rolling back code does not roll back save data or synchronize devices. Export a save through the normal UI before rollback when practical; never clear site data to refresh code. Verify served release identity and reload normally while online; offline devices can retain an earlier app shell. Synthetic QA fixtures prove compatibility separately from the owner's real saves.
 
 The existing `release/demo-complete-v1/verified-win-unpacked/Farm Empire.exe` and Desktop shortcut are outside this web publication and remain untouched.
+
+Post-publication verification (2026-09-06): remaster product `4a4dd18` is Live as `dep-daf41e740ujc739g74i0`. The original `dep-dabmk5btqb8s73ct11kg` still exposes its exact Rollback link. No rollback was executed; disabled auto-deploy, permanent source refs, bundle and installed Windows artifact are preserved.

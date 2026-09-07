@@ -89,4 +89,4 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 
 ## Astra 3D Remaster checkpoint
 
-Authorized stages 1–5 are locally implemented and verified; stage 6 is pending independent review and exact GitHub/Render publication. See [bounded plan](docs/owner/ASTRA_3D_REMASTER_PLAN.md) and [acceptance evidence](docs/owner/ASTRA_3D_REMASTER_VERIFICATION.md). No later roadmap package is authorized by this checkpoint.
+All six authorized stages are complete. Independent review returned SHIP with no findings; accepted product 4a4dd18 is published to GitHub and Live on the existing Render service as dep-daf41e740ujc739g74i0, with hosted gameplay and responsive acceptance. See [bounded plan](docs/owner/ASTRA_3D_REMASTER_PLAN.md) and [acceptance evidence](docs/owner/ASTRA_3D_REMASTER_VERIFICATION.md). No later roadmap package is authorized by this checkpoint.

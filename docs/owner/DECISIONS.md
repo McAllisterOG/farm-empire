@@ -487,3 +487,13 @@ Only approved decisions with durable product, architecture, or workflow impact b
 - Prefer the browser `visualViewport` dimensions over stale layout-viewport fallbacks. Refit once on the immediate resize/orientation signal and once after the iOS viewport settles; use the same policy for the renderer backing surface and camera bounds.
 - Phone portrait and short landscape use an 18-pixel camera-fit padding and a 0.18 overview floor. Tablet and desktop retain the established 70-pixel padding and 0.46 farm minimum. A visible touch Fit action re-applies the authoritative fit without changing saved camera or gameplay state.
 - Short landscape means landscape at 500 CSS pixels high or less. It receives a compact HUD and crop tray; title orientation changes return the save list to its top after the viewport settles. No gameplay, save, economy, progression, transaction, iPad camera, or desktop camera authority changes.
+
+## 2026-09-06 - Publish bounded Astra 3D Remaster
+
+**Status:** Approved, complete and published
+
+- Use a disposable Three.js presentation adapter for existing Farm/Town snapshots, with fixed orthographic ground mapping, raised-mesh picking, original volumetric low-poly art, shared/instanced resources and bounded DPR/shadows. Keep one authoritative simulation/render loop, save v26 and existing maps/economy/timing/progression.
+- Load 3D lazily and retain selectable classic Canvas plus unavailable/context-loss fallback. Keep renderer preference separate from saved gameplay, release all owned resources, and preserve Paradise Isle/MIT attribution and the existing installed Windows package.
+- Add accessible backup import only into an empty slot and a phone Town Services chooser that uses existing walk-to-door service authority. No new transaction shortcut or service was added.
+- The owner separately approved two finite pre-existing blocker repairs: canonical carrot/tomato registry IDs for the unchanged Kitchen recipe/reward, and generic aggregate-sale feedback instead of resolving the synthetic batch crop ID. No broader transaction or balance change was authorized.
+- Independent review accepted exact product 4a4dd18 with no findings; normal publication to the existing deployment branch/service and final receipt notes was authorized. Preserve pre-astra-3d-remaster/codex/pre-astra-3d-remaster original refs and tested restore path. Physical Safari/multitouch/offline/GPU-driver acceptance remains separate.
