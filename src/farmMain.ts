@@ -1,11 +1,11 @@
 import './data';
 import type { GameState } from './core/types';
 import { FarmEmpireApp } from './game/farmEmpireApp';
-import { deleteSlot, loadFromSlot, newGameInSlot, slotInfos } from './save/save';
+import { deleteSlot, importSave, loadFromSlot, newGameInSlot, saveToSlot, slotInfos } from './save/save';
 import { setLang } from './i18n';
 import { h, clearChildren } from './ui/dom';
 import { initToast, toast } from './ui/toast';
-import { closePanel, confirmDialog, initModal, promptDialog } from './ui/modal';
+import { closePanel, confirmDialog, initModal, openPanel, promptDialog } from './ui/modal';
 import { hideActionMenu, initActionMenu } from './ui/actionMenu';
 import { installRuntimeFailureCapture, setRuntimeReturnToTitle } from './ui/runtimeFailure';
 import { resolveViewportSize } from './core/viewportPolicy';
@@ -77,6 +77,17 @@ function showTitle(): void {
 function renderTitle(root: HTMLElement): void {
   clearChildren(root);
   const list = h('div', { class: 'slot-list' });
+  const importButton=h('button',{class:'btn',onclick:()=>{
+    const free=slotInfos().findIndex(info=>!info);
+    if(free<0){toast('All farm slots are occupied. Keep your existing farms safe; an empty slot is required to import.', 'bad');return;}
+    openPanel({title:'Import farm backup',body:(body)=>{
+      const code=h('textarea',{'aria-label':'Farm backup code',rows:'6',style:'width:100%;'}) as HTMLTextAreaElement;
+      body.append(h('p',{},`Import into empty slot ${free+1}. Existing farms will remain untouched.`),code,h('button',{class:'btn btn-primary',onclick:()=>{
+        try{if(slotInfos()[free])throw new Error('This slot is no longer empty.');const now=Date.now(),state=importSave(code.value,now);if(!state.farm)throw new Error('A Farm Empire backup is required.');saveToSlot(state,free,now);closePanel();renderTitle(root);toast('Farm backup imported.','good');}
+        catch{toast('Could not import this backup. Check the code and use an empty slot. Existing farms were left untouched.','bad');}
+      }},'Import into empty slot'));
+    }});
+  }},'Import farm backup');
   slotInfos().forEach((info, slot) => {
     if (info) {
       const saved = new Date(info.savedAt);
@@ -124,6 +135,7 @@ function renderTitle(root: HTMLElement): void {
     h('div', { class: 'title-sub' }, 'Build a farm. Read the market. Own the land.'),
     h('div', { class: 'title-tagline' }, 'BUY SEEDS → GROW CROPS → STORE → SELL → EXPAND'),
     list,
+    importButton,
     h('div', { class: 'title-device-note' },
       h('strong', {}, 'Playing on iPad?'),
       ' Use Safari Share → Add to Home Screen. This browser keeps its own farm saves.',

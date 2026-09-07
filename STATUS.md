@@ -1,5 +1,11 @@
 # Farm Empire Status
 
+## Astra 3D Remaster — local review checkpoint
+
+- Stages 1–5 implemented on `codex/astra-3d-remaster`; 405 tests / 65 files, typecheck, web build and desktop-relative build pass. Genuine mesh Farm/Town, geometry picking, bounded resources and selectable Canvas fallback preserve save v26.
+- Actual farming, machinery, worker, Town transactions and save round trips verified. Two approved pre-existing Kitchen/sale-feedback blockers fixed separately. Independent Owner Console review and hosted publication remain pending; the published checkpoint below is still live.
+- Evidence, measured performance and physical-device limits: [Astra verification](docs/owner/ASTRA_3D_REMASTER_VERIFICATION.md). Permanent original refs and restore rehearsal: [rollback](docs/owner/PRE_ASTRA_ROLLBACK.md).
+
 ## Current known-good checkpoint
 
 - **Current local package:** First Harvest Onboarding & Field Interaction Simplification V1 is published and hosted. Fresh farms now start with six corn seeds only; stocked crop choice, weather guidance, selection-first field actions, and atomic all-fit cargo transfers are player-visible. Existing serialized inventories remain authoritative.

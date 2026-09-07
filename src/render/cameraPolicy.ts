@@ -48,3 +48,9 @@ export function farmCameraPolicy(viewW = 1280, viewH = 720): CameraPolicy {
   };
 }
 export function townCameraPolicy(): CameraPolicy { return { bounds: tileBoundsToWorld(2, 2, 30, 20), padding: 60, minZoom: .72, maxZoom: 1.2 }; }
+
+/** Include mesh roof height and permit a complete portrait overview. */
+export function threeTownCameraPolicy(width:number,height:number):CameraPolicy {
+  const base=townCameraPolicy();
+  return {...base,bounds:{...base.bounds,minY:base.bounds.minY-200},padding:height<500?88:width<600?20:70,minZoom:.18};
+}

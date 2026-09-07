@@ -86,3 +86,7 @@ Farm Empire should grow from a small, personal operation into a visibly larger a
 - Extend the current Mara/Eliot reviewed-crew foundation only after playtesting: additional workers, schedules, worker skills, deeper management, payroll depth, and passive operation remain separate decisions.
 - **Long-session validation:** Preserve the production-authority progression regression as new systems are added. The remaining packaged player-surface pass must use the isolated QA profile and must not open or alter the owner save.
 - Further environment art and ambient farm life after the current benchmark presentation is reviewed in play.
+
+## Astra 3D Remaster checkpoint
+
+Authorized stages 1–5 are locally implemented and verified; stage 6 is pending independent review and exact GitHub/Render publication. See [bounded plan](docs/owner/ASTRA_3D_REMASTER_PLAN.md) and [acceptance evidence](docs/owner/ASTRA_3D_REMASTER_VERIFICATION.md). No later roadmap package is authorized by this checkpoint.

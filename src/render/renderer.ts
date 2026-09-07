@@ -36,6 +36,8 @@ import { farmCropSpriteVariant, farmCropVisualFor, isFarmCropRipeStage, type Far
 import { boundedRenderScale } from './renderResolution';
 import { harvestWagonLoadPresentation, tractorWagonRenderOffset } from './farmMachinery';
 import { compareSequencedDepth, FarmCropAnchorCache, type FarmCropPlantAnchor } from './farmDepth';
+import type { ThreeFarmRenderer, MeshPick } from './threeFarmRenderer';
+import { threeTownCameraPolicy } from './cameraPolicy';
 
 export interface SceneActor {
   avatar: AvatarConfig;
@@ -84,7 +86,7 @@ export interface RenderScene {
       workKind?: ParcelWorkKind;
       harvestWagon?: { tier: 'basic' | 'county'; used: number; attached: boolean };
     };
-    pickup: { name: string; x: number; y: number; operating: boolean; moving: boolean; trailerOwned: boolean; headingX?: number; headingY?: number; steer?: number; wheelPhase?: number };
+    pickup: { name: string; x: number; y: number; operating: boolean; moving: boolean; trailerOwned: boolean; cargoUsed?: number; cargoCapacity?: number; headingX?: number; headingY?: number; steer?: number; wheelPhase?: number };
     scout: { x: number; y: number; moving: boolean; mode: 'follow' | 'home'; facing: FarmFacing; scratching: boolean };
     frisbee?: { throwFrom: { x: number; y: number }; carrier: { x: number; y: number }; to: { x: number; y: number }; phase: 'outbound' | 'pickup' | 'returning'; phaseStartedAt: number };
     farmhouseTier: FarmhousePresentationTier;
@@ -185,6 +187,12 @@ export class Renderer {
   readonly ctx: CanvasRenderingContext2D;
   readonly camera = new Camera();
   private dpr = 1;
+  private three: ThreeFarmRenderer | null = null;
+  private threeAttempted = false;
+  private presentation: 'three' | 'canvas' = 'three';
+  private threeActive = false;
+  private presentationGeneration = 0;
+  private canvasRenderTimes: number[] = [];
   private readonly farmItems: DrawItem[] = [];
   private readonly farmCropAnchorCache = new FarmCropAnchorCache(MAX_FARM_CROP_DRAW_CACHE_ENTRIES);
   private readonly farmCropDrawCache = new Map<string, CachedFarmCropDrawItems>();
@@ -192,8 +200,27 @@ export class Renderer {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
+    try { if (localStorage.getItem('farm-empire-presentation') === 'canvas') this.presentation = 'canvas'; } catch { /* optional preference */ }
     this.resize();
   }
+
+  get isThree(): boolean { return this.threeActive; }
+  get presentationMode(): 'three' | 'canvas' { return this.presentation; }
+  setPresentation(mode: 'three' | 'canvas'): void {
+    this.presentationGeneration++;
+    this.presentation = mode;
+    if (mode === 'canvas') { this.three?.dispose(); this.three = null; this.threeActive = false; }
+    this.threeAttempted = false;
+    try { localStorage.setItem('farm-empire-presentation', mode); } catch { /* optional preference */ }
+  }
+  pickObject(sx: number, sy: number): MeshPick | null { return this.threeActive ? this.three?.pick(sx, sy, this.camera.viewW, this.camera.viewH) ?? null : null; }
+  interactionPoint(sx: number, sy: number): { x: number; y: number } {
+    const pick = this.pickObject(sx, sy);
+    return pick ? (this.activeTown ? { x: pick.x, y: pick.y } : farmWorldPoint(pick)) : this.camera.tilePointAt(sx, sy);
+  }
+  private activeTown = false;
+  diagnostics(): object { const times=[...this.canvasRenderTimes].sort((a,b)=>a-b); return this.threeActive ? this.three!.diagnostics() : { mode: 'canvas', requested: this.presentation, sampledFrames: times.length, recentP95RenderMs: times[Math.floor(times.length*.95)] ?? 0 }; }
+  dispose(): void { this.presentationGeneration++; this.three?.dispose(); this.three = null; this.threeActive = false; }
 
   resize(): void {
     const viewport = resolveViewportSize({
@@ -218,9 +245,35 @@ export class Renderer {
 
   /** 主绘制入口 */
   render(scene: RenderScene, now: number): void {
+    const started=performance.now();
+    this.renderFrame(scene, now);
+    if (!this.threeActive) { this.canvasRenderTimes.push(performance.now()-started); if(this.canvasRenderTimes.length>180)this.canvasRenderTimes.shift(); }
+  }
+
+  private renderFrame(scene: RenderScene, now: number): void {
     const { ctx, camera } = this;
     const zoom = camera.zoom;
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    this.activeTown = Boolean(scene.town);
+    if ((scene.farm || scene.town) && this.presentation === 'three') {
+      if (!this.threeAttempted) {
+        this.threeAttempted = true;
+        const generation = this.presentationGeneration;
+        void import('./threeFarmRenderer').then(({ ThreeFarmRenderer }) => {
+          if (generation !== this.presentationGeneration || this.presentation !== 'three') return;
+          try { this.three = new ThreeFarmRenderer(this.canvas); } catch { this.three = null; }
+        }).catch(() => { /* Offline/unavailable WebGL chunk: retain usable Canvas. */ });
+      }
+      if (this.three) {
+        try { this.threeActive = this.three.render(scene, camera, ctx, now, this.dpr); }
+        catch { this.three.dispose(); this.three = null; this.threeActive = false; }
+        if (this.threeActive) { this.canvas.dataset.presentation = 'three'; return; }
+        if (this.three) this.three.visible = false;
+      }
+    }
+    this.threeActive = false;
+    if (this.three) this.three.visible = false;
+    this.canvas.dataset.presentation = 'canvas';
 
     if (scene.town) {
       renderTown(ctx, camera, scene.town, now);
@@ -509,12 +562,14 @@ export class Renderer {
   }
 
   centerOnTown(): void {
-    this.camera.centerOnTile(TOWN_CAMERA.x, TOWN_CAMERA.y);
-    this.camera.zoom = cameraFitZoom(townCameraPolicy(), this.camera.viewW, this.camera.viewH); this.clampTownCamera();
+    const policy=this.presentation === 'three' ? threeTownCameraPolicy(this.camera.viewW,this.camera.viewH) : townCameraPolicy();
+    if(this.presentation === 'three'){const center=cameraFitCenter(policy);this.camera.cx=center.cx;this.camera.cy=center.cy;}
+    else this.camera.centerOnTile(TOWN_CAMERA.x, TOWN_CAMERA.y);
+    this.camera.zoom = cameraFitZoom(policy, this.camera.viewW, this.camera.viewH); this.clampTownCamera();
   }
 
   clampFarmCamera(): void { const policy = farmCameraPolicy(this.camera.viewW, this.camera.viewH); this.camera.zoom = clampCameraZoom(this.camera.zoom, policy); const p = clampCameraCenter(this.camera.cx, this.camera.cy, this.camera.zoom, this.camera.viewW, this.camera.viewH, policy); this.camera.cx = p.cx; this.camera.cy = p.cy; }
-  clampTownCamera(): void { const policy = townCameraPolicy(); this.camera.zoom = clampCameraZoom(this.camera.zoom, policy); const p = clampCameraCenter(this.camera.cx, this.camera.cy, this.camera.zoom, this.camera.viewW, this.camera.viewH, policy); this.camera.cx = p.cx; this.camera.cy = p.cy; }
+  clampTownCamera(): void { const policy = this.presentation === 'three' ? threeTownCameraPolicy(this.camera.viewW,this.camera.viewH) : townCameraPolicy(); this.camera.zoom = clampCameraZoom(this.camera.zoom, policy); const p = clampCameraCenter(this.camera.cx, this.camera.cy, this.camera.zoom, this.camera.viewW, this.camera.viewH, policy); this.camera.cx = p.cx; this.camera.cy = p.cy; }
 
   /** Farm-only presentation branch.  Legacy island rendering above stays isolated. */
   private renderFarm(scene: RenderScene, now: number): void {

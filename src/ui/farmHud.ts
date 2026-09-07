@@ -20,6 +20,7 @@ export interface FarmHudCallbacks {
   onUnloadBasket: () => void;
   onCancelOperation: () => void;
   onReturnFarm: () => void;
+  onTownServices?: () => void;
   onSave: () => void;
   onFitFarm: () => void;
   onMenu: () => void;
@@ -157,6 +158,7 @@ export class FarmHud {
       ),
       h('div', { class: 'farm-actions' },
         h('button', { class: 'btn', 'data-testid': 'town-save-button', onclick: cb.onSave }, 'Save'),
+        ...(cb.onTownServices ? [h('button', { class: 'btn', onclick: cb.onTownServices }, 'Services')] : []),
         h('button', { class: 'btn btn-primary', 'data-testid': 'town-return-button', onclick: cb.onReturnFarm }, 'Return to Farm'),
       ),
     );

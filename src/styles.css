@@ -973,7 +973,19 @@ button:focus-visible, input:focus-visible, .slot-main:focus-visible, a:focus-vis
   z-index: 6;
 }
 .farm-crop-control, .basket-chip { min-height: 44px; white-space: nowrap; }
+.farm-hud-farm-controls { flex-wrap: wrap; justify-content: flex-end; }
+.farm-hud-farm-controls > .farm-crop-control { flex: 0 0 auto; }
+.farm-hud-farm-controls > .farm-actions { width: auto; }
 .cargo-batch-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+/* Farm service controls remain comfortable when a phone uses a fine-pointer browser. */
+@media (max-width: 600px), (max-height: 500px), (pointer: coarse) {
+  body:has(.farm-hud-root) .modal-panel button,
+  body:has(.farm-hud-root) .modal-panel input[type="number"],
+  body:has(.farm-hud-root) .modal-panel summary { min-height: 44px; }
+  body:has(.farm-hud-root) .modal-panel button { min-width: 44px; }
+  body:has(.farm-hud-root) .modal-panel summary { display: flex; align-items: center; }
+}
 
 @media (min-width: 561px) and (max-width: 900px) and (min-height: 501px) {
   .farm-hud-top {

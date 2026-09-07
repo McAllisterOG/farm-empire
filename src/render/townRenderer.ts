@@ -21,7 +21,7 @@ export interface TownRenderScene {
   weather: FarmWeatherKind;
   gesturingNpcId: TownNpcDef['id'] | null;
   gestureUntil: number;
-  pickup?: { x: number; y: number; trailerOwned: boolean };
+  pickup?: { x: number; y: number; trailerOwned: boolean; cargoUsed?: number; cargoCapacity?: number };
   interactionHint?: { label: string; x: number; y: number };
   kitchenCompleted?: boolean;
 }
